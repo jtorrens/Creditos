@@ -770,28 +770,20 @@ button:hover,
   width: min(100%, 960px);
 }
 
-.pdf-page-meta {
-  color: var(--muted);
-  font-size: 11px;
-  left: 10px;
-  position: absolute;
-  top: 8px;
-}
-
 .pdf-page-inner {
   box-sizing: border-box;
   display: flex;
   height: 100%;
+  justify-content: center;
   padding: 0 68px 58px;
 }
 
 .pdf-page-body {
-  align-self: stretch;
   display: flex;
-  flex: 1;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   min-height: 0;
+  width: 100%;
 }
 
 .pdf-page-title {
@@ -820,7 +812,7 @@ button:hover,
 }
 
 .pdf-unit.horizontal {
-  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
 .pdf-unit.vertical {

@@ -1585,7 +1585,7 @@
     els.pdfPreview.className = 'pdf-preview';
     els.pdfPreview.innerHTML = '';
 
-    buildPhysicalPages(state.render.cartelas || []).forEach((page, index) => {
+    buildPhysicalPages(state.render.cartelas || []).forEach((page) => {
       const sheetEl = document.createElement('section');
       sheetEl.className = 'pdf-sheet';
 
@@ -1596,19 +1596,14 @@
       const pageBody = document.createElement('div');
       pageBody.className = 'pdf-page-body';
 
-      const pageMeta = document.createElement('div');
-      pageMeta.className = 'pdf-page-meta';
-      pageMeta.textContent = `Pagina ${index + 1}`;
-      sheetEl.appendChild(pageMeta);
-
       const title = document.createElement('div');
       title.className = 'pdf-page-title';
-      title.textContent = page.cartela_page.title || page.cartela.title || '';
+      title.textContent = getPdfPageTitle(page.cartela_page);
       applyTypography(title, 'page_header', {
         multiplier: page.cartela.font_size_multiplier,
         lineMultiplier: page.cartela.line_spacing_multiplier,
       });
-      pageBody.appendChild(title);
+      if (title.textContent) pageBody.appendChild(title);
 
       page.blocks.forEach((block) => {
         pageBody.appendChild(renderPdfBlock(block, page.cartela, layout));
@@ -1641,6 +1636,11 @@
       });
     });
     return physicalPages;
+  }
+
+  function getPdfPageTitle(cartelaPage) {
+    const title = cartelaPage && cartelaPage.title ? cartelaPage.title : '';
+    return /^Pagina \d+$/i.test(title) ? '' : title;
   }
 
   function renderPdfBlock(block, cartela, layout) {
