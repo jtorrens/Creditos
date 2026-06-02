@@ -103,7 +103,7 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - En `Preview`, los bloques repiten su titulo en cada pagina interna; ese titulo puede borrarse o cambiarse de forma independiente.
 - En `Preview`, los cargos repetidos por varias personas se muestran una vez por pagina interna; cada nombre sigue contando como linea independiente.
 - En `Preview`, cargos y nombres no hacen wrap: el texto que no entra en su columna queda recortado.
-- En `PDF`, previsualiza paginas fisicas 16:9 con el contenido centrado como conjunto.
+- En `PDF`, previsualiza paginas fisicas 16:9 con solo titulo de cartela y titulo de bloque; los titulos vacios no reservan espacio.
 - Los cargos con varios nombres se dividen en lineas independientes para preview, render y saltos de pagina.
 - Divide `RODILLO FINAL` en bloques de diseno por secciones.
 - Agrupa `Licencias Musicales` en temas separados por saltos de fila, tanto en preview como en `render_json`.

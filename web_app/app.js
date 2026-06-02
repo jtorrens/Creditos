@@ -540,7 +540,7 @@
 
     rendered.pages = rendered.pages.map((page) => ({
       ...page,
-      title: resolveOverride(overrides, blockPageTitleRef(material.id, page.id), 'title', rendered.title),
+      title: rendered.title,
     }));
 
     return rendered;
@@ -577,10 +577,6 @@
 
   function countItemLines(item) {
     return 1;
-  }
-
-  function blockPageTitleRef(blockId, pageId) {
-    return `${blockId}__${pageId}`;
   }
 
   function flattenRenderedItems(items, overrides) {
@@ -998,11 +994,6 @@
     wrap.appendChild(localNumberRow('Columnas bloque', getSelectedBlockColumns(ref), 1, 6, (value) => updateSelectedBlockColumns(ref, value)));
     wrap.appendChild(renderBlockAlignmentControls(material, ref));
     wrap.appendChild(inputRow('Titulo bloque', material.id, 'title', material.title || ''));
-    wrap.appendChild(inputRow('Titulos bloque', material.id, 'titles', (material.titles || [material.title]).join('\n'), {
-      multiline: true,
-      parse: (value) => value.split('\n').map((line) => line.trim()).filter(Boolean),
-      fallback: material.titles || [material.title],
-    }));
 
     if (material.type === 'music_licenses') {
       wrap.appendChild(renderMusicThemesEditor(material));
@@ -1459,6 +1450,17 @@
     return input;
   }
 
+  function makeVisualStaticText(value, className, styleKey, options = {}) {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const element = document.createElement('div');
+    element.className = `visual-static ${className}`;
+    element.textContent = text;
+    applyTypography(element, styleKey, options);
+    if (options.textAlign) element.style.textAlign = options.textAlign;
+    return element;
+  }
+
   function applyTypography(element, key, options = {}) {
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
     const typography = settings.typography[key];
@@ -1596,14 +1598,8 @@
       const pageBody = document.createElement('div');
       pageBody.className = 'pdf-page-body';
 
-      const title = document.createElement('div');
-      title.className = 'pdf-page-title';
-      title.textContent = getPdfPageTitle(page.cartela_page);
-      applyTypography(title, 'page_header', {
-        multiplier: page.cartela.font_size_multiplier,
-        lineMultiplier: page.cartela.line_spacing_multiplier,
-      });
-      if (title.textContent) pageBody.appendChild(title);
+      const title = makePdfOptionalTitle(page.cartela.title, 'pdf-page-title', 'page_header', page.cartela);
+      if (title) pageBody.appendChild(title);
 
       page.blocks.forEach((block) => {
         pageBody.appendChild(renderPdfBlock(block, page.cartela, layout));
@@ -1638,11 +1634,6 @@
     return physicalPages;
   }
 
-  function getPdfPageTitle(cartelaPage) {
-    const title = cartelaPage && cartelaPage.title ? cartelaPage.title : '';
-    return /^Pagina \d+$/i.test(title) ? '' : title;
-  }
-
   function renderPdfBlock(block, cartela, layout) {
     const blockEl = document.createElement('div');
     blockEl.className = 'pdf-block';
@@ -1651,14 +1642,8 @@
       return blockEl;
     }
 
-    const blockTitle = document.createElement('div');
-    blockTitle.className = 'pdf-block-title';
-    blockTitle.textContent = block.pages && block.pages[0] ? block.pages[0].title || block.title || '' : block.title || '';
-    applyTypography(blockTitle, 'block_title', {
-      multiplier: cartela.font_size_multiplier,
-      lineMultiplier: cartela.line_spacing_multiplier,
-    });
-    blockEl.appendChild(blockTitle);
+    const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela);
+    if (blockTitle) blockEl.appendChild(blockTitle);
 
     const contentEl = document.createElement('div');
     contentEl.className = 'pdf-block-content';
@@ -1680,6 +1665,19 @@
 
     blockEl.appendChild(contentEl);
     return blockEl;
+  }
+
+  function makePdfOptionalTitle(value, className, styleKey, cartela) {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const title = document.createElement('div');
+    title.className = className;
+    title.textContent = text;
+    applyTypography(title, styleKey, {
+      multiplier: cartela.font_size_multiplier,
+      lineMultiplier: cartela.line_spacing_multiplier,
+    });
+    return title;
   }
 
   function renderPdfTheme(theme, block, cartela) {
@@ -1767,14 +1765,12 @@
       const blockPageEl = document.createElement('div');
       blockPageEl.className = 'render-block-page';
 
-      blockPageEl.appendChild(
-        makeVisualInput(blockPageTitleRef(block.id, blockPage.id), 'title', block.title || '', 'render-block-title-input', {
-          styleKey: 'block_title',
-          multiplier: cartela.font_size_multiplier,
-          lineMultiplier: cartela.line_spacing_multiplier,
-          textAlign: 'center',
-        })
-      );
+      const blockTitle = makeVisualStaticText(block.title, 'render-block-title-input', 'block_title', {
+        multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+        textAlign: 'center',
+      });
+      if (blockTitle) blockPageEl.appendChild(blockTitle);
 
       const contentEl = document.createElement('div');
       contentEl.className = 'render-block-content';
