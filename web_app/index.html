@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Creditos JSON</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Creditos JSON</h1>
+        <p id="sourceMeta">Carga un XLSX o source_json para empezar.</p>
+      </div>
+      <div class="header-actions">
+        <label class="button primary">
+          Abrir XLSX
+          <input id="xlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        </label>
+        <label class="button">
+          Abrir source_json
+          <input id="sourceInput" type="file" accept="application/json,.json">
+        </label>
+        <label class="button">
+          Abrir structure_json
+          <input id="structureInput" type="file" accept="application/json,.json">
+        </label>
+        <button id="downloadStructureBtn" type="button">Descargar structure</button>
+        <button id="downloadRenderBtn" type="button">Descargar render</button>
+      </div>
+    </header>
+
+    <nav class="app-tabs" aria-label="Secciones">
+      <button class="active" type="button" data-tab="settings">Ajustes</button>
+      <button type="button" data-tab="structure">Estructura</button>
+      <button type="button" data-tab="json">JSON</button>
+      <button type="button" data-tab="visual">Preview</button>
+    </nav>
+
+    <main>
+      <section id="settingsPane" class="tab-pane active">
+        <div class="settings-panel">
+          <div class="panel-heading">
+            <h2>Ajustes comunes</h2>
+          </div>
+          <div class="settings-body">
+            <div class="field-grid">
+              <label for="defaultDurationInput">Duracion cartela por defecto</label>
+              <input id="defaultDurationInput" class="text-input" type="number" min="0" step="0.1">
+            </div>
+            <div class="field-grid">
+              <label for="defaultAutoLinesInput">Lineas antes de salto automatico</label>
+              <input id="defaultAutoLinesInput" class="text-input" type="number" min="1" step="1">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="structurePane" class="tab-pane">
+        <div class="workspace">
+          <aside class="block-list-panel">
+            <div class="panel-heading">
+              <h2>Cartelas</h2>
+              <span id="blockCount">0</span>
+            </div>
+            <div id="blockList" class="block-list"></div>
+          </aside>
+
+          <section class="editor-panel">
+            <div class="panel-heading">
+              <h2 id="editorTitle">Sin cartela seleccionada</h2>
+              <span id="editorKind"></span>
+            </div>
+            <div id="editorBody" class="editor-body empty-state">
+              Carga un XLSX y selecciona una cartela.
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="jsonPane" class="tab-pane">
+        <aside class="json-panel">
+          <div class="panel-heading">
+            <h2>Salida</h2>
+            <div class="segmented" role="tablist">
+              <button id="structureTab" class="active" type="button">Structure</button>
+              <button id="renderTab" type="button">Render</button>
+            </div>
+          </div>
+          <textarea id="jsonPreview" spellcheck="false" readonly></textarea>
+        </aside>
+      </section>
+
+      <section id="visualPane" class="tab-pane">
+        <div class="visual-panel">
+          <div class="panel-heading">
+            <h2>Preview render</h2>
+          </div>
+          <div id="visualPreview" class="visual-preview empty-state">
+            Carga un XLSX para ver el preview.
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
