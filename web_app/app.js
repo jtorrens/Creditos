@@ -259,6 +259,7 @@
 
   function createStructureFromSource(source, materials, previousStructure) {
     const previous = migrateStructure(previousStructure);
+    const materialIds = new Set(materials.map((material) => material.id));
     const previousByRef = new Map();
     const previousById = new Map();
     const previousOverrides = previous && previous.overrides ? previous.overrides : {};
@@ -297,12 +298,15 @@
     }
     cartelas.forEach((cartela) => {
       cartela.pages = (cartela.pages || []).map((page) => normalizeCartelaPage(page));
+      if (hasMissingMaterialRefs(cartela, materialIds)) {
+        cartela.enabled = false;
+      }
     });
     enforceUniqueMaterialRefs({ cartelas });
 
     return {
       schema: 'credits_structure_json',
-      version: 5,
+      version: 6,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas,
@@ -312,10 +316,14 @@
     };
   }
 
+  function hasMissingMaterialRefs(cartela, materialIds) {
+    return getCartelaRefs(cartela).some((ref) => !materialIds.has(ref));
+  }
+
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 5);
+      structure.version = Math.max(Number(structure.version) || 0, 6);
       structure.page_breaks = structure.page_breaks || {};
       structure.settings = normalizeSettings(structure.settings || {});
       structure.cartelas.forEach((cartela) => {
@@ -327,7 +335,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 5,
+        version: 6,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -337,6 +345,7 @@
           orientation: page.orientation || 'horizontal',
           columns: page.columns || (page.distribution === 'columns' ? 2 : 1),
           font_size_multiplier: Number(page.font_size_multiplier) || 1,
+          line_spacing_multiplier: Number(page.line_spacing_multiplier) || 1,
           duration: 4,
           enabled: page.enabled !== false,
           notes: page.notes || '',
@@ -354,7 +363,7 @@
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 5);
+    structure.version = Math.max(Number(structure.version) || 0, 6);
     structure.page_breaks = structure.page_breaks || {};
     structure.settings = normalizeSettings(structure.settings || {});
     (structure.cartelas || []).forEach((cartela) => {
@@ -373,6 +382,11 @@
         role: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
         name: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
       },
+      layout: {
+        line_spacing: 1.12,
+        column_gap: 14,
+        role_name_gap: 6,
+      },
     };
   }
 
@@ -385,6 +399,10 @@
         ...defaults.typography,
         ...(settings.typography || {}),
       },
+      layout: {
+        ...defaults.layout,
+        ...(settings.layout || {}),
+      },
     };
     TYPOGRAPHY_FIELDS.forEach(([key]) => {
       normalized.typography[key] = {
@@ -395,6 +413,9 @@
       normalized.typography[key].font_family = normalized.typography[key].font_family || defaults.typography[key].font_family;
       normalized.typography[key].color = normalized.typography[key].color || defaults.typography[key].color;
     });
+    normalized.layout.line_spacing = Math.max(0.1, Number(normalized.layout.line_spacing) || defaults.layout.line_spacing);
+    normalized.layout.column_gap = Math.max(0, Number(normalized.layout.column_gap) || defaults.layout.column_gap);
+    normalized.layout.role_name_gap = Math.max(0, Number(normalized.layout.role_name_gap) || defaults.layout.role_name_gap);
     return normalized;
   }
 
@@ -406,6 +427,7 @@
       orientation: defaultOrientationForMaterial(material),
       columns: 1,
       font_size_multiplier: 1,
+      line_spacing_multiplier: 1,
       duration: Number(settings.default_cartela_duration) || 4,
       enabled: true,
       notes: '',
@@ -427,6 +449,7 @@
     normalized.orientation = normalized.orientation || defaultOrientationForMaterial(material);
     normalized.columns = normalized.columns || (normalized.distribution === 'columns' ? 2 : 1);
     normalized.font_size_multiplier = Number(normalized.font_size_multiplier) || 1;
+    normalized.line_spacing_multiplier = Number(normalized.line_spacing_multiplier) || 1;
     delete normalized.distribution;
     normalized.duration = normalized.duration === undefined ? 4 : normalized.duration;
     normalized.enabled = normalized.enabled !== false;
@@ -446,6 +469,7 @@
     normalized.source_refs.forEach((ref) => {
       normalized.source_ref_settings[ref] = normalized.source_ref_settings[ref] || {};
       normalized.source_ref_settings[ref].columns = Math.max(1, Number(normalized.source_ref_settings[ref].columns) || 1);
+      normalized.source_ref_settings[ref].alignment = normalized.source_ref_settings[ref].alignment || {};
     });
     return normalized;
   }
@@ -461,6 +485,7 @@
       source_sheet: source.sheet || '',
       settings: {
         typography: normalizeSettings(structure.settings || {}).typography,
+        layout: normalizeSettings(structure.settings || {}).layout,
       },
       cartelas: (structure.cartelas || [])
         .filter((cartela) => cartela.enabled !== false)
@@ -472,14 +497,17 @@
           orientation: cartela.orientation || 'horizontal',
           columns: Number(cartela.columns) || 1,
           font_size_multiplier: Number(cartela.font_size_multiplier) || 1,
+          line_spacing_multiplier: Number(cartela.line_spacing_multiplier) || 1,
           duration: Number(cartela.duration) || 0,
           pages: (cartela.pages || []).map((page, pageIndex) => ({
             id: page.id,
             page_number: pageIndex + 1,
             title: resolveOverride(overrides, page.id, 'title', `Pagina ${pageIndex + 1}`),
             blocks: (page.source_refs || []).map((ref) => {
-              const block = renderMaterial(materialById.get(ref), ref, overrides, structure.page_breaks || {}, maxAutoLines);
+              const material = materialById.get(ref);
+              const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, maxAutoLines);
               block.columns = getSourceRefColumns(page, ref);
+              block.alignment = getSourceRefAlignment(page, ref, material, cartela);
               return block;
             }),
           })),
@@ -682,6 +710,7 @@
     els.defaultDurationInput.value = String(settings.default_cartela_duration);
     els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
     renderTypographySettings(settings);
+    renderLayoutSettings(settings);
   }
 
   function renderTypographySettings(settings) {
@@ -749,11 +778,61 @@
     renderVisualPreview();
   }
 
+  function renderLayoutSettings(settings) {
+    const existing = document.getElementById('layoutSettings');
+    if (existing) existing.remove();
+
+    const wrap = document.createElement('div');
+    wrap.id = 'layoutSettings';
+    wrap.className = 'layout-settings';
+    wrap.appendChild(sectionLabel('Layout base'));
+    wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, 5, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
+    wrap.appendChild(settingsNumberRow('Gap columnas', settings.layout.column_gap, 0, 200, 1, (value) => updateLayoutSetting({ column_gap: value })));
+    wrap.appendChild(settingsNumberRow('Gap cargo/nombre', settings.layout.role_name_gap, 0, 100, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
+    els.typographySettings.after(wrap);
+  }
+
+  function settingsNumberRow(label, value, min, max, step, onInput) {
+    const row = document.createElement('div');
+    row.className = 'field-grid';
+    const labelEl = document.createElement('label');
+    labelEl.textContent = label;
+    const input = document.createElement('input');
+    input.className = 'text-input';
+    input.type = 'number';
+    input.min = String(min);
+    input.max = String(max);
+    input.step = String(step);
+    input.value = String(value);
+    input.addEventListener('change', () => {
+      const next = Math.max(min, Math.min(max, Number(input.value) || min));
+      input.value = String(next);
+      onInput(next);
+    });
+    row.appendChild(labelEl);
+    row.appendChild(input);
+    return row;
+  }
+
+  function updateLayoutSetting(fields) {
+    if (!state.structure) {
+      updateSettings({});
+    }
+    state.structure.settings = normalizeSettings(state.structure.settings || {});
+    state.structure.settings.layout = {
+      ...state.structure.settings.layout,
+      ...fields,
+    };
+    state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    renderPreview();
+    renderVisualPreview();
+  }
+
   function updateSettings(fields) {
     if (!state.structure) {
       state.structure = {
         schema: 'credits_structure_json',
-        version: 5,
+        version: 6,
         source_sheet: '',
         source_file: '',
         cartelas: [],
@@ -843,6 +922,7 @@
     ], (value) => updateCartela({ orientation: value })));
     wrap.appendChild(localNumberRow('Columnas', Number(cartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value })));
     wrap.appendChild(localNumberRow('Multiplicador letra', Number(cartela.font_size_multiplier) || 1, 0.1, 5, (value) => updateCartela({ font_size_multiplier: value }), 0.1));
+    wrap.appendChild(localNumberRow('Multiplicador interlineado', Number(cartela.line_spacing_multiplier) || 1, 0.1, 5, (value) => updateCartela({ line_spacing_multiplier: value }), 0.1));
     wrap.appendChild(localInputRow('Duracion', String(cartela.duration || 0), (value) => updateCartela({ duration: Number(value) || 0 })));
     wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateCartela({ notes: value }), { multiline: true }));
     return wrap;
@@ -911,6 +991,7 @@
     wrap.appendChild(header);
 
     wrap.appendChild(localNumberRow('Columnas bloque', getSelectedBlockColumns(ref), 1, 6, (value) => updateSelectedBlockColumns(ref, value)));
+    wrap.appendChild(renderBlockAlignmentControls(material, ref));
     wrap.appendChild(inputRow('Titulo bloque', material.id, 'title', material.title || ''));
     wrap.appendChild(inputRow('Titulos bloque', material.id, 'titles', (material.titles || [material.title]).join('\n'), {
       multiline: true,
@@ -931,6 +1012,25 @@
         wrap.appendChild(renderPageBreakControl(material.id, item.id));
       }
     });
+    return wrap;
+  }
+
+  function renderBlockAlignmentControls(material, ref) {
+    const wrap = document.createElement('div');
+    const alignment = getSelectedBlockAlignment(ref, material);
+    const options = [
+      ['left', 'Izquierda'],
+      ['center', 'Centro'],
+      ['right', 'Derecha'],
+    ];
+
+    if (!materialHasPairedText(material)) {
+      wrap.appendChild(localSelectRow('Alineacion texto', alignment.text || 'center', options, (value) => updateSelectedBlockAlignment(ref, { text: value })));
+      return wrap;
+    }
+
+    wrap.appendChild(localSelectRow('Alineacion cargo', alignment.role || 'right', options, (value) => updateSelectedBlockAlignment(ref, { role: value })));
+    wrap.appendChild(localSelectRow('Alineacion nombre', alignment.name || 'left', options, (value) => updateSelectedBlockAlignment(ref, { name: value })));
     return wrap;
   }
 
@@ -1078,6 +1178,7 @@
       orientation: 'vertical',
       columns: 1,
       font_size_multiplier: 1,
+      line_spacing_multiplier: 1,
       enabled: true,
       notes: '',
       pages: [{ id: `page_${String(index).padStart(3, '0')}_001`, source_refs: [], source_ref_settings: {} }],
@@ -1112,6 +1213,58 @@
       ? page.source_ref_settings[ref]
       : {};
     return Math.max(1, Number(settings.columns) || 1);
+  }
+
+  function getSourceRefAlignment(page, ref, material, cartela) {
+    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
+      ? page.source_ref_settings[ref]
+      : {};
+    return normalizeBlockAlignment(settings.alignment, material, cartela);
+  }
+
+  function normalizeBlockAlignment(alignment, material, cartela) {
+    const defaults = defaultBlockAlignment(material, cartela);
+    return {
+      ...defaults,
+      ...(alignment || {}),
+    };
+  }
+
+  function defaultBlockAlignment(material, cartela) {
+    const orientation = cartela && cartela.orientation ? cartela.orientation : 'horizontal';
+    const paired = materialHasPairedText(material);
+    if (!paired) {
+      return { text: orientation === 'vertical' ? 'center' : 'left' };
+    }
+    if (orientation === 'vertical') {
+      return { role: 'center', name: 'center' };
+    }
+    return { role: 'right', name: 'left' };
+  }
+
+  function materialHasPairedText(material) {
+    return !!(material && (material.items || []).some((item) => item.kind === 'credit' || item.kind === 'crew_credit' || item.kind === 'cast'));
+  }
+
+  function getSelectedBlockAlignment(ref, material) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    return getSourceRefAlignment(page, ref, material, cartela);
+  }
+
+  function updateSelectedBlockAlignment(ref, fields) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    if (!page) return;
+    page.source_ref_settings = page.source_ref_settings || {};
+    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
+    page.source_ref_settings[ref].alignment = {
+      ...(page.source_ref_settings[ref].alignment || {}),
+      ...fields,
+    };
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderPreview();
+    renderVisualPreview();
   }
 
   function getSelectedBlockColumns(ref) {
@@ -1296,17 +1449,24 @@
     const input = makeInput(refId, field, fallback);
     input.classList.add('visual-input', className);
     input.setAttribute('aria-label', field);
-    if (options.styleKey) applyTypography(input, options.styleKey, options.multiplier);
+    if (options.styleKey) applyTypography(input, options.styleKey, options);
+    if (options.textAlign) input.style.textAlign = options.textAlign;
     return input;
   }
 
-  function applyTypography(element, key, multiplier = 1) {
+  function applyTypography(element, key, options = {}) {
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
     const typography = settings.typography[key];
-    const scale = Number(multiplier) || 1;
+    const scale = Number(options.multiplier) || 1;
+    const lineScale = Number(options.lineMultiplier) || 1;
     element.style.fontFamily = typography.font_family;
     element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
+    element.style.lineHeight = String(settings.layout.line_spacing * lineScale);
     element.style.color = typography.color;
+  }
+
+  function getRenderLayout() {
+    return normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {}).layout;
   }
 
   function getCartelaBaseTitle(cartelaId, fallback) {
@@ -1370,6 +1530,7 @@
     els.visualPreview.className = 'visual-preview';
     els.visualPreview.innerHTML = '';
     (state.render.cartelas || []).forEach((cartela) => {
+      const layout = getRenderLayout();
       const cartelaEl = document.createElement('section');
       cartelaEl.className = 'render-cartela';
 
@@ -1378,6 +1539,7 @@
       headerEl.appendChild(makeVisualInput(cartela.id, 'title', getCartelaBaseTitle(cartela.id, cartela.title), 'render-cartela-title-input', {
         styleKey: 'page_header',
         multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
       }));
       const metaEl = document.createElement('span');
       metaEl.textContent = `${cartela.orientation || 'horizontal'} · ${cartela.columns || 1} col · ${cartela.duration || 0}s`;
@@ -1392,11 +1554,12 @@
         pageLabelEl.appendChild(makeVisualInput(cartelaPage.id, 'title', `Pagina ${cartelaPage.page_number}`, 'render-page-title-input', {
           styleKey: 'page_header',
           multiplier: cartela.font_size_multiplier,
+          lineMultiplier: cartela.line_spacing_multiplier,
         }));
         pageEl.appendChild(pageLabelEl);
 
         (cartelaPage.blocks || []).forEach((block) => {
-          pageEl.appendChild(renderVisualBlock(block, cartela));
+          pageEl.appendChild(renderVisualBlock(block, cartela, layout));
         });
 
         cartelaEl.appendChild(pageEl);
@@ -1406,7 +1569,7 @@
     });
   }
 
-  function renderVisualBlock(block, cartela) {
+  function renderVisualBlock(block, cartela, layout) {
     const blockEl = document.createElement('div');
     blockEl.className = 'render-block';
     if (block.missing_source) {
@@ -1422,12 +1585,15 @@
         makeVisualInput(blockPageTitleRef(block.id, blockPage.id), 'title', block.title || '', 'render-block-title-input', {
           styleKey: 'block_title',
           multiplier: cartela.font_size_multiplier,
+          lineMultiplier: cartela.line_spacing_multiplier,
+          textAlign: 'center',
         })
       );
 
       const contentEl = document.createElement('div');
       contentEl.className = 'render-block-content';
       contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
+      contentEl.style.columnGap = `${layout.column_gap}px`;
 
       const units = blockPage.items || [];
       let previousCreditSourceId = null;
@@ -1439,13 +1605,15 @@
             themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input', {
               styleKey: lineIndex === 0 ? 'block_title' : 'name',
               multiplier: cartela.font_size_multiplier,
+              lineMultiplier: cartela.line_spacing_multiplier,
+              textAlign: block.alignment && block.alignment.text ? block.alignment.text : 'center',
             }));
           });
           contentEl.appendChild(themeEl);
         } else {
           const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
           const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
-          contentEl.appendChild(renderVisualUnit(unit, cartela, { hideRole: hideRepeatedRole }));
+          contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, { hideRole: hideRepeatedRole }));
           previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
         }
       });
@@ -1455,10 +1623,13 @@
     return blockEl;
   }
 
-  function renderVisualUnit(unit, cartela, options = {}) {
+  function renderVisualUnit(unit, cartela, alignment, layout, options = {}) {
     const orientation = cartela.orientation || 'horizontal';
     const unitEl = document.createElement('div');
     unitEl.className = `render-unit ${orientation}`;
+    if (orientation === 'horizontal') {
+      unitEl.style.gap = `${layout.role_name_gap}px`;
+    }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
       if (options.hideRole) {
         const roleEl = document.createElement('div');
@@ -1468,11 +1639,15 @@
         unitEl.appendChild(makeVisualInput(unit.source_item_id || unit.id, 'role', unit.role || '', 'render-role-input', {
           styleKey: 'role',
           multiplier: cartela.font_size_multiplier,
+          lineMultiplier: cartela.line_spacing_multiplier,
+          textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
         }));
       }
       unitEl.appendChild(makeVisualInput(unit.source_name_id || unit.id, 'name', unit.name || '', 'render-name-input', {
         styleKey: 'name',
         multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
     }
@@ -1480,10 +1655,14 @@
       unitEl.appendChild(makeVisualInput(unit.id, 'actor', unit.actor || '', 'render-role-input', {
         styleKey: 'role',
         multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+        textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
       }));
       unitEl.appendChild(makeVisualInput(unit.id, 'character', unit.character || '', 'render-name-input', {
         styleKey: 'name',
         multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
     }
@@ -1491,6 +1670,8 @@
     unitEl.appendChild(makeVisualInput(unit.id, unit.title !== undefined ? 'title' : 'value', value, 'render-line-input', {
       styleKey: unit.title !== undefined ? 'block_title' : 'name',
       multiplier: cartela.font_size_multiplier,
+      lineMultiplier: cartela.line_spacing_multiplier,
+      textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
     }));
     return unitEl;
   }

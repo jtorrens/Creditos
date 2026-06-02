@@ -428,7 +428,8 @@ button:hover,
   margin-bottom: 14px;
 }
 
-.typography-settings {
+.typography-settings,
+.layout-settings {
   margin-top: 14px;
 }
 

@@ -84,7 +84,7 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Carga `.xlsx` y lo parsea a `source_json` en memoria.
 - Genera estructura inicial automaticamente como `cartelas`.
 - Pestanas: `Ajustes`, `Estructura`, `JSON` y `Preview`.
-- Ajustes comunes: duracion por defecto, lineas antes de salto automatico y tipografia base.
+- Ajustes comunes: duracion por defecto, lineas antes de salto automatico, tipografia base e interlineado/gaps base.
 - Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente y color.
 - Permite juntar varios bloques fuente en una misma cartela.
 - Panel central tipo preview con campos editables.
@@ -92,7 +92,10 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Orientacion vertical por defecto en cartelas tipo card, licencias, agradecimientos, logos/cierre y bloques sin cargos en columna B.
 - Numero de columnas por cartela.
 - Multiplicador de tamano de letra por cartela, por defecto 1.
+- Multiplicador de interlineado por cartela, por defecto 1.
 - Numero de columnas por bloque, por defecto 1, para distribuir los items o temas dentro de ese bloque.
+- Alineacion por bloque: cargo/nombre en bloques con pares, o texto unico en bloques simples.
+- Si una estructura previa referencia bloques que no existen en el XLSX actual, la cartela queda excluida por defecto.
 - Un bloque de diseno solo puede pertenecer a una cartela; al anadirlo a otra se mueve.
 - Saltos de pagina internos por bloque/material, guardados en `structure_json`.
 - En `Preview`, se pueden editar textos visibles, titulo de cartela, cabecera de pagina y titulo de bloque por pagina interna.
