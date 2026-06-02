@@ -439,7 +439,7 @@ button:hover,
   align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(120px, 180px) 88px minmax(160px, 1fr) 48px;
+  grid-template-columns: minmax(120px, 180px) 78px minmax(160px, 1fr) minmax(130px, 180px) 48px;
   margin-bottom: 8px;
 }
 
@@ -455,6 +455,21 @@ button:hover,
   height: 36px;
   padding: 2px;
   width: 48px;
+}
+
+.font-actions {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+  padding-bottom: 14px;
+}
+
+.font-actions span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .material-panel {
@@ -784,11 +799,6 @@ button:hover,
   justify-content: flex-start;
   min-height: 0;
   width: 100%;
-}
-
-.pdf-page-title {
-  margin-bottom: 18px;
-  text-align: center;
 }
 
 .pdf-block {

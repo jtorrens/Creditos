@@ -9,6 +9,7 @@
     activeTab: 'settings',
     structureFileHandle: null,
     renderFileHandle: null,
+    fontCatalog: null,
   };
 
   const els = {
@@ -26,6 +27,8 @@
     pdfPreview: document.getElementById('pdfPreview'),
     defaultDurationInput: document.getElementById('defaultDurationInput'),
     defaultAutoLinesInput: document.getElementById('defaultAutoLinesInput'),
+    loadSystemFontsBtn: document.getElementById('loadSystemFontsBtn'),
+    fontStatus: document.getElementById('fontStatus'),
     typographySettings: document.getElementById('typographySettings'),
     tabButtons: Array.from(document.querySelectorAll('.app-tabs button')),
     tabPanes: Array.from(document.querySelectorAll('.tab-pane')),
@@ -55,6 +58,7 @@
   ];
 
   els.xlsxInput.addEventListener('change', loadXlsxFile);
+  els.loadSystemFontsBtn.addEventListener('click', loadSystemFonts);
   els.openStructureBtn.addEventListener('click', openStructureJsonFile);
   els.structureInput.addEventListener('change', (event) => loadJsonFile(event, loadStructureJson));
   els.tabButtons.forEach((button) => {
@@ -307,7 +311,7 @@
 
     return {
       schema: 'credits_structure_json',
-      version: 7,
+      version: 8,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas,
@@ -324,7 +328,7 @@
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 7);
+      structure.version = Math.max(Number(structure.version) || 0, 8);
       structure.page_breaks = structure.page_breaks || {};
       structure.settings = normalizeSettings(structure.settings || {});
       structure.cartelas.forEach((cartela) => {
@@ -336,7 +340,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 7,
+        version: 8,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -364,7 +368,7 @@
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 7);
+    structure.version = Math.max(Number(structure.version) || 0, 8);
     structure.page_breaks = structure.page_breaks || {};
     structure.settings = normalizeSettings(structure.settings || {});
     (structure.cartelas || []).forEach((cartela) => {
@@ -378,10 +382,10 @@
       default_cartela_duration: 4,
       default_auto_page_lines: 18,
       typography: {
-        page_header: { font_size: 12, font_family: 'Arial', color: '#58616a' },
-        block_title: { font_size: 16, font_family: 'Arial', color: '#24545f' },
-        role: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
-        name: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
+        page_header: { font_size: 12, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#58616a' },
+        block_title: { font_size: 16, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#24545f' },
+        role: { font_size: 14, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
+        name: { font_size: 14, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
       },
       layout: {
         line_spacing: 1.12,
@@ -413,6 +417,8 @@
       };
       normalized.typography[key].font_size = Math.max(1, Number(normalized.typography[key].font_size) || defaults.typography[key].font_size);
       normalized.typography[key].font_family = normalized.typography[key].font_family || defaults.typography[key].font_family;
+      normalized.typography[key].font_style = normalized.typography[key].font_style || defaults.typography[key].font_style;
+      normalized.typography[key].font_postscript_name = normalized.typography[key].font_postscript_name || '';
       normalized.typography[key].color = normalized.typography[key].color || defaults.typography[key].color;
     });
     normalized.layout.line_spacing = Math.max(0.1, Number(normalized.layout.line_spacing) || defaults.layout.line_spacing);
@@ -484,7 +490,7 @@
 
     return {
       schema: 'credits_render_json',
-      version: 4,
+      version: 5,
       source_sheet: source.sheet || '',
       settings: {
         typography: normalizeSettings(structure.settings || {}).typography,
@@ -716,6 +722,8 @@
   function renderTypographySettings(settings) {
     els.typographySettings.innerHTML = '';
     els.typographySettings.appendChild(sectionLabel('Tipografia base'));
+    updateFontStatus();
+    const fontCatalog = getFontCatalog();
 
     TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
       const value = settings.typography[key];
@@ -737,21 +745,56 @@
 
       const fontSelect = document.createElement('select');
       fontSelect.className = 'text-input';
-      FONT_OPTIONS.forEach((font) => {
+      fontCatalog.families.forEach((font) => {
         const option = document.createElement('option');
         option.value = font;
         option.textContent = font;
         fontSelect.appendChild(option);
       });
-      if (!FONT_OPTIONS.includes(value.font_family)) {
+      if (!fontCatalog.families.includes(value.font_family)) {
         const option = document.createElement('option');
         option.value = value.font_family;
         option.textContent = value.font_family;
         fontSelect.appendChild(option);
       }
       fontSelect.value = value.font_family;
-      fontSelect.addEventListener('change', () => updateTypographySetting(key, { font_family: fontSelect.value }));
+      fontSelect.addEventListener('change', () => {
+        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+        updateTypographySetting(key, {
+          font_family: fontSelect.value,
+          font_style: nextStyle.style,
+          font_postscript_name: nextStyle.postscript_name,
+        });
+        renderSettings();
+      });
       row.appendChild(fontSelect);
+
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'text-input';
+      const styles = getFontStyles(value.font_family);
+      styles.forEach((fontStyle) => {
+        const option = document.createElement('option');
+        option.value = fontStyle.style;
+        option.textContent = fontStyle.style;
+        option.dataset.postscriptName = fontStyle.postscript_name || '';
+        styleSelect.appendChild(option);
+      });
+      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
+        const option = document.createElement('option');
+        option.value = value.font_style;
+        option.textContent = value.font_style;
+        option.dataset.postscriptName = value.font_postscript_name || '';
+        styleSelect.appendChild(option);
+      }
+      styleSelect.value = value.font_style;
+      styleSelect.addEventListener('change', () => {
+        const selected = styleSelect.selectedOptions[0];
+        updateTypographySetting(key, {
+          font_style: styleSelect.value,
+          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+        });
+      });
+      row.appendChild(styleSelect);
 
       const colorInput = document.createElement('input');
       colorInput.className = 'color-input';
@@ -762,6 +805,82 @@
 
       els.typographySettings.appendChild(row);
     });
+  }
+
+  async function loadSystemFonts() {
+    if (!window.queryLocalFonts) {
+      window.alert('Chrome no permite leer fuentes del sistema en este entorno. Se usara la lista basica.');
+      updateFontStatus();
+      return;
+    }
+
+    try {
+      const fonts = await window.queryLocalFonts();
+      const byFamily = new Map();
+      fonts.forEach((font) => {
+        const family = font.family || font.fullName || font.postscriptName;
+        if (!family) return;
+        const style = font.style || styleFromFullName(font.fullName, family);
+        const entry = {
+          family,
+          style: style || 'Regular',
+          full_name: font.fullName || '',
+          postscript_name: font.postscriptName || '',
+        };
+        if (!byFamily.has(family)) byFamily.set(family, []);
+        byFamily.get(family).push(entry);
+      });
+      state.fontCatalog = {
+        families: Array.from(byFamily.keys()).sort((a, b) => a.localeCompare(b)),
+        stylesByFamily: Object.fromEntries(
+          Array.from(byFamily.entries()).map(([family, styles]) => [
+            family,
+            dedupeFontStyles(styles),
+          ])
+        ),
+      };
+      renderSettings();
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        window.alert('No se pudieron cargar las fuentes del sistema: ' + error.message);
+      }
+    }
+  }
+
+  function getFontCatalog() {
+    if (state.fontCatalog) return state.fontCatalog;
+    return {
+      families: FONT_OPTIONS,
+      stylesByFamily: Object.fromEntries(FONT_OPTIONS.map((font) => [font, [{ style: 'Regular', postscript_name: '' }]])),
+    };
+  }
+
+  function getFontStyles(family) {
+    const catalog = getFontCatalog();
+    return catalog.stylesByFamily[family] || [{ style: 'Regular', postscript_name: '' }];
+  }
+
+  function dedupeFontStyles(styles) {
+    const byStyle = new Map();
+    styles.forEach((fontStyle) => {
+      if (!byStyle.has(fontStyle.style)) byStyle.set(fontStyle.style, fontStyle);
+    });
+    return Array.from(byStyle.values()).sort((a, b) => a.style.localeCompare(b.style));
+  }
+
+  function styleFromFullName(fullName, family) {
+    return String(fullName || '').replace(String(family || ''), '').trim() || 'Regular';
+  }
+
+  function updateFontStatus() {
+    if (!els.fontStatus) return;
+    if (state.fontCatalog) {
+      els.fontStatus.textContent = `${state.fontCatalog.families.length} familias cargadas`;
+    } else if (window.queryLocalFonts) {
+      els.fontStatus.textContent = 'Fuentes basicas cargadas; puedes cargar fuentes del sistema';
+    } else {
+      els.fontStatus.textContent = 'Fuentes basicas cargadas';
+    }
   }
 
   function updateTypographySetting(key, fields) {
@@ -833,7 +952,7 @@
     if (!state.structure) {
       state.structure = {
         schema: 'credits_structure_json',
-        version: 7,
+        version: 8,
         source_sheet: '',
         source_file: '',
         cartelas: [],
@@ -1469,7 +1588,22 @@
     element.style.fontFamily = typography.font_family;
     element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
     element.style.lineHeight = String(settings.layout.line_spacing * lineScale);
+    element.style.fontWeight = fontWeightFromStyle(typography.font_style);
+    element.style.fontStyle = /italic|oblique/i.test(typography.font_style || '') ? 'italic' : 'normal';
     element.style.color = typography.color;
+  }
+
+  function fontWeightFromStyle(style) {
+    const value = String(style || '');
+    if (/thin/i.test(value)) return '100';
+    if (/extra\s*light|ultra\s*light/i.test(value)) return '200';
+    if (/light/i.test(value)) return '300';
+    if (/medium/i.test(value)) return '500';
+    if (/semi\s*bold|demi\s*bold/i.test(value)) return '600';
+    if (/extra\s*bold|ultra\s*bold/i.test(value)) return '800';
+    if (/black|heavy/i.test(value)) return '900';
+    if (/bold/i.test(value)) return '700';
+    return '400';
   }
 
   function getRenderLayout() {
@@ -1597,9 +1731,6 @@
 
       const pageBody = document.createElement('div');
       pageBody.className = 'pdf-page-body';
-
-      const title = makePdfOptionalTitle(page.cartela.title, 'pdf-page-title', 'page_header', page.cartela);
-      if (title) pageBody.appendChild(title);
 
       page.blocks.forEach((block) => {
         pageBody.appendChild(renderPdfBlock(block, page.cartela, layout));
