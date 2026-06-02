@@ -45,7 +45,7 @@ Haz doble clic en:
 
 `web_app/start.command`
 
-Esto arranca el servidor local y abre la app en el navegador. Para cerrar la app, cierra la ventana de Terminal o pulsa `Ctrl+C`.
+Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la app, cierra la ventana de Terminal o pulsa `Ctrl+C`.
 
 ### Opcion manual
 
