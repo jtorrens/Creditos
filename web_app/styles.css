@@ -97,6 +97,23 @@ button:hover,
   justify-content: flex-end;
 }
 
+.file-actions,
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-actions {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+}
+
+.hidden-input {
+  display: none;
+}
+
 .app-tabs {
   background: #fff;
   border-bottom: 1px solid var(--line);
@@ -156,7 +173,7 @@ button:hover,
 }
 
 .settings-body {
-  max-width: 560px;
+  max-width: 760px;
   padding: 14px;
 }
 
@@ -409,6 +426,32 @@ button:hover,
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 14px;
+}
+
+.typography-settings {
+  margin-top: 14px;
+}
+
+.typography-row {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(120px, 180px) 88px minmax(160px, 1fr) 48px;
+  margin-bottom: 8px;
+}
+
+.typography-row label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.color-input {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  height: 36px;
+  padding: 2px;
+  width: 48px;
 }
 
 .material-panel {
@@ -740,6 +783,15 @@ button:hover,
 
   .header-actions {
     justify-content: flex-start;
+  }
+
+  .file-actions,
+  .panel-actions {
+    justify-content: flex-start;
+  }
+
+  .typography-row {
+    grid-template-columns: 1fr;
   }
 
   .workspace {

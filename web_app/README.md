@@ -57,7 +57,7 @@ Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la ap
 
 2. Se abrira automaticamente `http://127.0.0.1:8787`. Si no se abre, entra manualmente en esa URL.
 3. Carga un `.xlsx`.
-4. En `Ajustes`, define duracion de cartela por defecto y lineas antes de salto automatico.
+4. En `Ajustes`, define duracion de cartela por defecto, lineas antes de salto automatico y tipografia base.
 5. En `Estructura`, la app crea por defecto una cartela por bloque de diseno.
 6. Selecciona una cartela y usa `Anadir bloque` para juntar varios bloques en una misma cartela.
 7. Ajusta orientacion:
@@ -68,8 +68,8 @@ Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la ap
 10. En bloques largos usa `Anadir salto de pagina` entre items para dividir ese bloque en paginas internas de render.
 11. Revisa `Preview` para ver cartelas, paginas y divisiones internas de bloque.
 12. Si un bloque fuente debe funcionar solo como titulo de cartela, copia/usa ese texto en `Titulo cartela` y desactiva `Incluir en salida` en la cartela original.
-13. En `JSON`, descarga `structure_json` para guardar tus decisiones.
-14. Descarga `render_json` para el script de render.
+13. En `Ajustes`, usa `Guardar` o `Guardar como` para conservar el `structure_json`.
+14. En `Preview`, usa `Guardar` o `Guardar como` para generar el `render_json`.
 
 Para arrancar sin abrir el navegador automaticamente:
 
@@ -77,20 +77,21 @@ Para arrancar sin abrir el navegador automaticamente:
 python3 web_app/server.py --no-open
 ```
 
-Tambien puedes abrir `index.html` directamente y cargar un `source_json`, pero para parsear `.xlsx` necesitas el servidor local.
+Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor local en Chrome.
 
 ## Estado actual
 
 - Carga `.xlsx` y lo parsea a `source_json` en memoria.
-- Carga JSON fuente para depuracion o recuperacion.
 - Genera estructura inicial automaticamente como `cartelas`.
 - Pestanas: `Ajustes`, `Estructura`, `JSON` y `Preview`.
-- Ajustes comunes: duracion por defecto y lineas antes de salto automatico.
+- Ajustes comunes: duracion por defecto, lineas antes de salto automatico y tipografia base.
+- Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente y color.
 - Permite juntar varios bloques fuente en una misma cartela.
 - Panel central tipo preview con campos editables.
 - Orientacion horizontal/vertical por cartela.
 - Orientacion vertical por defecto en cartelas tipo card, licencias, agradecimientos, logos/cierre y bloques sin cargos en columna B.
 - Numero de columnas por cartela.
+- Multiplicador de tamano de letra por cartela, por defecto 1.
 - Numero de columnas por bloque, por defecto 1, para distribuir los items o temas dentro de ese bloque.
 - Un bloque de diseno solo puede pertenecer a una cartela; al anadirlo a otra se mueve.
 - Saltos de pagina internos por bloque/material, guardados en `structure_json`.
@@ -104,7 +105,7 @@ Tambien puedes abrir `index.html` directamente y cargar un `source_json`, pero p
 - Permite excluir cartelas de la salida sin borrarlas de la estructura.
 - Permite cargar estructura previa.
 - Permite editar titulos, cargos, nombres, actores, personajes y lineas.
-- Exporta `structure_json` y `render_json`.
+- Guarda `structure_json` desde `Ajustes` y `render_json` desde `Preview`.
 
 ## Pendiente
 

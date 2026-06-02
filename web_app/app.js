@@ -7,11 +7,13 @@
     selectedCartelaId: null,
     preview: 'structure',
     activeTab: 'settings',
+    structureFileHandle: null,
+    renderFileHandle: null,
   };
 
   const els = {
     xlsxInput: document.getElementById('xlsxInput'),
-    sourceInput: document.getElementById('sourceInput'),
+    openStructureBtn: document.getElementById('openStructureBtn'),
     structureInput: document.getElementById('structureInput'),
     sourceMeta: document.getElementById('sourceMeta'),
     blockCount: document.getElementById('blockCount'),
@@ -23,16 +25,36 @@
     visualPreview: document.getElementById('visualPreview'),
     defaultDurationInput: document.getElementById('defaultDurationInput'),
     defaultAutoLinesInput: document.getElementById('defaultAutoLinesInput'),
+    typographySettings: document.getElementById('typographySettings'),
     tabButtons: Array.from(document.querySelectorAll('.app-tabs button')),
     tabPanes: Array.from(document.querySelectorAll('.tab-pane')),
     structureTab: document.getElementById('structureTab'),
     renderTab: document.getElementById('renderTab'),
-    downloadStructureBtn: document.getElementById('downloadStructureBtn'),
-    downloadRenderBtn: document.getElementById('downloadRenderBtn'),
+    saveStructureBtn: document.getElementById('saveStructureBtn'),
+    saveStructureAsBtn: document.getElementById('saveStructureAsBtn'),
+    saveRenderBtn: document.getElementById('saveRenderBtn'),
+    saveRenderAsBtn: document.getElementById('saveRenderAsBtn'),
   };
 
+  const TYPOGRAPHY_FIELDS = [
+    ['page_header', 'Cabecera'],
+    ['block_title', 'Titulo bloque'],
+    ['role', 'Cargo'],
+    ['name', 'Nombre'],
+  ];
+
+  const FONT_OPTIONS = [
+    'Arial',
+    'Helvetica',
+    'Georgia',
+    'Times New Roman',
+    'Courier New',
+    'Verdana',
+    'Trebuchet MS',
+  ];
+
   els.xlsxInput.addEventListener('change', loadXlsxFile);
-  els.sourceInput.addEventListener('change', (event) => loadJsonFile(event, loadSourceJson));
+  els.openStructureBtn.addEventListener('click', openStructureJsonFile);
   els.structureInput.addEventListener('change', (event) => loadJsonFile(event, loadStructureJson));
   els.tabButtons.forEach((button) => {
     button.addEventListener('click', () => setActiveTab(button.dataset.tab));
@@ -45,8 +67,10 @@
   }));
   els.structureTab.addEventListener('click', () => setPreview('structure'));
   els.renderTab.addEventListener('click', () => setPreview('render'));
-  els.downloadStructureBtn.addEventListener('click', () => downloadJson('structure_json'));
-  els.downloadRenderBtn.addEventListener('click', () => downloadJson('render_json'));
+  els.saveStructureBtn.addEventListener('click', () => saveJsonFile('structure_json'));
+  els.saveStructureAsBtn.addEventListener('click', () => saveJsonFile('structure_json', true));
+  els.saveRenderBtn.addEventListener('click', () => saveJsonFile('render_json'));
+  els.saveRenderAsBtn.addEventListener('click', () => saveJsonFile('render_json', true));
 
   async function loadXlsxFile(event) {
     const file = event.target.files && event.target.files[0];
@@ -90,16 +114,48 @@
     reader.readAsText(file, 'utf-8');
   }
 
+  async function openStructureJsonFile() {
+    if (!window.showOpenFilePicker) {
+      els.structureInput.click();
+      return;
+    }
+
+    try {
+      const [handle] = await window.showOpenFilePicker({
+        multiple: false,
+        types: [
+          {
+            description: 'JSON',
+            accept: { 'application/json': ['.json'] },
+          },
+        ],
+      });
+      if (!handle) return;
+      const file = await handle.getFile();
+      const text = await file.text();
+      loadStructureJson(JSON.parse(text), file.name);
+      state.structureFileHandle = handle;
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        window.alert('No se pudo abrir el structure_json: ' + error.message);
+      }
+    }
+  }
+
   function loadSourceJson(json, fileName) {
     state.source = normalizeSource(json, fileName);
     state.materials = createMaterialsFromSource(state.source);
     state.structure = createStructureFromSource(state.source, state.materials, state.structure);
+    state.structureFileHandle = null;
+    state.renderFileHandle = null;
     state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
     rebuild();
   }
 
   function loadStructureJson(json) {
     state.structure = migrateStructure(json);
+    state.structureFileHandle = null;
+    state.renderFileHandle = null;
     if (state.source) {
       state.structure = createStructureFromSource(state.source, state.materials, state.structure);
       state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
@@ -207,7 +263,7 @@
     const previousById = new Map();
     const previousOverrides = previous && previous.overrides ? previous.overrides : {};
     const previousPageBreaks = previous && previous.page_breaks ? previous.page_breaks : {};
-    const settings = previous && previous.settings ? previous.settings : defaultSettings();
+    const settings = normalizeSettings(previous && previous.settings ? previous.settings : {});
 
     if (previous && Array.isArray(previous.cartelas)) {
       previous.cartelas.forEach((cartela) => {
@@ -246,7 +302,7 @@
 
     return {
       schema: 'credits_structure_json',
-      version: 4,
+      version: 5,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas,
@@ -259,9 +315,9 @@
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 4);
+      structure.version = Math.max(Number(structure.version) || 0, 5);
       structure.page_breaks = structure.page_breaks || {};
-      structure.settings = structure.settings || defaultSettings();
+      structure.settings = normalizeSettings(structure.settings || {});
       structure.cartelas.forEach((cartela) => {
         cartela.pages = (cartela.pages || []).map((page) => normalizeCartelaPage(page));
       });
@@ -271,7 +327,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 4,
+        version: 5,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -280,6 +336,7 @@
           type: page.layout || 'card',
           orientation: page.orientation || 'horizontal',
           columns: page.columns || (page.distribution === 'columns' ? 2 : 1),
+          font_size_multiplier: Number(page.font_size_multiplier) || 1,
           duration: 4,
           enabled: page.enabled !== false,
           notes: page.notes || '',
@@ -291,15 +348,15 @@
             },
           ],
         })),
-        settings: structure.settings || defaultSettings(),
+        settings: normalizeSettings(structure.settings || {}),
         overrides: structure.overrides || {},
         page_breaks: structure.page_breaks || {},
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 4);
+    structure.version = Math.max(Number(structure.version) || 0, 5);
     structure.page_breaks = structure.page_breaks || {};
-    structure.settings = structure.settings || defaultSettings();
+    structure.settings = normalizeSettings(structure.settings || {});
     (structure.cartelas || []).forEach((cartela) => {
       cartela.pages = (cartela.pages || []).map((page) => normalizeCartelaPage(page));
     });
@@ -310,7 +367,35 @@
     return {
       default_cartela_duration: 4,
       default_auto_page_lines: 18,
+      typography: {
+        page_header: { font_size: 12, font_family: 'Arial', color: '#58616a' },
+        block_title: { font_size: 16, font_family: 'Arial', color: '#24545f' },
+        role: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
+        name: { font_size: 14, font_family: 'Arial', color: '#171b1f' },
+      },
     };
+  }
+
+  function normalizeSettings(settings) {
+    const defaults = defaultSettings();
+    const normalized = {
+      ...defaults,
+      ...settings,
+      typography: {
+        ...defaults.typography,
+        ...(settings.typography || {}),
+      },
+    };
+    TYPOGRAPHY_FIELDS.forEach(([key]) => {
+      normalized.typography[key] = {
+        ...defaults.typography[key],
+        ...(settings.typography && settings.typography[key] ? settings.typography[key] : {}),
+      };
+      normalized.typography[key].font_size = Math.max(1, Number(normalized.typography[key].font_size) || defaults.typography[key].font_size);
+      normalized.typography[key].font_family = normalized.typography[key].font_family || defaults.typography[key].font_family;
+      normalized.typography[key].color = normalized.typography[key].color || defaults.typography[key].color;
+    });
+    return normalized;
   }
 
   function defaultCartelaForMaterial(material, index, settings) {
@@ -320,6 +405,7 @@
       type: defaultLayoutForMaterial(material),
       orientation: defaultOrientationForMaterial(material),
       columns: 1,
+      font_size_multiplier: 1,
       duration: Number(settings.default_cartela_duration) || 4,
       enabled: true,
       notes: '',
@@ -340,6 +426,7 @@
     normalized.type = normalized.type || defaultLayoutForMaterial(material);
     normalized.orientation = normalized.orientation || defaultOrientationForMaterial(material);
     normalized.columns = normalized.columns || (normalized.distribution === 'columns' ? 2 : 1);
+    normalized.font_size_multiplier = Number(normalized.font_size_multiplier) || 1;
     delete normalized.distribution;
     normalized.duration = normalized.duration === undefined ? 4 : normalized.duration;
     normalized.enabled = normalized.enabled !== false;
@@ -370,8 +457,11 @@
 
     return {
       schema: 'credits_render_json',
-      version: 2,
+      version: 3,
       source_sheet: source.sheet || '',
+      settings: {
+        typography: normalizeSettings(structure.settings || {}).typography,
+      },
       cartelas: (structure.cartelas || [])
         .filter((cartela) => cartela.enabled !== false)
         .map((cartela, cartelaIndex) => ({
@@ -381,6 +471,7 @@
           type: cartela.type,
           orientation: cartela.orientation || 'horizontal',
           columns: Number(cartela.columns) || 1,
+          font_size_multiplier: Number(cartela.font_size_multiplier) || 1,
           duration: Number(cartela.duration) || 0,
           pages: (cartela.pages || []).map((page, pageIndex) => ({
             id: page.id,
@@ -570,7 +661,7 @@
 
   function renderMeta() {
     if (!state.source) {
-      els.sourceMeta.textContent = 'Carga un XLSX o source_json para empezar.';
+      els.sourceMeta.textContent = 'Carga un XLSX o structure_json para empezar.';
       return;
     }
 
@@ -587,29 +678,96 @@
   }
 
   function renderSettings() {
-    const settings = state.structure && state.structure.settings ? state.structure.settings : defaultSettings();
+    const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
     els.defaultDurationInput.value = String(settings.default_cartela_duration);
     els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
+    renderTypographySettings(settings);
+  }
+
+  function renderTypographySettings(settings) {
+    els.typographySettings.innerHTML = '';
+    els.typographySettings.appendChild(sectionLabel('Tipografia base'));
+
+    TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
+      const value = settings.typography[key];
+      const row = document.createElement('div');
+      row.className = 'typography-row';
+
+      const labelEl = document.createElement('label');
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const sizeInput = document.createElement('input');
+      sizeInput.className = 'text-input';
+      sizeInput.type = 'number';
+      sizeInput.min = '1';
+      sizeInput.step = '1';
+      sizeInput.value = String(value.font_size);
+      sizeInput.addEventListener('change', () => updateTypographySetting(key, { font_size: Math.max(1, Number(sizeInput.value) || 1) }));
+      row.appendChild(sizeInput);
+
+      const fontSelect = document.createElement('select');
+      fontSelect.className = 'text-input';
+      FONT_OPTIONS.forEach((font) => {
+        const option = document.createElement('option');
+        option.value = font;
+        option.textContent = font;
+        fontSelect.appendChild(option);
+      });
+      if (!FONT_OPTIONS.includes(value.font_family)) {
+        const option = document.createElement('option');
+        option.value = value.font_family;
+        option.textContent = value.font_family;
+        fontSelect.appendChild(option);
+      }
+      fontSelect.value = value.font_family;
+      fontSelect.addEventListener('change', () => updateTypographySetting(key, { font_family: fontSelect.value }));
+      row.appendChild(fontSelect);
+
+      const colorInput = document.createElement('input');
+      colorInput.className = 'color-input';
+      colorInput.type = 'color';
+      colorInput.value = normalizeColor(value.color);
+      colorInput.addEventListener('input', () => updateTypographySetting(key, { color: colorInput.value }));
+      row.appendChild(colorInput);
+
+      els.typographySettings.appendChild(row);
+    });
+  }
+
+  function updateTypographySetting(key, fields) {
+    if (!state.structure) {
+      updateSettings({});
+    }
+    state.structure.settings = normalizeSettings(state.structure.settings || {});
+    state.structure.settings.typography[key] = {
+      ...state.structure.settings.typography[key],
+      ...fields,
+    };
+    state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    renderPreview();
+    renderVisualPreview();
   }
 
   function updateSettings(fields) {
     if (!state.structure) {
       state.structure = {
         schema: 'credits_structure_json',
-        version: 4,
+        version: 5,
         source_sheet: '',
         source_file: '',
         cartelas: [],
-        settings: defaultSettings(),
+        settings: normalizeSettings({}),
         overrides: {},
         page_breaks: {},
       };
     }
-    state.structure.settings = state.structure.settings || defaultSettings();
+    state.structure.settings = normalizeSettings(state.structure.settings || {});
     Object.assign(state.structure.settings, fields);
     if (state.source) {
       state.render = buildRenderJson(state.source, state.materials, state.structure);
     }
+    renderSettings();
     renderPreview();
     renderVisualPreview();
   }
@@ -684,6 +842,7 @@
       ['vertical', 'Vertical'],
     ], (value) => updateCartela({ orientation: value })));
     wrap.appendChild(localNumberRow('Columnas', Number(cartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value })));
+    wrap.appendChild(localNumberRow('Multiplicador letra', Number(cartela.font_size_multiplier) || 1, 0.1, 5, (value) => updateCartela({ font_size_multiplier: value }), 0.1));
     wrap.appendChild(localInputRow('Duracion', String(cartela.duration || 0), (value) => updateCartela({ duration: Number(value) || 0 })));
     wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateCartela({ notes: value }), { multiline: true }));
     return wrap;
@@ -918,6 +1077,7 @@
       duration: 4,
       orientation: 'vertical',
       columns: 1,
+      font_size_multiplier: 1,
       enabled: true,
       notes: '',
       pages: [{ id: `page_${String(index).padStart(3, '0')}_001`, source_refs: [], source_ref_settings: {} }],
@@ -934,6 +1094,7 @@
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
+    renderVisualPreview();
   }
 
   function getSelectedCartela() {
@@ -1063,7 +1224,7 @@
     return row;
   }
 
-  function localNumberRow(label, value, min, max, onInput) {
+  function localNumberRow(label, value, min, max, onInput, step = 1) {
     const row = document.createElement('div');
     row.className = 'field-grid';
     const labelEl = document.createElement('label');
@@ -1073,7 +1234,7 @@
     input.type = 'number';
     input.min = String(min);
     input.max = String(max);
-    input.step = '1';
+    input.step = String(step);
     input.value = String(value);
     input.addEventListener('change', () => {
       const next = Math.max(min, Math.min(max, Number(input.value) || min));
@@ -1131,11 +1292,21 @@
     return input;
   }
 
-  function makeVisualInput(refId, field, fallback, className) {
+  function makeVisualInput(refId, field, fallback, className, options = {}) {
     const input = makeInput(refId, field, fallback);
     input.classList.add('visual-input', className);
     input.setAttribute('aria-label', field);
+    if (options.styleKey) applyTypography(input, options.styleKey, options.multiplier);
     return input;
+  }
+
+  function applyTypography(element, key, multiplier = 1) {
+    const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
+    const typography = settings.typography[key];
+    const scale = Number(multiplier) || 1;
+    element.style.fontFamily = typography.font_family;
+    element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
+    element.style.color = typography.color;
   }
 
   function getCartelaBaseTitle(cartelaId, fallback) {
@@ -1182,7 +1353,7 @@
   }
 
   function renderPreview() {
-    if (!state.source) {
+    if (!state.source && !state.structure && !state.render) {
       els.jsonPreview.value = '';
       return;
     }
@@ -1204,7 +1375,10 @@
 
       const headerEl = document.createElement('div');
       headerEl.className = 'render-cartela-header';
-      headerEl.appendChild(makeVisualInput(cartela.id, 'title', getCartelaBaseTitle(cartela.id, cartela.title), 'render-cartela-title-input'));
+      headerEl.appendChild(makeVisualInput(cartela.id, 'title', getCartelaBaseTitle(cartela.id, cartela.title), 'render-cartela-title-input', {
+        styleKey: 'page_header',
+        multiplier: cartela.font_size_multiplier,
+      }));
       const metaEl = document.createElement('span');
       metaEl.textContent = `${cartela.orientation || 'horizontal'} · ${cartela.columns || 1} col · ${cartela.duration || 0}s`;
       headerEl.appendChild(metaEl);
@@ -1215,7 +1389,10 @@
         pageEl.className = 'render-page';
         const pageLabelEl = document.createElement('div');
         pageLabelEl.className = 'render-page-label';
-        pageLabelEl.appendChild(makeVisualInput(cartelaPage.id, 'title', `Pagina ${cartelaPage.page_number}`, 'render-page-title-input'));
+        pageLabelEl.appendChild(makeVisualInput(cartelaPage.id, 'title', `Pagina ${cartelaPage.page_number}`, 'render-page-title-input', {
+          styleKey: 'page_header',
+          multiplier: cartela.font_size_multiplier,
+        }));
         pageEl.appendChild(pageLabelEl);
 
         (cartelaPage.blocks || []).forEach((block) => {
@@ -1242,7 +1419,10 @@
       blockPageEl.className = 'render-block-page';
 
       blockPageEl.appendChild(
-        makeVisualInput(blockPageTitleRef(block.id, blockPage.id), 'title', block.title || '', 'render-block-title-input')
+        makeVisualInput(blockPageTitleRef(block.id, blockPage.id), 'title', block.title || '', 'render-block-title-input', {
+          styleKey: 'block_title',
+          multiplier: cartela.font_size_multiplier,
+        })
       );
 
       const contentEl = document.createElement('div');
@@ -1256,13 +1436,16 @@
           const themeEl = document.createElement('div');
           themeEl.className = 'render-theme';
           unit.lines.forEach((line, lineIndex) => {
-            themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input'));
+            themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input', {
+              styleKey: lineIndex === 0 ? 'block_title' : 'name',
+              multiplier: cartela.font_size_multiplier,
+            }));
           });
           contentEl.appendChild(themeEl);
         } else {
           const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
           const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
-          contentEl.appendChild(renderVisualUnit(unit, cartela.orientation || 'horizontal', { hideRole: hideRepeatedRole }));
+          contentEl.appendChild(renderVisualUnit(unit, cartela, { hideRole: hideRepeatedRole }));
           previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
         }
       });
@@ -1272,7 +1455,8 @@
     return blockEl;
   }
 
-  function renderVisualUnit(unit, orientation, options = {}) {
+  function renderVisualUnit(unit, cartela, options = {}) {
+    const orientation = cartela.orientation || 'horizontal';
     const unitEl = document.createElement('div');
     unitEl.className = `render-unit ${orientation}`;
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
@@ -1281,29 +1465,93 @@
         roleEl.className = 'render-role repeated-role';
         unitEl.appendChild(roleEl);
       } else {
-        unitEl.appendChild(makeVisualInput(unit.source_item_id || unit.id, 'role', unit.role || '', 'render-role-input'));
+        unitEl.appendChild(makeVisualInput(unit.source_item_id || unit.id, 'role', unit.role || '', 'render-role-input', {
+          styleKey: 'role',
+          multiplier: cartela.font_size_multiplier,
+        }));
       }
-      unitEl.appendChild(makeVisualInput(unit.source_name_id || unit.id, 'name', unit.name || '', 'render-name-input'));
+      unitEl.appendChild(makeVisualInput(unit.source_name_id || unit.id, 'name', unit.name || '', 'render-name-input', {
+        styleKey: 'name',
+        multiplier: cartela.font_size_multiplier,
+      }));
       return unitEl;
     }
     if (unit.kind === 'cast') {
-      unitEl.appendChild(makeVisualInput(unit.id, 'actor', unit.actor || '', 'render-role-input'));
-      unitEl.appendChild(makeVisualInput(unit.id, 'character', unit.character || '', 'render-name-input'));
+      unitEl.appendChild(makeVisualInput(unit.id, 'actor', unit.actor || '', 'render-role-input', {
+        styleKey: 'role',
+        multiplier: cartela.font_size_multiplier,
+      }));
+      unitEl.appendChild(makeVisualInput(unit.id, 'character', unit.character || '', 'render-name-input', {
+        styleKey: 'name',
+        multiplier: cartela.font_size_multiplier,
+      }));
       return unitEl;
     }
     const value = unit.title || unit.value || '';
-    unitEl.appendChild(makeVisualInput(unit.id, unit.title !== undefined ? 'title' : 'value', value, 'render-line-input'));
+    unitEl.appendChild(makeVisualInput(unit.id, unit.title !== undefined ? 'title' : 'value', value, 'render-line-input', {
+      styleKey: unit.title !== undefined ? 'block_title' : 'name',
+      multiplier: cartela.font_size_multiplier,
+    }));
     return unitEl;
   }
 
-  function downloadJson(kind) {
-    if (!state.source) {
-      window.alert('Carga primero un XLSX o source_json.');
+  async function saveJsonFile(kind, forceSaveAs = false) {
+    const data = kind === 'structure_json' ? state.structure : state.render;
+    if (!data) {
+      window.alert(kind === 'structure_json' ? 'Carga primero un XLSX o structure_json.' : 'Genera primero un render_json.');
       return;
     }
 
+    const handleKey = kind === 'structure_json' ? 'structureFileHandle' : 'renderFileHandle';
+    let handle = state[handleKey];
+    if (forceSaveAs || !handle) {
+      handle = await requestSaveHandle(kind);
+      if (!handle) return;
+      state[handleKey] = handle;
+    }
+
+    try {
+      await writeJsonToHandle(handle, data);
+    } catch (error) {
+      window.alert('No se pudo guardar el JSON: ' + error.message);
+    }
+  }
+
+  async function requestSaveHandle(kind) {
+    const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
+    const suggestedName = `${sheet}_${kind}.json`;
+    if (!window.showSaveFilePicker) {
+      fallbackDownloadJson(kind);
+      return null;
+    }
+
+    try {
+      return await window.showSaveFilePicker({
+        suggestedName,
+        types: [
+          {
+            description: 'JSON',
+            accept: { 'application/json': ['.json'] },
+          },
+        ],
+      });
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        window.alert('No se pudo elegir archivo: ' + error.message);
+      }
+      return null;
+    }
+  }
+
+  async function writeJsonToHandle(handle, data) {
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+  }
+
+  function fallbackDownloadJson(kind) {
     const data = kind === 'structure_json' ? state.structure : state.render;
-    const sheet = safeFilePart(state.source.sheet || 'credits');
+    const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -1363,6 +1611,10 @@
 
   function normalizeEditableValue(value) {
     return Array.isArray(value) ? JSON.stringify(value) : String(value || '');
+  }
+
+  function normalizeColor(value) {
+    return /^#[0-9a-fA-F]{6}$/.test(String(value || '')) ? value : '#171b1f';
   }
 
   function escapeHtml(value) {
