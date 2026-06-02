@@ -23,6 +23,7 @@
     editorBody: document.getElementById('editorBody'),
     jsonPreview: document.getElementById('jsonPreview'),
     visualPreview: document.getElementById('visualPreview'),
+    pdfPreview: document.getElementById('pdfPreview'),
     defaultDurationInput: document.getElementById('defaultDurationInput'),
     defaultAutoLinesInput: document.getElementById('defaultAutoLinesInput'),
     typographySettings: document.getElementById('typographySettings'),
@@ -306,7 +307,7 @@
 
     return {
       schema: 'credits_structure_json',
-      version: 6,
+      version: 7,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas,
@@ -323,7 +324,7 @@
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 6);
+      structure.version = Math.max(Number(structure.version) || 0, 7);
       structure.page_breaks = structure.page_breaks || {};
       structure.settings = normalizeSettings(structure.settings || {});
       structure.cartelas.forEach((cartela) => {
@@ -335,7 +336,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 6,
+        version: 7,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -363,7 +364,7 @@
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 6);
+    structure.version = Math.max(Number(structure.version) || 0, 7);
     structure.page_breaks = structure.page_breaks || {};
     structure.settings = normalizeSettings(structure.settings || {});
     (structure.cartelas || []).forEach((cartela) => {
@@ -386,6 +387,7 @@
         line_spacing: 1.12,
         column_gap: 14,
         role_name_gap: 6,
+        page_top_margin: 80,
       },
     };
   }
@@ -416,6 +418,7 @@
     normalized.layout.line_spacing = Math.max(0.1, Number(normalized.layout.line_spacing) || defaults.layout.line_spacing);
     normalized.layout.column_gap = Math.max(0, Number(normalized.layout.column_gap) || defaults.layout.column_gap);
     normalized.layout.role_name_gap = Math.max(0, Number(normalized.layout.role_name_gap) || defaults.layout.role_name_gap);
+    normalized.layout.page_top_margin = Math.max(0, Number(normalized.layout.page_top_margin) || defaults.layout.page_top_margin);
     return normalized;
   }
 
@@ -481,7 +484,7 @@
 
     return {
       schema: 'credits_render_json',
-      version: 3,
+      version: 4,
       source_sheet: source.sheet || '',
       settings: {
         typography: normalizeSettings(structure.settings || {}).typography,
@@ -702,6 +705,7 @@
     els.tabButtons.forEach((button) => button.classList.toggle('active', button.dataset.tab === tabName));
     els.tabPanes.forEach((pane) => pane.classList.toggle('active', pane.id === `${tabName}Pane`));
     if (tabName === 'visual') renderVisualPreview();
+    if (tabName === 'pdf') renderPdfPreview();
     if (tabName === 'json') renderPreview();
   }
 
@@ -789,6 +793,7 @@
     wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, 5, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
     wrap.appendChild(settingsNumberRow('Gap columnas', settings.layout.column_gap, 0, 200, 1, (value) => updateLayoutSetting({ column_gap: value })));
     wrap.appendChild(settingsNumberRow('Gap cargo/nombre', settings.layout.role_name_gap, 0, 100, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
+    wrap.appendChild(settingsNumberRow('Margen superior pagina', settings.layout.page_top_margin, 0, 400, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
     els.typographySettings.after(wrap);
   }
 
@@ -832,7 +837,7 @@
     if (!state.structure) {
       state.structure = {
         schema: 'credits_structure_json',
-        version: 6,
+        version: 7,
         source_sheet: '',
         source_file: '',
         cartelas: [],
@@ -1567,6 +1572,187 @@
 
       els.visualPreview.appendChild(cartelaEl);
     });
+  }
+
+  function renderPdfPreview() {
+    if (!state.render) {
+      els.pdfPreview.className = 'pdf-preview empty-state';
+      els.pdfPreview.textContent = 'Carga un XLSX para ver las paginas.';
+      return;
+    }
+
+    const layout = getRenderLayout();
+    els.pdfPreview.className = 'pdf-preview';
+    els.pdfPreview.innerHTML = '';
+
+    buildPhysicalPages(state.render.cartelas || []).forEach((page, index) => {
+      const sheetEl = document.createElement('section');
+      sheetEl.className = 'pdf-sheet';
+
+      const pageInner = document.createElement('div');
+      pageInner.className = 'pdf-page-inner';
+      pageInner.style.paddingTop = `${layout.page_top_margin}px`;
+
+      const pageBody = document.createElement('div');
+      pageBody.className = 'pdf-page-body';
+
+      const pageMeta = document.createElement('div');
+      pageMeta.className = 'pdf-page-meta';
+      pageMeta.textContent = `Pagina ${index + 1}`;
+      sheetEl.appendChild(pageMeta);
+
+      const title = document.createElement('div');
+      title.className = 'pdf-page-title';
+      title.textContent = page.cartela_page.title || page.cartela.title || '';
+      applyTypography(title, 'page_header', {
+        multiplier: page.cartela.font_size_multiplier,
+        lineMultiplier: page.cartela.line_spacing_multiplier,
+      });
+      pageBody.appendChild(title);
+
+      page.blocks.forEach((block) => {
+        pageBody.appendChild(renderPdfBlock(block, page.cartela, layout));
+      });
+
+      pageInner.appendChild(pageBody);
+      sheetEl.appendChild(pageInner);
+      els.pdfPreview.appendChild(sheetEl);
+    });
+  }
+
+  function buildPhysicalPages(cartelas) {
+    const physicalPages = [];
+    cartelas.forEach((cartela) => {
+      (cartela.pages || []).forEach((cartelaPage) => {
+        const blocks = cartelaPage.blocks || [];
+        const maxBlockPages = Math.max(1, ...blocks.map((block) => (block.pages || []).length || 1));
+        for (let pageIndex = 0; pageIndex < maxBlockPages; pageIndex += 1) {
+          physicalPages.push({
+            cartela,
+            cartela_page: cartelaPage,
+            blocks: blocks
+              .map((block) => ({
+                ...block,
+                pages: block.pages && block.pages[pageIndex] ? [block.pages[pageIndex]] : [],
+              }))
+              .filter((block) => block.pages.length || block.missing_source),
+          });
+        }
+      });
+    });
+    return physicalPages;
+  }
+
+  function renderPdfBlock(block, cartela, layout) {
+    const blockEl = document.createElement('div');
+    blockEl.className = 'pdf-block';
+    if (block.missing_source) {
+      blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
+      return blockEl;
+    }
+
+    const blockTitle = document.createElement('div');
+    blockTitle.className = 'pdf-block-title';
+    blockTitle.textContent = block.pages && block.pages[0] ? block.pages[0].title || block.title || '' : block.title || '';
+    applyTypography(blockTitle, 'block_title', {
+      multiplier: cartela.font_size_multiplier,
+      lineMultiplier: cartela.line_spacing_multiplier,
+    });
+    blockEl.appendChild(blockTitle);
+
+    const contentEl = document.createElement('div');
+    contentEl.className = 'pdf-block-content';
+    contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
+    contentEl.style.columnGap = `${layout.column_gap}px`;
+
+    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+    let previousCreditSourceId = null;
+    units.forEach((unit) => {
+      if (block.type === 'music_licenses' && unit.lines) {
+        contentEl.appendChild(renderPdfTheme(unit, block, cartela));
+      } else {
+        const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
+        const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
+        contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, { hideRole: hideRepeatedRole }));
+        previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
+      }
+    });
+
+    blockEl.appendChild(contentEl);
+    return blockEl;
+  }
+
+  function renderPdfTheme(theme, block, cartela) {
+    const themeEl = document.createElement('div');
+    themeEl.className = 'pdf-theme';
+    (theme.lines || []).forEach((line, index) => {
+      const lineEl = document.createElement('div');
+      lineEl.className = index === 0 ? 'pdf-theme-title' : 'pdf-line';
+      lineEl.textContent = line.value || '';
+      lineEl.style.textAlign = block.alignment && block.alignment.text ? block.alignment.text : 'center';
+      applyTypography(lineEl, index === 0 ? 'block_title' : 'name', {
+        multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+      });
+      themeEl.appendChild(lineEl);
+    });
+    return themeEl;
+  }
+
+  function renderPdfUnit(unit, block, cartela, layout, options = {}) {
+    const orientation = cartela.orientation || 'horizontal';
+    const alignment = block.alignment || {};
+    const unitEl = document.createElement('div');
+    unitEl.className = `pdf-unit ${orientation}`;
+    if (orientation === 'horizontal') {
+      unitEl.style.gap = `${layout.role_name_gap}px`;
+    }
+
+    if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
+      unitEl.appendChild(makePdfText(options.hideRole ? '' : unit.role || '', 'role', {
+        className: 'pdf-role',
+        cartela,
+        textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
+      }));
+      unitEl.appendChild(makePdfText(unit.name || '', 'name', {
+        className: 'pdf-name',
+        cartela,
+        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
+      }));
+      return unitEl;
+    }
+
+    if (unit.kind === 'cast') {
+      unitEl.appendChild(makePdfText(unit.actor || '', 'role', {
+        className: 'pdf-role',
+        cartela,
+        textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
+      }));
+      unitEl.appendChild(makePdfText(unit.character || '', 'name', {
+        className: 'pdf-name',
+        cartela,
+        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
+      }));
+      return unitEl;
+    }
+
+    return makePdfText(unit.title || unit.value || '', unit.title !== undefined ? 'block_title' : 'name', {
+      className: 'pdf-line',
+      cartela,
+      textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
+    });
+  }
+
+  function makePdfText(text, styleKey, options) {
+    const el = document.createElement('div');
+    el.className = options.className;
+    el.textContent = text;
+    el.style.textAlign = options.textAlign;
+    applyTypography(el, styleKey, {
+      multiplier: options.cartela.font_size_multiplier,
+      lineMultiplier: options.cartela.line_spacing_multiplier,
+    });
+    return el;
   }
 
   function renderVisualBlock(block, cartela, layout) {
