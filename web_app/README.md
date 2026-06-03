@@ -86,6 +86,7 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Pestanas: `Ajustes`, `Estructura`, `JSON` y `PNG`.
 - Ajustes comunes: duracion por defecto, lineas antes de salto automatico, tipografia base e interlineado/gaps base.
 - Tamano de pagina en pixeles, color de fondo de visualizacion, margen superior/inferior y gap de bloques para la previsualizacion/render.
+- Los campos de layout no tienen maximo artificial; el zoom del visor PNG permite trabajar con paginas UHD sin cambiar la exportacion real.
 - Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente, estilo y color.
 - Carga fuentes del sistema en Chrome mediante permiso del usuario; el JSON guarda familia, estilo y PostScript name.
 - Permite juntar varios bloques fuente en una misma cartela.

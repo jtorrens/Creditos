@@ -11,6 +11,7 @@
     renderFileHandle: null,
     fontCatalog: null,
     pdfPageIndex: 0,
+    pngPreviewZoom: 0.25,
   };
 
   const els = {
@@ -49,6 +50,9 @@
     pdfPageTitleInput: document.getElementById('pdfPageTitleInput'),
     pdfBaseNameInput: document.getElementById('pdfBaseNameInput'),
     pdfLineStatus: document.getElementById('pdfLineStatus'),
+    pngZoomOutBtn: document.getElementById('pngZoomOutBtn'),
+    pngZoomInBtn: document.getElementById('pngZoomInBtn'),
+    pngZoomStatus: document.getElementById('pngZoomStatus'),
     exportCurrentPdfBtn: document.getElementById('exportCurrentPdfBtn'),
     exportAllPdfBtn: document.getElementById('exportAllPdfBtn'),
   };
@@ -98,6 +102,8 @@
   els.pdfPlusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(1));
   els.pdfPageTitleInput.addEventListener('input', updateCurrentPdfPageTitle);
   els.pdfBaseNameInput.addEventListener('input', updatePdfBaseName);
+  els.pngZoomOutBtn.addEventListener('click', () => updatePngPreviewZoom(-0.1));
+  els.pngZoomInBtn.addEventListener('click', () => updatePngPreviewZoom(0.1));
   els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
   els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
 
@@ -988,14 +994,14 @@
     wrap.id = 'layoutSettings';
     wrap.className = 'layout-settings';
     wrap.appendChild(sectionLabel('Layout base'));
-    wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, 5, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
-    wrap.appendChild(settingsNumberRow('Gap columnas', settings.layout.column_gap, 0, 200, 1, (value) => updateLayoutSetting({ column_gap: value })));
-    wrap.appendChild(settingsNumberRow('Gap cargo/nombre', settings.layout.role_name_gap, 0, 100, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
-    wrap.appendChild(settingsNumberRow('Gap bloques', settings.layout.block_gap, 0, 300, 1, (value) => updateLayoutSetting({ block_gap: value })));
-    wrap.appendChild(settingsNumberRow('Ancho pagina px', settings.layout.page_width, 1, 10000, 1, (value) => updateLayoutSetting({ page_width: value })));
-    wrap.appendChild(settingsNumberRow('Alto pagina px', settings.layout.page_height, 1, 10000, 1, (value) => updateLayoutSetting({ page_height: value })));
-    wrap.appendChild(settingsNumberRow('Margen superior pagina', settings.layout.page_top_margin, 0, 400, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
-    wrap.appendChild(settingsNumberRow('Margen inferior pagina', settings.layout.page_bottom_margin, 0, 400, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
+    wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
+    wrap.appendChild(settingsNumberRow('Gap columnas', settings.layout.column_gap, 0, null, 1, (value) => updateLayoutSetting({ column_gap: value })));
+    wrap.appendChild(settingsNumberRow('Gap cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
+    wrap.appendChild(settingsNumberRow('Gap bloques', settings.layout.block_gap, 0, null, 1, (value) => updateLayoutSetting({ block_gap: value })));
+    wrap.appendChild(settingsNumberRow('Ancho pagina px', settings.layout.page_width, 1, null, 1, (value) => updateLayoutSetting({ page_width: value })));
+    wrap.appendChild(settingsNumberRow('Alto pagina px', settings.layout.page_height, 1, null, 1, (value) => updateLayoutSetting({ page_height: value })));
+    wrap.appendChild(settingsNumberRow('Margen superior pagina', settings.layout.page_top_margin, 0, null, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
+    wrap.appendChild(settingsNumberRow('Margen inferior pagina', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
     wrap.appendChild(settingsColorRow('Fondo pagina', settings.layout.page_background, (value) => updateLayoutSetting({ page_background: value })));
     els.typographySettings.after(wrap);
   }
@@ -1009,11 +1015,13 @@
     input.className = 'text-input';
     input.type = 'number';
     input.min = String(min);
-    input.max = String(max);
+    if (max !== null && max !== undefined) input.max = String(max);
     input.step = String(step);
     input.value = String(value);
     input.addEventListener('change', () => {
-      const next = Math.max(min, Math.min(max, Number(input.value) || min));
+      const raw = Number(input.value);
+      let next = Math.max(min, Number.isFinite(raw) ? raw : min);
+      if (max !== null && max !== undefined) next = Math.min(max, next);
       input.value = String(next);
       onInput(next);
     });
@@ -1835,7 +1843,9 @@
     }
 
     const sheetEl = makePdfSheetElement(page, layout);
+    sheetEl.style.transform = `scale(${state.pngPreviewZoom})`;
     els.pdfPreview.appendChild(sheetEl);
+    updatePngZoomStatus();
   }
 
   function makePdfSheetElement(page, layout, options = {}) {
@@ -1976,6 +1986,16 @@
     state.structure.settings = normalizeSettings(state.structure.settings || {});
     state.structure.settings.pdf_base_name = safeFilePart(els.pdfBaseNameInput.value || 'creditos');
     renderPreview();
+  }
+
+  function updatePngPreviewZoom(delta) {
+    state.pngPreviewZoom = Math.max(0.05, Math.min(2, Math.round((state.pngPreviewZoom + delta) * 20) / 20));
+    renderPdfPreview();
+  }
+
+  function updatePngZoomStatus() {
+    if (!els.pngZoomStatus) return;
+    els.pngZoomStatus.textContent = `${Math.round(state.pngPreviewZoom * 100)}%`;
   }
 
   function pdfPageVerticalJustify(page) {
