@@ -2331,20 +2331,49 @@
     const items = units || [];
     const columns = Math.max(1, Number(block.columns) || 1);
     const rowHeights = [];
+    let previousCreditSourceId = null;
     items.forEach((unit, index) => {
       const row = Math.floor(index / columns);
-      rowHeights[row] = Math.max(rowHeights[row] || 0, countRenderedUnitLines(unit, block, cartela));
+      const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
+      rowHeights[row] = Math.max(rowHeights[row] || 0, countRenderedUnitLines(unit, block, cartela, options));
+      previousCreditSourceId = creditSourceId(unit);
     });
     return countTitleLine(block.title) + rowHeights.reduce((total, value) => total + value, 0);
   }
 
-  function countRenderedUnitLines(unit, block, cartela) {
+  function countRenderedUnitLines(unit, block, cartela, options = {}) {
     if (!unit) return 1;
     if (unit.lines) return Math.max(1, unit.lines.length);
+    if (options.repeatedNameRow) return 1;
     if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
       return cartela && cartela.orientation === 'vertical' ? 2 : 1;
     }
     return 1;
+  }
+
+  function unitRenderOptions(unit, previousCreditSourceId, cartela, hasPreviousUnit) {
+    const sourceId = creditSourceId(unit);
+    const repeatedNameRow = !!(
+      cartela &&
+      cartela.orientation === 'vertical' &&
+      sourceId &&
+      sourceId === previousCreditSourceId
+    );
+    return {
+      hideRole: !!(sourceId && sourceId === previousCreditSourceId),
+      repeatedNameRow,
+      groupGapBefore: !!(hasPreviousUnit && cartela && cartela.orientation === 'vertical' && sourceId && !repeatedNameRow),
+    };
+  }
+
+  function creditSourceId(unit) {
+    return unit && (unit.kind === 'credit' || unit.kind === 'crew_credit') ? unit.source_item_id || null : null;
+  }
+
+  function usesCompactVerticalNameRows(block, cartela) {
+    if (!cartela || cartela.orientation !== 'vertical') return false;
+    const units = getRenderedBlockUnits(block);
+    return units.some((unit) => unit.kind === 'credit' || unit.kind === 'crew_credit');
   }
 
   function countTitleLine(title) {
@@ -2562,13 +2591,16 @@
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
     const rowHeights = [];
+    let previousCreditSourceId = null;
     units.forEach((unit, index) => {
       const row = Math.floor(index / columns);
-      const unitHeight = measureCanvasUnit(unit, block, cartela, layout, columnWidth);
+      const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
+      const unitHeight = measureCanvasUnit(unit, block, cartela, layout, columnWidth, options);
       rowHeights[row] = Math.max(rowHeights[row] || 0, unitHeight);
+      previousCreditSourceId = creditSourceId(unit);
     });
     height += rowHeights.reduce((total, value) => total + value, 0);
-    height += Math.max(0, rowHeights.length - 1) * layout.block_gap;
+    height += canvasRowGaps(units, cartela, layout, columns).reduce((total, value) => total + value, 0);
     return height;
   }
 
@@ -2584,29 +2616,51 @@
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
     const rowHeights = [];
+    const rowGaps = canvasRowGaps(units, cartela, layout, columns);
     units.forEach((unit, index) => {
       const row = Math.floor(index / columns);
-      rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, cartela, layout, columnWidth));
+      const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
+      const options = unitRenderOptions(unit, previousSourceId, cartela, index > 0);
+      rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, cartela, layout, columnWidth, options));
     });
     let previousCreditSourceId = null;
     units.forEach((unit, index) => {
       const row = Math.floor(index / columns);
       const col = index % columns;
       const unitX = x + col * (columnWidth + layout.column_gap);
-      const unitY = cursorY + rowHeights.slice(0, row).reduce((total, value) => total + value, 0) + row * layout.block_gap;
-      const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
-      drawCanvasUnit(ctx, unit, block, cartela, layout, unitX, unitY, columnWidth, {
-        hideRole: isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId,
-      });
-      previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
+      const unitY = cursorY +
+        rowHeights.slice(0, row).reduce((total, value) => total + value, 0) +
+        rowGaps.slice(0, row).reduce((total, value) => total + value, 0);
+      const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
+      drawCanvasUnit(ctx, unit, block, cartela, layout, unitX, unitY, columnWidth, options);
+      previousCreditSourceId = creditSourceId(unit);
     });
   }
 
-  function measureCanvasUnit(unit, block, cartela, layout, width) {
+  function canvasRowGaps(units, cartela, layout, columns) {
+    const items = units || [];
+    const rowCount = Math.ceil(items.length / Math.max(1, columns));
+    const gaps = Array.from({ length: Math.max(0, rowCount - 1) }, () => layout.block_gap);
+    if (!cartela || cartela.orientation !== 'vertical') return gaps;
+
+    for (let row = 1; row < rowCount; row += 1) {
+      const firstIndex = row * columns;
+      const unit = items[firstIndex];
+      const previousUnit = items[firstIndex - 1];
+      const options = unitRenderOptions(unit, creditSourceId(previousUnit), cartela, firstIndex > 0);
+      gaps[row - 1] = options.repeatedNameRow ? 0 : layout.block_gap;
+    }
+    return gaps;
+  }
+
+  function measureCanvasUnit(unit, block, cartela, layout, width, options = {}) {
     if (block.type === 'music_licenses' && unit.lines) {
       return (unit.lines || []).reduce((total, line, index) => {
         return total + canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, block.typography).lineHeight;
       }, 0);
+    }
+    if (options.repeatedNameRow) {
+      return canvasTextMetrics('name', cartela, layout, block.typography).lineHeight;
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
       const orientation = cartela.orientation || 'horizontal';
@@ -2645,6 +2699,10 @@
     const roleMetrics = canvasTextMetrics('role', cartela, layout, typography);
     const nameMetrics = canvasTextMetrics('name', cartela, layout, typography);
     if (orientation === 'vertical') {
+      if (!role) {
+        drawCanvasText(ctx, name, x, y, width, nameMetrics, alignment.name || 'center');
+        return;
+      }
       drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center');
       drawCanvasText(ctx, name, x, y + roleMetrics.lineHeight + layout.block_gap, width, nameMetrics, alignment.name || 'center');
       return;
@@ -2747,19 +2805,18 @@
     contentEl.className = 'pdf-block-content';
     contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
     contentEl.style.columnGap = `${layout.column_gap}px`;
-    contentEl.style.rowGap = `${layout.block_gap}px`;
+    contentEl.style.rowGap = `${usesCompactVerticalNameRows(block, cartela) ? 0 : layout.block_gap}px`;
     contentEl.style.setProperty('--block-gap', `${layout.block_gap}px`);
 
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     let previousCreditSourceId = null;
-    units.forEach((unit) => {
+    units.forEach((unit, index) => {
       if (block.type === 'music_licenses' && unit.lines) {
         contentEl.appendChild(renderPdfTheme(unit, block, cartela));
       } else {
-        const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
-        const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
-        contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, { hideRole: hideRepeatedRole }));
-        previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
+        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
+        contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, options));
+        previousCreditSourceId = creditSourceId(unit);
       }
     });
 
@@ -2805,19 +2862,24 @@
     const alignment = block.alignment || {};
     const unitEl = document.createElement('div');
     unitEl.className = `pdf-unit ${orientation}`;
+    if (options.groupGapBefore) unitEl.style.marginTop = `${layout.block_gap}px`;
     if (orientation === 'horizontal') {
       unitEl.style.gap = `${layout.role_name_gap}px`;
+    } else if (options.repeatedNameRow) {
+      unitEl.style.gap = '0';
     } else {
       unitEl.style.gap = `${layout.block_gap}px`;
     }
 
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-      unitEl.appendChild(makePdfText(options.hideRole ? '' : unit.role || '', 'role', {
-        className: 'pdf-role',
-        cartela,
-        typography: block.typography,
-        textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
-      }));
+      if (!options.repeatedNameRow) {
+        unitEl.appendChild(makePdfText(options.hideRole ? '' : unit.role || '', 'role', {
+          className: 'pdf-role',
+          cartela,
+          typography: block.typography,
+          textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
+        }));
+      }
       unitEl.appendChild(makePdfText(unit.name || '', 'name', {
         className: 'pdf-name',
         cartela,
@@ -2888,11 +2950,11 @@
       contentEl.className = 'render-block-content';
       contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
       contentEl.style.columnGap = `${layout.column_gap}px`;
-      contentEl.style.rowGap = `${layout.block_gap}px`;
+      contentEl.style.rowGap = `${usesCompactVerticalNameRows(block, cartela) ? 0 : layout.block_gap}px`;
 
       const units = blockPage.items || [];
       let previousCreditSourceId = null;
-      units.forEach((unit) => {
+      units.forEach((unit, index) => {
         if (block.type === 'music_licenses' && unit.lines) {
           const themeEl = document.createElement('div');
           themeEl.className = 'render-theme';
@@ -2909,13 +2971,12 @@
           });
           contentEl.appendChild(themeEl);
         } else {
-          const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
-          const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
+          const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
           contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, {
-            hideRole: hideRepeatedRole,
+            ...options,
             typography: block.typography,
           }));
-          previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
+          previousCreditSourceId = creditSourceId(unit);
         }
       });
       blockPageEl.appendChild(contentEl);
@@ -2928,13 +2989,18 @@
     const orientation = cartela.orientation || 'horizontal';
     const unitEl = document.createElement('div');
     unitEl.className = `render-unit ${orientation}`;
+    if (options.groupGapBefore) unitEl.style.marginTop = `${layout.block_gap}px`;
     if (orientation === 'horizontal') {
       unitEl.style.gap = `${layout.role_name_gap}px`;
+    } else if (options.repeatedNameRow) {
+      unitEl.style.gap = '0';
     } else {
       unitEl.style.gap = `${layout.block_gap}px`;
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-      if (options.hideRole) {
+      if (options.repeatedNameRow) {
+        // Continuacion del mismo cargo: solo se pinta el nombre.
+      } else if (options.hideRole) {
         const roleEl = document.createElement('div');
         roleEl.className = 'render-role repeated-role';
         unitEl.appendChild(roleEl);
