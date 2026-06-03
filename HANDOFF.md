@@ -347,11 +347,40 @@ Futuro app independiente:
 
 - Crear una app Electron en `desktop_app/`.
 - Usar la web actual como renderer.
+- Objetivo multiplataforma: macOS y Windows como minimo. No asumir rutas tipo `/Volumes/...`; usar `path`, dialogs nativos y rutas absolutas elegidas por el usuario.
 - Lanzar `server.py` internamente al principio, o migrar parser/export a proceso principal.
-- Sustituir llamadas HTTP por IPC progresivamente.
-- Integrar dialogs nativos para abrir XLSX, abrir/guardar JSON y elegir carpeta de PNG.
+- Si se mantiene Python, empaquetar el runtime o un binario del parser para que el usuario no tenga que instalar Python manualmente. En Windows esto es especialmente importante.
+- Si se mantiene un servidor interno temporal, que sea gestionado por Electron:
+  - puerto elegido automaticamente o IPC/local socket.
+  - arranque/cierre junto con la app.
+  - manejo de errores visible en UI.
+  - sin terminal externa para el usuario final.
+- Sustituir llamadas HTTP por IPC progresivamente. Objetivo final: parser, guardado, exportacion y acceso a archivos deberian vivir en proceso principal/preload, no depender de un servidor web externo.
+- Integrar dialogs nativos de Electron para:
+  - abrir XLSX.
+  - abrir `structure_json`.
+  - guardar/guardar como `structure_json`.
+  - guardar/guardar como `render_json`.
+  - elegir carpeta de salida PNG.
+  - elegir nombre/ruta de salida MOV futuro.
+- Reducir dependencia de APIs puras de Chromium donde Electron tenga alternativa nativa:
+  - File System Access API -> `dialog.showOpenDialog`, `dialog.showSaveDialog`, `fs`.
+  - descargas browser -> escritura directa con `fs`.
+  - rutas y permisos -> Electron main/preload.
+- Mantener Chromium/Electron solo donde aporta valor real, especialmente UI y posible `queryLocalFonts`. Si `queryLocalFonts` no fuera estable en builds empaquetadas, valorar obtener fuentes desde el sistema en main process o mediante un modulo/plataforma especifica.
 - Empaquetar con `electron-builder`.
-- Mantener Chrome/Chromium para `queryLocalFonts`.
+- Preparar empaquetado de dependencias externas:
+  - parser Python/binario.
+  - FFmpeg para futuro MOV.
+  - plantillas/presets.
+  - assets necesarios.
+- Para FFmpeg, no asumir instalacion global. Incluir binario por plataforma o resolverlo con una dependencia empaquetable, y permitir configurar ruta solo como fallback avanzado.
+- Mantener separada la logica de dominio de la UI para facilitar la transicion:
+  - parser XLSX.
+  - generacion `structure_json`.
+  - generacion `render_json`.
+  - export PNG.
+  - futuro export MOV/timeline.
 
 Futuro timeline/MOV:
 
@@ -404,4 +433,3 @@ Arrancar servidor:
 ```bash
 python3 web_app/server.py
 ```
-
