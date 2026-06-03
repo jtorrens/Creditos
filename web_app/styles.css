@@ -99,7 +99,9 @@ button:hover,
 
 .file-actions,
 .panel-actions,
-.pdf-toolbar {
+.pdf-toolbar,
+.pdf-nav,
+.json-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -107,18 +109,57 @@ button:hover,
 
 .pdf-toolbar {
   align-items: center;
+  justify-content: flex-end;
+  max-width: calc(100% - 120px);
 }
 
-.pdf-toolbar span {
+.pdf-nav {
+  align-items: center;
+  margin-right: auto;
+}
+
+.pdf-nav button {
+  font-size: 12px;
+  min-width: 34px;
+  padding: 0 8px;
+}
+
+.pdf-toolbar span,
+.pdf-nav span {
   color: var(--muted);
   font-size: 12px;
-  min-width: 86px;
   text-align: center;
+}
+
+.pdf-page-number {
+  min-width: 58px;
+  padding-left: 6px;
+  padding-right: 6px;
+  text-align: center;
+  width: 58px;
 }
 
 .pdf-toolbar-title {
   min-width: 180px;
   width: 240px;
+}
+
+.pdf-base-name {
+  min-width: 160px;
+  width: 210px;
+}
+
+#pdfLineStatus {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  min-height: 34px;
+  min-width: 62px;
+  padding: 8px 9px;
+}
+
+.json-actions {
+  align-items: center;
+  justify-content: flex-end;
 }
 
 .file-actions {

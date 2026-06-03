@@ -24,7 +24,6 @@
     editorKind: document.getElementById('editorKind'),
     editorBody: document.getElementById('editorBody'),
     jsonPreview: document.getElementById('jsonPreview'),
-    visualPreview: document.getElementById('visualPreview'),
     pdfPreview: document.getElementById('pdfPreview'),
     defaultDurationInput: document.getElementById('defaultDurationInput'),
     defaultAutoLinesInput: document.getElementById('defaultAutoLinesInput'),
@@ -39,12 +38,19 @@
     saveStructureAsBtn: document.getElementById('saveStructureAsBtn'),
     saveRenderBtn: document.getElementById('saveRenderBtn'),
     saveRenderAsBtn: document.getElementById('saveRenderAsBtn'),
+    pdfFirstPageBtn: document.getElementById('pdfFirstPageBtn'),
     pdfPrevPageBtn: document.getElementById('pdfPrevPageBtn'),
     pdfNextPageBtn: document.getElementById('pdfNextPageBtn'),
+    pdfLastPageBtn: document.getElementById('pdfLastPageBtn'),
     pdfMinusLinesBtn: document.getElementById('pdfMinusLinesBtn'),
     pdfPlusLinesBtn: document.getElementById('pdfPlusLinesBtn'),
-    pdfPageStatus: document.getElementById('pdfPageStatus'),
+    pdfPageNumberInput: document.getElementById('pdfPageNumberInput'),
+    pdfTotalPages: document.getElementById('pdfTotalPages'),
     pdfPageTitleInput: document.getElementById('pdfPageTitleInput'),
+    pdfBaseNameInput: document.getElementById('pdfBaseNameInput'),
+    pdfLineStatus: document.getElementById('pdfLineStatus'),
+    exportCurrentPdfBtn: document.getElementById('exportCurrentPdfBtn'),
+    exportAllPdfBtn: document.getElementById('exportAllPdfBtn'),
   };
 
   const TYPOGRAPHY_FIELDS = [
@@ -83,11 +89,17 @@
   els.saveStructureAsBtn.addEventListener('click', () => saveJsonFile('structure_json', true));
   els.saveRenderBtn.addEventListener('click', () => saveJsonFile('render_json'));
   els.saveRenderAsBtn.addEventListener('click', () => saveJsonFile('render_json', true));
+  els.pdfFirstPageBtn.addEventListener('click', () => goToPdfPage(0));
   els.pdfPrevPageBtn.addEventListener('click', () => changePdfPage(-1));
   els.pdfNextPageBtn.addEventListener('click', () => changePdfPage(1));
+  els.pdfLastPageBtn.addEventListener('click', () => goToPdfPage(Number.POSITIVE_INFINITY));
+  els.pdfPageNumberInput.addEventListener('change', () => goToPdfPage((Number(els.pdfPageNumberInput.value) || 1) - 1));
   els.pdfMinusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(-1));
   els.pdfPlusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(1));
   els.pdfPageTitleInput.addEventListener('input', updateCurrentPdfPageTitle);
+  els.pdfBaseNameInput.addEventListener('input', updatePdfBaseName);
+  els.exportCurrentPdfBtn.addEventListener('click', () => exportPdfPages('current'));
+  els.exportAllPdfBtn.addEventListener('click', () => exportPdfPages('all'));
 
   async function loadXlsxFile(event) {
     const file = event.target.files && event.target.files[0];
@@ -342,7 +354,7 @@
 
     return {
       schema: 'credits_structure_json',
-      version: 9,
+      version: 10,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas,
@@ -360,7 +372,7 @@
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 9);
+      structure.version = Math.max(Number(structure.version) || 0, 10);
       structure.page_breaks = structure.page_breaks || {};
       structure.page_line_adjustments = structure.page_line_adjustments || {};
       structure.settings = normalizeSettings(structure.settings || {});
@@ -373,7 +385,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 9,
+        version: 10,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -403,7 +415,7 @@
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 9);
+    structure.version = Math.max(Number(structure.version) || 0, 10);
     structure.page_breaks = structure.page_breaks || {};
     structure.page_line_adjustments = structure.page_line_adjustments || {};
     structure.settings = normalizeSettings(structure.settings || {});
@@ -417,6 +429,7 @@
     return {
       default_cartela_duration: 4,
       default_auto_page_lines: 18,
+      pdf_base_name: 'creditos',
       typography: {
         page_header: { font_size: 12, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#58616a' },
         block_title: { font_size: 16, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#24545f' },
@@ -471,6 +484,7 @@
     normalized.layout.page_height = Math.max(1, Number(normalized.layout.page_height) || defaults.layout.page_height);
     normalized.layout.page_background = normalizeColor(normalized.layout.page_background || defaults.layout.page_background);
     normalized.layout.block_gap = Math.max(0, Number(normalized.layout.block_gap) || defaults.layout.block_gap);
+    normalized.pdf_base_name = safeFilePart(normalized.pdf_base_name || defaults.pdf_base_name);
     return normalized;
   }
 
@@ -538,7 +552,7 @@
 
     const render = {
       schema: 'credits_render_json',
-      version: 6,
+      version: 7,
       source_sheet: source.sheet || '',
       settings: {
         typography: normalizeSettings(structure.settings || {}).typography,
@@ -759,7 +773,6 @@
     renderCartelaList();
     renderEditor();
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -777,7 +790,6 @@
     state.activeTab = tabName;
     els.tabButtons.forEach((button) => button.classList.toggle('active', button.dataset.tab === tabName));
     els.tabPanes.forEach((pane) => pane.classList.toggle('active', pane.id === `${tabName}Pane`));
-    if (tabName === 'visual') renderVisualPreview();
     if (tabName === 'pdf') renderPdfPreview();
     if (tabName === 'json') renderPreview();
   }
@@ -965,7 +977,6 @@
     };
     state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1037,7 +1048,6 @@
     };
     state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1045,7 +1055,7 @@
     if (!state.structure) {
       state.structure = {
         schema: 'credits_structure_json',
-        version: 9,
+        version: 10,
         source_sheet: '',
         source_file: '',
         cartelas: [],
@@ -1062,7 +1072,6 @@
     }
     renderSettings();
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1368,7 +1377,6 @@
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1458,7 +1466,6 @@
     };
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1477,7 +1484,6 @@
     page.source_ref_settings[ref].vertical_align = normalizeVerticalAlign(value);
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1496,7 +1502,6 @@
     page.source_ref_settings[ref].columns = Math.max(1, Number(columns) || 1);
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
-    renderVisualPreview();
     refreshPdfIfActive();
   }
 
@@ -1829,6 +1834,11 @@
       return;
     }
 
+    const sheetEl = makePdfSheetElement(page, layout);
+    els.pdfPreview.appendChild(sheetEl);
+  }
+
+  function makePdfSheetElement(page, layout) {
     const sheetEl = document.createElement('section');
     sheetEl.className = 'pdf-sheet';
     sheetEl.style.width = `${layout.page_width}px`;
@@ -1853,7 +1863,7 @@
 
     pageInner.appendChild(pageBody);
     sheetEl.appendChild(pageInner);
-    els.pdfPreview.appendChild(sheetEl);
+    return sheetEl;
   }
 
   function buildPhysicalPages(cartelas, overrides = {}) {
@@ -1885,20 +1895,40 @@
   }
 
   function updatePdfToolbar(current, total) {
-    if (!els.pdfPageStatus) return;
-    els.pdfPageStatus.textContent = `Pagina ${current} / ${total}`;
+    if (!els.pdfPageNumberInput) return;
+    const page = state.render ? buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {})[state.pdfPageIndex] : null;
+    els.pdfPageNumberInput.disabled = !page;
+    els.pdfPageNumberInput.max = String(Math.max(1, total));
+    els.pdfPageNumberInput.value = String(Math.max(1, current));
+    els.pdfTotalPages.textContent = `/ ${total}`;
+    els.pdfFirstPageBtn.disabled = current <= 1;
     els.pdfPrevPageBtn.disabled = current <= 1;
     els.pdfNextPageBtn.disabled = current >= total;
+    els.pdfLastPageBtn.disabled = current >= total;
     els.pdfMinusLinesBtn.disabled = total === 0;
     els.pdfPlusLinesBtn.disabled = total === 0;
-    const page = state.render ? buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {})[state.pdfPageIndex] : null;
     els.pdfPageTitleInput.disabled = !page;
     els.pdfPageTitleInput.value = page ? resolveOverride(state.structure.overrides || {}, page.id, 'title', '') : '';
+    els.pdfBaseNameInput.disabled = !state.structure;
+    els.pdfBaseNameInput.value = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {}).pdf_base_name;
+    els.exportCurrentPdfBtn.disabled = !page;
+    els.exportAllPdfBtn.disabled = total === 0;
+    els.pdfLineStatus.textContent = page ? getPdfLineStatus(page) : '0/0';
   }
 
   function changePdfPage(delta) {
     const total = state.render ? buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {}).length : 0;
     state.pdfPageIndex = Math.max(0, Math.min(total - 1, state.pdfPageIndex + delta));
+    renderPdfPreview();
+  }
+
+  function goToPdfPage(index) {
+    const total = state.render ? buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {}).length : 0;
+    if (!total) {
+      state.pdfPageIndex = 0;
+    } else {
+      state.pdfPageIndex = Math.max(0, Math.min(total - 1, index));
+    }
     renderPdfPreview();
   }
 
@@ -1922,8 +1952,29 @@
     }
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
-    renderVisualPreview();
     renderPdfPreview();
+  }
+
+  function getPdfLineStatus(page) {
+    const targetBlock = page.blocks.find((block) => !block.missing_source && block.pages && block.pages[0]);
+    const defaultLines = Number(state.structure && state.structure.settings && state.structure.settings.default_auto_page_lines) || 1;
+    if (!targetBlock) return `${defaultLines}/${defaultLines}`;
+    const materialId = targetBlock.id;
+    const blockPageIndex = Math.max(0, Number(targetBlock.block_page_index) || 0);
+    const adjustment = Number(
+      state.structure &&
+      state.structure.page_line_adjustments &&
+      state.structure.page_line_adjustments[materialId] &&
+      state.structure.page_line_adjustments[materialId][blockPageIndex]
+    ) || 0;
+    return `${defaultLines}/${Math.max(1, defaultLines + adjustment)}`;
+  }
+
+  function updatePdfBaseName() {
+    if (!state.structure) updateSettings({});
+    state.structure.settings = normalizeSettings(state.structure.settings || {});
+    state.structure.settings.pdf_base_name = safeFilePart(els.pdfBaseNameInput.value || 'creditos');
+    renderPreview();
   }
 
   function pdfPageVerticalJustify(page) {
@@ -1940,7 +1991,6 @@
     setOverride(page.id, 'title', els.pdfPageTitleInput.value, '');
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
-    renderVisualPreview();
     renderPdfPreview();
   }
 
@@ -1957,6 +2007,57 @@
     });
     return titleEl;
   }
+
+  function exportPdfPages(mode) {
+    if (!state.render || !state.structure) return;
+    const layout = getRenderLayout();
+    const pages = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {});
+    if (!pages.length) return;
+    const selectedPages = mode === 'current' ? [pages[state.pdfPageIndex]] : pages;
+    const settings = normalizeSettings(state.structure.settings || {});
+    const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
+    const title = mode === 'current'
+      ? `${baseName}_${String(state.pdfPageIndex + 1).padStart(3, '0')}`
+      : `${baseName}_all`;
+    const win = window.open('', '_blank');
+    if (!win) {
+      window.alert('Chrome ha bloqueado la ventana de exportacion.');
+      return;
+    }
+    const sheetsHtml = selectedPages
+      .filter(Boolean)
+      .map((page) => makePdfSheetElement(page, layout).outerHTML)
+      .join('');
+    win.document.write(makePrintablePdfHtml(title, sheetsHtml, layout));
+    win.document.close();
+    win.focus();
+    win.setTimeout(() => win.print(), 100);
+  }
+
+  function makePrintablePdfHtml(title, sheetsHtml, layout) {
+    const cssHref = new URL('./styles.css', window.location.href).href;
+    return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>${escapeHtml(title)}</title>
+    <link rel="stylesheet" href="${cssHref}">
+    <style>
+      @page { size: ${layout.page_width}px ${layout.page_height}px; margin: 0; }
+      html, body { background: ${layout.page_background}; margin: 0; padding: 0; }
+      body { display: block; }
+      .pdf-sheet {
+        border: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always;
+      }
+      .pdf-sheet:last-child { page-break-after: auto; }
+    </style>
+  </head>
+  <body>${sheetsHtml}</body>
+</html>`;
+  }
+
   function renderPdfBlock(block, cartela, layout) {
     const blockEl = document.createElement('div');
     blockEl.className = 'pdf-block';

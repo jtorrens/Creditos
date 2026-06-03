@@ -18,7 +18,6 @@
       <button class="active" type="button" data-tab="settings">Ajustes</button>
       <button type="button" data-tab="structure">Estructura</button>
       <button type="button" data-tab="json">JSON</button>
-      <button type="button" data-tab="visual">Preview</button>
       <button type="button" data-tab="pdf">PDF</button>
     </nav>
 
@@ -82,28 +81,17 @@
         <aside class="json-panel">
           <div class="panel-heading">
             <h2>Salida</h2>
-            <div class="segmented" role="tablist">
-              <button id="structureTab" class="active" type="button">Structure</button>
-              <button id="renderTab" type="button">Render</button>
+            <div class="json-actions">
+              <div class="segmented" role="tablist">
+                <button id="structureTab" class="active" type="button">Structure</button>
+                <button id="renderTab" type="button">Render</button>
+              </div>
+              <button id="saveRenderBtn" type="button">Guardar render</button>
+              <button id="saveRenderAsBtn" type="button">Guardar render como</button>
             </div>
           </div>
           <textarea id="jsonPreview" spellcheck="false" readonly></textarea>
         </aside>
-      </section>
-
-      <section id="visualPane" class="tab-pane">
-        <div class="visual-panel">
-          <div class="panel-heading">
-            <h2>Preview render</h2>
-            <div class="panel-actions">
-              <button id="saveRenderBtn" type="button">Guardar</button>
-              <button id="saveRenderAsBtn" type="button">Guardar como</button>
-            </div>
-          </div>
-          <div id="visualPreview" class="visual-preview empty-state">
-            Carga un XLSX para ver el preview.
-          </div>
-        </div>
       </section>
 
       <section id="pdfPane" class="tab-pane">
@@ -111,11 +99,20 @@
           <div class="panel-heading">
             <h2>Preview PDF</h2>
             <div class="pdf-toolbar">
-              <button id="pdfPrevPageBtn" type="button">Anterior</button>
-              <span id="pdfPageStatus">Pagina 0 / 0</span>
-              <button id="pdfNextPageBtn" type="button">Siguiente</button>
+              <div class="pdf-nav">
+                <button id="pdfFirstPageBtn" type="button" title="Primera pagina" aria-label="Primera pagina">&#x23EE;</button>
+                <button id="pdfPrevPageBtn" type="button" title="Pagina anterior" aria-label="Pagina anterior">&#x25C0;</button>
+                <input id="pdfPageNumberInput" class="text-input pdf-page-number" type="number" min="1" step="1" value="1" aria-label="Numero de pagina">
+                <span id="pdfTotalPages">/ 0</span>
+                <button id="pdfNextPageBtn" type="button" title="Pagina siguiente" aria-label="Pagina siguiente">&#x25B6;</button>
+                <button id="pdfLastPageBtn" type="button" title="Ultima pagina" aria-label="Ultima pagina">&#x23ED;</button>
+              </div>
               <input id="pdfPageTitleInput" class="text-input pdf-toolbar-title" type="text" placeholder="Titulo pagina">
+              <input id="pdfBaseNameInput" class="text-input pdf-base-name" type="text" placeholder="Nombre base PDF">
+              <button id="exportCurrentPdfBtn" type="button">Exportar pagina</button>
+              <button id="exportAllPdfBtn" type="button">Exportar todas</button>
               <button id="pdfMinusLinesBtn" type="button">-</button>
+              <span id="pdfLineStatus">0/0</span>
               <button id="pdfPlusLinesBtn" type="button">+</button>
             </div>
           </div>
