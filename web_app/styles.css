@@ -98,10 +98,27 @@ button:hover,
 }
 
 .file-actions,
-.panel-actions {
+.panel-actions,
+.pdf-toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.pdf-toolbar {
+  align-items: center;
+}
+
+.pdf-toolbar span {
+  color: var(--muted);
+  font-size: 12px;
+  min-width: 86px;
+  text-align: center;
+}
+
+.pdf-toolbar-title {
+  min-width: 180px;
+  width: 240px;
 }
 
 .file-actions {
@@ -359,39 +376,6 @@ button:hover,
   background: #fff;
   border-color: var(--line);
   outline: none;
-}
-
-.page-break-control {
-  align-items: center;
-  border-top: 1px dashed var(--line);
-  display: flex;
-  justify-content: center;
-  margin: 2px 0;
-  padding: 6px 0;
-}
-
-.page-break-control button {
-  color: var(--muted);
-  font-size: 12px;
-  height: 28px;
-}
-
-.page-break-control.active {
-  border-top-color: var(--accent);
-}
-
-.page-break-control.active button {
-  border-color: var(--accent);
-  color: var(--accent-strong);
-}
-
-.preview-names .page-break-control {
-  margin: 0;
-  padding: 3px 0;
-}
-
-.preview-names .page-break-control button {
-  height: 24px;
 }
 
 .role-input,
@@ -767,22 +751,19 @@ button:hover,
 
 .pdf-preview {
   background: #d7dde2;
-  display: grid;
-  gap: 18px;
+  display: flex;
   height: calc(100% - 46px);
-  justify-items: center;
+  justify-content: center;
   overflow: auto;
   padding: 18px;
 }
 
 .pdf-sheet {
-  aspect-ratio: 16 / 9;
   background: #fff;
   border: 1px solid #b7c0c8;
   box-shadow: 0 12px 32px rgba(28, 36, 44, 0.18);
-  max-width: 960px;
+  flex: 0 0 auto;
   position: relative;
-  width: min(100%, 960px);
 }
 
 .pdf-page-inner {
@@ -790,19 +771,23 @@ button:hover,
   display: flex;
   height: 100%;
   justify-content: center;
-  padding: 0 68px 58px;
+  width: 100%;
 }
 
 .pdf-page-body {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   min-height: 0;
   width: 100%;
 }
 
 .pdf-block {
-  margin: 10px 0;
+  margin: 0;
+}
+
+.pdf-page-title {
+  font-weight: 700;
+  text-align: center;
 }
 
 .pdf-block-title {
@@ -813,7 +798,7 @@ button:hover,
 
 .pdf-block-content {
   display: grid;
-  row-gap: 4px;
+  row-gap: var(--block-gap, 4px);
 }
 
 .pdf-unit {
@@ -846,6 +831,7 @@ button:hover,
 
 .pdf-theme {
   min-width: 0;
+  padding: calc(var(--block-gap, 4px) / 2) 0;
 }
 
 .tag {

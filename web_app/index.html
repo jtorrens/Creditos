@@ -110,6 +110,14 @@
         <div class="pdf-panel">
           <div class="panel-heading">
             <h2>Preview PDF</h2>
+            <div class="pdf-toolbar">
+              <button id="pdfPrevPageBtn" type="button">Anterior</button>
+              <span id="pdfPageStatus">Pagina 0 / 0</span>
+              <button id="pdfNextPageBtn" type="button">Siguiente</button>
+              <input id="pdfPageTitleInput" class="text-input pdf-toolbar-title" type="text" placeholder="Titulo pagina">
+              <button id="pdfMinusLinesBtn" type="button">-</button>
+              <button id="pdfPlusLinesBtn" type="button">+</button>
+            </div>
           </div>
           <div id="pdfPreview" class="pdf-preview empty-state">
             Carga un XLSX para ver las paginas.

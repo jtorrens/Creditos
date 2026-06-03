@@ -63,11 +63,11 @@ Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la ap
 7. Ajusta orientacion:
    - `Horizontal`: cargo a la izquierda, nombre a la derecha.
    - `Vertical`: cargo arriba, nombre abajo.
-8. Ajusta `Columnas` para distribuir los bloques dentro de la cartela.
+8. Ajusta `Columnas`, alineaciones y titulo visible de bloque si hace falta.
 9. Edita textos o titulos en el panel central solo si hace falta una correccion puntual.
-10. En bloques largos usa `Anadir salto de pagina` entre items para dividir ese bloque en paginas internas de render.
+10. En bloques largos usa la pestana `PDF` y los botones `+`/`-` para ajustar las lineas de la pagina visible.
 11. Revisa `Preview` para ver cartelas, paginas y divisiones internas de bloque.
-12. Si un bloque fuente debe funcionar solo como titulo de cartela, copia/usa ese texto en `Titulo cartela` y desactiva `Incluir en salida` en la cartela original.
+12. Si un bloque fuente debe funcionar solo como titulo de pagina o bloque, deja su contenido fuera de salida y escribe ese titulo en el campo correspondiente.
 13. En `Ajustes`, usa `Guardar` o `Guardar como` para conservar el `structure_json`.
 14. En `Preview`, usa `Guardar` o `Guardar como` para generar el `render_json`.
 
@@ -85,11 +85,11 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Genera estructura inicial automaticamente como `cartelas`.
 - Pestanas: `Ajustes`, `Estructura`, `JSON`, `Preview` y `PDF`.
 - Ajustes comunes: duracion por defecto, lineas antes de salto automatico, tipografia base e interlineado/gaps base.
-- Margen superior de pagina para la previsualizacion PDF/render.
+- Tamano de pagina en pixeles, color de fondo, margen superior/inferior y gap de bloques para la previsualizacion PDF/render.
 - Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente, estilo y color.
 - Carga fuentes del sistema en Chrome mediante permiso del usuario; el JSON guarda familia, estilo y PostScript name.
 - Permite juntar varios bloques fuente en una misma cartela.
-- Panel central tipo preview con campos editables.
+- Panel central tipo preview con campos editables; el ID tecnico del bloque queda separado del titulo visible de bloque.
 - Orientacion horizontal/vertical por cartela.
 - Orientacion vertical por defecto en cartelas tipo card, licencias, agradecimientos, logos/cierre y bloques sin cargos en columna B.
 - Numero de columnas por cartela.
@@ -97,14 +97,16 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Multiplicador de interlineado por cartela, por defecto 1.
 - Numero de columnas por bloque, por defecto 1, para distribuir los items o temas dentro de ese bloque.
 - Alineacion por bloque: cargo/nombre en bloques con pares, o texto unico en bloques simples.
+- Alineacion vertical por bloque para colocar el conjunto de bloques de la cartela arriba, centrado o abajo.
 - Si una estructura previa referencia bloques que no existen en el XLSX actual, la cartela queda excluida por defecto.
 - Un bloque de diseno solo puede pertenecer a una cartela; al anadirlo a otra se mueve.
-- Saltos de pagina internos por bloque/material, guardados en `structure_json`.
-- En `Preview`, se pueden editar textos visibles, titulo de cartela, cabecera de pagina y titulo de bloque por pagina interna.
+- Ajustes de lineas por pagina interna, guardados en `structure_json`.
+- En `Preview`, se pueden editar textos visibles, cabecera de pagina y titulo visible de bloque por pagina interna.
 - En `Preview`, los bloques repiten su titulo en cada pagina interna; ese titulo puede borrarse o cambiarse de forma independiente.
 - En `Preview`, los cargos repetidos por varias personas se muestran una vez por pagina interna; cada nombre sigue contando como linea independiente.
 - En `Preview`, cargos y nombres no hacen wrap: el texto que no entra en su columna queda recortado.
-- En `PDF`, previsualiza paginas fisicas 16:9 sin titulo tecnico de pagina ni titulo de cartela; los titulos de bloque vacios no reservan espacio.
+- En `PDF`, previsualiza una pagina fisica cada vez, con navegador, titulo de pagina editable y botones `+`/`-` para ajustar las lineas de esa pagina sin cambiar el valor global.
+- Los titulos de pagina son vacios por defecto y no reservan espacio si no tienen texto.
 - Los cargos con varios nombres se dividen en lineas independientes para preview, render y saltos de pagina.
 - Divide `RODILLO FINAL` en bloques de diseno por secciones.
 - Agrupa `Licencias Musicales` en temas separados por saltos de fila, tanto en preview como en `render_json`.
