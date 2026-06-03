@@ -102,7 +102,7 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Un bloque de diseno solo puede pertenecer a una cartela; al anadirlo a otra se mueve.
 - Ajustes de lineas por pagina interna, guardados en `structure_json`.
 - En `PNG`, previsualiza una pagina fisica cada vez, con navegador lateral, titulo de pagina editable y botones `+`/`-` para ajustar las lineas de esa pagina sin cambiar el valor global.
-- En `PNG`, muestra `lineas globales/lineas pagina`, permite definir nombre base y exportar la pagina actual o todas como secuencia `nombre_base_###.png`.
+- En `PNG`, muestra `lineas globales/lineas pagina`, permite definir nombre base y exportar la pagina actual o escribir todas en una carpeta como secuencia `nombre_base_###.png`.
 - Los PNG exportados tienen fondo transparente; el color de fondo se usa solo para visualizar.
 - Los titulos de pagina son vacios por defecto y no reservan espacio si no tienen texto.
 - Los cargos con varios nombres se dividen en lineas independientes para render, PNG y saltos de pagina.

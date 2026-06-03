@@ -2020,65 +2020,213 @@
     const settings = normalizeSettings(state.structure.settings || {});
     const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
     try {
-      const cssText = await getExportCss();
+      if (mode === 'all' && window.showDirectoryPicker) {
+        const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
+        for (const item of selectedPages.filter((candidate) => candidate.page)) {
+          const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
+          const blob = await renderPageToPngBlob(item.page, layout);
+          await writeBlobToDirectory(directory, fileName, blob);
+        }
+        return;
+      }
+
       for (const item of selectedPages.filter((candidate) => candidate.page)) {
         const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
-        const blob = await renderPageToPngBlob(item.page, layout, cssText);
-        downloadBlob(blob, fileName);
+        const blob = await renderPageToPngBlob(item.page, layout);
+        if (mode === 'current') {
+          await saveBlobAs(blob, fileName);
+        } else {
+          downloadBlob(blob, fileName);
+        }
         await wait(120);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       window.alert('No se pudo exportar PNG: ' + error.message);
     }
   }
 
-  async function getExportCss() {
-    const response = await fetch('./styles.css');
-    if (!response.ok) throw new Error('No se pudo cargar styles.css');
-    return response.text();
+  function renderPageToPngBlob(page, layout) {
+    const canvas = document.createElement('canvas');
+    canvas.width = layout.page_width;
+    canvas.height = layout.page_height;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawCanvasPage(ctx, page, layout);
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('No se pudo crear el PNG.'));
+      }, 'image/png');
+    });
   }
 
-  function renderPageToPngBlob(page, layout, cssText) {
-    const sheet = makePdfSheetElement(page, layout, { transparent: true });
-    sheet.style.border = '0';
-    sheet.style.boxShadow = 'none';
-    const html = `
-      <style>${cssText}</style>
-      <style>
-        * { box-sizing: border-box; }
-        .pdf-sheet { border: 0 !important; box-shadow: none !important; background: transparent !important; }
-      </style>
-      ${sheet.outerHTML}
-    `;
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="${layout.page_width}" height="${layout.page_height}">
-        <foreignObject width="100%" height="100%">
-          <div xmlns="http://www.w3.org/1999/xhtml">${html}</div>
-        </foreignObject>
-      </svg>
-    `;
-    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
-    return new Promise((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = layout.page_width;
-        canvas.height = layout.page_height;
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(image, 0, 0);
-        URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error('No se pudo crear el PNG.'));
-        }, 'image/png');
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('No se pudo rasterizar la pagina.'));
-      };
-      image.src = url;
+  function drawCanvasPage(ctx, page, layout) {
+    const x = 68;
+    const y = layout.page_top_margin;
+    const width = layout.page_width - (x * 2);
+    const height = layout.page_height - layout.page_top_margin - layout.page_bottom_margin;
+    const blocks = page.blocks.filter((block) => !block.missing_source);
+    const heights = blocks.map((block) => measureCanvasBlock(ctx, block, page.cartela, layout, width));
+    const titleText = String(resolveOverride(state.structure.overrides || {}, page.id, 'title', '') || '').trim();
+    const titleMetrics = titleText ? canvasTextMetrics('page_header', page.cartela, layout) : null;
+    const titleHeight = titleMetrics ? titleMetrics.lineHeight : 0;
+    const totalBlocksHeight = heights.reduce((total, value) => total + value, 0);
+    const gaps = Math.max(0, blocks.length - 1) * layout.block_gap;
+    const totalHeight = titleHeight + (titleHeight && blocks.length ? layout.block_gap : 0) + totalBlocksHeight + gaps;
+    let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page));
+
+    if (titleText && titleMetrics) {
+      drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center');
+      cursorY += titleMetrics.lineHeight + (blocks.length ? layout.block_gap : 0);
+    }
+
+    blocks.forEach((block, index) => {
+      drawCanvasBlock(ctx, block, page.cartela, layout, x, cursorY, width);
+      cursorY += heights[index] + layout.block_gap;
     });
+  }
+
+  function verticalOffset(availableHeight, contentHeight, justify) {
+    if (justify === 'center') return Math.max(0, (availableHeight - contentHeight) / 2);
+    if (justify === 'flex-end') return Math.max(0, availableHeight - contentHeight);
+    return 0;
+  }
+
+  function measureCanvasBlock(ctx, block, cartela, layout, width) {
+    let height = 0;
+    const title = String(block.title || '').trim();
+    if (title) {
+      height += canvasTextMetrics('block_title', cartela, layout).lineHeight + 8;
+    }
+    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+    const columns = Math.max(1, Number(block.columns) || 1);
+    const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
+    const rowHeights = [];
+    units.forEach((unit, index) => {
+      const row = Math.floor(index / columns);
+      const unitHeight = measureCanvasUnit(unit, block, cartela, layout, columnWidth);
+      rowHeights[row] = Math.max(rowHeights[row] || 0, unitHeight);
+    });
+    height += rowHeights.reduce((total, value) => total + value, 0);
+    height += Math.max(0, rowHeights.length - 1) * layout.block_gap;
+    return height;
+  }
+
+  function drawCanvasBlock(ctx, block, cartela, layout, x, y, width) {
+    let cursorY = y;
+    const title = String(block.title || '').trim();
+    if (title) {
+      const metrics = canvasTextMetrics('block_title', cartela, layout);
+      drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
+      cursorY += metrics.lineHeight + 8;
+    }
+    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+    const columns = Math.max(1, Number(block.columns) || 1);
+    const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
+    const rowHeights = [];
+    units.forEach((unit, index) => {
+      const row = Math.floor(index / columns);
+      rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, cartela, layout, columnWidth));
+    });
+    let previousCreditSourceId = null;
+    units.forEach((unit, index) => {
+      const row = Math.floor(index / columns);
+      const col = index % columns;
+      const unitX = x + col * (columnWidth + layout.column_gap);
+      const unitY = cursorY + rowHeights.slice(0, row).reduce((total, value) => total + value, 0) + row * layout.block_gap;
+      const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
+      drawCanvasUnit(ctx, unit, block, cartela, layout, unitX, unitY, columnWidth, {
+        hideRole: isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId,
+      });
+      previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
+    });
+  }
+
+  function measureCanvasUnit(unit, block, cartela, layout, width) {
+    if (block.type === 'music_licenses' && unit.lines) {
+      return (unit.lines || []).reduce((total, line, index) => {
+        return total + canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout).lineHeight;
+      }, 0);
+    }
+    if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
+      const orientation = cartela.orientation || 'horizontal';
+      const roleHeight = canvasTextMetrics('role', cartela, layout).lineHeight;
+      const nameHeight = canvasTextMetrics('name', cartela, layout).lineHeight;
+      return orientation === 'vertical' ? roleHeight + layout.block_gap + nameHeight : Math.max(roleHeight, nameHeight);
+    }
+    return canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout).lineHeight;
+  }
+
+  function drawCanvasUnit(ctx, unit, block, cartela, layout, x, y, width, options = {}) {
+    const orientation = cartela.orientation || 'horizontal';
+    const alignment = block.alignment || {};
+    if (block.type === 'music_licenses' && unit.lines) {
+      let cursorY = y;
+      (unit.lines || []).forEach((line, index) => {
+        const metrics = canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout);
+        drawCanvasText(ctx, line.value || '', x, cursorY, width, metrics, alignment.text || 'center');
+        cursorY += metrics.lineHeight;
+      });
+      return;
+    }
+    if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
+      drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation);
+      return;
+    }
+    if (unit.kind === 'cast') {
+      drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation);
+      return;
+    }
+    const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout);
+    drawCanvasText(ctx, unit.title || unit.value || '', x, y, width, metrics, alignment.text || (orientation === 'vertical' ? 'center' : 'left'));
+  }
+
+  function drawCanvasPair(ctx, role, name, cartela, layout, x, y, width, alignment, orientation) {
+    const roleMetrics = canvasTextMetrics('role', cartela, layout);
+    const nameMetrics = canvasTextMetrics('name', cartela, layout);
+    if (orientation === 'vertical') {
+      drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center');
+      drawCanvasText(ctx, name, x, y + roleMetrics.lineHeight + layout.block_gap, width, nameMetrics, alignment.name || 'center');
+      return;
+    }
+    const halfWidth = (width - layout.role_name_gap) / 2;
+    drawCanvasText(ctx, role, x, y, halfWidth, roleMetrics, alignment.role || 'right');
+    drawCanvasText(ctx, name, x + halfWidth + layout.role_name_gap, y, halfWidth, nameMetrics, alignment.name || 'left');
+  }
+
+  function canvasTextMetrics(styleKey, cartela, layout) {
+    const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
+    const typography = settings.typography[styleKey];
+    const fontSize = Math.max(1, Number(typography.font_size) || 1) * (Number(cartela.font_size_multiplier) || 1);
+    return {
+      color: typography.color,
+      font: `${fontStyleFromStyle(typography.font_style)} ${fontWeightFromStyle(typography.font_style)} ${fontSize}px ${quoteFontFamily(typography.font_family)}`,
+      fontSize,
+      lineHeight: fontSize * settings.layout.line_spacing * (Number(cartela.line_spacing_multiplier) || 1),
+    };
+  }
+
+  function drawCanvasText(ctx, text, x, y, width, metrics, align) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, width, metrics.lineHeight);
+    ctx.clip();
+    ctx.font = metrics.font;
+    ctx.fillStyle = metrics.color;
+    ctx.textBaseline = 'top';
+    ctx.textAlign = align;
+    const textX = align === 'center' ? x + width / 2 : align === 'right' ? x + width : x;
+    ctx.fillText(String(text || ''), textX, y);
+    ctx.restore();
+  }
+
+  function fontStyleFromStyle(style) {
+    return /italic|oblique/i.test(style || '') ? 'italic' : 'normal';
+  }
+
+  function quoteFontFamily(family) {
+    return `"${String(family || 'Arial').replace(/"/g, '\\"')}"`;
   }
 
   function downloadBlob(blob, fileName) {
@@ -2089,6 +2237,32 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(link.href);
+  }
+
+  async function saveBlobAs(blob, fileName) {
+    if (!window.showSaveFilePicker) {
+      downloadBlob(blob, fileName);
+      return;
+    }
+    const handle = await window.showSaveFilePicker({
+      suggestedName: fileName,
+      types: [
+        {
+          description: 'PNG',
+          accept: { 'image/png': ['.png'] },
+        },
+      ],
+    });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+  }
+
+  async function writeBlobToDirectory(directory, fileName, blob) {
+    const handle = await directory.getFileHandle(fileName, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
   }
 
   function wait(ms) {
