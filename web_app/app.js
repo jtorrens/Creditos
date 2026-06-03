@@ -1069,13 +1069,15 @@
 
   function updateFontStatus() {
     if (!els.fontStatus) return;
+    els.fontStatus.textContent = fontCatalogStatusText();
+  }
+
+  function fontCatalogStatusText() {
     if (state.fontCatalog) {
-      els.fontStatus.textContent = `${state.fontCatalog.families.length} familias cargadas`;
-    } else if (window.queryLocalFonts) {
-      els.fontStatus.textContent = 'Fuentes basicas cargadas; puedes cargar fuentes del sistema';
-    } else {
-      els.fontStatus.textContent = 'Fuentes basicas cargadas';
+      return `${state.fontCatalog.families.length} familias cargadas`;
     }
+    if (window.queryLocalFonts) return 'Fuentes basicas cargadas; puedes cargar fuentes del sistema';
+    return 'Fuentes basicas cargadas';
   }
 
   function updateTypographySetting(key, fields) {
@@ -1373,6 +1375,7 @@
     const wrap = document.createElement('div');
     wrap.className = 'block-typography-settings';
     wrap.appendChild(sectionLabel('Tipografia bloque'));
+    wrap.appendChild(renderBlockFontActions());
 
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
     const overrides = getSelectedBlockTypography(ref);
@@ -1467,6 +1470,23 @@
     resetButton.addEventListener('click', () => resetSelectedBlockTypography(ref));
     wrap.appendChild(resetButton);
     return wrap;
+  }
+
+  function renderBlockFontActions() {
+    const actions = document.createElement('div');
+    actions.className = 'block-font-actions';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = state.fontCatalog ? 'Recargar fuentes del sistema' : 'Cargar fuentes del sistema';
+    button.addEventListener('click', loadSystemFonts);
+    actions.appendChild(button);
+
+    const status = document.createElement('span');
+    status.textContent = fontCatalogStatusText();
+    actions.appendChild(status);
+
+    return actions;
   }
 
   function renderMusicThemesEditor(material) {

@@ -511,6 +511,19 @@ button:hover,
   padding-top: 10px;
 }
 
+.block-font-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.block-font-actions span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .block-typography-row {
   grid-template-columns: minmax(72px, 110px) 64px minmax(110px, 1fr) minmax(100px, 140px) 48px;
 }
