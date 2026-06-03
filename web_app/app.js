@@ -98,8 +98,8 @@
   els.pdfPlusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(1));
   els.pdfPageTitleInput.addEventListener('input', updateCurrentPdfPageTitle);
   els.pdfBaseNameInput.addEventListener('input', updatePdfBaseName);
-  els.exportCurrentPdfBtn.addEventListener('click', () => exportPdfPages('current'));
-  els.exportAllPdfBtn.addEventListener('click', () => exportPdfPages('all'));
+  els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
+  els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
 
   async function loadXlsxFile(event) {
     const file = event.target.files && event.target.files[0];
@@ -1838,12 +1838,13 @@
     els.pdfPreview.appendChild(sheetEl);
   }
 
-  function makePdfSheetElement(page, layout) {
+  function makePdfSheetElement(page, layout, options = {}) {
     const sheetEl = document.createElement('section');
     sheetEl.className = 'pdf-sheet';
     sheetEl.style.width = `${layout.page_width}px`;
     sheetEl.style.height = `${layout.page_height}px`;
-    sheetEl.style.background = layout.page_background;
+    sheetEl.style.background = options.transparent ? 'transparent' : layout.page_background;
+    if (options.transparent) sheetEl.classList.add('transparent-export');
 
     const pageInner = document.createElement('div');
     pageInner.className = 'pdf-page-inner';
@@ -2008,54 +2009,90 @@
     return titleEl;
   }
 
-  function exportPdfPages(mode) {
+  async function exportPngPages(mode) {
     if (!state.render || !state.structure) return;
     const layout = getRenderLayout();
     const pages = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {});
     if (!pages.length) return;
-    const selectedPages = mode === 'current' ? [pages[state.pdfPageIndex]] : pages;
+    const selectedPages = mode === 'current'
+      ? [{ page: pages[state.pdfPageIndex], pageNumber: state.pdfPageIndex + 1 }]
+      : pages.map((page, index) => ({ page, pageNumber: index + 1 }));
     const settings = normalizeSettings(state.structure.settings || {});
     const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
-    const title = mode === 'current'
-      ? `${baseName}_${String(state.pdfPageIndex + 1).padStart(3, '0')}`
-      : `${baseName}_all`;
-    const win = window.open('', '_blank');
-    if (!win) {
-      window.alert('Chrome ha bloqueado la ventana de exportacion.');
-      return;
+    try {
+      const cssText = await getExportCss();
+      for (const item of selectedPages.filter((candidate) => candidate.page)) {
+        const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
+        const blob = await renderPageToPngBlob(item.page, layout, cssText);
+        downloadBlob(blob, fileName);
+        await wait(120);
+      }
+    } catch (error) {
+      window.alert('No se pudo exportar PNG: ' + error.message);
     }
-    const sheetsHtml = selectedPages
-      .filter(Boolean)
-      .map((page) => makePdfSheetElement(page, layout).outerHTML)
-      .join('');
-    win.document.write(makePrintablePdfHtml(title, sheetsHtml, layout));
-    win.document.close();
-    win.focus();
-    win.setTimeout(() => win.print(), 100);
   }
 
-  function makePrintablePdfHtml(title, sheetsHtml, layout) {
-    const cssHref = new URL('./styles.css', window.location.href).href;
-    return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <title>${escapeHtml(title)}</title>
-    <link rel="stylesheet" href="${cssHref}">
-    <style>
-      @page { size: ${layout.page_width}px ${layout.page_height}px; margin: 0; }
-      html, body { background: ${layout.page_background}; margin: 0; padding: 0; }
-      body { display: block; }
-      .pdf-sheet {
-        border: 0 !important;
-        box-shadow: none !important;
-        page-break-after: always;
-      }
-      .pdf-sheet:last-child { page-break-after: auto; }
-    </style>
-  </head>
-  <body>${sheetsHtml}</body>
-</html>`;
+  async function getExportCss() {
+    const response = await fetch('./styles.css');
+    if (!response.ok) throw new Error('No se pudo cargar styles.css');
+    return response.text();
+  }
+
+  function renderPageToPngBlob(page, layout, cssText) {
+    const sheet = makePdfSheetElement(page, layout, { transparent: true });
+    sheet.style.border = '0';
+    sheet.style.boxShadow = 'none';
+    const html = `
+      <style>${cssText}</style>
+      <style>
+        * { box-sizing: border-box; }
+        .pdf-sheet { border: 0 !important; box-shadow: none !important; background: transparent !important; }
+      </style>
+      ${sheet.outerHTML}
+    `;
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${layout.page_width}" height="${layout.page_height}">
+        <foreignObject width="100%" height="100%">
+          <div xmlns="http://www.w3.org/1999/xhtml">${html}</div>
+        </foreignObject>
+      </svg>
+    `;
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = layout.page_width;
+        canvas.height = layout.page_height;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(image, 0, 0);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('No se pudo crear el PNG.'));
+        }, 'image/png');
+      };
+      image.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('No se pudo rasterizar la pagina.'));
+      };
+      image.src = url;
+    });
+  }
+
+  function downloadBlob(blob, fileName) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
   function renderPdfBlock(block, cartela, layout) {

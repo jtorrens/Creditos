@@ -65,8 +65,8 @@ Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la ap
    - `Vertical`: cargo arriba, nombre abajo.
 8. Ajusta `Columnas`, alineaciones y titulo visible de bloque si hace falta.
 9. Edita textos o titulos en el panel central solo si hace falta una correccion puntual.
-10. En bloques largos usa la pestana `PDF` y los botones `+`/`-` para ajustar las lineas de la pagina visible.
-11. Revisa `PDF` para ver cartelas, paginas y divisiones internas de bloque.
+10. En bloques largos usa la pestana `PNG` y los botones `+`/`-` para ajustar las lineas de la pagina visible.
+11. Revisa `PNG` para ver cartelas, paginas y divisiones internas de bloque.
 12. Si un bloque fuente debe funcionar solo como titulo de pagina o bloque, deja su contenido fuera de salida y escribe ese titulo en el campo correspondiente.
 13. En `Ajustes`, usa `Guardar` o `Guardar como` para conservar el `structure_json`.
 14. En `JSON`, usa `Guardar render` o `Guardar render como` para generar el `render_json`.
@@ -83,9 +83,9 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 
 - Carga `.xlsx` y lo parsea a `source_json` en memoria.
 - Genera estructura inicial automaticamente como `cartelas`.
-- Pestanas: `Ajustes`, `Estructura`, `JSON` y `PDF`.
+- Pestanas: `Ajustes`, `Estructura`, `JSON` y `PNG`.
 - Ajustes comunes: duracion por defecto, lineas antes de salto automatico, tipografia base e interlineado/gaps base.
-- Tamano de pagina en pixeles, color de fondo, margen superior/inferior y gap de bloques para la previsualizacion PDF/render.
+- Tamano de pagina en pixeles, color de fondo de visualizacion, margen superior/inferior y gap de bloques para la previsualizacion/render.
 - Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente, estilo y color.
 - Carga fuentes del sistema en Chrome mediante permiso del usuario; el JSON guarda familia, estilo y PostScript name.
 - Permite juntar varios bloques fuente en una misma cartela.
@@ -101,10 +101,11 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Si una estructura previa referencia bloques que no existen en el XLSX actual, la cartela queda excluida por defecto.
 - Un bloque de diseno solo puede pertenecer a una cartela; al anadirlo a otra se mueve.
 - Ajustes de lineas por pagina interna, guardados en `structure_json`.
-- En `PDF`, previsualiza una pagina fisica cada vez, con navegador, titulo de pagina editable y botones `+`/`-` para ajustar las lineas de esa pagina sin cambiar el valor global.
-- En `PDF`, muestra `lineas globales/lineas pagina`, permite definir nombre base de PDF y exportar la pagina actual o todas.
+- En `PNG`, previsualiza una pagina fisica cada vez, con navegador lateral, titulo de pagina editable y botones `+`/`-` para ajustar las lineas de esa pagina sin cambiar el valor global.
+- En `PNG`, muestra `lineas globales/lineas pagina`, permite definir nombre base y exportar la pagina actual o todas como secuencia `nombre_base_###.png`.
+- Los PNG exportados tienen fondo transparente; el color de fondo se usa solo para visualizar.
 - Los titulos de pagina son vacios por defecto y no reservan espacio si no tienen texto.
-- Los cargos con varios nombres se dividen en lineas independientes para render, PDF y saltos de pagina.
+- Los cargos con varios nombres se dividen en lineas independientes para render, PNG y saltos de pagina.
 - Divide `RODILLO FINAL` en bloques de diseno por secciones.
 - Agrupa `Licencias Musicales` en temas separados por saltos de fila, tanto en preview como en `render_json`.
 - Permite excluir cartelas de la salida sin borrarlas de la estructura.

@@ -18,7 +18,7 @@
       <button class="active" type="button" data-tab="settings">Ajustes</button>
       <button type="button" data-tab="structure">Estructura</button>
       <button type="button" data-tab="json">JSON</button>
-      <button type="button" data-tab="pdf">PDF</button>
+      <button type="button" data-tab="pdf">PNG</button>
     </nav>
 
     <main>
@@ -97,27 +97,37 @@
       <section id="pdfPane" class="tab-pane">
         <div class="pdf-panel">
           <div class="panel-heading">
-            <h2>Preview PDF</h2>
-            <div class="pdf-toolbar">
-              <div class="pdf-nav">
-                <button id="pdfFirstPageBtn" type="button" title="Primera pagina" aria-label="Primera pagina">&#x23EE;</button>
-                <button id="pdfPrevPageBtn" type="button" title="Pagina anterior" aria-label="Pagina anterior">&#x25C0;</button>
-                <input id="pdfPageNumberInput" class="text-input pdf-page-number" type="number" min="1" step="1" value="1" aria-label="Numero de pagina">
-                <span id="pdfTotalPages">/ 0</span>
-                <button id="pdfNextPageBtn" type="button" title="Pagina siguiente" aria-label="Pagina siguiente">&#x25B6;</button>
-                <button id="pdfLastPageBtn" type="button" title="Ultima pagina" aria-label="Ultima pagina">&#x23ED;</button>
-              </div>
-              <input id="pdfPageTitleInput" class="text-input pdf-toolbar-title" type="text" placeholder="Titulo pagina">
-              <input id="pdfBaseNameInput" class="text-input pdf-base-name" type="text" placeholder="Nombre base PDF">
-              <button id="exportCurrentPdfBtn" type="button">Exportar pagina</button>
-              <button id="exportAllPdfBtn" type="button">Exportar todas</button>
-              <button id="pdfMinusLinesBtn" type="button">-</button>
-              <span id="pdfLineStatus">0/0</span>
-              <button id="pdfPlusLinesBtn" type="button">+</button>
-            </div>
+            <h2>Preview paginas</h2>
           </div>
-          <div id="pdfPreview" class="pdf-preview empty-state">
-            Carga un XLSX para ver las paginas.
+          <div class="pdf-workspace">
+            <aside class="pdf-sidepanels">
+              <div class="pdf-control-panel">
+                <div class="section-title">Pagina</div>
+                <div class="pdf-nav">
+                  <button id="pdfFirstPageBtn" type="button" title="Primera pagina" aria-label="Primera pagina">&#x23EE;</button>
+                  <button id="pdfPrevPageBtn" type="button" title="Pagina anterior" aria-label="Pagina anterior">&#x25C0;</button>
+                  <input id="pdfPageNumberInput" class="text-input pdf-page-number" type="number" min="1" step="1" value="1" aria-label="Numero de pagina">
+                  <span id="pdfTotalPages">/ 0</span>
+                  <button id="pdfNextPageBtn" type="button" title="Pagina siguiente" aria-label="Pagina siguiente">&#x25B6;</button>
+                  <button id="pdfLastPageBtn" type="button" title="Ultima pagina" aria-label="Ultima pagina">&#x23ED;</button>
+                </div>
+                <input id="pdfPageTitleInput" class="text-input" type="text" placeholder="Titulo pagina">
+                <div class="pdf-lines-control">
+                  <button id="pdfMinusLinesBtn" type="button">-</button>
+                  <span id="pdfLineStatus">0/0</span>
+                  <button id="pdfPlusLinesBtn" type="button">+</button>
+                </div>
+              </div>
+              <div class="pdf-control-panel">
+                <div class="section-title">Exportar PNG</div>
+                <input id="pdfBaseNameInput" class="text-input" type="text" placeholder="Nombre base PNG">
+                <button id="exportCurrentPdfBtn" type="button">Exportar pagina</button>
+                <button id="exportAllPdfBtn" type="button">Exportar todas</button>
+              </div>
+            </aside>
+            <div id="pdfPreview" class="pdf-preview empty-state">
+              Carga un XLSX para ver las paginas.
+            </div>
           </div>
         </div>
       </section>
