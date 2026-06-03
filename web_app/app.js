@@ -408,6 +408,7 @@
       }
     });
     enforceUniqueMaterialRefs({ cartelas });
+    addMissingMaterialsToStructure(cartelas, materials, settings);
     const cleanCartelas = removeDefaultEmptyCartelas(cartelas, materials);
 
     return {
@@ -443,6 +444,21 @@
       if (!refs.length) return true;
       const hasContent = refs.some((ref) => materialHasRenderableContent(materialById.get(ref)));
       return hasContent || cartela.enabled !== false;
+    });
+  }
+
+  function addMissingMaterialsToStructure(cartelas, materials, settings) {
+    const existingRefs = new Set();
+    (cartelas || []).forEach((cartela) => {
+      getCartelaRefs(cartela).forEach((ref) => existingRefs.add(ref));
+    });
+
+    (materials || []).forEach((material) => {
+      if (existingRefs.has(material.id) || !materialHasRenderableContent(material)) return;
+      const cartela = defaultCartelaForMaterial(material, cartelas.length, settings);
+      cartela.pages = (cartela.pages || []).map((page) => normalizeCartelaPage(page));
+      cartelas.push(cartela);
+      existingRefs.add(material.id);
     });
   }
 
@@ -1016,6 +1032,9 @@
         ),
       };
       renderSettings();
+      renderEditor();
+      renderPreview();
+      refreshPdfIfActive();
     } catch (error) {
       if (error.name !== 'AbortError') {
         window.alert('No se pudieron cargar las fuentes del sistema: ' + error.message);
