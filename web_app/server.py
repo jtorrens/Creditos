@@ -248,18 +248,28 @@ def parse_rows(rows, source_name, sheet_name):
     return result
 
 
+def section_item(row, title, source_column, source_bold=False):
+    return {
+        "kind": "section",
+        "row": row,
+        "title": title,
+        "source_column": source_column,
+        "source_bold": bool(source_bold),
+    }
+
+
 def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew_item):
     if entry["merged_b_to_d"] and b:
         if b in {"#VALUE!", "VOLSKWAGEN"}:
             if active_section != "Logos":
                 active_section = "Logos"
                 current_crew_item = None
-                block["items"].append({"kind": "section", "row": row, "title": active_section})
+                block["items"].append(section_item(row, active_section, "B:D", entry["bold"].get("B")))
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
         elif active_section == "AGRADECIMIENTOS" and entry["bold"].get("B"):
             active_section = b
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": b})
+            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
         elif active_section == "AGRADECIMIENTOS":
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
         elif active_section == "Licencias Musicales":
@@ -267,7 +277,7 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
         elif active_section not in {None, "Logos", "closing_copy"} and entry["bold"].get("B") and b != active_section:
             active_section = b
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": b})
+            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
         elif active_section == "Vestuario" and gap > 1:
             active_section = "closing_copy"
             current_crew_item = None
@@ -279,18 +289,18 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
         else:
             active_section = b
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": b})
+            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
     elif c and not b and not d:
         if c == "Empresas de Servicios":
             active_section = c
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": c})
+            block["items"].append(section_item(row, c, "C", entry["bold"].get("C")))
         elif active_section in {"Doblaje de Figuracion", "Doblaje de Figuración"}:
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": c})
         else:
             active_section = c
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": c})
+            block["items"].append(section_item(row, c, "C", entry["bold"].get("C")))
     elif b and d:
         current_crew_item = {
             "kind": "crew_credit",
@@ -306,7 +316,7 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
         if b == "Licencias Musicales":
             active_section = b
             current_crew_item = None
-            block["items"].append({"kind": "section", "row": row, "title": b})
+            block["items"].append(section_item(row, b, "B", entry["bold"].get("B")))
         else:
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
     elif c or d:

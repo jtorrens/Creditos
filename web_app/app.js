@@ -249,8 +249,9 @@
   function splitCrewBlockIntoMaterials(block) {
     const materials = [];
     let current = null;
+    const items = normalizeCrewItemsForMaterials(block.items || []);
 
-    (block.items || []).forEach((item) => {
+    items.forEach((item) => {
       if (item.kind === 'section') {
         current = {
           id: `${block.id}_section_${item.row}_${safeFilePart(item.title || 'section')}`,
@@ -285,6 +286,52 @@
     });
 
     return materials;
+  }
+
+  function normalizeCrewItemsForMaterials(items) {
+    let inMusicLicenses = false;
+    return (items || []).map((item) => {
+      if (item.kind === 'section' && normalizeText(item.title) === normalizeText('Licencias Musicales')) {
+        inMusicLicenses = true;
+        return item;
+      }
+
+      if (inMusicLicenses && item.kind === 'section') {
+        if (isSectionAfterMusicLicenses(item)) {
+          inMusicLicenses = false;
+          return item;
+        }
+        return {
+          ...item,
+          kind: 'list_item',
+          section: 'Licencias Musicales',
+          value: item.title || '',
+        };
+      }
+
+      if (inMusicLicenses && item.kind === 'list_item') {
+        return {
+          ...item,
+          section: 'Licencias Musicales',
+        };
+      }
+
+      return item;
+    });
+  }
+
+  function isSectionAfterMusicLicenses(item) {
+    if (item.source_column === 'C' && item.source_bold) return true;
+    const title = normalizeText(item.title);
+    return [
+      'doblaje de figuracion',
+      'doblaje de figuración',
+      'empresas de servicios',
+      'logos',
+      'agradecimientos',
+      'vestuario',
+      'closing_copy',
+    ].includes(title);
   }
 
   function crewMaterialType(title) {
