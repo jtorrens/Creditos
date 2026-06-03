@@ -879,7 +879,7 @@ button:hover,
 
 .pdf-block-title {
   font-weight: 700;
-  margin-bottom: 8px;
+  margin-bottom: var(--block-gap, 8px);
   text-align: center;
 }
 

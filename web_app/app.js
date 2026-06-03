@@ -2169,10 +2169,11 @@
   function measureCanvasBlock(ctx, block, cartela, layout, width) {
     let height = 0;
     const title = String(block.title || '').trim();
-    if (title) {
-      height += canvasTextMetrics('block_title', cartela, layout).lineHeight + 8;
-    }
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+    if (title) {
+      height += canvasTextMetrics('block_title', cartela, layout).lineHeight;
+      if (units.length) height += layout.block_gap;
+    }
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
     const rowHeights = [];
@@ -2189,12 +2190,12 @@
   function drawCanvasBlock(ctx, block, cartela, layout, x, y, width) {
     let cursorY = y;
     const title = String(block.title || '').trim();
+    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     if (title) {
       const metrics = canvasTextMetrics('block_title', cartela, layout);
       drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
-      cursorY += metrics.lineHeight + 8;
+      cursorY += metrics.lineHeight + (units.length ? layout.block_gap : 0);
     }
-    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
     const rowHeights = [];
@@ -2345,6 +2346,7 @@
   function renderPdfBlock(block, cartela, layout) {
     const blockEl = document.createElement('div');
     blockEl.className = 'pdf-block';
+    blockEl.style.setProperty('--block-gap', `${layout.block_gap}px`);
     if (block.missing_source) {
       blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
       return blockEl;
