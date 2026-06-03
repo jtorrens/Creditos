@@ -50,6 +50,9 @@
     pdfPageTitleInput: document.getElementById('pdfPageTitleInput'),
     pdfBaseNameInput: document.getElementById('pdfBaseNameInput'),
     pdfLineStatus: document.getElementById('pdfLineStatus'),
+    pdfFontMultiplierInput: document.getElementById('pdfFontMultiplierInput'),
+    pdfLineMultiplierInput: document.getElementById('pdfLineMultiplierInput'),
+    pdfVerticalOffsetInput: document.getElementById('pdfVerticalOffsetInput'),
     pngZoomOutBtn: document.getElementById('pngZoomOutBtn'),
     pngZoomInBtn: document.getElementById('pngZoomInBtn'),
     pngZoomStatus: document.getElementById('pngZoomStatus'),
@@ -103,6 +106,9 @@
   els.pdfPlusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(1));
   els.pdfPageTitleInput.addEventListener('input', updateCurrentPdfPageTitle);
   els.pdfBaseNameInput.addEventListener('input', updatePdfBaseName);
+  els.pdfFontMultiplierInput.addEventListener('change', () => updateCurrentPdfCartela({ font_size_multiplier: Math.max(0.1, Number(els.pdfFontMultiplierInput.value) || 1) }));
+  els.pdfLineMultiplierInput.addEventListener('change', () => updateCurrentPdfCartela({ line_spacing_multiplier: Math.max(0.1, Number(els.pdfLineMultiplierInput.value) || 1) }));
+  els.pdfVerticalOffsetInput.addEventListener('change', () => updateCurrentPdfCartela({ vertical_offset: Number(els.pdfVerticalOffsetInput.value) || 0 }));
   els.pngZoomOutBtn.addEventListener('click', () => updatePngPreviewZoom(-0.1));
   els.pngZoomInBtn.addEventListener('click', () => updatePngPreviewZoom(0.1));
   els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
@@ -2395,6 +2401,12 @@
     els.pdfPlusLinesBtn.disabled = total === 0;
     els.pdfPageTitleInput.disabled = !page;
     els.pdfPageTitleInput.value = page ? resolveOverride(state.structure.overrides || {}, page.id, 'title', '') : '';
+    els.pdfFontMultiplierInput.disabled = !page;
+    els.pdfLineMultiplierInput.disabled = !page;
+    els.pdfVerticalOffsetInput.disabled = !page;
+    els.pdfFontMultiplierInput.value = page ? String(Number(page.cartela.font_size_multiplier) || 1) : '';
+    els.pdfLineMultiplierInput.value = page ? String(Number(page.cartela.line_spacing_multiplier) || 1) : '';
+    els.pdfVerticalOffsetInput.value = page ? String(Number(page.cartela.vertical_offset) || 0) : '';
     els.pdfBaseNameInput.disabled = !state.structure;
     els.pdfBaseNameInput.value = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {}).pdf_base_name;
     els.exportCurrentPdfBtn.disabled = !page;
@@ -2463,6 +2475,20 @@
   function updatePngZoomStatus() {
     if (!els.pngZoomStatus) return;
     els.pngZoomStatus.textContent = `${Math.round(state.pngPreviewZoom * 100)}%`;
+  }
+
+  function updateCurrentPdfCartela(fields) {
+    if (!state.render || !state.structure) return;
+    const page = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {})[state.pdfPageIndex];
+    if (!page || !page.cartela) return;
+    const cartela = (state.structure.cartelas || []).find((candidate) => candidate.id === page.cartela.id);
+    if (!cartela) return;
+    Object.assign(cartela, fields);
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderCartelaList();
+    renderEditor();
+    renderPreview();
+    renderPdfPreview();
   }
 
   function pdfPageVerticalJustify(page) {

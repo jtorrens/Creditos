@@ -155,6 +155,17 @@ button:hover,
   text-align: center;
 }
 
+.pdf-cartela-controls {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.pdf-cartela-controls label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .pdf-workspace {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
