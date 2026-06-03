@@ -505,6 +505,16 @@ button:hover,
   font-size: 12px;
 }
 
+.block-typography-settings {
+  border-top: 1px solid var(--line);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.block-typography-row {
+  grid-template-columns: minmax(72px, 110px) 64px minmax(110px, 1fr) minmax(100px, 140px) 48px;
+}
+
 .color-input {
   background: transparent;
   border: 1px solid var(--line);

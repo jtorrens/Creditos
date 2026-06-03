@@ -63,6 +63,7 @@
     ['role', 'Cargo'],
     ['name', 'Nombre'],
   ];
+  const BLOCK_TYPOGRAPHY_FIELDS = TYPOGRAPHY_FIELDS.filter(([key]) => key !== 'page_header');
 
   const FONT_OPTIONS = [
     'Arial',
@@ -594,6 +595,12 @@
       normalized.source_ref_settings[ref].columns = Math.max(1, Number(normalized.source_ref_settings[ref].columns) || 1);
       normalized.source_ref_settings[ref].alignment = normalized.source_ref_settings[ref].alignment || {};
       normalized.source_ref_settings[ref].vertical_align = normalizeVerticalAlign(normalized.source_ref_settings[ref].vertical_align);
+      const typography = normalizeTypographyOverrides(normalized.source_ref_settings[ref].typography);
+      if (Object.keys(typography).length) {
+        normalized.source_ref_settings[ref].typography = typography;
+      } else {
+        delete normalized.source_ref_settings[ref].typography;
+      }
     });
     return normalized;
   }
@@ -634,6 +641,7 @@
               block.columns = getSourceRefColumns(page, ref);
               block.alignment = getSourceRefAlignment(page, ref, material, cartela);
               block.vertical_align = getSourceRefVerticalAlign(page, ref);
+              block.typography = getSourceRefTypography(page, ref);
               return block;
             }),
           })),
@@ -1280,6 +1288,7 @@
       ['center', 'Centrado'],
       ['bottom', 'Abajo'],
     ], (value) => updateSelectedBlockVerticalAlign(ref, value)));
+    wrap.appendChild(renderBlockTypographyControls(ref));
     wrap.appendChild(inputRow('Titulo bloque', material.id, 'title', material.default_title || ''));
 
     if (material.type === 'music_licenses') {
@@ -1311,6 +1320,106 @@
 
     wrap.appendChild(localSelectRow('Alineacion cargo', alignment.role || 'right', options, (value) => updateSelectedBlockAlignment(ref, { role: value })));
     wrap.appendChild(localSelectRow('Alineacion nombre', alignment.name || 'left', options, (value) => updateSelectedBlockAlignment(ref, { name: value })));
+    return wrap;
+  }
+
+  function renderBlockTypographyControls(ref) {
+    const wrap = document.createElement('div');
+    wrap.className = 'block-typography-settings';
+    wrap.appendChild(sectionLabel('Tipografia bloque'));
+
+    const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
+    const overrides = getSelectedBlockTypography(ref);
+    const fontCatalog = getFontCatalog();
+
+    BLOCK_TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
+      const base = settings.typography[key];
+      const override = overrides[key] || {};
+      const value = { ...base, ...override };
+      const row = document.createElement('div');
+      row.className = 'typography-row block-typography-row';
+
+      const labelEl = document.createElement('label');
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const sizeInput = document.createElement('input');
+      sizeInput.className = 'text-input';
+      sizeInput.type = 'number';
+      sizeInput.min = '1';
+      sizeInput.step = '1';
+      sizeInput.value = String(value.font_size);
+      sizeInput.placeholder = String(base.font_size);
+      sizeInput.addEventListener('change', () => updateSelectedBlockTypography(ref, key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+      row.appendChild(sizeInput);
+
+      const fontSelect = document.createElement('select');
+      fontSelect.className = 'text-input';
+      fontCatalog.families.forEach((font) => {
+        const option = document.createElement('option');
+        option.value = font;
+        option.textContent = font;
+        fontSelect.appendChild(option);
+      });
+      if (!fontCatalog.families.includes(value.font_family)) {
+        const option = document.createElement('option');
+        option.value = value.font_family;
+        option.textContent = value.font_family;
+        fontSelect.appendChild(option);
+      }
+      fontSelect.value = value.font_family;
+      fontSelect.addEventListener('change', () => {
+        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+        updateSelectedBlockTypography(ref, key, {
+          font_family: fontSelect.value,
+          font_style: nextStyle.style,
+          font_postscript_name: nextStyle.postscript_name,
+        }, { rerenderEditor: true });
+      });
+      row.appendChild(fontSelect);
+
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'text-input';
+      const styles = getFontStyles(value.font_family);
+      styles.forEach((fontStyle) => {
+        const option = document.createElement('option');
+        option.value = fontStyle.style;
+        option.textContent = fontStyle.style;
+        option.dataset.postscriptName = fontStyle.postscript_name || '';
+        styleSelect.appendChild(option);
+      });
+      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
+        const option = document.createElement('option');
+        option.value = value.font_style;
+        option.textContent = value.font_style;
+        option.dataset.postscriptName = value.font_postscript_name || '';
+        styleSelect.appendChild(option);
+      }
+      styleSelect.value = value.font_style;
+      styleSelect.addEventListener('change', () => {
+        const selected = styleSelect.selectedOptions[0];
+        updateSelectedBlockTypography(ref, key, {
+          font_style: styleSelect.value,
+          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+        });
+      });
+      row.appendChild(styleSelect);
+
+      const colorInput = document.createElement('input');
+      colorInput.className = 'color-input';
+      colorInput.type = 'color';
+      colorInput.value = normalizeColor(value.color);
+      colorInput.addEventListener('input', () => updateSelectedBlockTypography(ref, key, { color: colorInput.value }));
+      row.appendChild(colorInput);
+
+      wrap.appendChild(row);
+    });
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.textContent = 'Restablecer tipografia bloque';
+    resetButton.addEventListener('click', () => resetSelectedBlockTypography(ref));
+    wrap.appendChild(resetButton);
     return wrap;
   }
 
@@ -1480,6 +1589,29 @@
     return normalizeVerticalAlign(settings.vertical_align);
   }
 
+  function getSourceRefTypography(page, ref) {
+    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
+      ? page.source_ref_settings[ref]
+      : {};
+    return normalizeTypographyOverrides(settings.typography);
+  }
+
+  function normalizeTypographyOverrides(typography) {
+    const normalized = {};
+    BLOCK_TYPOGRAPHY_FIELDS.forEach(([key]) => {
+      if (!typography || !typography[key]) return;
+      const value = typography[key];
+      const item = {};
+      if (value.font_size !== undefined && value.font_size !== '') item.font_size = Math.max(1, Number(value.font_size) || 1);
+      if (value.font_family) item.font_family = value.font_family;
+      if (value.font_style) item.font_style = value.font_style;
+      if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
+      if (value.color) item.color = normalizeColor(value.color);
+      if (Object.keys(item).length) normalized[key] = item;
+    });
+    return normalized;
+  }
+
   function normalizeBlockAlignment(alignment, material, cartela) {
     const defaults = defaultBlockAlignment(material, cartela);
     return {
@@ -1543,6 +1675,43 @@
     page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
     page.source_ref_settings[ref].vertical_align = normalizeVerticalAlign(value);
     state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderPreview();
+    refreshPdfIfActive();
+  }
+
+  function getSelectedBlockTypography(ref) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    return getSourceRefTypography(page, ref);
+  }
+
+  function updateSelectedBlockTypography(ref, key, fields, options = {}) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    if (!page) return;
+    page.source_ref_settings = page.source_ref_settings || {};
+    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
+    const typography = {
+      ...(page.source_ref_settings[ref].typography || {}),
+      [key]: {
+        ...(page.source_ref_settings[ref].typography && page.source_ref_settings[ref].typography[key] ? page.source_ref_settings[ref].typography[key] : {}),
+        ...fields,
+      },
+    };
+    page.source_ref_settings[ref].typography = normalizeTypographyOverrides(typography);
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    if (options.rerenderEditor) renderEditor();
+    renderPreview();
+    refreshPdfIfActive();
+  }
+
+  function resetSelectedBlockTypography(ref) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    if (!page || !page.source_ref_settings || !page.source_ref_settings[ref]) return;
+    delete page.source_ref_settings[ref].typography;
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderEditor();
     renderPreview();
     refreshPdfIfActive();
   }
@@ -1747,7 +1916,10 @@
 
   function applyTypography(element, key, options = {}) {
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
-    const typography = settings.typography[key];
+    const typography = {
+      ...settings.typography[key],
+      ...((options.typography && options.typography[key]) || {}),
+    };
     const scale = Number(options.multiplier) || 1;
     const lineScale = Number(options.lineMultiplier) || 1;
     element.style.fontFamily = typography.font_family;
@@ -2279,7 +2451,7 @@
     const title = String(block.title || '').trim();
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     if (title) {
-      height += canvasTextMetrics('block_title', cartela, layout).lineHeight;
+      height += canvasTextMetrics('block_title', cartela, layout, block.typography).lineHeight;
       if (units.length) height += layout.block_gap;
     }
     const columns = Math.max(1, Number(block.columns) || 1);
@@ -2300,7 +2472,7 @@
     const title = String(block.title || '').trim();
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     if (title) {
-      const metrics = canvasTextMetrics('block_title', cartela, layout);
+      const metrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
       drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
       cursorY += metrics.lineHeight + (units.length ? layout.block_gap : 0);
     }
@@ -2328,16 +2500,16 @@
   function measureCanvasUnit(unit, block, cartela, layout, width) {
     if (block.type === 'music_licenses' && unit.lines) {
       return (unit.lines || []).reduce((total, line, index) => {
-        return total + canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout).lineHeight;
+        return total + canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout, block.typography).lineHeight;
       }, 0);
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
       const orientation = cartela.orientation || 'horizontal';
-      const roleHeight = canvasTextMetrics('role', cartela, layout).lineHeight;
-      const nameHeight = canvasTextMetrics('name', cartela, layout).lineHeight;
+      const roleHeight = canvasTextMetrics('role', cartela, layout, block.typography).lineHeight;
+      const nameHeight = canvasTextMetrics('name', cartela, layout, block.typography).lineHeight;
       return orientation === 'vertical' ? roleHeight + layout.block_gap + nameHeight : Math.max(roleHeight, nameHeight);
     }
-    return canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout).lineHeight;
+    return canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, block.typography).lineHeight;
   }
 
   function drawCanvasUnit(ctx, unit, block, cartela, layout, x, y, width, options = {}) {
@@ -2346,27 +2518,27 @@
     if (block.type === 'music_licenses' && unit.lines) {
       let cursorY = y;
       (unit.lines || []).forEach((line, index) => {
-        const metrics = canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout);
+        const metrics = canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout, block.typography);
         drawCanvasText(ctx, line.value || '', x, cursorY, width, metrics, alignment.text || 'center');
         cursorY += metrics.lineHeight;
       });
       return;
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-      drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation);
+      drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation, block.typography);
       return;
     }
     if (unit.kind === 'cast') {
-      drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation);
+      drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation, block.typography);
       return;
     }
-    const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout);
+    const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, block.typography);
     drawCanvasText(ctx, unit.title || unit.value || '', x, y, width, metrics, alignment.text || (orientation === 'vertical' ? 'center' : 'left'));
   }
 
-  function drawCanvasPair(ctx, role, name, cartela, layout, x, y, width, alignment, orientation) {
-    const roleMetrics = canvasTextMetrics('role', cartela, layout);
-    const nameMetrics = canvasTextMetrics('name', cartela, layout);
+  function drawCanvasPair(ctx, role, name, cartela, layout, x, y, width, alignment, orientation, typography) {
+    const roleMetrics = canvasTextMetrics('role', cartela, layout, typography);
+    const nameMetrics = canvasTextMetrics('name', cartela, layout, typography);
     if (orientation === 'vertical') {
       drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center');
       drawCanvasText(ctx, name, x, y + roleMetrics.lineHeight + layout.block_gap, width, nameMetrics, alignment.name || 'center');
@@ -2377,9 +2549,12 @@
     drawCanvasText(ctx, name, x + halfWidth + layout.role_name_gap, y, halfWidth, nameMetrics, alignment.name || 'left');
   }
 
-  function canvasTextMetrics(styleKey, cartela, layout) {
+  function canvasTextMetrics(styleKey, cartela, layout, typographyOverrides = {}) {
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
-    const typography = settings.typography[styleKey];
+    const typography = {
+      ...settings.typography[styleKey],
+      ...((typographyOverrides && typographyOverrides[styleKey]) || {}),
+    };
     const fontSize = Math.max(1, Number(typography.font_size) || 1) * (Number(cartela.font_size_multiplier) || 1);
     return {
       color: typography.color,
@@ -2460,7 +2635,7 @@
       return blockEl;
     }
 
-    const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela);
+    const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela, block.typography);
     if (blockTitle) blockEl.appendChild(blockTitle);
 
     const contentEl = document.createElement('div');
@@ -2487,7 +2662,7 @@
     return blockEl;
   }
 
-  function makePdfOptionalTitle(value, className, styleKey, cartela) {
+  function makePdfOptionalTitle(value, className, styleKey, cartela, typography) {
     const text = String(value || '').trim();
     if (!text) return null;
     const title = document.createElement('div');
@@ -2496,6 +2671,7 @@
     applyTypography(title, styleKey, {
       multiplier: cartela.font_size_multiplier,
       lineMultiplier: cartela.line_spacing_multiplier,
+      typography,
     });
     return title;
   }
@@ -2511,6 +2687,7 @@
       applyTypography(lineEl, index === 0 ? 'block_title' : 'name', {
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
+        typography: block.typography,
       });
       themeEl.appendChild(lineEl);
     });
@@ -2533,11 +2710,13 @@
       unitEl.appendChild(makePdfText(options.hideRole ? '' : unit.role || '', 'role', {
         className: 'pdf-role',
         cartela,
+        typography: block.typography,
         textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
       }));
       unitEl.appendChild(makePdfText(unit.name || '', 'name', {
         className: 'pdf-name',
         cartela,
+        typography: block.typography,
         textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
@@ -2547,11 +2726,13 @@
       unitEl.appendChild(makePdfText(unit.actor || '', 'role', {
         className: 'pdf-role',
         cartela,
+        typography: block.typography,
         textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
       }));
       unitEl.appendChild(makePdfText(unit.character || '', 'name', {
         className: 'pdf-name',
         cartela,
+        typography: block.typography,
         textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
@@ -2560,6 +2741,7 @@
     return makePdfText(unit.title || unit.value || '', unit.title !== undefined ? 'block_title' : 'name', {
       className: 'pdf-line',
       cartela,
+      typography: block.typography,
       textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
     });
   }
@@ -2572,6 +2754,7 @@
     applyTypography(el, styleKey, {
       multiplier: options.cartela.font_size_multiplier,
       lineMultiplier: options.cartela.line_spacing_multiplier,
+      typography: options.typography,
     });
     return el;
   }
@@ -2591,6 +2774,7 @@
       const blockTitle = makeVisualStaticText(block.title, 'render-block-title-input', 'block_title', {
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
+        typography: block.typography,
         textAlign: 'center',
       });
       if (blockTitle) blockPageEl.appendChild(blockTitle);
@@ -2614,6 +2798,7 @@
               styleKey: lineIndex === 0 ? 'block_title' : 'name',
               multiplier: cartela.font_size_multiplier,
               lineMultiplier: cartela.line_spacing_multiplier,
+              typography: block.typography,
               textAlign: block.alignment && block.alignment.text ? block.alignment.text : 'center',
             }));
           });
@@ -2621,7 +2806,10 @@
         } else {
           const isCredit = unit.kind === 'credit' || unit.kind === 'crew_credit';
           const hideRepeatedRole = isCredit && unit.source_item_id && unit.source_item_id === previousCreditSourceId;
-          contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, { hideRole: hideRepeatedRole }));
+          contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, {
+            hideRole: hideRepeatedRole,
+            typography: block.typography,
+          }));
           previousCreditSourceId = isCredit ? unit.source_item_id || null : null;
         }
       });
@@ -2650,6 +2838,7 @@
           styleKey: 'role',
           multiplier: cartela.font_size_multiplier,
           lineMultiplier: cartela.line_spacing_multiplier,
+          typography: options.typography,
           textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
         }));
       }
@@ -2657,6 +2846,7 @@
         styleKey: 'name',
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
+        typography: options.typography,
         textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
@@ -2666,12 +2856,14 @@
         styleKey: 'role',
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
+        typography: options.typography,
         textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
       }));
       unitEl.appendChild(makeVisualInput(unit.id, 'character', unit.character || '', 'render-name-input', {
         styleKey: 'name',
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
+        typography: options.typography,
         textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
       }));
       return unitEl;
@@ -2681,6 +2873,7 @@
       styleKey: unit.title !== undefined ? 'block_title' : 'name',
       multiplier: cartela.font_size_multiplier,
       lineMultiplier: cartela.line_spacing_multiplier,
+      typography: options.typography,
       textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
     }));
     return unitEl;
