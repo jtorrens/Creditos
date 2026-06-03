@@ -380,6 +380,9 @@
     const cartelas = [];
     materials.forEach((material, index) => {
       const previousCartela = previousByRef.get(material.id);
+      if (!previousCartela && !materialHasRenderableContent(material)) {
+        return;
+      }
       if (previousCartela && usedPrevious.has(previousCartela.id)) {
         return;
       }
@@ -405,18 +408,42 @@
       }
     });
     enforceUniqueMaterialRefs({ cartelas });
+    const cleanCartelas = removeDefaultEmptyCartelas(cartelas, materials);
 
     return {
       schema: 'credits_structure_json',
       version: 10,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
-      cartelas,
+      cartelas: cleanCartelas,
       settings,
       overrides: previousOverrides,
       page_breaks: previousPageBreaks,
       page_line_adjustments: previous && previous.page_line_adjustments ? previous.page_line_adjustments : {},
     };
+  }
+
+  function materialHasRenderableContent(material) {
+    if (!material) return false;
+    if (material.type === 'music_licenses') return groupMusicLicenseThemes(getMaterialContentItems(material), {}).length > 0;
+    return getMaterialContentItems(material).some((item) => {
+      if (item.kind === 'section') return false;
+      if (item.kind === 'crew_credit' || item.kind === 'credit') return (item.names || []).length > 0 || item.role;
+      if (item.kind === 'cast') return item.actor || item.character;
+      if (item.kind === 'list_item' || item.kind === 'closing_line') return item.value;
+      if (item.kind === 'logo') return item.value || item.title;
+      return Object.keys(item || {}).some((key) => !['id', 'kind', 'row', 'section'].includes(key) && item[key]);
+    });
+  }
+
+  function removeDefaultEmptyCartelas(cartelas, materials) {
+    const materialById = new Map((materials || []).map((material) => [material.id, material]));
+    return (cartelas || []).filter((cartela) => {
+      const refs = getCartelaRefs(cartela);
+      if (!refs.length) return true;
+      const hasContent = refs.some((ref) => materialHasRenderableContent(materialById.get(ref)));
+      return hasContent || cartela.enabled !== false;
+    });
   }
 
   function hasMissingMaterialRefs(cartela, materialIds) {
@@ -637,7 +664,7 @@
             blocks: (page.source_refs || []).map((ref) => {
               const material = materialById.get(ref);
               const lineAdjustments = structure.page_line_adjustments || {};
-              const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, maxAutoLines, lineAdjustments);
+              const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, 0, lineAdjustments);
               block.columns = getSourceRefColumns(page, ref);
               block.alignment = getSourceRefAlignment(page, ref, material, cartela);
               block.vertical_align = getSourceRefVerticalAlign(page, ref);
@@ -706,7 +733,7 @@
       const pageIndex = pages.length;
       const lineAdjustment = Number(pageLineAdjustments[pageIndex]) || 0;
       const lineLimit = Math.max(1, maxAutoLines + lineAdjustment);
-      const shouldAutoBreak = lineLimit > 0 && currentLines >= lineLimit && index < units.length - 1;
+      const shouldAutoBreak = maxAutoLines > 0 && lineLimit > 0 && currentLines >= lineLimit && index < units.length - 1;
       if (breakSet.has(idForUnit(unit)) || shouldAutoBreak) {
         currentPage.end_index = index;
         currentPage.line_count = currentLines;
@@ -1988,7 +2015,14 @@
       els.jsonPreview.value = '';
       return;
     }
-    els.jsonPreview.value = JSON.stringify(state.preview === 'structure' ? state.structure : state.render, null, 2);
+    els.jsonPreview.value = JSON.stringify(state.preview === 'structure' ? getStructureJsonForOutput() : state.render, null, 2);
+  }
+
+  function getStructureJsonForOutput() {
+    if (!state.structure) return null;
+    const output = JSON.parse(JSON.stringify(state.structure));
+    output.cartelas = removeDefaultEmptyCartelas(output.cartelas || [], state.materials || []);
+    return output;
   }
 
   function renderVisualPreview() {
@@ -2170,30 +2204,35 @@
         const addUnitToPage = (block, unit, unitIndex) => {
           if (!currentPage) startPage();
           let physicalBlock = currentPage.blocks[currentPage.blocks.length - 1];
-          const startsBlockOnPage = !physicalBlock || physicalBlock.id !== block.id;
-          const blockTitleLines = startsBlockOnPage ? countTitleLine(block.title) : 0;
-          const unitLines = countRenderedUnitLines(unit, block, cartela);
-          const addedLines = blockTitleLines + unitLines;
+          const existingItems = physicalBlock && physicalBlock.id === block.id && physicalBlock.pages[0]
+            ? physicalBlock.pages[0].items
+            : [];
+          const existingBlockLines = physicalBlock && physicalBlock.id === block.id && physicalBlock.pages[0]
+            ? Number(physicalBlock.pages[0].line_count) || 0
+            : 0;
+          const candidateBlockLines = countBlockVisualLines(block, cartela, existingItems.concat(unit));
+          const addedLines = candidateBlockLines - existingBlockLines;
           if (pageHasBlocks() && currentPage.line_count + addedLines > currentPage.line_limit) {
             finishPage();
             startPage();
+            physicalBlock = null;
           }
 
           physicalBlock = ensureBlockOnPage(block);
           const page = physicalBlock.pages[0];
+          const previousBlockLines = Number(page.line_count) || 0;
           if (!page.items.length) {
             page.start_index = unitIndex;
-            const newBlockTitleLines = countTitleLine(block.title);
-            if (newBlockTitleLines) {
-              currentPage.line_count += newBlockTitleLines;
-              page.line_count += newBlockTitleLines;
-            }
           }
-          page.items.push(unit);
+          const forcePageBreakAfter = unit.__force_page_break_after;
+          const cleanUnit = { ...unit };
+          delete cleanUnit.__force_page_break_after;
+          page.items.push(cleanUnit);
           page.end_index = unitIndex;
-          page.break_after_id = unit.id || '';
-          page.line_count += unitLines;
-          currentPage.line_count += unitLines;
+          page.break_after_id = cleanUnit.id || '';
+          page.line_count = countBlockVisualLines(block, cartela, page.items);
+          currentPage.line_count += page.line_count - previousBlockLines;
+          if (forcePageBreakAfter) finishPage();
         };
 
         blocks.forEach((block) => {
@@ -2210,8 +2249,9 @@
             }
             const physicalBlock = ensureBlockOnPage(block);
             const page = physicalBlock.pages[0];
-            page.line_count += countTitleLine(block.title);
-            currentPage.line_count += countTitleLine(block.title);
+            const previousBlockLines = Number(page.line_count) || 0;
+            page.line_count = countTitleLine(block.title);
+            currentPage.line_count += page.line_count - previousBlockLines;
             return;
           }
           units.forEach((unit, unitIndex) => addUnitToPage(block, unit, unitIndex));
@@ -2229,8 +2269,28 @@
 
   function getRenderedBlockUnits(block) {
     if (!block) return [];
+    if (block.pages && block.pages.length) {
+      return block.pages.flatMap((page, pageIndex) => {
+        const items = page.items || [];
+        return items.map((item, itemIndex) => ({
+          ...item,
+          __force_page_break_after: pageIndex < block.pages.length - 1 && itemIndex === items.length - 1,
+        }));
+      });
+    }
     if (block.type === 'music_licenses') return block.themes || [];
     return block.items || [];
+  }
+
+  function countBlockVisualLines(block, cartela, units) {
+    const items = units || [];
+    const columns = Math.max(1, Number(block.columns) || 1);
+    const rowHeights = [];
+    items.forEach((unit, index) => {
+      const row = Math.floor(index / columns);
+      rowHeights[row] = Math.max(rowHeights[row] || 0, countRenderedUnitLines(unit, block, cartela));
+    });
+    return countTitleLine(block.title) + rowHeights.reduce((total, value) => total + value, 0);
   }
 
   function countRenderedUnitLines(unit, block, cartela) {
@@ -2880,7 +2940,7 @@
   }
 
   async function saveJsonFile(kind, forceSaveAs = false) {
-    const data = kind === 'structure_json' ? state.structure : state.render;
+    const data = kind === 'structure_json' ? getStructureJsonForOutput() : state.render;
     if (!data) {
       window.alert(kind === 'structure_json' ? 'Carga primero un XLSX o structure_json.' : 'Genera primero un render_json.');
       return;
@@ -2934,7 +2994,7 @@
   }
 
   function fallbackDownloadJson(kind) {
-    const data = kind === 'structure_json' ? state.structure : state.render;
+    const data = kind === 'structure_json' ? getStructureJsonForOutput() : state.render;
     const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
     const link = document.createElement('a');
