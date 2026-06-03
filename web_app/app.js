@@ -594,6 +594,7 @@
       columns: 1,
       font_size_multiplier: 1,
       line_spacing_multiplier: 1,
+      vertical_offset: 0,
       duration: Number(settings.default_cartela_duration) || 4,
       enabled: true,
       notes: '',
@@ -616,6 +617,7 @@
     normalized.columns = normalized.columns || (normalized.distribution === 'columns' ? 2 : 1);
     normalized.font_size_multiplier = Number(normalized.font_size_multiplier) || 1;
     normalized.line_spacing_multiplier = Number(normalized.line_spacing_multiplier) || 1;
+    normalized.vertical_offset = Number(normalized.vertical_offset) || 0;
     delete normalized.distribution;
     normalized.duration = normalized.duration === undefined ? 4 : normalized.duration;
     normalized.enabled = normalized.enabled !== false;
@@ -672,6 +674,7 @@
           columns: Number(cartela.columns) || 1,
           font_size_multiplier: Number(cartela.font_size_multiplier) || 1,
           line_spacing_multiplier: Number(cartela.line_spacing_multiplier) || 1,
+          vertical_offset: Number(cartela.vertical_offset) || 0,
           duration: Number(cartela.duration) || 0,
           pages: (cartela.pages || []).map((page, pageIndex) => ({
             id: page.id,
@@ -1262,6 +1265,7 @@
     wrap.appendChild(localNumberRow('Columnas', Number(cartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value })));
     wrap.appendChild(localNumberRow('Multiplicador letra', Number(cartela.font_size_multiplier) || 1, 0.1, 5, (value) => updateCartela({ font_size_multiplier: value }), 0.1));
     wrap.appendChild(localNumberRow('Multiplicador interlineado', Number(cartela.line_spacing_multiplier) || 1, 0.1, 5, (value) => updateCartela({ line_spacing_multiplier: value }), 0.1));
+    wrap.appendChild(localNumberRow('Offset vertical', Number(cartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value })));
     wrap.appendChild(localInputRow('Duracion', String(cartela.duration || 0), (value) => updateCartela({ duration: Number(value) || 0 })));
     wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateCartela({ notes: value }), { multiline: true }));
     return wrap;
@@ -1596,6 +1600,7 @@
       columns: 1,
       font_size_multiplier: 1,
       line_spacing_multiplier: 1,
+      vertical_offset: 0,
       enabled: true,
       notes: '',
       pages: [{ id: `page_${String(index).padStart(3, '0')}_001`, source_refs: [], source_ref_settings: {} }],
@@ -2167,6 +2172,7 @@
     pageBody.className = 'pdf-page-body';
     pageBody.style.gap = `${layout.block_gap}px`;
     pageBody.style.justifyContent = pdfPageVerticalJustify(page);
+    pageBody.style.transform = `translateY(${Number(page.cartela.vertical_offset) || 0}px)`;
 
     const pageTitle = makePdfPageTitle(page);
     if (pageTitle) pageBody.appendChild(pageTitle);
@@ -2526,7 +2532,7 @@
     const totalBlocksHeight = heights.reduce((total, value) => total + value, 0);
     const gaps = Math.max(0, blocks.length - 1) * layout.block_gap;
     const totalHeight = titleHeight + (titleHeight && blocks.length ? layout.block_gap : 0) + totalBlocksHeight + gaps;
-    let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page));
+    let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page)) + (Number(page.cartela.vertical_offset) || 0);
 
     if (titleText && titleMetrics) {
       drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center');
