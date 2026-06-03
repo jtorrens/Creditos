@@ -2599,7 +2599,7 @@
   function measureCanvasUnit(unit, block, cartela, layout, width) {
     if (block.type === 'music_licenses' && unit.lines) {
       return (unit.lines || []).reduce((total, line, index) => {
-        return total + canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout, block.typography).lineHeight;
+        return total + canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, block.typography).lineHeight;
       }, 0);
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
@@ -2617,7 +2617,7 @@
     if (block.type === 'music_licenses' && unit.lines) {
       let cursorY = y;
       (unit.lines || []).forEach((line, index) => {
-        const metrics = canvasTextMetrics(index === 0 ? 'block_title' : 'name', cartela, layout, block.typography);
+        const metrics = canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, block.typography);
         drawCanvasText(ctx, line.value || '', x, cursorY, width, metrics, alignment.text || 'center');
         cursorY += metrics.lineHeight;
       });
@@ -2783,7 +2783,7 @@
       lineEl.className = index === 0 ? 'pdf-theme-title' : 'pdf-line';
       lineEl.textContent = line.value || '';
       lineEl.style.textAlign = block.alignment && block.alignment.text ? block.alignment.text : 'center';
-      applyTypography(lineEl, index === 0 ? 'block_title' : 'name', {
+      applyTypography(lineEl, index === 0 ? 'role' : 'name', {
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
         typography: block.typography,
@@ -2894,7 +2894,7 @@
           themeEl.style.paddingBottom = `${layout.block_gap / 2}px`;
           unit.lines.forEach((line, lineIndex) => {
             themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input', {
-              styleKey: lineIndex === 0 ? 'block_title' : 'name',
+              styleKey: lineIndex === 0 ? 'role' : 'name',
               multiplier: cartela.font_size_multiplier,
               lineMultiplier: cartela.line_spacing_multiplier,
               typography: block.typography,
