@@ -262,6 +262,8 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
             block["items"].append({"kind": "section", "row": row, "title": b})
         elif active_section == "AGRADECIMIENTOS":
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
+        elif active_section == "Licencias Musicales":
+            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
         elif active_section not in {None, "Logos", "closing_copy"} and entry["bold"].get("B") and b != active_section:
             active_section = b
             current_crew_item = None
@@ -272,8 +274,6 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
             block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": b})
         elif active_section == "closing_copy":
             block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": b})
-        elif active_section == "Licencias Musicales":
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
         elif active_section == "Vestuario" and b != "Vestuario":
             block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
         else:
@@ -303,7 +303,12 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
     elif d and current_crew_item:
         current_crew_item["names"].append({"row": row, "name": d})
     elif b and not c and not d:
-        block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
+        if b == "Licencias Musicales":
+            active_section = b
+            current_crew_item = None
+            block["items"].append({"kind": "section", "row": row, "title": b})
+        else:
+            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
     elif c or d:
         block["items"].append({"kind": "unclassified", "row": row, "section": active_section, "B": b, "C": c, "D": d})
 
