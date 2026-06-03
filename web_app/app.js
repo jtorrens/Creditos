@@ -712,8 +712,8 @@
     let currentTheme = null;
     let previousRow = null;
 
-    lines.forEach((line, index) => {
-      if (!currentTheme || (index > 0 && isMusicThemeTitle(line.value))) {
+    lines.forEach((line) => {
+      if (!currentTheme || (previousRow !== null && line.row - previousRow > 1)) {
         currentTheme = {
           id: `theme_${line.id}`,
           title: line.value,
@@ -728,18 +728,6 @@
     });
 
     return themes;
-  }
-
-  function isMusicThemeTitle(value) {
-    const text = String(value || '').trim();
-    if (!text) return false;
-    if (/^[([{¿¡]/.test(text)) return false;
-    if (/[©℗]/.test(text)) return false;
-    if (/^autorizad[oa]/i.test(text)) return false;
-    if (/universal|music publishing|library|ltd|s\.l|slu|sony|koka|tracks/i.test(text)) return false;
-    const letters = text.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
-    if (letters.length < 3) return false;
-    return letters === letters.toUpperCase();
   }
 
   function renderItem(item, overrides) {

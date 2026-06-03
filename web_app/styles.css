@@ -846,6 +846,13 @@ button:hover,
   position: relative;
 }
 
+.png-preview-frame .pdf-sheet {
+  left: 0;
+  position: absolute;
+  top: 0;
+  transform-origin: top left;
+}
+
 .pdf-page-inner {
   box-sizing: border-box;
   display: flex;
