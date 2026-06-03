@@ -1842,9 +1842,15 @@
       return;
     }
 
+    const frameEl = document.createElement('div');
+    frameEl.className = 'png-preview-frame';
+    frameEl.style.width = `${layout.page_width * state.pngPreviewZoom}px`;
+    frameEl.style.height = `${layout.page_height * state.pngPreviewZoom}px`;
+
     const sheetEl = makePdfSheetElement(page, layout);
-    sheetEl.style.transform = `scale(${state.pngPreviewZoom})`;
-    els.pdfPreview.appendChild(sheetEl);
+    sheetEl.style.transform = `translateX(-50%) scale(${state.pngPreviewZoom})`;
+    frameEl.appendChild(sheetEl);
+    els.pdfPreview.appendChild(frameEl);
     updatePngZoomStatus();
   }
 
