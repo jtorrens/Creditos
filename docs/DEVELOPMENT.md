@@ -102,7 +102,24 @@ On Windows:
 py apps\renderer\server.py
 ```
 
-## Windows Update Build Script
+## Windows Update And Install Script
+
+From the repository root on Windows:
+
+```bat
+scripts\updateCreditosPC.bat
+```
+
+The script runs:
+
+- `git pull`
+- `npm install`
+- `npm run dist:win`
+- the newest generated `.exe` installer in `apps\desktop\dist\`
+
+Use it when you want to update the repository and install the current Windows build.
+
+## Windows Build Script
 
 From the repository root on Windows:
 
@@ -116,7 +133,7 @@ The script runs:
 - `npm install`
 - `npm run dist`
 
-The installer will be in `apps/desktop/dist/`.
+The installer will be in `apps/desktop/dist/`, but this PowerShell script does not run it automatically.
 
 ## Git Workflow
 
