@@ -28,6 +28,131 @@ El renderer / servidor está en:
 apps/renderer
 ```
 
+## Estado actual tras trabajo en Mac
+
+Fecha de esta nota: 2026-06-04.
+
+El repositorio ya fue reorganizado y subido a GitHub. La rama principal esperada es `main`.
+
+Commits recientes relevantes:
+
+```text
+a92b8a6 Run Windows installer from update script
+79ff691 Add Windows update launcher script
+9044d6a Stop tracking local app alias
+0b48a6e Show app version in interface
+9f44959 Prepare cross-platform development workflow
+```
+
+La app muestra su version en la cabecera, arriba a la derecha. Ahora deberia verse:
+
+```text
+v0.1.1
+```
+
+Esto sirve para comprobar rapidamente que Mac y Windows estan usando la misma version del codigo.
+
+La estructura actual esperada del repo es:
+
+```text
+apps/desktop      App Electron
+apps/renderer     UI, servidor Python, parser y exportadores
+docs              Documentacion y handoffs
+scripts           Scripts de actualizacion/build
+test              Fixtures de prueba
+```
+
+`README.md` y `AGENTS.md` se mantienen en la raiz por convencion. `DEVELOPMENT.md` vive en:
+
+```text
+docs/DEVELOPMENT.md
+```
+
+`Creditos alias` es un alias local del Mac a la app empaquetada y no debe versionarse.
+
+## Punto importante para Codex en Windows
+
+Se creo este script:
+
+```text
+scripts/updateCreditosPC.bat
+```
+
+La intencion del `.bat` es que, desde Windows, haga el flujo completo:
+
+```text
+git pull
+npm install
+npm run dist:win
+ejecutar el instalador .exe mas reciente de apps\desktop\dist
+```
+
+Jorge sospecha que el flujo todavia puede no estar funcionando del todo en Windows. Es mas facil depurarlo desde el PC porque ahi se vera el entorno real: permisos, Node, Electron Builder, Python, FFmpeg, instalador generado y rutas Windows.
+
+Primeros pasos recomendados en Codex VS en el PC:
+
+```powershell
+cd D:\PROYECTOS\CREDITOS
+git pull
+git status
+scripts\updateCreditosPC.bat
+```
+
+Si el `.bat` falla, no asumir que el concepto esta mal: leer el mensaje de error y depurar por pasos.
+
+Comandos utiles para aislar el problema:
+
+```powershell
+cd D:\PROYECTOS\CREDITOS
+git log --oneline -5
+git status
+
+cd apps\desktop
+node -v
+npm -v
+py --version
+where ffmpeg
+where ffprobe
+
+npm install
+npm start
+npm run dist:win
+
+dir dist
+```
+
+Si `npm run dist:win` genera un `.exe`, probar manualmente:
+
+```powershell
+cd D:\PROYECTOS\CREDITOS\apps\desktop
+dir dist\*.exe
+```
+
+Y ejecutar el instalador mas reciente desde Explorer o PowerShell.
+
+Si el problema es solo encontrar o ejecutar el instalador desde el `.bat`, ajustar `scripts/updateCreditosPC.bat`.
+
+Si el problema esta en Electron Builder, revisar `apps/desktop/package.json`.
+
+Si el problema esta en Python, recordar que en Windows el launcher esperado por defecto es:
+
+```text
+py
+```
+
+Y puede forzarse con:
+
+```powershell
+$env:CREDITOS_PYTHON="C:\ruta\a\python.exe"
+```
+
+Si el problema esta en FFmpeg/FFprobe, deben estar en `PATH` o se puede forzar:
+
+```powershell
+$env:CREDITOS_FFMPEG="C:\ruta\a\ffmpeg.exe"
+$env:CREDITOS_FFPROBE="C:\ruta\a\ffprobe.exe"
+```
+
 Comandos principales desde `apps/desktop`:
 
 ```bash
@@ -793,4 +918,3 @@ Prioridad baja / opcional:
 2. Empaquetar Python dentro de la app.
 3. Crear instalador portable para terceros.
 4. Automatizar builds con GitHub Actions.
-
