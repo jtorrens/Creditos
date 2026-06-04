@@ -67,6 +67,22 @@ npm run dist:win
 
 Build outputs are written to `apps/desktop/dist/` and are not versioned.
 
+## macOS Update Script
+
+From the repository root on macOS:
+
+```bash
+scripts/updateCreditosMac.command
+```
+
+The script runs:
+
+- `git pull`
+- `npm install`
+- `npm run pack`
+
+The app will be rebuilt in `apps/desktop/dist/mac-arm64/Creditos.app`.
+
 ## Optional Environment Overrides
 
 Use these only when a tool is not available through the default command or `PATH`.
