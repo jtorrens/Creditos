@@ -57,6 +57,9 @@ web_app/app.js          logica frontend, structure/render, preview y export PNG
 web_app/server.py       servidor local y parser XLSX
 web_app/start.command   arranque macOS, abre Chrome
 web_app/README.md       README de uso actual
+desktop_app/main.js     wrapper Electron, arranca/cierra server.py y carga la web
+desktop_app/preload.js  puente IPC para dialogs nativos
+desktop_app/package.json scripts/dependencias Electron
 google_sheets_extension/ archivos de una extension Apps Script exploratoria
 JSON/TEST.xlsx          XLSX de prueba original
 JSON/TEST_rodillo_final_first_pass.json  primer source_json de referencia
@@ -88,6 +91,16 @@ La app debe usarse en Chrome para:
 - File System Access API para guardar/guardar como.
 - exportar carpetas de PNGs con selector nativo.
 
+Opcion Electron minima:
+
+```bash
+cd desktop_app
+npm install
+npm start
+```
+
+Electron arranca `web_app/server.py` automaticamente en un puerto libre, carga la web desde `127.0.0.1` y cierra el servidor al salir. En el entorno actual de Codex no habia `node`/`npm`, asi que esta parte quedo scaffolded y validada por sintaxis, pero no ejecutada localmente.
+
 ## Flujo de datos
 
 1. El usuario abre un `.xlsx`.
@@ -104,6 +117,7 @@ En `app.js`:
 
 - `credits_structure_json`, version `10`.
 - `credits_render_json`, version `7`.
+- `credits_cartela_style_json`, version `1`.
 
 ## Parser XLSX
 
@@ -204,6 +218,7 @@ Fuentes:
 Campos relevantes:
 
 - `enabled`
+- `style_id`
 - `orientation`: `horizontal` o `vertical`
 - `columns`
 - `font_size_multiplier`
@@ -226,6 +241,47 @@ En `PNG` se duplicaron controles visuales para la cartela actual:
 - Offset vertical.
 
 Esos controles modifican la misma cartela de `structure_json`.
+
+## Estilos de cartela
+
+La app permite elegir una carpeta de estilos por produccion desde `Ajustes`. Se cargan todos los `.json` validos de esa carpeta y aparecen en un dropdown dentro de cada cartela.
+
+Schema:
+
+```json
+{
+  "schema": "credits_cartela_style_json",
+  "version": 1,
+  "id": "licencias_musicales",
+  "name": "Licencias Musicales",
+  "cartela": {
+    "orientation": "vertical",
+    "columns": 1,
+    "font_size_multiplier": 1,
+    "line_spacing_multiplier": 1,
+    "vertical_offset": 0,
+    "duration": 4
+  },
+  "block": {
+    "columns": 1,
+    "alignment": { "role": "center", "name": "center", "text": "center" },
+    "vertical_align": "top",
+    "typography": {
+      "block_title": {},
+      "role": {},
+      "name": {}
+    }
+  }
+}
+```
+
+Decision actual:
+
+- El estilo se aplica a todos los bloques de la cartela.
+- No se presentan overrides visuales por bloque cuando se trabaja con estilos.
+- Internamente `source_ref_settings` se mantiene para compatibilidad/futuro, pero con `style_id` cargado gana el estilo.
+- Al editar una cartela con estilo, los controles visuales editan el estilo cargado en memoria. `Guardar estilo` sobrescribe el JSON con confirmacion; `Guardar estilo como` crea un JSON nuevo y asigna el nuevo `style_id`.
+- Si se abre otro XLS/structure que referencia el mismo `style_id`, al cargar la carpeta de estilos recibira los cambios del JSON.
 
 ## Layout y separaciones
 
@@ -320,6 +376,10 @@ Funciones:
 
 ## Cosas ya resueltas recientemente
 
+- Anadio `desktop_app/` como wrapper Electron minimo.
+- Electron gestiona el arranque/cierre de `web_app/server.py` en puerto libre.
+- `app.js` usa `window.creditosNative` cuando existe, manteniendo fallback Chrome.
+- Dialogs nativos Electron para abrir `structure_json`, guardar `structure_json`, guardar `render_json`, exportar PNG actual y exportar secuencia PNG a carpeta.
 - Licencias Musicales ya no se separan en un bloque por linea.
 - Licencias Musicales agrupa temas por saltos de fila.
 - Nombre de tema musical usa tipografia `Cargo`; lineas restantes usan `Nombre`.
@@ -345,8 +405,8 @@ Producto actual:
 
 Futuro app independiente:
 
-- Crear una app Electron en `desktop_app/`.
-- Usar la web actual como renderer.
+- Continuar desde la app Electron minima en `desktop_app/`.
+- Usar la web actual como renderer mientras se migra gradualmente a IPC.
 - Objetivo multiplataforma: macOS y Windows como minimo. No asumir rutas tipo `/Volumes/...`; usar `path`, dialogs nativos y rutas absolutas elegidas por el usuario.
 - Lanzar `server.py` internamente al principio, o migrar parser/export a proceso principal.
 - Si se mantiene Python, empaquetar el runtime o un binario del parser para que el usuario no tenga que instalar Python manualmente. En Windows esto es especialmente importante.

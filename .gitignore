@@ -7,3 +7,5 @@ node_modules/
 *.tmp
 *.mov
 test/renders/
+desktop_app/dist/
+desktop_app/*.app/

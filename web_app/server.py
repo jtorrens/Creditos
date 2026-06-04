@@ -245,6 +245,7 @@ def parse_rows(rows, source_name, sheet_name):
 
         last_data_row = row
 
+    normalize_trailing_closing_copy(result)
     return result
 
 
@@ -278,10 +279,6 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
             active_section = b
             current_crew_item = None
             block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
-        elif active_section == "Vestuario" and gap > 1:
-            active_section = "closing_copy"
-            current_crew_item = None
-            block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": b})
         elif active_section == "closing_copy":
             block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": b})
         elif active_section == "Vestuario" and b != "Vestuario":
@@ -291,7 +288,9 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
             current_crew_item = None
             block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
     elif c and not b and not d:
-        if c == "Empresas de Servicios":
+        if active_section == "closing_copy":
+            block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": c})
+        elif c == "Empresas de Servicios":
             active_section = c
             current_crew_item = None
             block["items"].append(section_item(row, c, "C", entry["bold"].get("C")))
@@ -323,6 +322,74 @@ def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew
         block["items"].append({"kind": "unclassified", "row": row, "section": active_section, "B": b, "C": c, "D": d})
 
     return active_section, current_crew_item
+
+
+def normalize_trailing_closing_copy(result):
+    for block in result.get("blocks", []):
+        if block.get("type") != "crew":
+            continue
+        items = block.get("items", [])
+        suffix_start = len(items)
+        while suffix_start > 0 and is_trailing_copy_suffix_candidate(items[suffix_start - 1]):
+            suffix_start -= 1
+        if suffix_start == len(items):
+            continue
+        suffix = items[suffix_start:]
+        marker_offset = next(
+            (index for index, item in enumerate(suffix) if looks_like_closing_copy_text(item.get("value") or item.get("title") or "")),
+            None,
+        )
+        start = suffix_start + marker_offset if marker_offset is not None else suffix_start
+        block["items"] = items[:start] + [
+            {
+                "kind": "closing_line",
+                "row": item.get("row"),
+                "section": "closing_copy",
+                "value": item.get("value") or item.get("title") or "",
+            }
+            for item in items[start:]
+        ]
+
+
+def is_trailing_copy_suffix_candidate(item):
+    if item.get("kind") == "closing_line":
+        return True
+    if item.get("kind") == "section":
+        return item.get("source_column") in {"B:D", "C"} and not item.get("source_bold")
+    if item.get("kind") == "list_item":
+        return True
+    return False
+
+
+def looks_like_closing_copy_text(value):
+    text = normalize_copy_text(value)
+    return any(
+        marker in text
+        for marker in [
+            "produccion",
+            "colaboracion",
+            "copyright",
+            "deposito legal",
+            "copy animado",
+            "atresmedia",
+        ]
+    ) or "©" in str(value or "")
+
+
+def normalize_copy_text(value):
+    text = str(value or "").lower()
+    replacements = {
+        "á": "a",
+        "é": "e",
+        "í": "i",
+        "ó": "o",
+        "ú": "u",
+        "ü": "u",
+        "ñ": "n",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    return re.sub(r"\s+", " ", text).strip()
 
 
 def parse_xlsx(file_bytes, source_name):

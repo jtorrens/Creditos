@@ -3,52 +3,54 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Creditos JSON</title>
+    <title>Créditos</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
     <header class="app-header">
       <div>
-        <h1>Creditos JSON</h1>
-        <p id="sourceMeta">Carga un XLSX o structure_json para empezar.</p>
+        <h1>Créditos</h1>
+        <p id="sourceMeta">Abre un Excel o una estructura de créditos para empezar.</p>
       </div>
     </header>
 
     <nav class="app-tabs" aria-label="Secciones">
-      <button class="active" type="button" data-tab="settings">Ajustes</button>
-      <button type="button" data-tab="structure">Estructura</button>
-      <button type="button" data-tab="json">JSON</button>
-      <button type="button" data-tab="pdf">PNG</button>
+      <button class="active" type="button" data-tab="settings">Proyecto</button>
+      <button type="button" data-tab="structure">Cartelas</button>
+      <button type="button" data-tab="pdf">Preview</button>
+      <button type="button" data-tab="json">Datos</button>
     </nav>
 
     <main>
       <section id="settingsPane" class="tab-pane active">
         <div class="settings-panel">
           <div class="panel-heading">
-            <h2>Ajustes comunes</h2>
+            <h2>Proyecto</h2>
           </div>
           <div class="settings-body">
             <div class="file-actions">
-              <label class="button primary">
-                Abrir XLSX
-                <input id="xlsxInput" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-              </label>
-              <button id="openStructureBtn" type="button">Abrir structure_json</button>
+              <button id="openStructureBtn" type="button">Abrir estructura</button>
               <input id="structureInput" class="hidden-input" type="file" accept="application/json,.json">
-              <button id="saveStructureBtn" type="button">Guardar</button>
-              <button id="saveStructureAsBtn" type="button">Guardar como</button>
+              <button id="saveStructureBtn" type="button">Guardar estructura</button>
+              <button id="saveStructureAsBtn" type="button">Guardar estructura como...</button>
+              <span id="structureFileStatus">Sin estructura abierta</span>
             </div>
             <div class="field-grid">
-              <label for="defaultDurationInput">Duracion cartela por defecto</label>
+              <label for="defaultDurationInput">Duración por página</label>
               <input id="defaultDurationInput" class="text-input" type="number" min="0" step="0.1">
             </div>
             <div class="field-grid">
-              <label for="defaultAutoLinesInput">Lineas antes de salto automatico</label>
+              <label for="defaultAutoLinesInput">Líneas por página</label>
               <input id="defaultAutoLinesInput" class="text-input" type="number" min="1" step="1">
             </div>
+            <div class="field-grid">
+              <label for="movieFpsInput">FPS del MOV</label>
+              <input id="movieFpsInput" class="text-input" type="number" min="1" step="1" value="25">
+            </div>
+            <div id="fontStatus" class="settings-status">Fuentes básicas cargadas</div>
             <div class="font-actions">
-              <button id="loadSystemFontsBtn" type="button">Cargar fuentes del sistema</button>
-              <span id="fontStatus">Fuentes basicas cargadas</span>
+              <button id="chooseStylesDirBtn" type="button">Seleccionar carpeta de estilos</button>
+              <span id="stylesStatus">No hay carpeta de estilos seleccionada</span>
             </div>
             <div id="typographySettings" class="typography-settings"></div>
           </div>
@@ -56,6 +58,11 @@
       </section>
 
       <section id="structurePane" class="tab-pane">
+        <div class="structure-file-panel">
+          <button id="openXlsxBtn" class="primary" type="button">Abrir XLSX</button>
+          <input id="xlsxInput" class="hidden-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+          <span id="xlsxFileStatus">Sin XLSX abierto</span>
+        </div>
         <div class="workspace">
           <aside class="block-list-panel">
             <div class="panel-heading">
@@ -80,14 +87,14 @@
       <section id="jsonPane" class="tab-pane">
         <aside class="json-panel">
           <div class="panel-heading">
-            <h2>Salida</h2>
+            <h2>Datos</h2>
             <div class="json-actions">
               <div class="segmented" role="tablist">
-                <button id="structureTab" class="active" type="button">Structure</button>
-                <button id="renderTab" type="button">Render</button>
+                <button id="structureTab" class="active" type="button">Estructura</button>
+                <button id="renderTab" type="button">Render final</button>
               </div>
-              <button id="saveRenderBtn" type="button">Guardar render</button>
-              <button id="saveRenderAsBtn" type="button">Guardar render como</button>
+              <button id="saveRenderBtn" type="button">Guardar render final</button>
+              <button id="saveRenderAsBtn" type="button">Guardar render como...</button>
             </div>
           </div>
           <textarea id="jsonPreview" spellcheck="false" readonly></textarea>
@@ -97,21 +104,21 @@
       <section id="pdfPane" class="tab-pane">
         <div class="pdf-panel">
           <div class="panel-heading">
-            <h2>Preview paginas</h2>
+            <h2>Preview</h2>
           </div>
           <div class="pdf-workspace">
             <aside class="pdf-sidepanels">
               <div class="pdf-control-panel">
-                <div class="section-title">Pagina</div>
+                <div class="section-title">Página</div>
                 <div class="pdf-nav">
-                  <button id="pdfFirstPageBtn" type="button" title="Primera pagina" aria-label="Primera pagina">&#x23EE;</button>
-                  <button id="pdfPrevPageBtn" type="button" title="Pagina anterior" aria-label="Pagina anterior">&#x25C0;</button>
-                  <input id="pdfPageNumberInput" class="text-input pdf-page-number" type="number" min="1" step="1" value="1" aria-label="Numero de pagina">
+                  <button id="pdfFirstPageBtn" type="button" title="Primera página" aria-label="Primera página">&#x23EE;</button>
+                  <button id="pdfPrevPageBtn" type="button" title="Página anterior" aria-label="Página anterior">&#x25C0;</button>
+                  <input id="pdfPageNumberInput" class="text-input pdf-page-number" type="number" min="1" step="1" value="1" aria-label="Número de página">
                   <span id="pdfTotalPages">/ 0</span>
-                  <button id="pdfNextPageBtn" type="button" title="Pagina siguiente" aria-label="Pagina siguiente">&#x25B6;</button>
-                  <button id="pdfLastPageBtn" type="button" title="Ultima pagina" aria-label="Ultima pagina">&#x23ED;</button>
+                  <button id="pdfNextPageBtn" type="button" title="Página siguiente" aria-label="Página siguiente">&#x25B6;</button>
+                  <button id="pdfLastPageBtn" type="button" title="Última página" aria-label="Última página">&#x23ED;</button>
                 </div>
-                <input id="pdfPageTitleInput" class="text-input" type="text" placeholder="Titulo pagina">
+                <input id="pdfPageTitleInput" class="text-input" type="text" placeholder="Título de página">
                 <div class="pdf-lines-control">
                   <button id="pdfMinusLinesBtn" type="button">-</button>
                   <span id="pdfLineStatus">0/0</span>
@@ -122,24 +129,32 @@
                   <span id="pngZoomStatus">100%</span>
                   <button id="pngZoomInBtn" type="button" title="Acercar" aria-label="Acercar">+</button>
                 </div>
+                <button id="toggleMarginsBtn" type="button">Mostrar márgenes</button>
                 <div class="pdf-cartela-controls">
-                  <label for="pdfFontMultiplierInput">Multiplicador letra</label>
+                  <label for="pdfFontMultiplierInput">Escala de texto</label>
                   <input id="pdfFontMultiplierInput" class="text-input" type="number" min="0.1" step="0.1">
-                  <label for="pdfLineMultiplierInput">Multiplicador interlineado</label>
+                  <label for="pdfLineMultiplierInput">Escala de interlineado</label>
                   <input id="pdfLineMultiplierInput" class="text-input" type="number" min="0.1" step="0.1">
-                  <label for="pdfVerticalOffsetInput">Offset vertical</label>
+                  <label for="pdfVerticalOffsetInput">Desplazamiento vertical</label>
                   <input id="pdfVerticalOffsetInput" class="text-input" type="number" step="1">
                 </div>
               </div>
               <div class="pdf-control-panel">
                 <div class="section-title">Exportar PNG</div>
                 <input id="pdfBaseNameInput" class="text-input" type="text" placeholder="Nombre base PNG">
-                <button id="exportCurrentPdfBtn" type="button">Exportar pagina</button>
-                <button id="exportAllPdfBtn" type="button">Exportar todas</button>
+                <div class="pdf-export-range">
+                  <label for="exportFromPageInput">Desde</label>
+                  <input id="exportFromPageInput" class="text-input" type="number" min="1" step="1" value="1">
+                  <label for="exportToPageInput">Hasta</label>
+                  <input id="exportToPageInput" class="text-input" type="number" min="1" step="1" value="1">
+                </div>
+                <button id="exportCurrentPdfBtn" type="button">Exportar página actual</button>
+                <button id="exportAllPdfBtn" type="button">Exportar rango PNG</button>
+                <button id="exportMovBtn" type="button">Exportar MOV</button>
               </div>
             </aside>
             <div id="pdfPreview" class="pdf-preview empty-state">
-              Carga un XLSX para ver las paginas.
+              Carga un XLSX para ver las páginas.
             </div>
           </div>
         </div>

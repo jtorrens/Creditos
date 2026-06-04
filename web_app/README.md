@@ -58,18 +58,20 @@ Esto arranca el servidor local y abre la app en Google Chrome. Para cerrar la ap
 2. Se abrira automaticamente `http://127.0.0.1:8787`. Si no se abre, entra manualmente en esa URL.
 3. Carga un `.xlsx`.
 4. En `Ajustes`, define duracion de cartela por defecto, lineas antes de salto automatico y tipografia base.
+   Usa `Carpeta estilos` para elegir la carpeta de estilos JSON de la produccion.
 5. En `Estructura`, la app crea por defecto una cartela por bloque de diseno.
 6. Selecciona una cartela y usa `Anadir bloque` para juntar varios bloques en una misma cartela.
-7. Ajusta orientacion:
+7. Opcionalmente asigna un estilo a la cartela. Si una cartela usa estilo, sus controles visuales editan ese estilo cargado; al guardar el estilo se actualizan las demas cartelas/estructuras que lo referencien.
+8. Ajusta orientacion:
    - `Horizontal`: cargo a la izquierda, nombre a la derecha.
    - `Vertical`: cargo arriba, nombre abajo.
-8. Ajusta `Columnas`, alineaciones y titulo visible de bloque si hace falta.
-9. Edita textos o titulos en el panel central solo si hace falta una correccion puntual.
-10. En bloques largos usa la pestana `PNG` y los botones `+`/`-` para ajustar las lineas de la pagina visible.
-11. Revisa `PNG` para ver cartelas, paginas y divisiones internas de bloque.
-12. Si un bloque fuente debe funcionar solo como titulo de pagina o bloque, deja su contenido fuera de salida y escribe ese titulo en el campo correspondiente.
-13. En `Ajustes`, usa `Guardar` o `Guardar como` para conservar el `structure_json`.
-14. En `JSON`, usa `Guardar render` o `Guardar render como` para generar el `render_json`.
+9. Ajusta `Columnas`, alineaciones y titulo visible de bloque si hace falta.
+10. Edita textos o titulos en el panel central solo si hace falta una correccion puntual.
+11. En bloques largos usa la pestana `PNG` y los botones `+`/`-` para ajustar las lineas de la pagina visible.
+12. Revisa `PNG` para ver cartelas, paginas y divisiones internas de bloque.
+13. Si un bloque fuente debe funcionar solo como titulo de pagina o bloque, deja su contenido fuera de salida y escribe ese titulo en el campo correspondiente.
+14. En `Ajustes`, usa `Guardar` o `Guardar como` para conservar el `structure_json`.
+15. En `JSON`, usa `Guardar render` o `Guardar render como` para generar el `render_json`.
 
 Para arrancar sin abrir el navegador automaticamente:
 
@@ -78,6 +80,18 @@ python3 web_app/server.py --no-open
 ```
 
 Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor local en Chrome.
+
+### Opcion Electron
+
+La primera version de escritorio vive en `desktop_app/` y reutiliza esta web app como renderer:
+
+```bash
+cd desktop_app
+npm install
+npm start
+```
+
+Electron arranca y cierra `web_app/server.py` automaticamente. Tambien usa dialogs nativos para abrir/guardar JSON y exportar PNGs.
 
 ## Estado actual
 
@@ -88,6 +102,9 @@ Para parsear `.xlsx` y guardar con selector de archivo necesitas el servidor loc
 - Tamano de pagina en pixeles, color de fondo de visualizacion, margen superior/inferior y gap de bloques para la previsualizacion/render.
 - Los campos de layout no tienen maximo artificial; el zoom del visor PNG permite trabajar con paginas UHD sin cambiar la exportacion real.
 - Tipografia base para cabecera, titulo de bloque, cargo y nombre: tamano, fuente, estilo y color.
+- Carpeta de estilos por produccion, con un JSON por estilo de cartela.
+- Cada cartela puede referenciar un estilo por `style_id`.
+- Los estilos guardan ajustes de cartela y un bloque visual global que se aplica a todos los bloques de la cartela.
 - Carga fuentes del sistema en Chrome mediante permiso del usuario; el JSON guarda familia, estilo y PostScript name.
 - Permite juntar varios bloques fuente en una misma cartela.
 - Panel central tipo preview con campos editables; el ID tecnico del bloque queda separado del titulo visible de bloque.

@@ -1,0 +1,37 @@
+{
+  "name": "creditos-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Electron wrapper for the Creditos JSON web app.",
+  "main": "main.js",
+  "scripts": {
+    "start": "node run-electron.js",
+    "repair-electron": "node repair-electron.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.jtorrens.creditos",
+    "productName": "Creditos",
+    "files": [
+      "main.js",
+      "preload.js",
+      "repair-electron.js",
+      "run-electron.js",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../web_app",
+        "to": "web_app"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    }
+  }
+}

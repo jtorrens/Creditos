@@ -9,15 +9,25 @@
     activeTab: 'settings',
     structureFileHandle: null,
     renderFileHandle: null,
+    structureFilePath: null,
+    renderFilePath: null,
+    styleDirectoryHandle: null,
+    styleDirectoryPath: null,
+    styles: [],
+    preferences: {},
     fontCatalog: null,
     pdfPageIndex: 0,
     pngPreviewZoom: 0.25,
+    showMarginOverlay: false,
   };
 
   const els = {
+    openXlsxBtn: document.getElementById('openXlsxBtn'),
     xlsxInput: document.getElementById('xlsxInput'),
     openStructureBtn: document.getElementById('openStructureBtn'),
     structureInput: document.getElementById('structureInput'),
+    xlsxFileStatus: document.getElementById('xlsxFileStatus'),
+    structureFileStatus: document.getElementById('structureFileStatus'),
     sourceMeta: document.getElementById('sourceMeta'),
     blockCount: document.getElementById('blockCount'),
     blockList: document.getElementById('blockList'),
@@ -28,8 +38,10 @@
     pdfPreview: document.getElementById('pdfPreview'),
     defaultDurationInput: document.getElementById('defaultDurationInput'),
     defaultAutoLinesInput: document.getElementById('defaultAutoLinesInput'),
-    loadSystemFontsBtn: document.getElementById('loadSystemFontsBtn'),
+    movieFpsInput: document.getElementById('movieFpsInput'),
     fontStatus: document.getElementById('fontStatus'),
+    chooseStylesDirBtn: document.getElementById('chooseStylesDirBtn'),
+    stylesStatus: document.getElementById('stylesStatus'),
     typographySettings: document.getElementById('typographySettings'),
     tabButtons: Array.from(document.querySelectorAll('.app-tabs button')),
     tabPanes: Array.from(document.querySelectorAll('.tab-pane')),
@@ -49,6 +61,8 @@
     pdfTotalPages: document.getElementById('pdfTotalPages'),
     pdfPageTitleInput: document.getElementById('pdfPageTitleInput'),
     pdfBaseNameInput: document.getElementById('pdfBaseNameInput'),
+    exportFromPageInput: document.getElementById('exportFromPageInput'),
+    exportToPageInput: document.getElementById('exportToPageInput'),
     pdfLineStatus: document.getElementById('pdfLineStatus'),
     pdfFontMultiplierInput: document.getElementById('pdfFontMultiplierInput'),
     pdfLineMultiplierInput: document.getElementById('pdfLineMultiplierInput'),
@@ -56,17 +70,26 @@
     pngZoomOutBtn: document.getElementById('pngZoomOutBtn'),
     pngZoomInBtn: document.getElementById('pngZoomInBtn'),
     pngZoomStatus: document.getElementById('pngZoomStatus'),
+    toggleMarginsBtn: document.getElementById('toggleMarginsBtn'),
     exportCurrentPdfBtn: document.getElementById('exportCurrentPdfBtn'),
     exportAllPdfBtn: document.getElementById('exportAllPdfBtn'),
+    exportMovBtn: document.getElementById('exportMovBtn'),
   };
 
   const TYPOGRAPHY_FIELDS = [
     ['page_header', 'Cabecera'],
-    ['block_title', 'Titulo bloque'],
+    ['block_title', 'Título del bloque'],
     ['role', 'Cargo'],
     ['name', 'Nombre'],
   ];
   const BLOCK_TYPOGRAPHY_FIELDS = TYPOGRAPHY_FIELDS.filter(([key]) => key !== 'page_header');
+  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'font_size_multiplier', 'line_spacing_multiplier', 'block_gap_multiplier', 'vertical_offset', 'duration'];
+  const STORAGE_KEYS = {
+    xlsxDir: 'creditos:lastDir:xlsx',
+    structureDir: 'creditos:lastDir:structure',
+    renderDir: 'creditos:lastDir:render',
+    stylesDir: 'creditos:lastDir:styles',
+  };
 
   const FONT_OPTIONS = [
     'Arial',
@@ -78,8 +101,9 @@
     'Trebuchet MS',
   ];
 
+  els.openXlsxBtn.addEventListener('click', openXlsxFile);
   els.xlsxInput.addEventListener('change', loadXlsxFile);
-  els.loadSystemFontsBtn.addEventListener('click', loadSystemFonts);
+  els.chooseStylesDirBtn.addEventListener('click', chooseStylesDirectory);
   els.openStructureBtn.addEventListener('click', openStructureJsonFile);
   els.structureInput.addEventListener('change', (event) => loadJsonFile(event, loadStructureJson));
   els.tabButtons.forEach((button) => {
@@ -90,6 +114,9 @@
   }));
   els.defaultAutoLinesInput.addEventListener('change', () => updateSettings({
     default_auto_page_lines: Math.max(1, Number(els.defaultAutoLinesInput.value) || 1),
+  }));
+  els.movieFpsInput.addEventListener('change', () => updateSettings({
+    movie_fps: Math.max(1, Math.round(Number(els.movieFpsInput.value) || 25)),
   }));
   els.structureTab.addEventListener('click', () => setPreview('structure'));
   els.renderTab.addEventListener('click', () => setPreview('render'));
@@ -111,13 +138,112 @@
   els.pdfVerticalOffsetInput.addEventListener('change', () => updateCurrentPdfCartela({ vertical_offset: Number(els.pdfVerticalOffsetInput.value) || 0 }));
   els.pngZoomOutBtn.addEventListener('click', () => updatePngPreviewZoom(-0.1));
   els.pngZoomInBtn.addEventListener('click', () => updatePngPreviewZoom(0.1));
+  els.toggleMarginsBtn.addEventListener('click', toggleMarginOverlay);
   els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
   els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
+  els.exportMovBtn.addEventListener('click', exportMov);
+  initializeAppPreferences();
+
+  function nativeBridge() {
+    return window.creditosNative || null;
+  }
+
+  async function initializeAppPreferences() {
+    const native = nativeBridge();
+    if (native && native.getPreferences) {
+      try {
+        state.preferences = await native.getPreferences() || {};
+      } catch (_error) {
+        state.preferences = {};
+      }
+    }
+
+    const lastStylesDir = readLocalPreference(STORAGE_KEYS.stylesDir);
+    if (lastStylesDir) {
+      state.styleDirectoryPath = lastStylesDir;
+      updateStylesStatus();
+      if (native && native.loadStyleDirectory) {
+        native.loadStyleDirectory({ directory: lastStylesDir })
+          .then((result) => {
+            if (result && !result.canceled) {
+              loadStyleDirectoryResult(result);
+            }
+          })
+          .catch(() => updateStylesStatus());
+      }
+    }
+    loadSystemFonts({ silent: true });
+  }
+
+  function readLocalPreference(key) {
+    if (state.preferences && state.preferences[key]) return state.preferences[key];
+    try {
+      return window.localStorage.getItem(key) || '';
+    } catch (_error) {
+      return '';
+    }
+  }
+
+  function writeLocalPreference(key, value) {
+    if (!value) return;
+    state.preferences = state.preferences || {};
+    state.preferences[key] = value;
+    const native = nativeBridge();
+    if (native && native.setPreference) {
+      native.setPreference({ key, value }).catch(() => {});
+    }
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (_error) {
+      // Local persistence is a convenience only.
+    }
+  }
+
+  function rememberFileDirectory(key, filePath) {
+    const directory = directoryFromPath(filePath);
+    if (directory) writeLocalPreference(key, directory);
+  }
+
+  function directoryFromPath(filePath) {
+    const text = String(filePath || '');
+    const index = Math.max(text.lastIndexOf('/'), text.lastIndexOf('\\'));
+    return index > 0 ? text.slice(0, index) : '';
+  }
+
+  function joinPath(directory, fileName) {
+    if (!directory) return fileName;
+    const separator = directory.includes('\\') ? '\\' : '/';
+    return `${directory.replace(/[\\/]+$/, '')}${separator}${fileName}`;
+  }
 
   async function loadXlsxFile(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
+    await parseXlsxFile(file);
+    event.target.value = '';
+  }
 
+  async function openXlsxFile() {
+    const native = nativeBridge();
+    if (native && native.openXlsx) {
+      try {
+        const result = await native.openXlsx({ defaultPath: readLocalPreference(STORAGE_KEYS.xlsxDir) });
+        if (!result || result.canceled) return;
+        rememberFileDirectory(STORAGE_KEYS.xlsxDir, result.filePath);
+        const bytes = Uint8Array.from(atob(result.base64), (char) => char.charCodeAt(0));
+        const file = new File([bytes], result.name || 'creditos.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        await parseXlsxFile(file);
+      } catch (error) {
+        window.alert('No se pudo abrir el XLSX: ' + error.message);
+      }
+      return;
+    }
+    els.xlsxInput.click();
+  }
+
+  async function parseXlsxFile(file) {
     try {
       els.sourceMeta.textContent = `Parseando ${file.name}...`;
       const form = new FormData();
@@ -127,6 +253,7 @@
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Error al parsear el XLSX.');
       loadSourceJson(payload, file.name);
+      if (els.xlsxFileStatus) els.xlsxFileStatus.textContent = file.name;
     } catch (error) {
       window.alert(
         'No se pudo parsear el XLSX: ' +
@@ -135,7 +262,6 @@
       );
       renderMeta();
     } finally {
-      event.target.value = '';
     }
   }
 
@@ -157,6 +283,19 @@
   }
 
   async function openStructureJsonFile() {
+    const native = nativeBridge();
+    if (native && native.openJson) {
+      try {
+        const result = await native.openJson({ defaultPath: readLocalPreference(STORAGE_KEYS.structureDir) });
+        if (!result || result.canceled) return;
+        rememberFileDirectory(STORAGE_KEYS.structureDir, result.filePath);
+        loadStructureJson(JSON.parse(result.text), result.name, result.filePath || null);
+      } catch (error) {
+        window.alert('No se pudo abrir la estructura: ' + error.message);
+      }
+      return;
+    }
+
     if (!window.showOpenFilePicker) {
       els.structureInput.click();
       return;
@@ -179,7 +318,7 @@
       state.structureFileHandle = handle;
     } catch (error) {
       if (error.name !== 'AbortError') {
-        window.alert('No se pudo abrir el structure_json: ' + error.message);
+        window.alert('No se pudo abrir la estructura: ' + error.message);
       }
     }
   }
@@ -190,14 +329,20 @@
     state.structure = createStructureFromSource(state.source, state.materials, state.structure);
     state.structureFileHandle = null;
     state.renderFileHandle = null;
+    state.structureFilePath = null;
+    state.renderFilePath = null;
+    if (els.structureFileStatus) els.structureFileStatus.textContent = 'Sin estructura abierta';
     state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
     rebuild();
   }
 
-  function loadStructureJson(json) {
+  function loadStructureJson(json, _fileName, filePath = null) {
     state.structure = migrateStructure(json);
     state.structureFileHandle = null;
+    state.structureFilePath = filePath;
     state.renderFileHandle = null;
+    state.renderFilePath = null;
+    if (els.structureFileStatus) els.structureFileStatus.textContent = _fileName || filePath || 'Estructura abierta';
     if (state.source) {
       state.structure = createStructureFromSource(state.source, state.materials, state.structure);
       state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
@@ -256,12 +401,14 @@
   function splitCrewBlockIntoMaterials(block) {
     const materials = [];
     let current = null;
+    const seenSectionIds = new Map();
     const items = normalizeCrewItemsForMaterials(block.items || []);
 
     items.forEach((item) => {
       if (item.kind === 'section') {
+        const materialId = uniqueMaterialId(makeCrewMaterialId(block.id, item.title || 'section'), seenSectionIds);
         current = {
-          id: `${block.id}_section_${item.row}_${safeFilePart(item.title || 'section')}`,
+          id: materialId,
           source_block_id: block.id,
           source_section_id: item.id,
           group: block.group,
@@ -273,6 +420,21 @@
         };
         materials.push(current);
         return;
+      }
+
+      if (item.kind === 'closing_line' && (!current || current.type !== 'closing')) {
+        const materialId = uniqueMaterialId(makeCrewMaterialId(block.id, 'closing_copy'), seenSectionIds);
+        current = {
+          id: materialId,
+          source_block_id: block.id,
+          group: block.group,
+          title: 'Copy serie',
+          default_title: '',
+          titles: ['Copy serie'],
+          type: 'closing',
+          items: [],
+        };
+        materials.push(current);
       }
 
       if (!current) {
@@ -415,6 +577,7 @@
     });
     enforceUniqueMaterialRefs({ cartelas });
     addMissingMaterialsToStructure(cartelas, materials, settings);
+    enforceUniqueCartelaIds(cartelas);
     const cleanCartelas = removeDefaultEmptyCartelas(cartelas, materials);
 
     return {
@@ -447,10 +610,16 @@
     const materialById = new Map((materials || []).map((material) => [material.id, material]));
     return (cartelas || []).filter((cartela) => {
       const refs = getCartelaRefs(cartela);
-      if (!refs.length) return true;
+      if (!refs.length) return false;
       const hasContent = refs.some((ref) => materialHasRenderableContent(materialById.get(ref)));
       return hasContent || cartela.enabled !== false;
     });
+  }
+
+  function cartelaHasRenderableRefs(cartela, materialById) {
+    const refs = getCartelaRefs(cartela);
+    if (!refs.length) return false;
+    return refs.some((ref) => materialHasRenderableContent(materialById.get(ref)));
   }
 
   function addMissingMaterialsToStructure(cartelas, materials, settings) {
@@ -470,6 +639,23 @@
 
   function hasMissingMaterialRefs(cartela, materialIds) {
     return getCartelaRefs(cartela).some((ref) => !materialIds.has(ref));
+  }
+
+  function enforceUniqueCartelaIds(cartelas) {
+    const seen = new Map();
+    (cartelas || []).forEach((cartela, index) => {
+      const base = cartela.id || `cartela_${String(index + 1).padStart(3, '0')}`;
+      const count = (seen.get(base) || 0) + 1;
+      seen.set(base, count);
+      if (count === 1) {
+        cartela.id = base;
+        return;
+      }
+      cartela.id = `${base}_${String(count).padStart(2, '0')}`;
+      (cartela.pages || []).forEach((page, pageIndex) => {
+        page.id = `${cartela.id}_page_${String(pageIndex + 1).padStart(3, '0')}`;
+      });
+    });
   }
 
   function migrateStructure(structure) {
@@ -494,11 +680,13 @@
         cartelas: structure.pages.map((page, index) => ({
           id: `cartela_${String(index + 1).padStart(3, '0')}`,
           title: page.title || `Cartela ${index + 1}`,
+          style_id: page.style_id || '',
           type: page.layout || 'card',
           orientation: page.orientation || 'horizontal',
           columns: page.columns || (page.distribution === 'columns' ? 2 : 1),
           font_size_multiplier: Number(page.font_size_multiplier) || 1,
           line_spacing_multiplier: Number(page.line_spacing_multiplier) || 1,
+          block_gap_multiplier: normalizeBlockGapMultiplier(page.block_gap_multiplier),
           duration: 4,
           enabled: page.enabled !== false,
           notes: page.notes || '',
@@ -532,6 +720,7 @@
     return {
       default_cartela_duration: 4,
       default_auto_page_lines: 18,
+      movie_fps: 25,
       pdf_base_name: 'creditos',
       typography: {
         page_header: { font_size: 12, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#58616a' },
@@ -586,7 +775,8 @@
     normalized.layout.page_width = Math.max(1, Number(normalized.layout.page_width) || defaults.layout.page_width);
     normalized.layout.page_height = Math.max(1, Number(normalized.layout.page_height) || defaults.layout.page_height);
     normalized.layout.page_background = normalizeColor(normalized.layout.page_background || defaults.layout.page_background);
-    normalized.layout.block_gap = Math.max(0, Number(normalized.layout.block_gap) || defaults.layout.block_gap);
+    normalized.layout.block_gap = Math.max(0, Number.isFinite(Number(normalized.layout.block_gap)) ? Number(normalized.layout.block_gap) : defaults.layout.block_gap);
+    normalized.movie_fps = Math.max(1, Math.round(Number(normalized.movie_fps) || defaults.movie_fps));
     normalized.pdf_base_name = safeFilePart(normalized.pdf_base_name || defaults.pdf_base_name);
     return normalized;
   }
@@ -600,6 +790,7 @@
       columns: 1,
       font_size_multiplier: 1,
       line_spacing_multiplier: 1,
+      block_gap_multiplier: 1,
       vertical_offset: 0,
       duration: Number(settings.default_cartela_duration) || 4,
       enabled: true,
@@ -618,11 +809,13 @@
     const normalized = JSON.parse(JSON.stringify(cartela));
     normalized.id = normalized.id || `cartela_${String(index + 1).padStart(3, '0')}`;
     normalized.title = normalized.title || '';
+    normalized.style_id = normalized.style_id || '';
     normalized.type = normalized.type || defaultLayoutForMaterial(material);
     normalized.orientation = normalized.orientation || defaultOrientationForMaterial(material);
     normalized.columns = normalized.columns || (normalized.distribution === 'columns' ? 2 : 1);
     normalized.font_size_multiplier = Number(normalized.font_size_multiplier) || 1;
     normalized.line_spacing_multiplier = Number(normalized.line_spacing_multiplier) || 1;
+    normalized.block_gap_multiplier = normalizeBlockGapMultiplier(normalized.block_gap_multiplier);
     normalized.vertical_offset = Number(normalized.vertical_offset) || 0;
     delete normalized.distribution;
     normalized.duration = normalized.duration === undefined ? 4 : normalized.duration;
@@ -671,33 +864,39 @@
       },
       cartelas: (structure.cartelas || [])
         .filter((cartela) => cartela.enabled !== false)
-        .map((cartela, cartelaIndex) => ({
-          id: cartela.id,
-          cartela_number: cartelaIndex + 1,
-          label: cartela.title || '',
-          type: cartela.type,
-          orientation: cartela.orientation || 'horizontal',
-          columns: Number(cartela.columns) || 1,
-          font_size_multiplier: Number(cartela.font_size_multiplier) || 1,
-          line_spacing_multiplier: Number(cartela.line_spacing_multiplier) || 1,
-          vertical_offset: Number(cartela.vertical_offset) || 0,
-          duration: Number(cartela.duration) || 0,
-          pages: (cartela.pages || []).map((page, pageIndex) => ({
-            id: page.id,
-            page_number: pageIndex + 1,
-            title: resolveOverride(overrides, page.id, 'title', page.title || ''),
-            blocks: (page.source_refs || []).map((ref) => {
-              const material = materialById.get(ref);
-              const lineAdjustments = structure.page_line_adjustments || {};
-              const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, 0, lineAdjustments);
-              block.columns = getSourceRefColumns(page, ref);
-              block.alignment = getSourceRefAlignment(page, ref, material, cartela);
-              block.vertical_align = getSourceRefVerticalAlign(page, ref);
-              block.typography = getSourceRefTypography(page, ref);
-              return block;
-            }),
-          })),
-        })),
+        .filter((cartela) => cartelaHasRenderableRefs(cartela, materialById))
+        .map((cartela, cartelaIndex) => {
+          const effectiveCartela = getEffectiveCartela(cartela);
+          return {
+            id: cartela.id,
+            style_id: cartela.style_id || '',
+            cartela_number: cartelaIndex + 1,
+            label: cartela.title || '',
+            type: cartela.type,
+            orientation: effectiveCartela.orientation || 'horizontal',
+            columns: Number(effectiveCartela.columns) || 1,
+            font_size_multiplier: Number(effectiveCartela.font_size_multiplier) || 1,
+            line_spacing_multiplier: Number(effectiveCartela.line_spacing_multiplier) || 1,
+            block_gap_multiplier: normalizeBlockGapMultiplier(effectiveCartela.block_gap_multiplier),
+            vertical_offset: Number(effectiveCartela.vertical_offset) || 0,
+            duration: Number(effectiveCartela.duration) || 0,
+            pages: (cartela.pages || []).map((page, pageIndex) => ({
+              id: page.id,
+              page_number: pageIndex + 1,
+              title: resolveOverride(overrides, page.id, 'title', page.title || ''),
+              blocks: (page.source_refs || []).map((ref) => {
+                const material = materialById.get(ref);
+                const lineAdjustments = structure.page_line_adjustments || {};
+                const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, 0, lineAdjustments);
+                block.columns = getSourceRefColumns(page, ref, cartela);
+                block.alignment = getSourceRefAlignment(page, ref, material, effectiveCartela, cartela);
+                block.vertical_align = getSourceRefVerticalAlign(page, ref, cartela);
+                block.typography = getSourceRefTypography(page, ref, cartela);
+                return block;
+              }),
+            })),
+          };
+        }),
     };
     render.physical_pages = buildPhysicalPages(render.cartelas, overrides, {
       settings: structure.settings,
@@ -896,7 +1095,7 @@
 
   function renderMeta() {
     if (!state.source) {
-      els.sourceMeta.textContent = 'Carga un XLSX o structure_json para empezar.';
+      els.sourceMeta.textContent = 'Abre un Excel o una estructura de créditos para empezar.';
       return;
     }
 
@@ -916,6 +1115,8 @@
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
     els.defaultDurationInput.value = String(settings.default_cartela_duration);
     els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
+    els.movieFpsInput.value = String(settings.movie_fps);
+    updateStylesStatus();
     renderTypographySettings(settings);
     renderLayoutSettings(settings);
   }
@@ -1008,9 +1209,9 @@
     });
   }
 
-  async function loadSystemFonts() {
+  async function loadSystemFonts(options = {}) {
     if (!window.queryLocalFonts) {
-      window.alert('Chrome no permite leer fuentes del sistema en este entorno. Se usara la lista basica.');
+      if (!options.silent) window.alert('Chrome no permite leer fuentes del sistema en este entorno. Se usara la lista basica.');
       updateFontStatus();
       return;
     }
@@ -1045,9 +1246,10 @@
       renderPreview();
       refreshPdfIfActive();
     } catch (error) {
-      if (error.name !== 'AbortError') {
+      if (!options.silent && error.name !== 'AbortError') {
         window.alert('No se pudieron cargar las fuentes del sistema: ' + error.message);
       }
+      updateFontStatus();
     }
   }
 
@@ -1076,6 +1278,142 @@
     return String(fullName || '').replace(String(family || ''), '').trim() || 'Regular';
   }
 
+  async function chooseStylesDirectory() {
+    const native = nativeBridge();
+    try {
+      if (native && native.chooseStyleDirectory) {
+        const result = await native.chooseStyleDirectory({ defaultPath: readLocalPreference(STORAGE_KEYS.stylesDir) });
+        if (!result || result.canceled) return;
+        loadStyleDirectoryResult(result);
+        return;
+      }
+
+      if (!window.showDirectoryPicker) {
+        window.alert('Este navegador no permite elegir una carpeta de estilos. Usa Electron o Chrome compatible.');
+        return;
+      }
+
+      const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
+      state.styleDirectoryHandle = directory;
+      state.styleDirectoryPath = directory.name || '';
+      writeLocalPreference(STORAGE_KEYS.stylesDir, directory.name || '');
+      const files = [];
+      for await (const [name, handle] of directory.entries()) {
+        if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.json')) continue;
+        const file = await handle.getFile();
+        files.push({ name, handle, text: await file.text() });
+      }
+      loadStyleFiles(files);
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        window.alert('No se pudo cargar la carpeta de estilos: ' + error.message);
+      }
+    }
+  }
+
+  function loadStyleDirectoryResult(result) {
+    state.styleDirectoryPath = result.directory || null;
+    state.styleDirectoryHandle = null;
+    if (result.directory) writeLocalPreference(STORAGE_KEYS.stylesDir, result.directory);
+    loadStyleFiles((result.styles || []).map((file) => ({
+      name: file.name,
+      filePath: file.filePath,
+      text: file.text,
+    })));
+  }
+
+  function loadStyleFiles(files) {
+    const styles = [];
+    (files || []).forEach((file) => {
+      try {
+        const json = JSON.parse(file.text);
+        styles.push(normalizeCartelaStyle(json, file));
+      } catch (error) {
+        console.warn(`Estilo ignorado ${file.name}: ${error.message}`);
+      }
+    });
+    state.styles = styles.sort((a, b) => a.name.localeCompare(b.name));
+    syncLoadedStyleSnapshots();
+    updateStylesStatus();
+    if (state.source && state.structure) {
+      state.render = buildRenderJson(state.source, state.materials, state.structure);
+    }
+    renderEditor();
+    renderCartelaList();
+    renderPreview();
+    refreshPdfIfActive();
+  }
+
+  function normalizeCartelaStyle(json, file = {}) {
+    const fileBase = String(file.name || 'estilo.json').replace(/\.json$/i, '');
+    const id = safeStyleId(json.id || fileBase);
+    return {
+      schema: 'credits_cartela_style_json',
+      version: 1,
+      id,
+      name: String(json.name || fileBase || id),
+      file_name: file.name || `${id}.json`,
+      filePath: file.filePath || null,
+      fileHandle: file.handle || null,
+      cartela: normalizeStyleCartela(json.cartela || json),
+      block: normalizeStyleBlock(json.block || {}),
+    };
+  }
+
+  function normalizeStyleCartela(value = {}) {
+    return {
+      orientation: ['horizontal', 'vertical'].includes(value.orientation) ? value.orientation : 'vertical',
+      columns: Math.max(1, Number(value.columns) || 1),
+      font_size_multiplier: Math.max(0.1, Number(value.font_size_multiplier) || 1),
+      line_spacing_multiplier: Math.max(0.1, Number(value.line_spacing_multiplier) || 1),
+      block_gap_multiplier: normalizeBlockGapMultiplier(value.block_gap_multiplier),
+      vertical_offset: Number(value.vertical_offset) || 0,
+      duration: Math.max(0, Number(value.duration) || 0),
+    };
+  }
+
+  function normalizeStyleBlock(value = {}) {
+    return {
+      columns: Math.max(1, Number(value.columns) || 1),
+      alignment: {
+        ...(value.alignment || {}),
+      },
+      vertical_align: normalizeVerticalAlign(value.vertical_align),
+      typography: normalizeTypographyOverrides(value.typography),
+    };
+  }
+
+  function serializeCartelaStyle(style) {
+    return {
+      schema: 'credits_cartela_style_json',
+      version: 1,
+      id: style.id,
+      name: style.name,
+      cartela: normalizeStyleCartela(style.cartela || {}),
+      block: normalizeStyleBlock(style.block || {}),
+    };
+  }
+
+  function updateStylesStatus() {
+    if (!els.stylesStatus) return;
+    const directory = state.styleDirectoryPath || (state.styleDirectoryHandle && state.styleDirectoryHandle.name) || '';
+    if (!directory) {
+      els.stylesStatus.textContent = 'No hay carpeta de estilos seleccionada';
+      return;
+    }
+    const prefix = directory ? `${directory} · ` : '';
+    els.stylesStatus.textContent = `${prefix}${state.styles.length} estilo${state.styles.length === 1 ? '' : 's'} cargado${state.styles.length === 1 ? '' : 's'}`;
+  }
+
+  function safeStyleId(value) {
+    return safeFilePart(String(value || 'estilo').toLowerCase().replace(/\s+/g, '_')) || `style_${Date.now()}`;
+  }
+
+  function getStyleById(styleId) {
+    if (!styleId) return null;
+    return state.styles.find((style) => style.id === styleId) || null;
+  }
+
   function updateFontStatus() {
     if (!els.fontStatus) return;
     els.fontStatus.textContent = fontCatalogStatusText();
@@ -1085,8 +1423,8 @@
     if (state.fontCatalog) {
       return `${state.fontCatalog.families.length} familias cargadas`;
     }
-    if (window.queryLocalFonts) return 'Fuentes basicas cargadas; puedes cargar fuentes del sistema';
-    return 'Fuentes basicas cargadas';
+    if (window.queryLocalFonts) return 'Fuentes básicas cargadas';
+    return 'Fuentes básicas cargadas';
   }
 
   function updateTypographySetting(key, fields) {
@@ -1110,16 +1448,16 @@
     const wrap = document.createElement('div');
     wrap.id = 'layoutSettings';
     wrap.className = 'layout-settings';
-    wrap.appendChild(sectionLabel('Layout base'));
+    wrap.appendChild(sectionLabel('Composición base'));
     wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
-    wrap.appendChild(settingsNumberRow('Gap columnas', settings.layout.column_gap, 0, null, 1, (value) => updateLayoutSetting({ column_gap: value })));
-    wrap.appendChild(settingsNumberRow('Gap cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
-    wrap.appendChild(settingsNumberRow('Gap bloques', settings.layout.block_gap, 0, null, 1, (value) => updateLayoutSetting({ block_gap: value })));
-    wrap.appendChild(settingsNumberRow('Ancho pagina px', settings.layout.page_width, 1, null, 1, (value) => updateLayoutSetting({ page_width: value })));
-    wrap.appendChild(settingsNumberRow('Alto pagina px', settings.layout.page_height, 1, null, 1, (value) => updateLayoutSetting({ page_height: value })));
-    wrap.appendChild(settingsNumberRow('Margen superior pagina', settings.layout.page_top_margin, 0, null, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
-    wrap.appendChild(settingsNumberRow('Margen inferior pagina', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
-    wrap.appendChild(settingsColorRow('Fondo pagina', settings.layout.page_background, (value) => updateLayoutSetting({ page_background: value })));
+    wrap.appendChild(settingsNumberRow('Separación entre columnas', settings.layout.column_gap, 0, null, 1, (value) => updateLayoutSetting({ column_gap: value })));
+    wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
+    wrap.appendChild(settingsNumberRow('Separación entre bloques', settings.layout.block_gap, 0, null, 1, (value) => updateLayoutSetting({ block_gap: value })));
+    wrap.appendChild(settingsNumberRow('Ancho de página px', settings.layout.page_width, 1, null, 1, (value) => updateLayoutSetting({ page_width: value })));
+    wrap.appendChild(settingsNumberRow('Alto de página px', settings.layout.page_height, 1, null, 1, (value) => updateLayoutSetting({ page_height: value })));
+    wrap.appendChild(settingsNumberRow('Margen superior de página', settings.layout.page_top_margin, 0, null, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
+    wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
+    wrap.appendChild(settingsColorRow('Fondo de página', settings.layout.page_background, (value) => updateLayoutSetting({ page_background: value })));
     els.typographySettings.after(wrap);
   }
 
@@ -1214,6 +1552,8 @@
 
     cartelas.forEach((cartela, index) => {
       const refs = getCartelaRefs(cartela);
+      const effectiveCartela = getEffectiveCartela(cartela);
+      const style = getStyleById(cartela.style_id);
       const button = document.createElement('div');
       button.className = 'block-button' + (cartela.id === state.selectedCartelaId ? ' active' : '');
       button.addEventListener('click', () => {
@@ -1224,7 +1564,7 @@
       button.innerHTML = `
         <div class="block-group">${String(index + 1).padStart(2, '0')}</div>
         <div class="block-name">${escapeHtml(getCartelaDisplayName(cartela, index))}</div>
-        <div class="block-meta">${cartela.enabled === false ? 'excluida · ' : ''}${escapeHtml(cartela.orientation || 'horizontal')} · ${Number(cartela.columns) || 1} col · ${refs.length} bloque${refs.length === 1 ? '' : 's'}</div>
+        <div class="block-meta">${cartela.enabled === false ? 'excluida · ' : ''}${style ? escapeHtml(style.name) + ' · ' : ''}${escapeHtml(effectiveCartela.orientation || 'horizontal')} · ${Number(effectiveCartela.columns) || 1} col · ${refs.length} bloque${refs.length === 1 ? '' : 's'}</div>
       `;
       els.blockList.appendChild(button);
     });
@@ -1252,7 +1592,7 @@
 
     const materialsGrid = document.createElement('div');
     materialsGrid.className = 'cartela-materials-grid';
-    materialsGrid.style.gridTemplateColumns = `repeat(${Math.max(1, Number(cartela.columns) || 1)}, minmax(0, 1fr))`;
+    materialsGrid.style.gridTemplateColumns = `repeat(${Math.max(1, Number(getEffectiveCartela(cartela).columns) || 1)}, minmax(0, 1fr))`;
     getCartelaRefs(cartela).forEach((ref) => {
       const material = state.materials.find((candidate) => candidate.id === ref);
       materialsGrid.appendChild(renderMaterialEditor(material, ref));
@@ -1262,18 +1602,89 @@
 
   function renderCartelaFields(cartela) {
     const wrap = document.createElement('div');
+    const effectiveCartela = getEffectiveCartela(cartela);
     wrap.appendChild(sectionLabel('Cartela'));
     wrap.appendChild(localCheckboxRow('Incluir en salida', cartela.enabled !== false, (value) => updateCartela({ enabled: value })));
-    wrap.appendChild(localSelectRow('Orientacion', cartela.orientation || 'horizontal', [
+    wrap.appendChild(renderCartelaStyleControls(cartela));
+    wrap.appendChild(localSelectRow('Orientación', effectiveCartela.orientation || 'horizontal', [
       ['horizontal', 'Horizontal'],
       ['vertical', 'Vertical'],
     ], (value) => updateCartela({ orientation: value })));
-    wrap.appendChild(localNumberRow('Columnas', Number(cartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value })));
-    wrap.appendChild(localNumberRow('Multiplicador letra', Number(cartela.font_size_multiplier) || 1, 0.1, 5, (value) => updateCartela({ font_size_multiplier: value }), 0.1));
-    wrap.appendChild(localNumberRow('Multiplicador interlineado', Number(cartela.line_spacing_multiplier) || 1, 0.1, 5, (value) => updateCartela({ line_spacing_multiplier: value }), 0.1));
-    wrap.appendChild(localNumberRow('Offset vertical', Number(cartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value })));
-    wrap.appendChild(localInputRow('Duracion', String(cartela.duration || 0), (value) => updateCartela({ duration: Number(value) || 0 })));
+    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value })));
+    wrap.appendChild(localNumberRow('Escala de texto', Number(effectiveCartela.font_size_multiplier) || 1, 0.1, 5, (value) => updateCartela({ font_size_multiplier: value }), 0.1));
+    wrap.appendChild(localNumberRow('Escala de interlineado', Number(effectiveCartela.line_spacing_multiplier) || 1, 0.1, 5, (value) => updateCartela({ line_spacing_multiplier: value }), 0.1));
+    wrap.appendChild(localNumberRow('Escala de separación entre bloques', normalizeBlockGapMultiplier(effectiveCartela.block_gap_multiplier), 0, 10, (value) => updateCartela({ block_gap_multiplier: value }), 0.1));
+    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value })));
+    wrap.appendChild(localInputRow('Duración por página', String(effectiveCartela.duration || 0), (value) => updateCartela({ duration: Number(value) || 0 })));
+    wrap.appendChild(renderCartelaBlockStyleControls(cartela));
     wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateCartela({ notes: value }), { multiline: true }));
+    return wrap;
+  }
+
+  function renderCartelaStyleControls(cartela) {
+    const wrap = document.createElement('div');
+    wrap.className = 'source-controls';
+
+    const select = document.createElement('select');
+    select.className = 'text-input';
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = 'Sin estilo';
+    select.appendChild(noneOption);
+    state.styles.forEach((style) => {
+      const option = document.createElement('option');
+      option.value = style.id;
+      option.textContent = style.name;
+      select.appendChild(option);
+    });
+    select.value = cartela.style_id || '';
+    select.addEventListener('change', () => {
+      cartela.style_id = select.value;
+      applyStyleSnapshotToCartela(cartela, getStyleById(cartela.style_id));
+      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      renderCartelaList();
+      renderEditor();
+      renderPreview();
+      refreshPdfIfActive();
+    });
+
+    const saveButton = document.createElement('button');
+    saveButton.type = 'button';
+    saveButton.textContent = 'Actualizar estilo';
+    saveButton.disabled = !cartela.style_id;
+    saveButton.addEventListener('click', () => saveCartelaStyle(cartela, false));
+
+    const saveAsButton = document.createElement('button');
+    saveAsButton.type = 'button';
+    saveAsButton.textContent = 'Guardar como nuevo estilo';
+    saveAsButton.addEventListener('click', () => saveCartelaStyle(cartela, true));
+
+    wrap.appendChild(select);
+    wrap.appendChild(saveButton);
+    wrap.appendChild(saveAsButton);
+    return wrap;
+  }
+
+  function renderCartelaBlockStyleControls(cartela) {
+    const wrap = document.createElement('div');
+    wrap.appendChild(sectionLabel('Formato del bloque'));
+    const value = getEffectiveCartelaBlockStyle(cartela);
+    const alignment = value.alignment || {};
+    const options = [
+      ['left', 'Izquierda'],
+      ['center', 'Centro'],
+      ['right', 'Derecha'],
+    ];
+    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateCartelaBlockStyle({ columns: next })));
+    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateCartelaBlockStyle({ alignment: { ...alignment, role: next } })));
+    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateCartelaBlockStyle({ alignment: { ...alignment, name: next } })));
+    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateCartelaBlockStyle({ alignment: { ...alignment, text: next } })));
+    wrap.appendChild(localSelectRow('Alineación vertical del bloque', value.vertical_align || 'top', [
+      ['top', 'Arriba'],
+      ['center', 'Centrado'],
+      ['bottom', 'Abajo'],
+    ], (next) => updateCartelaBlockStyle({ vertical_align: next })));
+    wrap.appendChild(renderCartelaBlockTypographyControls(cartela, value.typography || {}));
     return wrap;
   }
 
@@ -1339,15 +1750,7 @@
     header.appendChild(removeButton);
     wrap.appendChild(header);
 
-    wrap.appendChild(localNumberRow('Columnas bloque', getSelectedBlockColumns(ref), 1, 6, (value) => updateSelectedBlockColumns(ref, value)));
-    wrap.appendChild(renderBlockAlignmentControls(material, ref));
-    wrap.appendChild(localSelectRow('Alineacion vertical bloque', getSelectedBlockVerticalAlign(ref), [
-      ['top', 'Arriba'],
-      ['center', 'Centrado'],
-      ['bottom', 'Abajo'],
-    ], (value) => updateSelectedBlockVerticalAlign(ref, value)));
-    wrap.appendChild(renderBlockTypographyControls(ref));
-    wrap.appendChild(inputRow('Titulo bloque', material.id, 'title', material.default_title || ''));
+    wrap.appendChild(inputRow('Título del bloque', material.id, 'title', material.default_title || ''));
 
     if (material.type === 'music_licenses') {
       wrap.appendChild(renderMusicThemesEditor(material));
@@ -1372,19 +1775,114 @@
     ];
 
     if (!materialHasPairedText(material)) {
-      wrap.appendChild(localSelectRow('Alineacion texto', alignment.text || 'center', options, (value) => updateSelectedBlockAlignment(ref, { text: value })));
+      wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (value) => updateSelectedBlockAlignment(ref, { text: value })));
       return wrap;
     }
 
-    wrap.appendChild(localSelectRow('Alineacion cargo', alignment.role || 'right', options, (value) => updateSelectedBlockAlignment(ref, { role: value })));
-    wrap.appendChild(localSelectRow('Alineacion nombre', alignment.name || 'left', options, (value) => updateSelectedBlockAlignment(ref, { name: value })));
+    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (value) => updateSelectedBlockAlignment(ref, { role: value })));
+    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (value) => updateSelectedBlockAlignment(ref, { name: value })));
+    return wrap;
+  }
+
+  function renderCartelaBlockTypographyControls(cartela, overrides) {
+    const wrap = document.createElement('div');
+    wrap.className = 'block-typography-settings';
+    wrap.appendChild(sectionLabel('Tipografía del bloque'));
+    wrap.appendChild(renderBlockFontActions());
+
+    const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
+    const fontCatalog = getFontCatalog();
+
+    BLOCK_TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
+      const base = settings.typography[key];
+      const override = overrides[key] || {};
+      const value = { ...base, ...override };
+      const row = document.createElement('div');
+      row.className = 'typography-row block-typography-row';
+
+      const labelEl = document.createElement('label');
+      labelEl.textContent = label;
+      row.appendChild(labelEl);
+
+      const sizeInput = document.createElement('input');
+      sizeInput.className = 'text-input';
+      sizeInput.type = 'number';
+      sizeInput.min = '1';
+      sizeInput.step = '1';
+      sizeInput.value = String(value.font_size);
+      sizeInput.placeholder = String(base.font_size);
+      sizeInput.addEventListener('change', () => updateCartelaBlockTypography(key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+      row.appendChild(sizeInput);
+
+      const fontSelect = document.createElement('select');
+      fontSelect.className = 'text-input';
+      fontCatalog.families.forEach((font) => {
+        const option = document.createElement('option');
+        option.value = font;
+        option.textContent = font;
+        fontSelect.appendChild(option);
+      });
+      if (!fontCatalog.families.includes(value.font_family)) {
+        const option = document.createElement('option');
+        option.value = value.font_family;
+        option.textContent = value.font_family;
+        fontSelect.appendChild(option);
+      }
+      fontSelect.value = value.font_family;
+      fontSelect.addEventListener('change', () => {
+        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+        updateCartelaBlockTypography(key, {
+          font_family: fontSelect.value,
+          font_style: nextStyle.style,
+          font_postscript_name: nextStyle.postscript_name,
+        }, { rerenderEditor: true });
+      });
+      row.appendChild(fontSelect);
+
+      const styleSelect = document.createElement('select');
+      styleSelect.className = 'text-input';
+      const styles = getFontStyles(value.font_family);
+      styles.forEach((fontStyle) => {
+        const option = document.createElement('option');
+        option.value = fontStyle.style;
+        option.textContent = fontStyle.style;
+        option.dataset.postscriptName = fontStyle.postscript_name || '';
+        styleSelect.appendChild(option);
+      });
+      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
+        const option = document.createElement('option');
+        option.value = value.font_style;
+        option.textContent = value.font_style;
+        option.dataset.postscriptName = value.font_postscript_name || '';
+        styleSelect.appendChild(option);
+      }
+      styleSelect.value = value.font_style;
+      styleSelect.addEventListener('change', () => {
+        const selected = styleSelect.selectedOptions[0];
+        updateCartelaBlockTypography(key, {
+          font_style: styleSelect.value,
+          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+        });
+      });
+      row.appendChild(styleSelect);
+
+      const colorInput = document.createElement('input');
+      colorInput.className = 'color-input';
+      colorInput.type = 'color';
+      colorInput.value = normalizeColor(value.color);
+      colorInput.addEventListener('input', () => updateCartelaBlockTypography(key, { color: colorInput.value }));
+      row.appendChild(colorInput);
+
+      wrap.appendChild(row);
+    });
+
     return wrap;
   }
 
   function renderBlockTypographyControls(ref) {
     const wrap = document.createElement('div');
     wrap.className = 'block-typography-settings';
-    wrap.appendChild(sectionLabel('Tipografia bloque'));
+    wrap.appendChild(sectionLabel('Tipografía del bloque'));
     wrap.appendChild(renderBlockFontActions());
 
     const settings = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {});
@@ -1476,7 +1974,7 @@
 
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
-    resetButton.textContent = 'Restablecer tipografia bloque';
+    resetButton.textContent = 'Restablecer tipografía del bloque';
     resetButton.addEventListener('click', () => resetSelectedBlockTypography(ref));
     wrap.appendChild(resetButton);
     return wrap;
@@ -1485,12 +1983,6 @@
   function renderBlockFontActions() {
     const actions = document.createElement('div');
     actions.className = 'block-font-actions';
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = state.fontCatalog ? 'Recargar fuentes del sistema' : 'Cargar fuentes del sistema';
-    button.addEventListener('click', loadSystemFonts);
-    actions.appendChild(button);
 
     const status = document.createElement('span');
     status.textContent = fontCatalogStatusText();
@@ -1619,11 +2111,217 @@
   function updateCartela(fields) {
     const cartela = getSelectedCartela();
     if (!cartela) return;
-    Object.assign(cartela, fields);
+    const style = getStyleById(cartela.style_id);
+    const styleFields = {};
+    const cartelaFields = {};
+    Object.entries(fields).forEach(([key, value]) => {
+      if (style && STYLE_CARTELA_FIELDS.includes(key)) {
+        styleFields[key] = value;
+      } else {
+        cartelaFields[key] = value;
+      }
+    });
+    if (Object.keys(styleFields).length) {
+      style.cartela = normalizeStyleCartela({ ...(style.cartela || {}), ...styleFields });
+      syncStyleSnapshot(style.id);
+    }
+    Object.assign(cartela, cartelaFields);
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
     refreshPdfIfActive();
+  }
+
+  function getEffectiveCartelaBlockStyle(cartela) {
+    const styleBlock = getCartelaStyleBlock(cartela);
+    if (styleBlock) return styleBlock;
+    const firstRef = getCartelaRefs(cartela)[0];
+    const firstPage = firstRef ? findPageWithRef(cartela, firstRef) : null;
+    const settings = firstPage && firstPage.source_ref_settings && firstPage.source_ref_settings[firstRef]
+      ? firstPage.source_ref_settings[firstRef]
+      : {};
+    return normalizeStyleBlock(settings);
+  }
+
+  function updateCartelaBlockStyle(fields) {
+    const cartela = getSelectedCartela();
+    if (!cartela) return;
+    const style = getStyleById(cartela.style_id);
+    if (style) {
+      style.block = normalizeStyleBlock({
+        ...(style.block || {}),
+        ...fields,
+        alignment: fields.alignment || (style.block && style.block.alignment) || {},
+        typography: fields.typography || (style.block && style.block.typography) || {},
+      });
+      syncStyleSnapshot(style.id);
+    } else {
+      applyBlockStyleToCartelaRefs(cartela, fields);
+    }
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderPreview();
+    refreshPdfIfActive();
+  }
+
+  function updateCartelaBlockTypography(key, fields, options = {}) {
+    const cartela = getSelectedCartela();
+    if (!cartela) return;
+    const current = getEffectiveCartelaBlockStyle(cartela);
+    const typography = normalizeTypographyOverrides({
+      ...(current.typography || {}),
+      [key]: {
+        ...(current.typography && current.typography[key] ? current.typography[key] : {}),
+        ...fields,
+      },
+    });
+    updateCartelaBlockStyle({ typography });
+    if (options.rerenderEditor) renderEditor();
+  }
+
+  function applyBlockStyleToCartelaRefs(cartela, fields) {
+    (cartela.pages || []).forEach((page) => {
+      page.source_ref_settings = page.source_ref_settings || {};
+      (page.source_refs || []).forEach((ref) => {
+        const current = page.source_ref_settings[ref] || {};
+        page.source_ref_settings[ref] = normalizeStyleBlock({
+          ...current,
+          ...fields,
+          alignment: fields.alignment || current.alignment || {},
+          typography: fields.typography || current.typography || {},
+        });
+      });
+    });
+  }
+
+  function syncLoadedStyleSnapshots() {
+    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
+    state.structure.cartelas.forEach((cartela) => applyStyleSnapshotToCartela(cartela, getStyleById(cartela.style_id)));
+  }
+
+  function syncStyleSnapshot(styleId) {
+    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
+    const style = getStyleById(styleId);
+    state.structure.cartelas
+      .filter((cartela) => cartela.style_id === styleId)
+      .forEach((cartela) => applyStyleSnapshotToCartela(cartela, style));
+  }
+
+  function applyStyleSnapshotToCartela(cartela, style) {
+    if (!cartela || !style) return;
+    Object.assign(cartela, normalizeStyleCartela(style.cartela || {}));
+    applyBlockStyleToCartelaRefs(cartela, normalizeStyleBlock(style.block || {}));
+  }
+
+  function createStyleFromCartela(cartela, name, id) {
+    return {
+      schema: 'credits_cartela_style_json',
+      version: 1,
+      id,
+      name,
+      file_name: `${safeStyleId(id)}.json`,
+      filePath: null,
+      fileHandle: null,
+      cartela: normalizeStyleCartela(getEffectiveCartela(cartela)),
+      block: normalizeStyleBlock(getEffectiveCartelaBlockStyle(cartela)),
+    };
+  }
+
+  async function saveCartelaStyle(cartela, forceSaveAs) {
+    if (!cartela) return;
+    if (!state.styleDirectoryPath && !state.styleDirectoryHandle) {
+      window.alert('Elige primero una carpeta de estilos en Ajustes.');
+      return;
+    }
+
+    try {
+      let style = getStyleById(cartela.style_id);
+      if (forceSaveAs || !style) {
+        const currentName = style ? style.name : getCartelaDisplayName(cartela);
+        const id = uniqueStyleId(safeStyleId(currentName || 'Nuevo estilo'));
+        const newStyle = createStyleFromCartela(cartela, currentName || 'Nuevo estilo', id);
+        const result = await writeStyleFile(newStyle, { forceSaveAs: true });
+        if (!result || result.canceled) return;
+        newStyle.filePath = result.filePath || newStyle.filePath;
+        newStyle.file_name = result.name || newStyle.file_name;
+        rememberFileDirectory(STORAGE_KEYS.stylesDir, newStyle.filePath);
+        newStyle.name = styleNameFromFileName(newStyle.file_name, newStyle.name);
+        state.styles.push(newStyle);
+        state.styles.sort((a, b) => a.name.localeCompare(b.name));
+        cartela.style_id = newStyle.id;
+      } else {
+        const confirmed = await confirmStyleOverwrite(style.name);
+        if (!confirmed) return;
+        const result = await writeStyleFile(style, { forceSaveAs: false });
+        if (!result || result.canceled) return;
+        style.filePath = result.filePath || style.filePath;
+        style.file_name = result.name || style.file_name;
+        rememberFileDirectory(STORAGE_KEYS.stylesDir, style.filePath);
+      }
+      updateStylesStatus();
+      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      renderCartelaList();
+      renderEditor();
+      renderPreview();
+      refreshPdfIfActive();
+    } catch (error) {
+      window.alert('No se pudo guardar el estilo: ' + error.message);
+    }
+  }
+
+  async function confirmStyleOverwrite(styleName) {
+    const native = nativeBridge();
+    if (native && native.confirm) {
+      const result = await native.confirm({
+        title: 'Actualizar estilo',
+        message: `Actualizar el estilo "${styleName}"? Este cambio se aplicará a las cartelas que lo usen.`,
+        confirmLabel: 'Actualizar',
+      });
+      return !!(result && result.confirmed);
+    }
+    return window.confirm(`Actualizar el estilo "${styleName}"? Este cambio se aplicará a las cartelas que lo usen.`);
+  }
+
+  function uniqueStyleId(baseId) {
+    let candidate = baseId || 'estilo';
+    let index = 2;
+    const existing = new Set(state.styles.map((style) => style.id));
+    while (existing.has(candidate)) {
+      candidate = `${baseId}_${index}`;
+      index += 1;
+    }
+    return candidate;
+  }
+
+  async function writeStyleFile(style, options = {}) {
+    const data = serializeCartelaStyle(style);
+    const fileName = style.file_name || `${safeStyleId(style.id)}.json`;
+    const native = nativeBridge();
+    if (native && native.saveStyleJson) {
+      const result = await native.saveStyleJson({
+        directory: state.styleDirectoryPath,
+        filePath: style.filePath,
+        fileName,
+        forceSaveAs: !!options.forceSaveAs,
+        data,
+      });
+      return result;
+    }
+
+    if (!state.styleDirectoryHandle) throw new Error('No hay carpeta de estilos disponible.');
+    const handle = style.fileHandle || await state.styleDirectoryHandle.getFileHandle(fileName, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(JSON.stringify(data, null, 2));
+    await writable.close();
+    style.fileHandle = handle;
+    style.file_name = fileName;
+    return { canceled: false, name: fileName };
+  }
+
+  function styleNameFromFileName(fileName, fallback) {
+    return String(fileName || '')
+      .replace(/\.json$/i, '')
+      .replace(/[_-]+/g, ' ')
+      .trim() || fallback;
   }
 
   function getSelectedCartela() {
@@ -1636,6 +2334,20 @@
     return (cartela.pages || []).flatMap((page) => page.source_refs || []);
   }
 
+  function getEffectiveCartela(cartela) {
+    const style = getStyleById(cartela && cartela.style_id);
+    if (!style) return cartela || {};
+    return {
+      ...(cartela || {}),
+      ...(style.cartela || {}),
+    };
+  }
+
+  function getCartelaStyleBlock(cartela) {
+    const style = getStyleById(cartela && cartela.style_id);
+    return style ? normalizeStyleBlock(style.block || {}) : null;
+  }
+
   function getCartelaDisplayName(cartela, index = 0) {
     const refs = getCartelaRefs(cartela);
     const titles = refs
@@ -1645,28 +2357,36 @@
     return titles.length ? titles.join(' + ') : `Cartela ${index + 1}`;
   }
 
-  function getSourceRefColumns(page, ref) {
+  function getSourceRefColumns(page, ref, cartela) {
+    const styleBlock = getCartelaStyleBlock(cartela);
+    if (styleBlock) return Math.max(1, Number(styleBlock.columns) || 1);
     const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
       ? page.source_ref_settings[ref]
       : {};
     return Math.max(1, Number(settings.columns) || 1);
   }
 
-  function getSourceRefAlignment(page, ref, material, cartela) {
+  function getSourceRefAlignment(page, ref, material, effectiveCartela, sourceCartela) {
+    const styleBlock = getCartelaStyleBlock(sourceCartela);
+    if (styleBlock) return normalizeBlockAlignment(styleBlock.alignment, material, effectiveCartela);
     const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
       ? page.source_ref_settings[ref]
       : {};
-    return normalizeBlockAlignment(settings.alignment, material, cartela);
+    return normalizeBlockAlignment(settings.alignment, material, effectiveCartela);
   }
 
-  function getSourceRefVerticalAlign(page, ref) {
+  function getSourceRefVerticalAlign(page, ref, cartela) {
+    const styleBlock = getCartelaStyleBlock(cartela);
+    if (styleBlock) return normalizeVerticalAlign(styleBlock.vertical_align);
     const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
       ? page.source_ref_settings[ref]
       : {};
     return normalizeVerticalAlign(settings.vertical_align);
   }
 
-  function getSourceRefTypography(page, ref) {
+  function getSourceRefTypography(page, ref, cartela) {
+    const styleBlock = getCartelaStyleBlock(cartela);
+    if (styleBlock) return normalizeTypographyOverrides(styleBlock.typography);
     const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
       ? page.source_ref_settings[ref]
       : {};
@@ -1911,12 +2631,15 @@
     const input = document.createElement('input');
     input.className = 'text-input';
     input.type = 'number';
-    input.min = String(min);
-    input.max = String(max);
+    if (min !== null && min !== undefined) input.min = String(min);
+    if (max !== null && max !== undefined) input.max = String(max);
     input.step = String(step);
     input.value = String(value);
     input.addEventListener('change', () => {
-      const next = Math.max(min, Math.min(max, Number(input.value) || min));
+      const raw = Number(input.value);
+      let next = Number.isFinite(raw) ? raw : (min !== null && min !== undefined ? min : 0);
+      if (min !== null && min !== undefined) next = Math.max(min, next);
+      if (max !== null && max !== undefined) next = Math.min(max, next);
       input.value = String(next);
       onInput(next);
       renderEditor();
@@ -2129,7 +2852,7 @@
   function renderPdfPreview() {
     if (!state.render) {
       els.pdfPreview.className = 'pdf-preview empty-state';
-      els.pdfPreview.textContent = 'Carga un XLSX para ver las paginas.';
+      els.pdfPreview.textContent = 'Carga un XLSX para ver las páginas.';
       updatePdfToolbar(0, 0);
       return;
     }
@@ -2146,7 +2869,7 @@
 
     if (!page) {
       els.pdfPreview.className = 'pdf-preview empty-state';
-      els.pdfPreview.textContent = 'No hay paginas activas.';
+      els.pdfPreview.textContent = 'No hay páginas activas.';
       return;
     }
 
@@ -2158,8 +2881,32 @@
     const sheetEl = makePdfSheetElement(page, layout);
     sheetEl.style.transform = `scale(${state.pngPreviewZoom})`;
     frameEl.appendChild(sheetEl);
+    if (state.showMarginOverlay) frameEl.appendChild(makeMarginOverlay(layout));
     els.pdfPreview.appendChild(frameEl);
     updatePngZoomStatus();
+  }
+
+  function makeMarginOverlay(layout) {
+    const overlay = document.createElement('div');
+    overlay.className = 'margin-overlay';
+    const zoom = state.pngPreviewZoom;
+    const sideMargin = 68;
+    const guides = [
+      ['vertical', sideMargin * zoom],
+      ['vertical', (layout.page_width - sideMargin) * zoom],
+      ['horizontal', layout.page_top_margin * zoom],
+      ['horizontal', (layout.page_height - layout.page_bottom_margin) * zoom],
+    ];
+
+    guides.forEach(([direction, position]) => {
+      const guide = document.createElement('div');
+      guide.className = `margin-guide ${direction}`;
+      if (direction === 'vertical') guide.style.left = `${position}px`;
+      else guide.style.top = `${position}px`;
+      overlay.appendChild(guide);
+    });
+
+    return overlay;
   }
 
   function makePdfSheetElement(page, layout, options = {}) {
@@ -2176,7 +2923,7 @@
 
     const pageBody = document.createElement('div');
     pageBody.className = 'pdf-page-body';
-    pageBody.style.gap = `${layout.block_gap}px`;
+    pageBody.style.gap = `${cartelaBlockGap(page.cartela, layout)}px`;
     pageBody.style.justifyContent = pdfPageVerticalJustify(page);
     pageBody.style.transform = `translateY(${Number(page.cartela.vertical_offset) || 0}px)`;
 
@@ -2357,7 +3104,7 @@
     return 1;
   }
 
-  function unitRenderOptions(unit, previousCreditSourceId, cartela, hasPreviousUnit) {
+  function unitRenderOptions(unit, previousCreditSourceId, cartela, hasPreviousUnit = false) {
     const sourceId = creditSourceId(unit);
     const repeatedNameRow = !!(
       cartela &&
@@ -2368,18 +3115,17 @@
     return {
       hideRole: !!(sourceId && sourceId === previousCreditSourceId),
       repeatedNameRow,
-      groupGapBefore: !!(hasPreviousUnit && cartela && cartela.orientation === 'vertical' && sourceId && !repeatedNameRow),
+      itemGapBefore: !!(
+        hasPreviousUnit &&
+        cartela &&
+        cartela.orientation === 'vertical' &&
+        !repeatedNameRow
+      ),
     };
   }
 
   function creditSourceId(unit) {
     return unit && (unit.kind === 'credit' || unit.kind === 'crew_credit') ? unit.source_item_id || null : null;
-  }
-
-  function usesCompactVerticalNameRows(block, cartela) {
-    if (!cartela || cartela.orientation !== 'vertical') return false;
-    const units = getRenderedBlockUnits(block);
-    return units.some((unit) => unit.kind === 'credit' || unit.kind === 'crew_credit');
   }
 
   function countTitleLine(title) {
@@ -2399,6 +3145,8 @@
     els.pdfLastPageBtn.disabled = current >= total;
     els.pdfMinusLinesBtn.disabled = total === 0;
     els.pdfPlusLinesBtn.disabled = total === 0;
+    els.toggleMarginsBtn.disabled = total === 0;
+    els.toggleMarginsBtn.classList.toggle('active-toggle', state.showMarginOverlay);
     els.pdfPageTitleInput.disabled = !page;
     els.pdfPageTitleInput.value = page ? resolveOverride(state.structure.overrides || {}, page.id, 'title', '') : '';
     els.pdfFontMultiplierInput.disabled = !page;
@@ -2409,8 +3157,15 @@
     els.pdfVerticalOffsetInput.value = page ? String(Number(page.cartela.vertical_offset) || 0) : '';
     els.pdfBaseNameInput.disabled = !state.structure;
     els.pdfBaseNameInput.value = normalizeSettings(state.structure && state.structure.settings ? state.structure.settings : {}).pdf_base_name;
+    els.exportFromPageInput.disabled = total === 0;
+    els.exportToPageInput.disabled = total === 0;
+    els.exportFromPageInput.max = String(Math.max(1, total));
+    els.exportToPageInput.max = String(Math.max(1, total));
+    if (!Number(els.exportFromPageInput.value) || Number(els.exportFromPageInput.value) > total) els.exportFromPageInput.value = '1';
+    if (!Number(els.exportToPageInput.value) || Number(els.exportToPageInput.value) > total) els.exportToPageInput.value = String(Math.max(1, total));
     els.exportCurrentPdfBtn.disabled = !page;
     els.exportAllPdfBtn.disabled = total === 0;
+    els.exportMovBtn.disabled = total === 0;
     els.pdfLineStatus.textContent = page ? getPdfLineStatus(page) : '0/0';
   }
 
@@ -2477,13 +3232,25 @@
     els.pngZoomStatus.textContent = `${Math.round(state.pngPreviewZoom * 100)}%`;
   }
 
+  function toggleMarginOverlay() {
+    state.showMarginOverlay = !state.showMarginOverlay;
+    if (els.toggleMarginsBtn) {
+      els.toggleMarginsBtn.classList.toggle('active-toggle', state.showMarginOverlay);
+      els.toggleMarginsBtn.textContent = state.showMarginOverlay ? 'Ocultar márgenes' : 'Mostrar márgenes';
+    }
+    renderPdfPreview();
+  }
+
   function updateCurrentPdfCartela(fields) {
     if (!state.render || !state.structure) return;
     const page = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {})[state.pdfPageIndex];
     if (!page || !page.cartela) return;
     const cartela = (state.structure.cartelas || []).find((candidate) => candidate.id === page.cartela.id);
     if (!cartela) return;
-    Object.assign(cartela, fields);
+    const previousSelected = state.selectedCartelaId;
+    state.selectedCartelaId = cartela.id;
+    updateCartela(fields);
+    state.selectedCartelaId = previousSelected;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
@@ -2529,10 +3296,25 @@
     if (!pages.length) return;
     const selectedPages = mode === 'current'
       ? [{ page: pages[state.pdfPageIndex], pageNumber: state.pdfPageIndex + 1 }]
-      : pages.map((page, index) => ({ page, pageNumber: index + 1 }));
+      : getExportPageRange(pages).map((page, index) => ({
+        page,
+        pageNumber: getExportRangeStart(pages) + index,
+      }));
     const settings = normalizeSettings(state.structure.settings || {});
     const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
+    const native = nativeBridge();
     try {
+      if (native && mode === 'all' && native.exportPngSequence) {
+        const exportedPages = [];
+        for (const item of selectedPages.filter((candidate) => candidate.page)) {
+          const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
+          const blob = await renderPageToPngBlob(item.page, layout);
+          exportedPages.push({ fileName, bytes: await blobToBytes(blob) });
+        }
+        await native.exportPngSequence({ pages: exportedPages });
+        return;
+      }
+
       if (mode === 'all' && window.showDirectoryPicker) {
         const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
         for (const item of selectedPages.filter((candidate) => candidate.page)) {
@@ -2559,6 +3341,83 @@
     }
   }
 
+  async function exportMov() {
+    if (!state.render || !state.structure) return;
+    const native = nativeBridge();
+    if (!native || !native.chooseMovPath || !native.exportMovSequence) {
+      window.alert('La exportacion MOV necesita la app Electron.');
+      return;
+    }
+
+    const layout = getRenderLayout();
+    const pages = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {});
+    if (!pages.length) return;
+
+    const rangeStart = getExportRangeStart(pages);
+    const selectedPages = getExportPageRange(pages).map((page, index) => ({
+      page,
+      pageNumber: rangeStart + index,
+    })).filter((candidate) => candidate.page);
+    if (!selectedPages.length) return;
+
+    const settings = normalizeSettings(state.structure.settings || {});
+    const fps = Math.max(1, Math.round(Number(settings.movie_fps) || 25));
+    const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
+
+    try {
+      const saveResult = await native.chooseMovPath({
+        defaultPath: joinPath(readLocalPreference(STORAGE_KEYS.renderDir), `${baseName}.mov`),
+      });
+      if (!saveResult || saveResult.canceled) return;
+      rememberFileDirectory(STORAGE_KEYS.renderDir, saveResult.filePath);
+
+      els.exportMovBtn.disabled = true;
+      els.exportMovBtn.textContent = 'Exportando MOV...';
+      const moviePages = [];
+      for (const item of selectedPages) {
+        const blob = await renderPageToPngBlob(item.page, layout);
+        const duration = Math.max(0, Number(item.page.cartela && item.page.cartela.duration) || 0);
+        moviePages.push({
+          pageNumber: item.pageNumber,
+          duration,
+          frameCount: Math.max(1, Math.round(duration * fps)),
+          bytes: await blobToBytes(blob),
+        });
+      }
+
+      await native.exportMovSequence({
+        filePath: saveResult.filePath,
+        fps,
+        pages: moviePages,
+      });
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      window.alert('No se pudo exportar MOV: ' + error.message);
+    } finally {
+      els.exportMovBtn.textContent = 'Exportar MOV';
+      updatePdfToolbar(state.pdfPageIndex + 1, pages.length);
+    }
+  }
+
+  function getExportRangeStart(pages) {
+    const total = pages.length;
+    return Math.max(1, Math.min(total, Number(els.exportFromPageInput.value) || 1));
+  }
+
+  function getExportRangeEnd(pages) {
+    const total = pages.length;
+    const start = getExportRangeStart(pages);
+    return Math.max(start, Math.min(total, Number(els.exportToPageInput.value) || total));
+  }
+
+  function getExportPageRange(pages) {
+    const start = getExportRangeStart(pages);
+    const end = getExportRangeEnd(pages);
+    els.exportFromPageInput.value = String(start);
+    els.exportToPageInput.value = String(end);
+    return pages.slice(start - 1, end);
+  }
+
   function renderPageToPngBlob(page, layout) {
     const canvas = document.createElement('canvas');
     canvas.width = layout.page_width;
@@ -2575,6 +3434,7 @@
   }
 
   function drawCanvasPage(ctx, page, layout) {
+    const blockGap = cartelaBlockGap(page.cartela, layout);
     const x = 68;
     const y = layout.page_top_margin;
     const width = layout.page_width - (x * 2);
@@ -2585,18 +3445,18 @@
     const titleMetrics = titleText ? canvasTextMetrics('page_header', page.cartela, layout) : null;
     const titleHeight = titleMetrics ? titleMetrics.lineHeight : 0;
     const totalBlocksHeight = heights.reduce((total, value) => total + value, 0);
-    const gaps = Math.max(0, blocks.length - 1) * layout.block_gap;
-    const totalHeight = titleHeight + (titleHeight && blocks.length ? layout.block_gap : 0) + totalBlocksHeight + gaps;
+    const gaps = Math.max(0, blocks.length - 1) * blockGap;
+    const totalHeight = titleHeight + (titleHeight && blocks.length ? blockGap : 0) + totalBlocksHeight + gaps;
     let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page)) + (Number(page.cartela.vertical_offset) || 0);
 
     if (titleText && titleMetrics) {
       drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center');
-      cursorY += titleMetrics.lineHeight + (blocks.length ? layout.block_gap : 0);
+      cursorY += titleMetrics.lineHeight + (blocks.length ? blockGap : 0);
     }
 
     blocks.forEach((block, index) => {
       drawCanvasBlock(ctx, block, page.cartela, layout, x, cursorY, width);
-      cursorY += heights[index] + layout.block_gap;
+      cursorY += heights[index] + blockGap;
     });
   }
 
@@ -2612,7 +3472,7 @@
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     if (title) {
       height += canvasTextMetrics('block_title', cartela, layout, block.typography).lineHeight;
-      if (units.length) height += layout.block_gap;
+      if (units.length) height += cartelaBlockGap(cartela, layout);
     }
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
@@ -2637,7 +3497,7 @@
     if (title) {
       const metrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
       drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
-      cursorY += metrics.lineHeight + (units.length ? layout.block_gap : 0);
+      cursorY += metrics.lineHeight + (units.length ? cartelaBlockGap(cartela, layout) : 0);
     }
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
@@ -2666,7 +3526,7 @@
   function canvasRowGaps(units, cartela, layout, columns) {
     const items = units || [];
     const rowCount = Math.ceil(items.length / Math.max(1, columns));
-    const gaps = Array.from({ length: Math.max(0, rowCount - 1) }, () => layout.block_gap);
+    const gaps = Array.from({ length: Math.max(0, rowCount - 1) }, () => 0);
     if (!cartela || cartela.orientation !== 'vertical') return gaps;
 
     for (let row = 1; row < rowCount; row += 1) {
@@ -2674,9 +3534,18 @@
       const unit = items[firstIndex];
       const previousUnit = items[firstIndex - 1];
       const options = unitRenderOptions(unit, creditSourceId(previousUnit), cartela, firstIndex > 0);
-      gaps[row - 1] = options.repeatedNameRow ? 0 : layout.block_gap;
+      gaps[row - 1] = options.itemGapBefore ? cartelaBlockGap(cartela, layout) : 0;
     }
     return gaps;
+  }
+
+  function cartelaBlockGap(cartela, layout) {
+    return Math.max(0, Number(layout.block_gap) || 0) * normalizeBlockGapMultiplier(cartela && cartela.block_gap_multiplier);
+  }
+
+  function normalizeBlockGapMultiplier(value) {
+    const number = Number(value);
+    return Math.max(0, Number.isFinite(number) ? number : 1);
   }
 
   function measureCanvasUnit(unit, block, cartela, layout, width, options = {}) {
@@ -2692,7 +3561,7 @@
       const orientation = cartela.orientation || 'horizontal';
       const roleHeight = canvasTextMetrics('role', cartela, layout, block.typography).lineHeight;
       const nameHeight = canvasTextMetrics('name', cartela, layout, block.typography).lineHeight;
-      return orientation === 'vertical' ? roleHeight + layout.block_gap + nameHeight : Math.max(roleHeight, nameHeight);
+      return orientation === 'vertical' ? roleHeight + nameHeight : Math.max(roleHeight, nameHeight);
     }
     return canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, block.typography).lineHeight;
   }
@@ -2730,7 +3599,7 @@
         return;
       }
       drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center');
-      drawCanvasText(ctx, name, x, y + roleMetrics.lineHeight + layout.block_gap, width, nameMetrics, alignment.name || 'center');
+      drawCanvasText(ctx, name, x, y + roleMetrics.lineHeight, width, nameMetrics, alignment.name || 'center');
       return;
     }
     const halfWidth = (width - layout.role_name_gap) / 2;
@@ -2786,6 +3655,12 @@
   }
 
   async function saveBlobAs(blob, fileName) {
+    const native = nativeBridge();
+    if (native && native.savePng) {
+      await native.savePng({ fileName, bytes: await blobToBytes(blob) });
+      return;
+    }
+
     if (!window.showSaveFilePicker) {
       downloadBlob(blob, fileName);
       return;
@@ -2804,6 +3679,10 @@
     await writable.close();
   }
 
+  async function blobToBytes(blob) {
+    return await blob.arrayBuffer();
+  }
+
   async function writeBlobToDirectory(directory, fileName, blob) {
     const handle = await directory.getFileHandle(fileName, { create: true });
     const writable = await handle.createWritable();
@@ -2818,29 +3697,30 @@
   function renderPdfBlock(block, cartela, layout) {
     const blockEl = document.createElement('div');
     blockEl.className = 'pdf-block';
-    blockEl.style.setProperty('--block-gap', `${layout.block_gap}px`);
     if (block.missing_source) {
       blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
       return blockEl;
     }
 
     const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela, block.typography);
-    if (blockTitle) blockEl.appendChild(blockTitle);
+    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+    if (blockTitle) {
+      if (units.length) blockTitle.style.marginBottom = `${cartelaBlockGap(cartela, layout)}px`;
+      blockEl.appendChild(blockTitle);
+    }
 
     const contentEl = document.createElement('div');
     contentEl.className = 'pdf-block-content';
     contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
     contentEl.style.columnGap = `${layout.column_gap}px`;
-    contentEl.style.rowGap = `${usesCompactVerticalNameRows(block, cartela) ? 0 : layout.block_gap}px`;
-    contentEl.style.setProperty('--block-gap', `${layout.block_gap}px`);
+    contentEl.style.rowGap = '0';
 
-    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     let previousCreditSourceId = null;
     units.forEach((unit, index) => {
+      const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
       if (block.type === 'music_licenses' && unit.lines) {
-        contentEl.appendChild(renderPdfTheme(unit, block, cartela));
+        contentEl.appendChild(renderPdfTheme(unit, block, cartela, layout, options));
       } else {
-        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
         contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, options));
         previousCreditSourceId = creditSourceId(unit);
       }
@@ -2864,9 +3744,10 @@
     return title;
   }
 
-  function renderPdfTheme(theme, block, cartela) {
+  function renderPdfTheme(theme, block, cartela, layout, options = {}) {
     const themeEl = document.createElement('div');
     themeEl.className = 'pdf-theme';
+    if (options.itemGapBefore) themeEl.style.marginTop = `${cartelaBlockGap(cartela, layout)}px`;
     (theme.lines || []).forEach((line, index) => {
       const lineEl = document.createElement('div');
       lineEl.className = index === 0 ? 'pdf-theme-title' : 'pdf-line';
@@ -2879,7 +3760,6 @@
       });
       themeEl.appendChild(lineEl);
     });
-    themeEl.style.setProperty('--block-gap', `${getRenderLayout().block_gap}px`);
     return themeEl;
   }
 
@@ -2888,13 +3768,11 @@
     const alignment = block.alignment || {};
     const unitEl = document.createElement('div');
     unitEl.className = `pdf-unit ${orientation}`;
-    if (options.groupGapBefore) unitEl.style.marginTop = `${layout.block_gap}px`;
+    if (options.itemGapBefore) unitEl.style.marginTop = `${cartelaBlockGap(cartela, layout)}px`;
     if (orientation === 'horizontal') {
       unitEl.style.gap = `${layout.role_name_gap}px`;
-    } else if (options.repeatedNameRow) {
-      unitEl.style.gap = '0';
     } else {
-      unitEl.style.gap = `${layout.block_gap}px`;
+      unitEl.style.gap = '0';
     }
 
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
@@ -2970,22 +3848,25 @@
         typography: block.typography,
         textAlign: 'center',
       });
-      if (blockTitle) blockPageEl.appendChild(blockTitle);
 
       const contentEl = document.createElement('div');
       contentEl.className = 'render-block-content';
       contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
       contentEl.style.columnGap = `${layout.column_gap}px`;
-      contentEl.style.rowGap = `${usesCompactVerticalNameRows(block, cartela) ? 0 : layout.block_gap}px`;
+      contentEl.style.rowGap = '0';
 
       const units = blockPage.items || [];
+      if (blockTitle) {
+        if (units.length) blockTitle.style.marginBottom = `${cartelaBlockGap(cartela, layout)}px`;
+        blockPageEl.appendChild(blockTitle);
+      }
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
+        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
         if (block.type === 'music_licenses' && unit.lines) {
           const themeEl = document.createElement('div');
           themeEl.className = 'render-theme';
-          themeEl.style.paddingTop = `${layout.block_gap / 2}px`;
-          themeEl.style.paddingBottom = `${layout.block_gap / 2}px`;
+          if (options.itemGapBefore) themeEl.style.marginTop = `${cartelaBlockGap(cartela, layout)}px`;
           unit.lines.forEach((line, lineIndex) => {
             themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input', {
               styleKey: lineIndex === 0 ? 'role' : 'name',
@@ -2997,7 +3878,6 @@
           });
           contentEl.appendChild(themeEl);
         } else {
-          const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0);
           contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, {
             ...options,
             typography: block.typography,
@@ -3015,13 +3895,11 @@
     const orientation = cartela.orientation || 'horizontal';
     const unitEl = document.createElement('div');
     unitEl.className = `render-unit ${orientation}`;
-    if (options.groupGapBefore) unitEl.style.marginTop = `${layout.block_gap}px`;
+    if (options.itemGapBefore) unitEl.style.marginTop = `${cartelaBlockGap(cartela, layout)}px`;
     if (orientation === 'horizontal') {
       unitEl.style.gap = `${layout.role_name_gap}px`;
-    } else if (options.repeatedNameRow) {
-      unitEl.style.gap = '0';
     } else {
-      unitEl.style.gap = `${layout.block_gap}px`;
+      unitEl.style.gap = '0';
     }
     if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
       if (options.repeatedNameRow) {
@@ -3079,7 +3957,34 @@
   async function saveJsonFile(kind, forceSaveAs = false) {
     const data = kind === 'structure_json' ? getStructureJsonForOutput() : state.render;
     if (!data) {
-      window.alert(kind === 'structure_json' ? 'Carga primero un XLSX o structure_json.' : 'Genera primero un render_json.');
+      window.alert(kind === 'structure_json' ? 'Carga primero un Excel o una estructura.' : 'Genera primero un render final.');
+      return;
+    }
+
+    const native = nativeBridge();
+    if (native && native.saveJson) {
+      const pathKey = kind === 'structure_json' ? 'structureFilePath' : 'renderFilePath';
+      const dirKey = kind === 'structure_json' ? STORAGE_KEYS.structureDir : STORAGE_KEYS.renderDir;
+      const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
+      const suggestedName = `${sheet}_${kind}.json`;
+      try {
+        const result = await native.saveJson({
+          data,
+          filePath: state[pathKey],
+          forceSaveAs,
+          suggestedName,
+          defaultPath: state[pathKey] || joinPath(readLocalPreference(dirKey), suggestedName),
+          title: kind === 'structure_json' ? 'Guardar estructura de créditos' : 'Guardar render final',
+        });
+        if (!result || result.canceled) return;
+        state[pathKey] = result.filePath || null;
+        rememberFileDirectory(dirKey, result.filePath);
+        if (kind === 'structure_json' && els.structureFileStatus) {
+          els.structureFileStatus.textContent = result.name || 'Estructura guardada';
+        }
+      } catch (error) {
+        window.alert('No se pudo guardar el JSON: ' + error.message);
+      }
       return;
     }
 
@@ -3149,6 +4054,7 @@
     if (material.type === 'music_licenses') return 'music_licenses';
     if (material.type === 'thanks') return 'thanks';
     if (material.type === 'logos') return 'logos';
+    if (material.type === 'closing') return 'closing';
     return 'card';
   }
 
@@ -3166,17 +4072,27 @@
   }
 
   function makeBlockId(block, index) {
-    return `block_${safeFilePart(block.group || index + 1)}_${block.start_row || index + 1}_${safeFilePart(block.title || 'block')}`;
+    return `block_${safeFilePart(block.group || index + 1)}_${safeFilePart(block.title || 'block')}`;
+  }
+
+  function makeCrewMaterialId(blockId, title) {
+    return `${blockId}_section_${safeFilePart(title || 'section')}`;
+  }
+
+  function uniqueMaterialId(baseId, seenIds) {
+    const count = (seenIds.get(baseId) || 0) + 1;
+    seenIds.set(baseId, count);
+    return count === 1 ? baseId : `${baseId}_${String(count).padStart(2, '0')}`;
   }
 
   function makeItemId(blockId, item, index) {
     const label = item.role || item.title || item.actor || item.value || item.kind || 'item';
-    return `${blockId}_item_${item.row || index + 1}_${safeFilePart(label)}`;
+    return `${blockId}_item_${String(index + 1).padStart(3, '0')}_${safeFilePart(label)}`;
   }
 
   function makeNameId(blockId, item, name, index) {
-    const itemRow = item.row || 'x';
-    return `${blockId}_name_${itemRow}_${name.row || index + 1}_${safeFilePart(name.name || 'name')}`;
+    const label = item.role || item.title || item.actor || item.value || item.kind || 'item';
+    return `${blockId}_name_${safeFilePart(label)}_${String(index + 1).padStart(3, '0')}_${safeFilePart(name.name || 'name')}`;
   }
 
   function safeFilePart(value) {
