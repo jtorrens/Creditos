@@ -28,13 +28,13 @@ echo === Instalando/actualizando dependencias ===
 cd /d "%DESKTOP%"
 if errorlevel 1 goto error
 
-npm install
+call npm install
 if errorlevel 1 goto error
 
 echo.
 echo === Generando instalador Windows ===
 if exist "%DIST%\*.exe" del /q "%DIST%\*.exe" >nul 2>nul
-npm run dist:win
+call npm run dist:win
 if errorlevel 1 goto error
 
 echo.
