@@ -9,3 +9,5 @@ node_modules/
 test/renders/
 apps/desktop/dist/
 apps/desktop/*.app/
+apps/desktop/package-lock.json
+apps/desktop/package-lock.json

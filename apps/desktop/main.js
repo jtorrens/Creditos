@@ -62,10 +62,13 @@ function waitForServer(url, timeoutMs = 10000) {
 async function startPythonServer() {
   const port = await findFreePort();
   const scriptPath = serverScriptPath();
-  serverProcess = spawn('python3', [scriptPath, String(port), '--no-open'], {
-    cwd: rendererPath(),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  
+  const pythonCommand = process.platform === 'win32' ? 'py' : 'python3';
+
+  serverProcess = spawn(pythonCommand, [scriptPath, String(port), '--no-open'], {
+	cwd: rendererPath(),
+	stdio: ['ignore', 'pipe', 'pipe'],
+	});
 
   serverProcess.stdout.on('data', (chunk) => {
     console.log(`[creditos-server] ${chunk.toString().trim()}`);
