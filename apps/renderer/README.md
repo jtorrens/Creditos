@@ -10,10 +10,22 @@ Normalmente se usa desde Electron (`apps/desktop`), pero también puede arrancar
 python3 apps/renderer/server.py
 ```
 
+En Windows usa:
+
+```powershell
+py apps\renderer\server.py
+```
+
 Para arrancar sin abrir navegador:
 
 ```bash
 python3 apps/renderer/server.py --no-open
+```
+
+En Windows usa:
+
+```powershell
+py apps\renderer\server.py --no-open
 ```
 
 En macOS también puedes abrir:

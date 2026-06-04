@@ -37,6 +37,12 @@ En macOS también puedes abrir `apps/desktop/start.command`.
 python3 apps/renderer/server.py
 ```
 
+En Windows:
+
+```powershell
+py apps\renderer\server.py
+```
+
 Después abre la URL local que indique la terminal.
 
 ## Flujo Mac/PC

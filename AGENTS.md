@@ -26,6 +26,12 @@ Renderer-only debugging:
 python3 apps/renderer/server.py
 ```
 
+On Windows:
+
+```powershell
+py apps\renderer\server.py
+```
+
 ## Cross-Platform Rules
 
 - Do not introduce absolute Mac or Windows paths.

@@ -274,7 +274,7 @@
       window.alert(
         'No se pudo parsear el XLSX: ' +
           error.message +
-          '\n\nPara abrir XLSX, inicia la app con:\npython3 apps/renderer/server.py'
+          '\n\nPara abrir XLSX, inicia la app desde Electron con npm start en apps/desktop, o arranca el renderer manualmente con python3 apps/renderer/server.py en macOS y py apps\\renderer\\server.py en Windows.'
       );
       renderMeta();
     } finally {
