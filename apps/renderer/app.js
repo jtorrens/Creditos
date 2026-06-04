@@ -29,6 +29,7 @@
     xlsxFileStatus: document.getElementById('xlsxFileStatus'),
     structureFileStatus: document.getElementById('structureFileStatus'),
     sourceMeta: document.getElementById('sourceMeta'),
+    appVersion: document.getElementById('appVersion'),
     blockCount: document.getElementById('blockCount'),
     blockList: document.getElementById('blockList'),
     editorTitle: document.getElementById('editorTitle'),
@@ -142,10 +143,25 @@
   els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
   els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
   els.exportMovBtn.addEventListener('click', exportMov);
+  initializeAppInfo();
   initializeAppPreferences();
 
   function nativeBridge() {
     return window.creditosNative || null;
+  }
+
+  async function initializeAppInfo() {
+    const native = nativeBridge();
+    if (!native || !native.getAppInfo || !els.appVersion) return;
+    try {
+      const info = await native.getAppInfo();
+      if (info && info.version) {
+        els.appVersion.textContent = `v${info.version}`;
+        els.appVersion.title = `${info.name || 'Créditos'} ${info.version} (${info.platform || ''} ${info.arch || ''})`.trim();
+      }
+    } catch (_error) {
+      els.appVersion.textContent = '';
+    }
   }
 
   async function initializeAppPreferences() {

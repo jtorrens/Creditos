@@ -5,6 +5,7 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const appPackage = require('./package.json');
 
 let mainWindow = null;
 let serverProcess = null;
@@ -227,6 +228,15 @@ async function writePreferences(preferences) {
 
 ipcMain.handle('creditos:get-preferences', async () => {
   return await readPreferences();
+});
+
+ipcMain.handle('creditos:get-app-info', async () => {
+  return {
+    name: appPackage.productName || appPackage.name || 'Créditos',
+    version: appPackage.version || app.getVersion(),
+    platform: process.platform,
+    arch: process.arch,
+  };
 });
 
 ipcMain.handle('creditos:set-preference', async (_event, payload) => {

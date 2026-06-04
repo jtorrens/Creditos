@@ -27,4 +27,4 @@ npm run pack
 npm run dist
 ```
 
-Más detalles en `DEVELOPMENT.md`.
+Más detalles en `docs/DEVELOPMENT.md`.

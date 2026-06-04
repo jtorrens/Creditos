@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('creditosNative', {
   saveStyleJson: (payload) => ipcRenderer.invoke('creditos:save-style-json', payload),
   confirm: (payload) => ipcRenderer.invoke('creditos:confirm', payload),
   getPreferences: () => ipcRenderer.invoke('creditos:get-preferences'),
+  getAppInfo: () => ipcRenderer.invoke('creditos:get-app-info'),
   setPreference: (payload) => ipcRenderer.invoke('creditos:set-preference', payload),
   onServerExit: (callback) => {
     ipcRenderer.on('creditos-server-exit', (_event, value) => callback(value));

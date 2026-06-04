@@ -30,6 +30,22 @@ body {
   font-size: 14px;
 }
 
+.app-version {
+  align-items: center;
+  background: #eef4f8;
+  border: 1px solid #ffffff;
+  border-radius: 999px;
+  color: #11171d;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 26px;
+  letter-spacing: 0;
+  line-height: 1;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
 button,
 .button,
 input,
