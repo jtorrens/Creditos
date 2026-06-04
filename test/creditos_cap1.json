@@ -1,0 +1,1340 @@
+{
+  "schema": "credits_structure_json",
+  "version": 10,
+  "source_sheet": "Rodillo Final",
+  "source_file": "LPNP_Créditos_CAP 01_251120.xlsx",
+  "cartelas": [
+    {
+      "id": "cartela_001",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_001_001",
+          "source_refs": [
+            "block_1_Basada_en_los_personajes_de"
+          ],
+          "source_ref_settings": {
+            "block_1_Basada_en_los_personajes_de": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_002",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_002_001",
+          "source_refs": [
+            "block_2_Coproduccion_Ejecutiva_Buendia"
+          ],
+          "source_ref_settings": {
+            "block_2_Coproduccion_Ejecutiva_Buendia": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_003",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_003_001",
+          "source_refs": [
+            "block_3_Responsable_de_Contenidos_Atresmedia"
+          ],
+          "source_ref_settings": {
+            "block_3_Responsable_de_Contenidos_Atresmedia": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_004",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_004_001",
+          "source_refs": [
+            "block_4_Director_de_Fotografia"
+          ],
+          "source_ref_settings": {
+            "block_4_Director_de_Fotografia": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_005",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_005_001",
+          "source_refs": [
+            "block_5_Direccion_de_Casting"
+          ],
+          "source_ref_settings": {
+            "block_5_Direccion_de_Casting": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_006",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_006_001",
+          "source_refs": [
+            "block_6_Coordinador_de_Direccion"
+          ],
+          "source_ref_settings": {
+            "block_6_Coordinador_de_Direccion": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_007",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_007_001",
+          "source_refs": [
+            "block_7_Director_de_Produccion"
+          ],
+          "source_ref_settings": {
+            "block_7_Director_de_Produccion": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_008",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_008_001",
+          "source_refs": [
+            "block_8_Directora_de_Arte"
+          ],
+          "source_ref_settings": {
+            "block_8_Directora_de_Arte": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_009",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_009_001",
+          "source_refs": [
+            "block_9_Peluqueria_y_Maquillaje"
+          ],
+          "source_ref_settings": {
+            "block_9_Peluqueria_y_Maquillaje": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_010",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_010_001",
+          "source_refs": [
+            "block_11_Montaje"
+          ],
+          "source_ref_settings": {
+            "block_11_Montaje": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_011",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_011_001",
+          "source_refs": [
+            "block_12_Supervision_Musical"
+          ],
+          "source_ref_settings": {
+            "block_12_Supervision_Musical": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_012",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_012_001",
+          "source_refs": [
+            "block_13_Sonido_Directo"
+          ],
+          "source_ref_settings": {
+            "block_13_Sonido_Directo": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_013",
+      "title": "",
+      "type": "card",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1.2,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_013_001",
+          "source_refs": [
+            "block_14_Supervision_VFX"
+          ],
+          "source_ref_settings": {
+            "block_14_Supervision_VFX": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "font_size": 90,
+                  "color": "#ff0000"
+                },
+                "role": {
+                  "font_size": 70,
+                  "color": "#ffffff"
+                },
+                "name": {
+                  "font_size": 90,
+                  "font_style": "Two Bold",
+                  "font_postscript_name": "Oskar-TwoBold"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "basada_en_los_personajes_de",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_014",
+      "title": "",
+      "type": "cast_page",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_014_001",
+          "source_refs": [
+            "block_15_Han_intervenido"
+          ],
+          "source_ref_settings": {
+            "block_15_Han_intervenido": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_015",
+      "title": "",
+      "type": "cast_page",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 3,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_015_001",
+          "source_refs": [
+            "block_15_Pequenas_Partes"
+          ],
+          "source_ref_settings": {
+            "block_15_Pequenas_Partes": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_016",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_016_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_intro"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_intro": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_017",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_017_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Equipo_2_Unidad"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Equipo_2_Unidad": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_018",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_018_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Equipo_Tecnico_Adicional"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Equipo_Tecnico_Adicional": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_019",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_019_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Equipo_Buendia_Estudios"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Equipo_Buendia_Estudios": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_020",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_020_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Equipo_Boomerang_TV"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Equipo_Boomerang_TV": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_022",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_022_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Imagen",
+            "block_17_RODILLO_FINAL_section_Sonido"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Imagen": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            },
+            "block_17_RODILLO_FINAL_section_Sonido": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top"
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_024",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_024_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Alive_VFXDESING",
+            "block_17_RODILLO_FINAL_section_Entre_Laprida_y_Aguero"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Alive_VFXDESING": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            },
+            "block_17_RODILLO_FINAL_section_Entre_Laprida_y_Aguero": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top"
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_026",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_026_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Musica"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Musica": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_027",
+      "title": "",
+      "type": "music_licenses",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 5,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_027_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Licencias_Musicales"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Licencias_Musicales": {
+              "columns": 2,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_style": "Regular"
+                },
+                "name": {
+                  "font_style": "Two Light",
+                  "font_postscript_name": "Oskar-TwoLight"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "licencias_musicales",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_028",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_028_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Doblaje_de_Figuracion"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Doblaje_de_Figuracion": {
+              "columns": 1,
+              "alignment": {
+                "role": "center",
+                "name": "center"
+              },
+              "vertical_align": "top",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_3",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_029",
+      "title": "",
+      "type": "roll_section",
+      "orientation": "horizontal",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_029_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Empresas_de_Servicios"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Empresas_de_Servicios": {
+              "columns": 1,
+              "alignment": {},
+              "vertical_align": "top",
+              "typography": {
+                "role": {
+                  "font_size": 36
+                },
+                "name": {
+                  "font_size": 36
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_2",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_030",
+      "title": "",
+      "type": "logos",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_030_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Logos"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Logos": {
+              "columns": 1,
+              "alignment": {
+                "role": "center",
+                "name": "center"
+              },
+              "vertical_align": "top",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_3",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_032",
+      "title": "",
+      "type": "thanks",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1,
+      "line_spacing_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_032_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_Vestuario"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_Vestuario": {
+              "columns": 1,
+              "alignment": {
+                "role": "center",
+                "name": "center"
+              },
+              "vertical_align": "top",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "han_intervenido_3",
+      "block_gap_multiplier": 1
+    },
+    {
+      "id": "cartela_033",
+      "title": "",
+      "type": "closing",
+      "orientation": "vertical",
+      "columns": 1,
+      "font_size_multiplier": 1.5,
+      "line_spacing_multiplier": 1.2,
+      "block_gap_multiplier": 1,
+      "vertical_offset": 0,
+      "duration": 2,
+      "enabled": true,
+      "notes": "",
+      "pages": [
+        {
+          "id": "page_033_001",
+          "source_refs": [
+            "block_17_RODILLO_FINAL_section_closing_copy"
+          ],
+          "source_ref_settings": {
+            "block_17_RODILLO_FINAL_section_closing_copy": {
+              "columns": 1,
+              "alignment": {
+                "role": "center",
+                "name": "center"
+              },
+              "vertical_align": "center",
+              "typography": {
+                "block_title": {
+                  "color": "#ffffff"
+                },
+                "role": {
+                  "font_size": 40
+                },
+                "name": {
+                  "font_size": 40,
+                  "font_family": "Arial",
+                  "font_style": "Regular",
+                  "font_postscript_name": "ArialMT"
+                }
+              }
+            }
+          },
+          "title": ""
+        }
+      ],
+      "style_id": "listavertical"
+    }
+  ],
+  "settings": {
+    "default_cartela_duration": 4,
+    "default_auto_page_lines": 17,
+    "movie_fps": 25,
+    "pdf_base_name": "creditos",
+    "typography": {
+      "page_header": {
+        "font_size": 50,
+        "font_family": "Oskar",
+        "font_style": "Two Bold",
+        "font_postscript_name": "Oskar-TwoBold",
+        "color": "#ffffff"
+      },
+      "block_title": {
+        "font_size": 40,
+        "font_family": "Oskar",
+        "font_style": "Two Bold",
+        "font_postscript_name": "Oskar-TwoBold",
+        "color": "#ffffff"
+      },
+      "role": {
+        "font_size": 36,
+        "font_family": "Oskar",
+        "font_style": "Two Light",
+        "font_postscript_name": "Oskar-TwoLight",
+        "color": "#ffffff"
+      },
+      "name": {
+        "font_size": 36,
+        "font_family": "Oskar",
+        "font_style": "Two Bold",
+        "font_postscript_name": "Oskar-TwoBold",
+        "color": "#ffffff"
+      }
+    },
+    "layout": {
+      "line_spacing": 1,
+      "column_gap": 10,
+      "role_name_gap": 80,
+      "page_top_margin": 1415,
+      "page_bottom_margin": 60,
+      "page_width": 3840,
+      "page_height": 2160,
+      "page_background": "#000000",
+      "block_gap": 30
+    }
+  },
+  "overrides": {
+    "block_17_RODILLO_FINAL_section_intro": {
+      "title": "Equipo Técnico"
+    },
+    "cartela_022_page_022_001_physical_01": {
+      "title": "Elamedia Estudios"
+    },
+    "block_17_RODILLO_FINAL_item_242_Copy_animado_Atresmedia_sin_ANO": {
+      "value": ""
+    }
+  },
+  "page_breaks": {},
+  "page_line_adjustments": {
+    "__physical": {
+      "cartela_014_page_014_001_physical_01": -3
+    }
+  }
+}

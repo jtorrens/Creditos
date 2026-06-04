@@ -1,0 +1,35 @@
+{
+  "schema": "credits_cartela_style_json",
+  "version": 1,
+  "id": "basada_en_los_personajes_de",
+  "name": "CartelasJefesEquipo",
+  "cartela": {
+    "orientation": "vertical",
+    "columns": 1,
+    "font_size_multiplier": 1,
+    "line_spacing_multiplier": 1.2,
+    "block_gap_multiplier": 1,
+    "vertical_offset": 0,
+    "duration": 3
+  },
+  "block": {
+    "columns": 1,
+    "alignment": {},
+    "vertical_align": "center",
+    "typography": {
+      "block_title": {
+        "font_size": 90,
+        "color": "#ff0000"
+      },
+      "role": {
+        "font_size": 70,
+        "color": "#ffffff"
+      },
+      "name": {
+        "font_size": 90,
+        "font_style": "Two Bold",
+        "font_postscript_name": "Oskar-TwoBold"
+      }
+    }
+  }
+}

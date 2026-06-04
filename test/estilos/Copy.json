@@ -1,0 +1,34 @@
+{
+  "schema": "credits_cartela_style_json",
+  "version": 1,
+  "id": "listavertical",
+  "name": "ListaVertical",
+  "cartela": {
+    "orientation": "vertical",
+    "columns": 1,
+    "font_size_multiplier": 1,
+    "line_spacing_multiplier": 1,
+    "block_gap_multiplier": 1,
+    "vertical_offset": 0,
+    "duration": 2
+  },
+  "block": {
+    "columns": 1,
+    "alignment": {
+      "role": "center",
+      "name": "center"
+    },
+    "vertical_align": "top",
+    "typography": {
+      "block_title": {
+        "color": "#ffffff"
+      },
+      "role": {
+        "font_size": 40
+      },
+      "name": {
+        "font_size": 40
+      }
+    }
+  }
+}

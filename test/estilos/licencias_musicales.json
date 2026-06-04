@@ -1,0 +1,28 @@
+{
+  "schema": "credits_cartela_style_json",
+  "version": 1,
+  "id": "licencias_musicales",
+  "name": "Licencias Musicales",
+  "cartela": {
+    "orientation": "vertical",
+    "columns": 1,
+    "font_size_multiplier": 1,
+    "line_spacing_multiplier": 1,
+    "vertical_offset": 0,
+    "duration": 5
+  },
+  "block": {
+    "columns": 2,
+    "alignment": {},
+    "vertical_align": "top",
+    "typography": {
+      "role": {
+        "font_style": "Regular"
+      },
+      "name": {
+        "font_style": "Two Light",
+        "font_postscript_name": "Oskar-TwoLight"
+      }
+    }
+  }
+}

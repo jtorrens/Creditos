@@ -1,0 +1,27 @@
+{
+  "schema": "credits_cartela_style_json",
+  "version": 1,
+  "id": "han_intervenido_2",
+  "name": "EquipoTecnicojson",
+  "cartela": {
+    "orientation": "horizontal",
+    "columns": 1,
+    "font_size_multiplier": 1,
+    "line_spacing_multiplier": 1,
+    "vertical_offset": 0,
+    "duration": 2
+  },
+  "block": {
+    "columns": 1,
+    "alignment": {},
+    "vertical_align": "top",
+    "typography": {
+      "role": {
+        "font_size": 36
+      },
+      "name": {
+        "font_size": 36
+      }
+    }
+  }
+}
