@@ -2,7 +2,7 @@
   "name": "creditos-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Electron wrapper for the Creditos JSON web app.",
+  "description": "Electron desktop app for Creditos.",
   "main": "main.js",
   "scripts": {
     "start": "node run-electron.js",
@@ -26,8 +26,8 @@
     ],
     "extraResources": [
       {
-        "from": "../web_app",
-        "to": "web_app"
+        "from": "../renderer",
+        "to": "renderer"
       }
     ],
     "mac": {

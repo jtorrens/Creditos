@@ -258,7 +258,7 @@
       window.alert(
         'No se pudo parsear el XLSX: ' +
           error.message +
-          '\n\nPara abrir XLSX, inicia la app con:\npython3 web_app/server.py'
+          '\n\nPara abrir XLSX, inicia la app con:\npython3 apps/renderer/server.py'
       );
       renderMeta();
     } finally {

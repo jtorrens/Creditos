@@ -450,7 +450,7 @@ def main():
     should_open = "--no-open" not in sys.argv[1:]
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}"
-    print(f"Creditos JSON app: {url}")
+    print(f"Créditos: {url}")
     print("Pulsa Ctrl+C para cerrar el servidor.")
     if should_open:
         threading.Thread(target=open_browser, args=(url,), daemon=True).start()

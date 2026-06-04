@@ -1,6 +1,6 @@
 # Creditos app handoff
 
-Este documento resume el estado del proyecto para continuar en otro hilo con poco contexto previo. La idea es que el siguiente trabajo empiece leyendo este archivo, `web_app/README.md` y, si hace falta, el codigo de `web_app/`.
+Este documento resume el estado del proyecto para continuar en otro hilo con poco contexto previo. La idea es que el siguiente trabajo empiece leyendo este archivo, `apps/renderer/README.md` y, si hace falta, el codigo de `apps/renderer/`.
 
 ## Objetivo
 
@@ -51,15 +51,15 @@ No borrarlas ni asumir que son basura: se usan para pruebas/exportaciones locale
 ## Archivos principales
 
 ```text
-web_app/index.html      UI de la web app
-web_app/styles.css      estilos
-web_app/app.js          logica frontend, structure/render, preview y export PNG
-web_app/server.py       servidor local y parser XLSX
-web_app/start.command   arranque macOS, abre Chrome
-web_app/README.md       README de uso actual
-desktop_app/main.js     wrapper Electron, arranca/cierra server.py y carga la web
-desktop_app/preload.js  puente IPC para dialogs nativos
-desktop_app/package.json scripts/dependencias Electron
+apps/renderer/index.html      UI de la web app
+apps/renderer/styles.css      estilos
+apps/renderer/app.js          logica frontend, structure/render, preview y export PNG
+apps/renderer/server.py       servidor local y parser XLSX
+apps/renderer/start.command   arranque macOS, abre Chrome
+apps/renderer/README.md       README de uso actual
+apps/desktop/main.js     wrapper Electron, arranca/cierra server.py y carga la web
+apps/desktop/preload.js  puente IPC para dialogs nativos
+apps/desktop/package.json scripts/dependencias Electron
 google_sheets_extension/ archivos de una extension Apps Script exploratoria
 JSON/TEST.xlsx          XLSX de prueba original
 JSON/TEST_rodillo_final_first_pass.json  primer source_json de referencia
@@ -70,19 +70,19 @@ JSON/TEST_rodillo_final_first_pass.json  primer source_json de referencia
 Opcion normal en macOS:
 
 ```text
-doble clic en web_app/start.command
+doble clic en apps/renderer/start.command
 ```
 
 Opcion manual:
 
 ```bash
-python3 web_app/server.py
+python3 apps/renderer/server.py
 ```
 
 El servidor abre `http://127.0.0.1:8787`. Para no abrir navegador:
 
 ```bash
-python3 web_app/server.py --no-open
+python3 apps/renderer/server.py --no-open
 ```
 
 La app debe usarse en Chrome para:
@@ -94,12 +94,12 @@ La app debe usarse en Chrome para:
 Opcion Electron minima:
 
 ```bash
-cd desktop_app
+cd apps/desktop
 npm install
 npm start
 ```
 
-Electron arranca `web_app/server.py` automaticamente en un puerto libre, carga la web desde `127.0.0.1` y cierra el servidor al salir. En el entorno actual de Codex no habia `node`/`npm`, asi que esta parte quedo scaffolded y validada por sintaxis, pero no ejecutada localmente.
+Electron arranca `apps/renderer/server.py` automaticamente en un puerto libre, carga la web desde `127.0.0.1` y cierra el servidor al salir. En el entorno actual de Codex no habia `node`/`npm`, asi que esta parte quedo scaffolded y validada por sintaxis, pero no ejecutada localmente.
 
 ## Flujo de datos
 
@@ -121,7 +121,7 @@ En `app.js`:
 
 ## Parser XLSX
 
-El parser esta en `web_app/server.py`.
+El parser esta en `apps/renderer/server.py`.
 
 Funciones clave:
 
@@ -376,8 +376,8 @@ Funciones:
 
 ## Cosas ya resueltas recientemente
 
-- Anadio `desktop_app/` como wrapper Electron minimo.
-- Electron gestiona el arranque/cierre de `web_app/server.py` en puerto libre.
+- Anadio `apps/desktop/` como wrapper Electron minimo.
+- Electron gestiona el arranque/cierre de `apps/renderer/server.py` en puerto libre.
 - `app.js` usa `window.creditosNative` cuando existe, manteniendo fallback Chrome.
 - Dialogs nativos Electron para abrir `structure_json`, guardar `structure_json`, guardar `render_json`, exportar PNG actual y exportar secuencia PNG a carpeta.
 - Licencias Musicales ya no se separan en un bloque por linea.
@@ -405,7 +405,7 @@ Producto actual:
 
 Futuro app independiente:
 
-- Continuar desde la app Electron minima en `desktop_app/`.
+- Continuar desde la app Electron minima en `apps/desktop/`.
 - Usar la web actual como renderer mientras se migra gradualmente a IPC.
 - Objetivo multiplataforma: macOS y Windows como minimo. No asumir rutas tipo `/Volumes/...`; usar `path`, dialogs nativos y rutas absolutas elegidas por el usuario.
 - Lanzar `server.py` internamente al principio, o migrar parser/export a proceso principal.
@@ -463,7 +463,7 @@ Futuro timeline/MOV:
 Prompt sugerido:
 
 ```text
-Lee HANDOFF.md y web_app/README.md. Queremos continuar el proyecto Creditos desde el estado actual, sin rehacer la web app. El siguiente objetivo es preparar una version Electron minima que mantenga todas las funciones actuales y abra/lance el parser automaticamente.
+Lee HANDOFF.md y apps/renderer/README.md. Queremos continuar el proyecto Creditos desde el estado actual, sin rehacer la web app. El siguiente objetivo es preparar una version Electron minima que mantenga todas las funciones actuales y abra/lance el parser automaticamente.
 ```
 
 Si el siguiente objetivo no es Electron, cambiar la ultima frase por la tarea concreta.
@@ -473,13 +473,13 @@ Si el siguiente objetivo no es Electron, cambiar la ultima frase por la tarea co
 Chequeo JS rapido:
 
 ```bash
-osascript -l JavaScript -e 'ObjC.import("Foundation"); const src = $.NSString.stringWithContentsOfFileEncodingError("/Volumes/SD_02/PROYECTOS/CREDITOS/web_app/app.js", $.NSUTF8StringEncoding, null).js; new Function(src);'
+osascript -l JavaScript -e 'ObjC.import("Foundation"); const src = $.NSString.stringWithContentsOfFileEncodingError("/Volumes/SD_02/PROYECTOS/CREDITOS/apps/renderer/app.js", $.NSUTF8StringEncoding, null).js; new Function(src);'
 ```
 
 Chequeo Python:
 
 ```bash
-PYTHONPYCACHEPREFIX=/tmp/creditos_pycache python3 -m py_compile web_app/server.py
+PYTHONPYCACHEPREFIX=/tmp/creditos_pycache python3 -m py_compile apps/renderer/server.py
 ```
 
 Estado git:
@@ -491,5 +491,5 @@ git status --short
 Arrancar servidor:
 
 ```bash
-python3 web_app/server.py
+python3 apps/renderer/server.py
 ```

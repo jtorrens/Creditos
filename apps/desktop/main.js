@@ -13,17 +13,17 @@ function repoRoot() {
   if (app.isPackaged) {
     return process.resourcesPath;
   }
-  return path.resolve(__dirname, '..');
+  return path.resolve(__dirname, '..', '..');
 }
 
-function webAppPath() {
+function rendererPath() {
   return app.isPackaged
-    ? path.join(process.resourcesPath, 'web_app')
-    : path.join(repoRoot(), 'web_app');
+    ? path.join(process.resourcesPath, 'renderer')
+    : path.join(repoRoot(), 'apps', 'renderer');
 }
 
 function serverScriptPath() {
-  return path.join(webAppPath(), 'server.py');
+  return path.join(rendererPath(), 'server.py');
 }
 
 function findFreePort() {
@@ -63,7 +63,7 @@ async function startPythonServer() {
   const port = await findFreePort();
   const scriptPath = serverScriptPath();
   serverProcess = spawn('python3', [scriptPath, String(port), '--no-open'], {
-    cwd: webAppPath(),
+    cwd: rendererPath(),
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
