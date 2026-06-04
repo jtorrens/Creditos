@@ -10,7 +10,7 @@ apps/
   renderer/   UI, preview, parser XLSX y exportadores
 test/         Fixtures compartidos para probar en Mac y PC
 JSON/         Material antiguo de referencia
-HANDOFF.md   Contexto técnico acumulado
+docs/        Documentación técnica y handoffs
 ```
 
 ## Desarrollo
@@ -53,3 +53,5 @@ git push
 ```
 
 No se versionan builds ni vídeos generados: `dist/`, `.app`, `.mov` y `test/renders/` quedan fuera.
+
+Consulta `DEVELOPMENT.md` para requisitos detallados de macOS/Windows, builds y variables de entorno.

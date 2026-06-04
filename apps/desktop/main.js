@@ -26,6 +26,35 @@ function serverScriptPath() {
   return path.join(rendererPath(), 'server.py');
 }
 
+function getPythonCommand() {
+  if (process.env.CREDITOS_PYTHON) return process.env.CREDITOS_PYTHON;
+  return process.platform === 'win32' ? 'py' : 'python3';
+}
+
+async function resolveExecutable(envName, executable, extraCandidates = []) {
+  if (process.env[envName]) return process.env[envName];
+
+  const names = process.platform === 'win32'
+    ? [`${executable}.exe`, executable]
+    : [executable];
+  const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
+  const candidates = [
+    ...pathEntries.flatMap((entry) => names.map((name) => path.join(entry, name))),
+    ...extraCandidates,
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch (_error) {
+      // Try the next known location.
+    }
+  }
+
+  return executable;
+}
+
 function findFreePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -62,13 +91,12 @@ function waitForServer(url, timeoutMs = 10000) {
 async function startPythonServer() {
   const port = await findFreePort();
   const scriptPath = serverScriptPath();
-  
-  const pythonCommand = process.platform === 'win32' ? 'py' : 'python3';
+  const pythonCommand = getPythonCommand();
 
   serverProcess = spawn(pythonCommand, [scriptPath, String(port), '--no-open'], {
-	cwd: rendererPath(),
-	stdio: ['ignore', 'pipe', 'pipe'],
-	});
+    cwd: rendererPath(),
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
   serverProcess.stdout.on('data', (chunk) => {
     console.log(`[creditos-server] ${chunk.toString().trim()}`);
@@ -129,23 +157,19 @@ function ensureMovExtension(filePath) {
 }
 
 async function resolveFfmpegPath() {
-  const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
-  const candidates = [
-    ...pathEntries.map((entry) => path.join(entry, 'ffmpeg')),
+  return resolveExecutable('CREDITOS_FFMPEG', 'ffmpeg', [
     '/opt/homebrew/bin/ffmpeg',
     '/usr/local/bin/ffmpeg',
     '/usr/bin/ffmpeg',
-  ];
+  ]);
+}
 
-  for (const candidate of candidates) {
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch (_error) {
-      // Try the next common location.
-    }
-  }
-  return 'ffmpeg';
+async function resolveFfprobePath() {
+  return resolveExecutable('CREDITOS_FFPROBE', 'ffprobe', [
+    '/opt/homebrew/bin/ffprobe',
+    '/usr/local/bin/ffprobe',
+    '/usr/bin/ffprobe',
+  ]);
 }
 
 function runCommand(command, args) {
