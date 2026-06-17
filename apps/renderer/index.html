@@ -32,10 +32,7 @@
             <div class="project-db-panel">
               <div class="field-grid">
                 <label for="databaseStatus">Base de datos</label>
-                <div class="inline-actions">
-                  <button id="chooseDatabaseBtn" type="button">Seleccionar DB</button>
-                  <span id="databaseStatus">Sin base de datos</span>
-                </div>
+                <span id="databaseStatus" class="settings-status">Inicializando base de datos...</span>
               </div>
               <div class="field-grid">
                 <label for="productionSelect">Producción</label>
@@ -54,16 +51,12 @@
                 </div>
               </div>
               <div class="field-grid">
-                <label for="saveStructureBtn">Cambios</label>
+                <label for="autosaveStatus">Cambios</label>
                 <div class="inline-actions">
-                  <button id="saveStructureBtn" type="button">Guardar estructura en DB</button>
-                  <button id="saveRenderBtn" type="button">Guardar render en DB</button>
+                  <span id="autosaveStatus">Autoguardado listo</span>
                   <span id="structureFileStatus">Sin episodio seleccionado</span>
                 </div>
               </div>
-              <input id="structureInput" class="hidden-input" type="file" accept="application/json,.json">
-              <button id="openStructureBtn" class="hidden-input" type="button">Abrir estructura</button>
-              <button id="saveStructureAsBtn" class="hidden-input" type="button">Guardar estructura como...</button>
             </div>
             <div class="field-grid">
               <label for="defaultDurationInput">Duración por página</label>
@@ -123,7 +116,6 @@
                 <button id="structureTab" class="active" type="button">Estructura</button>
                 <button id="renderTab" type="button">Render final</button>
               </div>
-              <button id="saveRenderAsBtn" class="hidden-input" type="button">Guardar render como...</button>
             </div>
           </div>
           <textarea id="jsonPreview" spellcheck="false" readonly></textarea>

@@ -7,32 +7,27 @@
     selectedCartelaId: null,
     preview: 'structure',
     activeTab: 'settings',
-    structureFileHandle: null,
-    renderFileHandle: null,
-    structureFilePath: null,
-    renderFilePath: null,
     databasePath: null,
     productions: [],
     episodes: [],
     selectedProductionId: null,
     selectedEpisodeId: null,
-    styleDirectoryHandle: null,
-    styleDirectoryPath: null,
     styles: [],
     preferences: {},
     fontCatalog: null,
     pdfPageIndex: 0,
     pngPreviewZoom: 0.25,
     showMarginOverlay: false,
+    isLoadingEpisode: false,
+    autosaveTimer: null,
+    autosaveStyleTimers: new Map(),
   };
 
   const els = {
     openXlsxBtn: document.getElementById('openXlsxBtn'),
     xlsxInput: document.getElementById('xlsxInput'),
-    openStructureBtn: document.getElementById('openStructureBtn'),
-    structureInput: document.getElementById('structureInput'),
-    chooseDatabaseBtn: document.getElementById('chooseDatabaseBtn'),
     databaseStatus: document.getElementById('databaseStatus'),
+    autosaveStatus: document.getElementById('autosaveStatus'),
     productionSelect: document.getElementById('productionSelect'),
     episodeSelect: document.getElementById('episodeSelect'),
     newProductionNameInput: document.getElementById('newProductionNameInput'),
@@ -60,10 +55,6 @@
     tabPanes: Array.from(document.querySelectorAll('.tab-pane')),
     structureTab: document.getElementById('structureTab'),
     renderTab: document.getElementById('renderTab'),
-    saveStructureBtn: document.getElementById('saveStructureBtn'),
-    saveStructureAsBtn: document.getElementById('saveStructureAsBtn'),
-    saveRenderBtn: document.getElementById('saveRenderBtn'),
-    saveRenderAsBtn: document.getElementById('saveRenderAsBtn'),
     pdfFirstPageBtn: document.getElementById('pdfFirstPageBtn'),
     pdfPrevPageBtn: document.getElementById('pdfPrevPageBtn'),
     pdfNextPageBtn: document.getElementById('pdfNextPageBtn'),
@@ -99,10 +90,7 @@
   const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'font_size_multiplier', 'line_spacing_multiplier', 'block_gap_multiplier', 'vertical_offset', 'duration'];
   const STORAGE_KEYS = {
     xlsxDir: 'creditos:lastDir:xlsx',
-    databasePath: 'creditos:database:path',
-    structureDir: 'creditos:lastDir:structure',
     renderDir: 'creditos:lastDir:render',
-    stylesDir: 'creditos:lastDir:styles',
   };
 
   const FONT_OPTIONS = [
@@ -117,13 +105,10 @@
 
   els.openXlsxBtn.addEventListener('click', openXlsxFile);
   els.xlsxInput.addEventListener('change', loadXlsxFile);
-  els.chooseDatabaseBtn.addEventListener('click', chooseDatabaseFile);
   els.productionSelect.addEventListener('change', selectProductionFromUi);
   els.episodeSelect.addEventListener('change', selectEpisodeFromUi);
   els.createProductionBtn.addEventListener('click', createProductionFromUi);
   els.chooseStylesDirBtn.addEventListener('click', chooseStylesDirectory);
-  els.openStructureBtn.addEventListener('click', openStructureJsonFile);
-  els.structureInput.addEventListener('change', (event) => loadJsonFile(event, loadStructureJson));
   els.tabButtons.forEach((button) => {
     button.addEventListener('click', () => setActiveTab(button.dataset.tab));
   });
@@ -138,10 +123,6 @@
   }));
   els.structureTab.addEventListener('click', () => setPreview('structure'));
   els.renderTab.addEventListener('click', () => setPreview('render'));
-  els.saveStructureBtn.addEventListener('click', () => saveProjectDocument('structure'));
-  els.saveStructureAsBtn.addEventListener('click', () => saveJsonFile('structure_json', true));
-  els.saveRenderBtn.addEventListener('click', () => saveProjectDocument('render'));
-  els.saveRenderAsBtn.addEventListener('click', () => saveJsonFile('render_json', true));
   els.pdfFirstPageBtn.addEventListener('click', () => goToPdfPage(0));
   els.pdfPrevPageBtn.addEventListener('click', () => changePdfPage(-1));
   els.pdfNextPageBtn.addEventListener('click', () => changePdfPage(1));
@@ -182,34 +163,8 @@
   }
 
   async function initializeAppPreferences() {
-    const native = nativeBridge();
-    if (native && native.getPreferences) {
-      try {
-        state.preferences = await native.getPreferences() || {};
-      } catch (_error) {
-        state.preferences = {};
-      }
-    }
+    await initializeDatabase();
 
-    const lastStylesDir = readLocalPreference(STORAGE_KEYS.stylesDir);
-    const lastDatabasePath = readLocalPreference(STORAGE_KEYS.databasePath);
-    if (lastDatabasePath) {
-      await openDatabasePath(lastDatabasePath, { silent: true });
-    }
-
-    if (lastStylesDir && !state.databasePath) {
-      state.styleDirectoryPath = lastStylesDir;
-      updateStylesStatus();
-      if (native && native.loadStyleDirectory) {
-        native.loadStyleDirectory({ directory: lastStylesDir })
-          .then((result) => {
-            if (result && !result.canceled) {
-              loadStyleDirectoryResult(result);
-            }
-          })
-          .catch(() => updateStylesStatus());
-      }
-    }
     loadSystemFonts({ silent: true });
     renderProjectSelectors();
   }
@@ -228,30 +183,10 @@
     return result;
   }
 
-  async function chooseDatabaseFile() {
-    const native = nativeBridge();
-    if (!native || !native.chooseDatabase) {
-      window.alert('La selección de base de datos necesita abrir la app desde Electron.');
-      return;
-    }
-
+  async function initializeDatabase(options = {}) {
     try {
-      const result = await native.chooseDatabase({
-        defaultPath: state.databasePath || readLocalPreference(STORAGE_KEYS.databasePath) || 'creditos.db',
-      });
-      if (!result || result.canceled) return;
-      await openDatabasePath(result.filePath);
-    } catch (error) {
-      window.alert('No se pudo abrir la base de datos: ' + error.message);
-    }
-  }
-
-  async function openDatabasePath(filePath, options = {}) {
-    if (!filePath) return;
-    state.databasePath = filePath;
-    writeLocalPreference(STORAGE_KEYS.databasePath, filePath);
-    try {
-      const overview = await dbPost('/api/db/init');
+      const overview = await dbPost('/api/db/init', { db_path: null });
+      state.databasePath = overview.db_path || 'data/creditos.db';
       applyDatabaseOverview(overview);
       updateDatabaseStatus();
     } catch (error) {
@@ -270,17 +205,16 @@
       state.selectedEpisodeId = availableEpisodes[0] ? availableEpisodes[0].id : null;
     }
     renderProjectSelectors();
-    if (state.selectedProductionId) {
-      loadProductionStyles().catch((error) => console.warn(error));
-    }
     if (state.selectedProductionId && state.selectedEpisodeId) {
       loadCurrentEpisode().catch((error) => console.warn(error));
+    } else if (state.selectedProductionId) {
+      loadProductionStyles().catch((error) => console.warn(error));
     }
   }
 
   function updateDatabaseStatus() {
     if (!els.databaseStatus) return;
-    els.databaseStatus.textContent = state.databasePath ? state.databasePath : 'Sin base de datos';
+    els.databaseStatus.textContent = state.databasePath ? state.databasePath : 'data/creditos.db';
   }
 
   function renderProjectSelectors() {
@@ -328,7 +262,7 @@
     const production = selectedProduction();
     const episode = selectedEpisode();
     if (!state.databasePath) {
-      els.structureFileStatus.textContent = 'Sin base de datos';
+      els.structureFileStatus.textContent = 'Inicializando base de datos';
     } else if (!production) {
       els.structureFileStatus.textContent = 'Crea una producción';
     } else if (!episode) {
@@ -343,7 +277,6 @@
     const episodes = currentProductionEpisodes();
     state.selectedEpisodeId = episodes[0] ? episodes[0].id : null;
     renderProjectSelectors();
-    await loadProductionStyles();
     await loadCurrentEpisode();
   }
 
@@ -355,7 +288,7 @@
 
   async function createProductionFromUi() {
     if (!state.databasePath) {
-      window.alert('Selecciona primero una base de datos.');
+      window.alert('La base de datos todavía se está inicializando.');
       return;
     }
     const name = els.newProductionNameInput.value.trim();
@@ -385,51 +318,82 @@
     if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
       return;
     }
-    const result = await dbPost('/api/db/load-episode', {
-      production_id: state.selectedProductionId,
-      episode_id: state.selectedEpisodeId,
-    });
-    loadStyleObjects(result.styles || []);
-    if (result.source) {
-      state.source = normalizeSource(result.source, result.source.meta && result.source.meta.loaded_file);
-      state.materials = createMaterialsFromSource(state.source);
-      state.structure = result.structure
-        ? createStructureFromSource(state.source, state.materials, migrateStructure(result.structure))
-        : createStructureFromSource(state.source, state.materials, null);
-      state.render = result.render || buildRenderJson(state.source, state.materials, state.structure);
-      state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
-    } else {
-      state.source = null;
-      state.materials = [];
-      state.structure = null;
-      state.render = null;
-      state.selectedCartelaId = null;
-    }
-    updateProjectStatus();
-    rebuild();
-  }
-
-  async function saveProjectDocument(kind) {
-    const data = kind === 'structure' ? getStructureJsonForOutput() : state.render;
-    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-      window.alert('Selecciona base de datos, producción y episodio.');
-      return;
-    }
-    if (!data) {
-      window.alert(kind === 'structure' ? 'Carga primero un Excel.' : 'Genera primero un render final.');
-      return;
-    }
+    state.isLoadingEpisode = true;
     try {
-      await dbPost('/api/db/save-document', {
+      const result = await dbPost('/api/db/load-episode', {
         production_id: state.selectedProductionId,
         episode_id: state.selectedEpisodeId,
-        kind,
-        data,
       });
+      loadStyleObjects(result.styles || []);
+      if (result.source) {
+        state.source = normalizeSource(result.source, result.source.meta && result.source.meta.loaded_file);
+        state.materials = createMaterialsFromSource(state.source);
+        state.structure = result.structure
+          ? createStructureFromSource(state.source, state.materials, migrateStructure(result.structure))
+          : createStructureFromSource(state.source, state.materials, null);
+        state.render = result.render || buildRenderJson(state.source, state.materials, state.structure);
+        state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
+      } else {
+        state.source = null;
+        state.materials = [];
+        state.structure = null;
+        state.render = null;
+        state.selectedCartelaId = null;
+      }
       updateProjectStatus();
-    } catch (error) {
-      window.alert('No se pudo guardar en la base de datos: ' + error.message);
+      rebuild();
+    } finally {
+      state.isLoadingEpisode = false;
     }
+  }
+
+  function setAutosaveStatus(message) {
+    if (els.autosaveStatus) els.autosaveStatus.textContent = message;
+  }
+
+  function scheduleAutosave() {
+    if (state.isLoadingEpisode || !state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
+      return;
+    }
+    setAutosaveStatus('Guardando...');
+    window.clearTimeout(state.autosaveTimer);
+    state.autosaveTimer = window.setTimeout(() => {
+      persistCurrentEpisode().catch((error) => {
+        console.error(error);
+        setAutosaveStatus('Error al guardar');
+      });
+    }, 500);
+  }
+
+  async function persistCurrentEpisode() {
+    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) return;
+    const base = {
+      production_id: state.selectedProductionId,
+      episode_id: state.selectedEpisodeId,
+    };
+    if (state.source) {
+      await dbPost('/api/db/save-document', { ...base, kind: 'source', data: state.source });
+    }
+    await dbPost('/api/db/save-document', { ...base, kind: 'structure', data: getStructureJsonForOutput() });
+    if (state.render) {
+      await dbPost('/api/db/save-document', { ...base, kind: 'render', data: state.render });
+    }
+    setAutosaveStatus(`Autoguardado ${new Date().toLocaleTimeString()}`);
+  }
+
+  function scheduleStyleAutosave(styleId) {
+    if (!state.databasePath || !state.selectedProductionId || !styleId) return;
+    const style = getStyleById(styleId);
+    if (!style) return;
+    window.clearTimeout(state.autosaveStyleTimers.get(styleId));
+    state.autosaveStyleTimers.set(styleId, window.setTimeout(() => {
+      writeStyleFile(style)
+        .then(() => setAutosaveStatus(`Estilo autoguardado ${new Date().toLocaleTimeString()}`))
+        .catch((error) => {
+          console.error(error);
+          setAutosaveStatus('Error al guardar estilo');
+        });
+    }, 500));
   }
 
   function readLocalPreference(key) {
@@ -445,10 +409,6 @@
     if (!value) return;
     state.preferences = state.preferences || {};
     state.preferences[key] = value;
-    const native = nativeBridge();
-    if (native && native.setPreference) {
-      native.setPreference({ key, value }).catch(() => {});
-    }
     try {
       window.localStorage.setItem(key, value);
     } catch (_error) {
@@ -477,7 +437,7 @@
     const file = event.target.files && event.target.files[0];
     if (!file) return;
     if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-      window.alert('Selecciona base de datos, producción y episodio antes de importar un XLSX.');
+      window.alert('Selecciona producción y episodio antes de importar un XLSX.');
       event.target.value = '';
       return;
     }
@@ -487,7 +447,7 @@
 
   async function openXlsxFile() {
     if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-      window.alert('Selecciona base de datos, producción y episodio antes de importar un XLSX.');
+      window.alert('Selecciona producción y episodio antes de importar un XLSX.');
       return;
     }
     const native = nativeBridge();
@@ -531,72 +491,10 @@
     }
   }
 
-  function loadJsonFile(event, handler) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        handler(JSON.parse(reader.result), file.name);
-      } catch (error) {
-        window.alert('No se pudo leer el JSON: ' + error.message);
-      } finally {
-        event.target.value = '';
-      }
-    };
-    reader.readAsText(file, 'utf-8');
-  }
-
-  async function openStructureJsonFile() {
-    const native = nativeBridge();
-    if (native && native.openJson) {
-      try {
-        const result = await native.openJson({ defaultPath: readLocalPreference(STORAGE_KEYS.structureDir) });
-        if (!result || result.canceled) return;
-        rememberFileDirectory(STORAGE_KEYS.structureDir, result.filePath);
-        loadStructureJson(JSON.parse(result.text), result.name, result.filePath || null);
-      } catch (error) {
-        window.alert('No se pudo abrir la estructura: ' + error.message);
-      }
-      return;
-    }
-
-    if (!window.showOpenFilePicker) {
-      els.structureInput.click();
-      return;
-    }
-
-    try {
-      const [handle] = await window.showOpenFilePicker({
-        multiple: false,
-        types: [
-          {
-            description: 'JSON',
-            accept: { 'application/json': ['.json'] },
-          },
-        ],
-      });
-      if (!handle) return;
-      const file = await handle.getFile();
-      const text = await file.text();
-      loadStructureJson(JSON.parse(text), file.name);
-      state.structureFileHandle = handle;
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        window.alert('No se pudo abrir la estructura: ' + error.message);
-      }
-    }
-  }
-
   async function loadSourceJson(json, fileName) {
     state.source = normalizeSource(json, fileName);
     state.materials = createMaterialsFromSource(state.source);
     state.structure = createStructureFromSource(state.source, state.materials, state.structure);
-    state.structureFileHandle = null;
-    state.renderFileHandle = null;
-    state.structureFilePath = null;
-    state.renderFilePath = null;
     updateProjectStatus();
     state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
     rebuild();
@@ -615,20 +513,6 @@
       });
       updateProjectStatus();
     }
-  }
-
-  function loadStructureJson(json, _fileName, filePath = null) {
-    state.structure = migrateStructure(json);
-    state.structureFileHandle = null;
-    state.structureFilePath = filePath;
-    state.renderFileHandle = null;
-    state.renderFilePath = null;
-    if (els.structureFileStatus) els.structureFileStatus.textContent = _fileName || filePath || 'Estructura abierta';
-    if (state.source) {
-      state.structure = createStructureFromSource(state.source, state.materials, state.structure);
-      state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
-    }
-    rebuild();
   }
 
   function normalizeSource(source, fileName) {
@@ -1380,7 +1264,7 @@
       const episode = selectedEpisode();
       els.sourceMeta.textContent = production && episode
         ? `${production.name} · ${episode.name} · importa un XLSX para empezar.`
-        : 'Selecciona una base de datos, producción y episodio para empezar.';
+        : 'Crea o selecciona una producción y un episodio para empezar.';
       return;
     }
 
@@ -1573,42 +1457,7 @@
     }
   }
 
-  function loadStyleDirectoryResult(result) {
-    state.styleDirectoryPath = result.directory || null;
-    state.styleDirectoryHandle = null;
-    if (result.directory) writeLocalPreference(STORAGE_KEYS.stylesDir, result.directory);
-    loadStyleFiles((result.styles || []).map((file) => ({
-      name: file.name,
-      filePath: file.filePath,
-      text: file.text,
-    })));
-  }
-
-  function loadStyleFiles(files) {
-    const styles = [];
-    (files || []).forEach((file) => {
-      try {
-        const json = JSON.parse(file.text);
-        styles.push(normalizeCartelaStyle(json, file));
-      } catch (error) {
-        console.warn(`Estilo ignorado ${file.name}: ${error.message}`);
-      }
-    });
-    state.styles = styles.sort((a, b) => a.name.localeCompare(b.name));
-    syncLoadedStyleSnapshots();
-    updateStylesStatus();
-    if (state.source && state.structure) {
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
-    }
-    renderEditor();
-    renderCartelaList();
-    renderPreview();
-    refreshPdfIfActive();
-  }
-
   function loadStyleObjects(styleObjects) {
-    state.styleDirectoryPath = null;
-    state.styleDirectoryHandle = null;
     state.styles = (styleObjects || [])
       .map((style) => normalizeCartelaStyle(style, { name: style.file_name || `${style.id || 'estilo'}.json` }))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -1677,7 +1526,7 @@
     if (!els.stylesStatus) return;
     const production = selectedProduction();
     if (!state.databasePath) {
-      els.stylesStatus.textContent = 'Selecciona una base de datos';
+      els.stylesStatus.textContent = 'Inicializando base de datos';
       return;
     }
     if (!production) {
@@ -2406,6 +2255,7 @@
     if (Object.keys(styleFields).length) {
       style.cartela = normalizeStyleCartela({ ...(style.cartela || {}), ...styleFields });
       syncStyleSnapshot(style.id);
+      scheduleStyleAutosave(style.id);
     }
     Object.assign(cartela, cartelaFields);
     state.render = buildRenderJson(state.source, state.materials, state.structure);
@@ -2437,6 +2287,7 @@
         typography: fields.typography || (style.block && style.block.typography) || {},
       });
       syncStyleSnapshot(style.id);
+      scheduleStyleAutosave(style.id);
     } else {
       applyBlockStyleToCartelaRefs(cartela, fields);
     }
@@ -2511,7 +2362,7 @@
   async function saveCartelaStyle(cartela, forceSaveAs) {
     if (!cartela) return;
     if (!state.databasePath || !state.selectedProductionId) {
-      window.alert('Selecciona primero una base de datos y una producción.');
+      window.alert('Selecciona primero una producción.');
       return;
     }
 
@@ -3048,6 +2899,7 @@
       return;
     }
     els.jsonPreview.value = JSON.stringify(state.preview === 'structure' ? getStructureJsonForOutput() : state.render, null, 2);
+    scheduleAutosave();
   }
 
   function getStructureJsonForOutput() {
@@ -4211,100 +4063,6 @@
       textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
     }));
     return unitEl;
-  }
-
-  async function saveJsonFile(kind, forceSaveAs = false) {
-    const data = kind === 'structure_json' ? getStructureJsonForOutput() : state.render;
-    if (!data) {
-      window.alert(kind === 'structure_json' ? 'Carga primero un Excel o una estructura.' : 'Genera primero un render final.');
-      return;
-    }
-
-    const native = nativeBridge();
-    if (native && native.saveJson) {
-      const pathKey = kind === 'structure_json' ? 'structureFilePath' : 'renderFilePath';
-      const dirKey = kind === 'structure_json' ? STORAGE_KEYS.structureDir : STORAGE_KEYS.renderDir;
-      const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
-      const suggestedName = `${sheet}_${kind}.json`;
-      try {
-        const result = await native.saveJson({
-          data,
-          filePath: state[pathKey],
-          forceSaveAs,
-          suggestedName,
-          defaultPath: state[pathKey] || joinPath(readLocalPreference(dirKey), suggestedName),
-          title: kind === 'structure_json' ? 'Guardar estructura de créditos' : 'Guardar render final',
-        });
-        if (!result || result.canceled) return;
-        state[pathKey] = result.filePath || null;
-        rememberFileDirectory(dirKey, result.filePath);
-        if (kind === 'structure_json' && els.structureFileStatus) {
-          els.structureFileStatus.textContent = result.name || 'Estructura guardada';
-        }
-      } catch (error) {
-        window.alert('No se pudo guardar el JSON: ' + error.message);
-      }
-      return;
-    }
-
-    const handleKey = kind === 'structure_json' ? 'structureFileHandle' : 'renderFileHandle';
-    let handle = state[handleKey];
-    if (forceSaveAs || !handle) {
-      handle = await requestSaveHandle(kind);
-      if (!handle) return;
-      state[handleKey] = handle;
-    }
-
-    try {
-      await writeJsonToHandle(handle, data);
-    } catch (error) {
-      window.alert('No se pudo guardar el JSON: ' + error.message);
-    }
-  }
-
-  async function requestSaveHandle(kind) {
-    const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
-    const suggestedName = `${sheet}_${kind}.json`;
-    if (!window.showSaveFilePicker) {
-      fallbackDownloadJson(kind);
-      return null;
-    }
-
-    try {
-      return await window.showSaveFilePicker({
-        suggestedName,
-        types: [
-          {
-            description: 'JSON',
-            accept: { 'application/json': ['.json'] },
-          },
-        ],
-      });
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        window.alert('No se pudo elegir archivo: ' + error.message);
-      }
-      return null;
-    }
-  }
-
-  async function writeJsonToHandle(handle, data) {
-    const writable = await handle.createWritable();
-    await writable.write(JSON.stringify(data, null, 2));
-    await writable.close();
-  }
-
-  function fallbackDownloadJson(kind) {
-    const data = kind === 'structure_json' ? getStructureJsonForOutput() : state.render;
-    const sheet = safeFilePart((state.source && state.source.sheet) || 'credits');
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${sheet}_${kind}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(link.href);
   }
 
   function defaultLayoutForMaterial(material) {

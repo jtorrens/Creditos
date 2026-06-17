@@ -141,14 +141,6 @@ function stopPythonServer() {
   serverProcess = null;
 }
 
-function jsonFilters() {
-  return [{ name: 'JSON', extensions: ['json'] }];
-}
-
-function databaseFilters() {
-  return [{ name: 'SQLite', extensions: ['db', 'sqlite', 'sqlite3'] }];
-}
-
 function pngFilters() {
   return [{ name: 'PNG', extensions: ['png'] }];
 }
@@ -201,39 +193,6 @@ function runCommand(command, args) {
   });
 }
 
-async function readStyleFiles(directory) {
-  const entries = await fs.readdir(directory, { withFileTypes: true });
-  const styles = [];
-  for (const entry of entries) {
-    if (!entry.isFile() || path.extname(entry.name).toLowerCase() !== '.json') continue;
-    const filePath = path.join(directory, entry.name);
-    const text = await fs.readFile(filePath, 'utf8');
-    styles.push({ filePath, name: entry.name, text });
-  }
-  return styles;
-}
-
-function preferencesPath() {
-  return path.join(app.getPath('userData'), 'preferences.json');
-}
-
-async function readPreferences() {
-  try {
-    return JSON.parse(await fs.readFile(preferencesPath(), 'utf8'));
-  } catch (_error) {
-    return {};
-  }
-}
-
-async function writePreferences(preferences) {
-  await fs.mkdir(path.dirname(preferencesPath()), { recursive: true });
-  await fs.writeFile(preferencesPath(), JSON.stringify(preferences, null, 2), 'utf8');
-}
-
-ipcMain.handle('creditos:get-preferences', async () => {
-  return await readPreferences();
-});
-
 ipcMain.handle('creditos:get-app-info', async () => {
   return {
     name: appPackage.productName || appPackage.name || 'Créditos',
@@ -241,15 +200,6 @@ ipcMain.handle('creditos:get-app-info', async () => {
     platform: process.platform,
     arch: process.arch,
   };
-});
-
-ipcMain.handle('creditos:set-preference', async (_event, payload) => {
-  const key = payload && payload.key;
-  if (!key) return { ok: false };
-  const preferences = await readPreferences();
-  preferences[key] = payload.value || '';
-  await writePreferences(preferences);
-  return { ok: true };
 });
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
@@ -263,49 +213,6 @@ ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
   const filePath = result.filePaths[0];
   const bytes = await fs.readFile(filePath);
   return { canceled: false, filePath, name: path.basename(filePath), base64: bytes.toString('base64') };
-});
-
-ipcMain.handle('creditos:open-json', async (_event, payload) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Abrir estructura de créditos',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
-    properties: ['openFile'],
-    filters: jsonFilters(),
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  const filePath = result.filePaths[0];
-  const text = await fs.readFile(filePath, 'utf8');
-  return { canceled: false, filePath, name: path.basename(filePath), text };
-});
-
-ipcMain.handle('creditos:choose-database', async (_event, payload) => {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Seleccionar base de datos',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : 'creditos.db',
-    filters: databaseFilters(),
-  });
-  if (result.canceled || !result.filePath) return { canceled: true };
-  const filePath = result.filePath;
-  return { canceled: false, filePath, name: path.basename(filePath) };
-});
-
-ipcMain.handle('creditos:save-json', async (_event, payload) => {
-  const data = payload && payload.data;
-  if (!data) throw new Error('No hay datos JSON para guardar.');
-
-  let filePath = payload.filePath;
-  if (payload.forceSaveAs || !filePath) {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: payload.title || 'Guardar JSON',
-      defaultPath: payload.defaultPath || payload.suggestedName || 'creditos.json',
-      filters: jsonFilters(),
-    });
-    if (result.canceled || !result.filePath) return { canceled: true };
-    filePath = result.filePath;
-  }
-
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-  return { canceled: false, filePath, name: path.basename(filePath) };
 });
 
 ipcMain.handle('creditos:save-png', async (_event, payload) => {
@@ -388,48 +295,6 @@ ipcMain.handle('creditos:export-mov-sequence', async (_event, payload) => {
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
   }
-});
-
-ipcMain.handle('creditos:choose-style-directory', async (_event, payload) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Elegir carpeta de estilos',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
-    properties: ['openDirectory', 'createDirectory'],
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  const directory = result.filePaths[0];
-  const styles = await readStyleFiles(directory);
-  return { canceled: false, directory, name: path.basename(directory), styles };
-});
-
-ipcMain.handle('creditos:load-style-directory', async (_event, payload) => {
-  const directory = payload && payload.directory;
-  if (!directory) return { canceled: true };
-  const styles = await readStyleFiles(directory);
-  return { canceled: false, directory, name: path.basename(directory), styles };
-});
-
-ipcMain.handle('creditos:save-style-json', async (_event, payload) => {
-  const directory = payload && payload.directory;
-  const data = payload && payload.data;
-  const fileName = payload && payload.fileName;
-  let filePath = payload && payload.filePath
-    ? payload.filePath
-    : directory && fileName
-      ? path.join(directory, fileName)
-      : null;
-  if (payload && payload.forceSaveAs) {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      title: payload && payload.forceSaveAs ? 'Guardar como nuevo estilo' : 'Actualizar estilo',
-      defaultPath: filePath || fileName || 'estilo.json',
-      filters: jsonFilters(),
-    });
-    if (result.canceled || !result.filePath) return { canceled: true };
-    filePath = result.filePath;
-  }
-  if (!filePath || !data) throw new Error('No hay ruta o datos de estilo para guardar.');
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
-  return { canceled: false, filePath, name: path.basename(filePath) };
 });
 
 ipcMain.handle('creditos:confirm', async (_event, payload) => {

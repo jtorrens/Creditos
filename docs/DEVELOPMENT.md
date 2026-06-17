@@ -69,7 +69,8 @@ Build outputs are written to `apps/desktop/dist/` and are not versioned.
 
 ## SQLite Project Storage
 
-The app stores project data in one SQLite database selected from the Proyecto tab.
+The app stores project data in one SQLite database at `data/creditos.db`.
+This file is intentionally versioned so Mac and Windows can share project data through GitHub.
 
 Hierarchy:
 
@@ -84,6 +85,10 @@ Current documents are preserved as JSON payloads inside SQLite rows:
 - production `styles`
 
 This keeps the existing render/editor logic stable while replacing external JSON files as the normal persistence mechanism.
+
+Changes in the editor are autosaved to the database. The normal workflow does not require JSON import/export or explicit Save buttons.
+
+Because the database is a binary file, avoid editing it independently on Mac and Windows before syncing. Pull before working and push after a session.
 
 ## macOS Update Script
 

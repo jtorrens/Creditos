@@ -27,14 +27,16 @@ XMLNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 DOCUMENT_KINDS = {"source", "structure", "render"}
 
 
+def default_db_path():
+    return ROOT.parents[1] / "data" / "creditos.db"
+
+
 def now_iso():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
 
 
 def db_connect(db_path):
-    if not db_path:
-        raise ValueError("No hay ruta de base de datos.")
-    path = Path(db_path).expanduser()
+    path = Path(db_path).expanduser() if db_path else default_db_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(str(path))
     connection.row_factory = sqlite3.Row
@@ -111,7 +113,7 @@ def db_overview(connection):
         ORDER BY production_id, episode_number
         """
     )]
-    return {"productions": productions, "episodes": episodes}
+    return {"db_path": str(default_db_path()), "productions": productions, "episodes": episodes}
 
 
 def create_production(connection, name, episode_count):
