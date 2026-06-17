@@ -2,6 +2,8 @@
 
 Aplicación local Electron para importar Excels de créditos, organizar cartelas, previsualizar páginas y exportar PNG/MOV.
 
+La persistencia de proyecto usa una base de datos SQLite global: primer nivel `productions`, segundo nivel `episodes`.
+
 ## Estructura
 
 ```text
@@ -11,6 +13,14 @@ apps/
 test/         Fixtures compartidos para probar en Mac y PC
 docs/         Documentación técnica y handoffs
 ```
+
+## Flujo de proyecto
+
+1. Selecciona o crea una base de datos `.db`.
+2. Crea una producción indicando cuántos episodios debe generar.
+3. Selecciona producción y episodio.
+4. Importa el XLSX del episodio.
+5. Guarda estructura/render/estilos en la base de datos.
 
 ## Uso rápido
 

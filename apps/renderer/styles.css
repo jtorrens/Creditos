@@ -287,6 +287,39 @@ button.primary:hover {
   padding-bottom: 14px;
 }
 
+.project-db-panel {
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+}
+
+.inline-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.inline-actions span {
+  color: var(--muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-actions .text-input {
+  min-width: 180px;
+}
+
+.inline-actions .compact-number {
+  min-width: 80px;
+  width: 88px;
+}
+
 .hidden-input {
   display: none;
 }

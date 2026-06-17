@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import cgi
+import datetime
 import json
 import mimetypes
 import re
+import sqlite3
 import sys
 import threading
 import time
@@ -22,6 +24,202 @@ NS = {
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
 }
 XMLNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+DOCUMENT_KINDS = {"source", "structure", "render"}
+
+
+def now_iso():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
+def db_connect(db_path):
+    if not db_path:
+        raise ValueError("No hay ruta de base de datos.")
+    path = Path(db_path).expanduser()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(str(path))
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA foreign_keys = ON")
+    init_db(connection)
+    return connection
+
+
+def init_db(connection):
+    connection.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS productions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            episode_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS episodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            production_id INTEGER NOT NULL,
+            episode_number INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (production_id, episode_number),
+            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS documents (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            production_id INTEGER NOT NULL,
+            episode_id INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            schema TEXT,
+            version INTEGER,
+            data_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (production_id, episode_id, kind),
+            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
+            FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS styles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            production_id INTEGER NOT NULL,
+            style_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            data_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (production_id, style_id),
+            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
+        );
+        """
+    )
+    connection.commit()
+
+
+def row_to_dict(row):
+    return dict(row) if row is not None else None
+
+
+def db_overview(connection):
+    productions = [row_to_dict(row) for row in connection.execute(
+        "SELECT id, name, episode_count, created_at, updated_at FROM productions ORDER BY name COLLATE NOCASE"
+    )]
+    episodes = [row_to_dict(row) for row in connection.execute(
+        """
+        SELECT id, production_id, episode_number, name, created_at, updated_at
+        FROM episodes
+        ORDER BY production_id, episode_number
+        """
+    )]
+    return {"productions": productions, "episodes": episodes}
+
+
+def create_production(connection, name, episode_count):
+    clean_name = str(name or "").strip()
+    if not clean_name:
+        raise ValueError("La produccion necesita nombre.")
+    count = max(1, int(episode_count or 1))
+    timestamp = now_iso()
+    cursor = connection.execute(
+        """
+        INSERT INTO productions (name, episode_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?)
+        """,
+        (clean_name, count, timestamp, timestamp),
+    )
+    production_id = cursor.lastrowid
+    width = max(2, len(str(count)))
+    for number in range(1, count + 1):
+        connection.execute(
+            """
+            INSERT INTO episodes (production_id, episode_number, name, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (production_id, number, f"Episodio {number:0{width}d}", timestamp, timestamp),
+        )
+    connection.commit()
+    return production_id
+
+
+def save_document(connection, production_id, episode_id, kind, data):
+    if kind not in DOCUMENT_KINDS:
+        raise ValueError("Tipo de documento no valido.")
+    if not isinstance(data, dict):
+        raise ValueError("El documento debe ser un objeto.")
+    timestamp = now_iso()
+    schema = data.get("schema")
+    version = data.get("version")
+    connection.execute(
+        """
+        INSERT INTO documents (production_id, episode_id, kind, schema, version, data_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(production_id, episode_id, kind) DO UPDATE SET
+            schema = excluded.schema,
+            version = excluded.version,
+            data_json = excluded.data_json,
+            updated_at = excluded.updated_at
+        """,
+        (
+            int(production_id),
+            int(episode_id),
+            kind,
+            schema,
+            version if isinstance(version, int) else None,
+            json.dumps(data, ensure_ascii=False),
+            timestamp,
+            timestamp,
+        ),
+    )
+    connection.commit()
+
+
+def load_document(connection, production_id, episode_id, kind):
+    if kind not in DOCUMENT_KINDS:
+        raise ValueError("Tipo de documento no valido.")
+    row = connection.execute(
+        """
+        SELECT data_json
+        FROM documents
+        WHERE production_id = ? AND episode_id = ? AND kind = ?
+        """,
+        (int(production_id), int(episode_id), kind),
+    ).fetchone()
+    return json.loads(row["data_json"]) if row else None
+
+
+def save_style(connection, production_id, data):
+    if not isinstance(data, dict):
+        raise ValueError("El estilo debe ser un objeto.")
+    style_id = str(data.get("id") or "").strip()
+    if not style_id:
+        raise ValueError("El estilo necesita id.")
+    name = str(data.get("name") or style_id).strip()
+    timestamp = now_iso()
+    connection.execute(
+        """
+        INSERT INTO styles (production_id, style_id, name, data_json, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(production_id, style_id) DO UPDATE SET
+            name = excluded.name,
+            data_json = excluded.data_json,
+            updated_at = excluded.updated_at
+        """,
+        (int(production_id), style_id, name, json.dumps(data, ensure_ascii=False), timestamp, timestamp),
+    )
+    connection.commit()
+
+
+def load_styles(connection, production_id):
+    rows = connection.execute(
+        """
+        SELECT data_json
+        FROM styles
+        WHERE production_id = ?
+        ORDER BY name COLLATE NOCASE
+        """,
+        (int(production_id),),
+    )
+    return [json.loads(row["data_json"]) for row in rows]
 
 
 def col_from_ref(ref):
@@ -421,10 +619,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_POST(self):
-        if self.path != "/api/parse-xlsx":
-            self.send_error(404)
+        path = unquote(self.path.split("?", 1)[0])
+        if path == "/api/parse-xlsx":
+            self.handle_parse_xlsx()
             return
+        if path.startswith("/api/db/"):
+            self.handle_db(path)
+            return
+        self.send_error(404)
 
+    def handle_parse_xlsx(self):
         try:
             form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
             uploaded = form["file"]
@@ -434,6 +638,78 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, parsed)
         except Exception as error:
             self.send_json(500, {"error": str(error)})
+
+    def handle_db(self, path):
+        try:
+            payload = self.read_json_body()
+            db_path = payload.get("db_path")
+            with db_connect(db_path) as connection:
+                if path in {"/api/db/init", "/api/db/list"}:
+                    self.send_json(200, db_overview(connection))
+                    return
+
+                if path == "/api/db/create-production":
+                    production_id = create_production(
+                        connection,
+                        payload.get("name"),
+                        payload.get("episode_count"),
+                    )
+                    self.send_json(200, {**db_overview(connection), "production_id": production_id})
+                    return
+
+                if path == "/api/db/save-document":
+                    save_document(
+                        connection,
+                        payload.get("production_id"),
+                        payload.get("episode_id"),
+                        payload.get("kind"),
+                        payload.get("data"),
+                    )
+                    self.send_json(200, {"ok": True})
+                    return
+
+                if path == "/api/db/load-document":
+                    data = load_document(
+                        connection,
+                        payload.get("production_id"),
+                        payload.get("episode_id"),
+                        payload.get("kind"),
+                    )
+                    self.send_json(200, {"data": data})
+                    return
+
+                if path == "/api/db/load-episode":
+                    production_id = payload.get("production_id")
+                    episode_id = payload.get("episode_id")
+                    self.send_json(
+                        200,
+                        {
+                            "source": load_document(connection, production_id, episode_id, "source"),
+                            "structure": load_document(connection, production_id, episode_id, "structure"),
+                            "render": load_document(connection, production_id, episode_id, "render"),
+                            "styles": load_styles(connection, production_id),
+                        },
+                    )
+                    return
+
+                if path == "/api/db/save-style":
+                    save_style(connection, payload.get("production_id"), payload.get("data"))
+                    self.send_json(200, {"ok": True})
+                    return
+
+                if path == "/api/db/load-styles":
+                    self.send_json(200, {"styles": load_styles(connection, payload.get("production_id"))})
+                    return
+
+            self.send_error(404)
+        except Exception as error:
+            self.send_json(500, {"error": str(error)})
+
+    def read_json_body(self):
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        if not length:
+            return {}
+        return json.loads(self.rfile.read(length).decode("utf-8"))
 
     def send_json(self, status, payload):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

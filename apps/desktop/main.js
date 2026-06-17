@@ -145,6 +145,10 @@ function jsonFilters() {
   return [{ name: 'JSON', extensions: ['json'] }];
 }
 
+function databaseFilters() {
+  return [{ name: 'SQLite', extensions: ['db', 'sqlite', 'sqlite3'] }];
+}
+
 function pngFilters() {
   return [{ name: 'PNG', extensions: ['png'] }];
 }
@@ -272,6 +276,17 @@ ipcMain.handle('creditos:open-json', async (_event, payload) => {
   const filePath = result.filePaths[0];
   const text = await fs.readFile(filePath, 'utf8');
   return { canceled: false, filePath, name: path.basename(filePath), text };
+});
+
+ipcMain.handle('creditos:choose-database', async (_event, payload) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Seleccionar base de datos',
+    defaultPath: payload && payload.defaultPath ? payload.defaultPath : 'creditos.db',
+    filters: databaseFilters(),
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+  const filePath = result.filePath;
+  return { canceled: false, filePath, name: path.basename(filePath) };
 });
 
 ipcMain.handle('creditos:save-json', async (_event, payload) => {

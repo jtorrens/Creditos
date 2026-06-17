@@ -29,12 +29,41 @@
             <h2>Proyecto</h2>
           </div>
           <div class="settings-body">
-            <div class="file-actions">
-              <button id="openStructureBtn" type="button">Abrir estructura</button>
+            <div class="project-db-panel">
+              <div class="field-grid">
+                <label for="databaseStatus">Base de datos</label>
+                <div class="inline-actions">
+                  <button id="chooseDatabaseBtn" type="button">Seleccionar DB</button>
+                  <span id="databaseStatus">Sin base de datos</span>
+                </div>
+              </div>
+              <div class="field-grid">
+                <label for="productionSelect">Producción</label>
+                <select id="productionSelect" class="text-input"></select>
+              </div>
+              <div class="field-grid">
+                <label for="episodeSelect">Episodio</label>
+                <select id="episodeSelect" class="text-input"></select>
+              </div>
+              <div class="field-grid">
+                <label for="newProductionNameInput">Nueva producción</label>
+                <div class="inline-actions">
+                  <input id="newProductionNameInput" class="text-input" type="text" placeholder="Nombre producción">
+                  <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de episodios">
+                  <button id="createProductionBtn" type="button">Crear</button>
+                </div>
+              </div>
+              <div class="field-grid">
+                <label for="saveStructureBtn">Cambios</label>
+                <div class="inline-actions">
+                  <button id="saveStructureBtn" type="button">Guardar estructura en DB</button>
+                  <button id="saveRenderBtn" type="button">Guardar render en DB</button>
+                  <span id="structureFileStatus">Sin episodio seleccionado</span>
+                </div>
+              </div>
               <input id="structureInput" class="hidden-input" type="file" accept="application/json,.json">
-              <button id="saveStructureBtn" type="button">Guardar estructura</button>
-              <button id="saveStructureAsBtn" type="button">Guardar estructura como...</button>
-              <span id="structureFileStatus">Sin estructura abierta</span>
+              <button id="openStructureBtn" class="hidden-input" type="button">Abrir estructura</button>
+              <button id="saveStructureAsBtn" class="hidden-input" type="button">Guardar estructura como...</button>
             </div>
             <div class="field-grid">
               <label for="defaultDurationInput">Duración por página</label>
@@ -50,8 +79,8 @@
             </div>
             <div id="fontStatus" class="settings-status">Fuentes básicas cargadas</div>
             <div class="font-actions">
-              <button id="chooseStylesDirBtn" type="button">Seleccionar carpeta de estilos</button>
-              <span id="stylesStatus">No hay carpeta de estilos seleccionada</span>
+              <button id="chooseStylesDirBtn" type="button">Recargar estilos</button>
+              <span id="stylesStatus">Selecciona una producción</span>
             </div>
             <div id="typographySettings" class="typography-settings"></div>
           </div>
@@ -94,8 +123,7 @@
                 <button id="structureTab" class="active" type="button">Estructura</button>
                 <button id="renderTab" type="button">Render final</button>
               </div>
-              <button id="saveRenderBtn" type="button">Guardar render final</button>
-              <button id="saveRenderAsBtn" type="button">Guardar render como...</button>
+              <button id="saveRenderAsBtn" class="hidden-input" type="button">Guardar render como...</button>
             </div>
           </div>
           <textarea id="jsonPreview" spellcheck="false" readonly></textarea>

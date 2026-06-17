@@ -67,6 +67,24 @@ npm run dist:win
 
 Build outputs are written to `apps/desktop/dist/` and are not versioned.
 
+## SQLite Project Storage
+
+The app stores project data in one SQLite database selected from the Proyecto tab.
+
+Hierarchy:
+
+- `productions`
+- `episodes`
+
+Current documents are preserved as JSON payloads inside SQLite rows:
+
+- `source`
+- `structure`
+- `render`
+- production `styles`
+
+This keeps the existing render/editor logic stable while replacing external JSON files as the normal persistence mechanism.
+
 ## macOS Update Script
 
 From the repository root on macOS:

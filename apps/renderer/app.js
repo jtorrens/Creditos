@@ -11,6 +11,11 @@
     renderFileHandle: null,
     structureFilePath: null,
     renderFilePath: null,
+    databasePath: null,
+    productions: [],
+    episodes: [],
+    selectedProductionId: null,
+    selectedEpisodeId: null,
     styleDirectoryHandle: null,
     styleDirectoryPath: null,
     styles: [],
@@ -26,6 +31,13 @@
     xlsxInput: document.getElementById('xlsxInput'),
     openStructureBtn: document.getElementById('openStructureBtn'),
     structureInput: document.getElementById('structureInput'),
+    chooseDatabaseBtn: document.getElementById('chooseDatabaseBtn'),
+    databaseStatus: document.getElementById('databaseStatus'),
+    productionSelect: document.getElementById('productionSelect'),
+    episodeSelect: document.getElementById('episodeSelect'),
+    newProductionNameInput: document.getElementById('newProductionNameInput'),
+    newProductionEpisodeCountInput: document.getElementById('newProductionEpisodeCountInput'),
+    createProductionBtn: document.getElementById('createProductionBtn'),
     xlsxFileStatus: document.getElementById('xlsxFileStatus'),
     structureFileStatus: document.getElementById('structureFileStatus'),
     sourceMeta: document.getElementById('sourceMeta'),
@@ -87,6 +99,7 @@
   const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'font_size_multiplier', 'line_spacing_multiplier', 'block_gap_multiplier', 'vertical_offset', 'duration'];
   const STORAGE_KEYS = {
     xlsxDir: 'creditos:lastDir:xlsx',
+    databasePath: 'creditos:database:path',
     structureDir: 'creditos:lastDir:structure',
     renderDir: 'creditos:lastDir:render',
     stylesDir: 'creditos:lastDir:styles',
@@ -104,6 +117,10 @@
 
   els.openXlsxBtn.addEventListener('click', openXlsxFile);
   els.xlsxInput.addEventListener('change', loadXlsxFile);
+  els.chooseDatabaseBtn.addEventListener('click', chooseDatabaseFile);
+  els.productionSelect.addEventListener('change', selectProductionFromUi);
+  els.episodeSelect.addEventListener('change', selectEpisodeFromUi);
+  els.createProductionBtn.addEventListener('click', createProductionFromUi);
   els.chooseStylesDirBtn.addEventListener('click', chooseStylesDirectory);
   els.openStructureBtn.addEventListener('click', openStructureJsonFile);
   els.structureInput.addEventListener('change', (event) => loadJsonFile(event, loadStructureJson));
@@ -121,9 +138,9 @@
   }));
   els.structureTab.addEventListener('click', () => setPreview('structure'));
   els.renderTab.addEventListener('click', () => setPreview('render'));
-  els.saveStructureBtn.addEventListener('click', () => saveJsonFile('structure_json'));
+  els.saveStructureBtn.addEventListener('click', () => saveProjectDocument('structure'));
   els.saveStructureAsBtn.addEventListener('click', () => saveJsonFile('structure_json', true));
-  els.saveRenderBtn.addEventListener('click', () => saveJsonFile('render_json'));
+  els.saveRenderBtn.addEventListener('click', () => saveProjectDocument('render'));
   els.saveRenderAsBtn.addEventListener('click', () => saveJsonFile('render_json', true));
   els.pdfFirstPageBtn.addEventListener('click', () => goToPdfPage(0));
   els.pdfPrevPageBtn.addEventListener('click', () => changePdfPage(-1));
@@ -175,7 +192,12 @@
     }
 
     const lastStylesDir = readLocalPreference(STORAGE_KEYS.stylesDir);
-    if (lastStylesDir) {
+    const lastDatabasePath = readLocalPreference(STORAGE_KEYS.databasePath);
+    if (lastDatabasePath) {
+      await openDatabasePath(lastDatabasePath, { silent: true });
+    }
+
+    if (lastStylesDir && !state.databasePath) {
       state.styleDirectoryPath = lastStylesDir;
       updateStylesStatus();
       if (native && native.loadStyleDirectory) {
@@ -189,6 +211,225 @@
       }
     }
     loadSystemFonts({ silent: true });
+    renderProjectSelectors();
+  }
+
+  async function dbPost(endpoint, payload = {}) {
+    if (!state.databasePath && endpoint !== '/api/db/init') {
+      throw new Error('Selecciona primero una base de datos.');
+    }
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ db_path: state.databasePath, ...payload }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Error de base de datos.');
+    return result;
+  }
+
+  async function chooseDatabaseFile() {
+    const native = nativeBridge();
+    if (!native || !native.chooseDatabase) {
+      window.alert('La selección de base de datos necesita abrir la app desde Electron.');
+      return;
+    }
+
+    try {
+      const result = await native.chooseDatabase({
+        defaultPath: state.databasePath || readLocalPreference(STORAGE_KEYS.databasePath) || 'creditos.db',
+      });
+      if (!result || result.canceled) return;
+      await openDatabasePath(result.filePath);
+    } catch (error) {
+      window.alert('No se pudo abrir la base de datos: ' + error.message);
+    }
+  }
+
+  async function openDatabasePath(filePath, options = {}) {
+    if (!filePath) return;
+    state.databasePath = filePath;
+    writeLocalPreference(STORAGE_KEYS.databasePath, filePath);
+    try {
+      const overview = await dbPost('/api/db/init');
+      applyDatabaseOverview(overview);
+      updateDatabaseStatus();
+    } catch (error) {
+      if (!options.silent) window.alert('No se pudo inicializar la base de datos: ' + error.message);
+    }
+  }
+
+  function applyDatabaseOverview(overview) {
+    state.productions = overview.productions || [];
+    state.episodes = overview.episodes || [];
+    if (!state.productions.some((production) => String(production.id) === String(state.selectedProductionId))) {
+      state.selectedProductionId = state.productions[0] ? state.productions[0].id : null;
+    }
+    const availableEpisodes = currentProductionEpisodes();
+    if (!availableEpisodes.some((episode) => String(episode.id) === String(state.selectedEpisodeId))) {
+      state.selectedEpisodeId = availableEpisodes[0] ? availableEpisodes[0].id : null;
+    }
+    renderProjectSelectors();
+    if (state.selectedProductionId) {
+      loadProductionStyles().catch((error) => console.warn(error));
+    }
+    if (state.selectedProductionId && state.selectedEpisodeId) {
+      loadCurrentEpisode().catch((error) => console.warn(error));
+    }
+  }
+
+  function updateDatabaseStatus() {
+    if (!els.databaseStatus) return;
+    els.databaseStatus.textContent = state.databasePath ? state.databasePath : 'Sin base de datos';
+  }
+
+  function renderProjectSelectors() {
+    renderSelect(els.productionSelect, state.productions, state.selectedProductionId, 'Sin producciones', (production) => production.name);
+    renderSelect(els.episodeSelect, currentProductionEpisodes(), state.selectedEpisodeId, 'Sin episodios', (episode) => episode.name);
+    updateDatabaseStatus();
+    updateProjectStatus();
+  }
+
+  function renderSelect(select, items, selectedId, emptyLabel, labelForItem) {
+    if (!select) return;
+    select.innerHTML = '';
+    if (!items.length) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = emptyLabel;
+      select.appendChild(option);
+      select.disabled = true;
+      return;
+    }
+    select.disabled = false;
+    items.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = String(item.id);
+      option.textContent = labelForItem(item);
+      select.appendChild(option);
+    });
+    select.value = selectedId ? String(selectedId) : String(items[0].id);
+  }
+
+  function currentProductionEpisodes() {
+    return state.episodes.filter((episode) => String(episode.production_id) === String(state.selectedProductionId));
+  }
+
+  function selectedProduction() {
+    return state.productions.find((production) => String(production.id) === String(state.selectedProductionId)) || null;
+  }
+
+  function selectedEpisode() {
+    return state.episodes.find((episode) => String(episode.id) === String(state.selectedEpisodeId)) || null;
+  }
+
+  function updateProjectStatus() {
+    if (!els.structureFileStatus) return;
+    const production = selectedProduction();
+    const episode = selectedEpisode();
+    if (!state.databasePath) {
+      els.structureFileStatus.textContent = 'Sin base de datos';
+    } else if (!production) {
+      els.structureFileStatus.textContent = 'Crea una producción';
+    } else if (!episode) {
+      els.structureFileStatus.textContent = 'Selecciona un episodio';
+    } else {
+      els.structureFileStatus.textContent = `${production.name} · ${episode.name}`;
+    }
+  }
+
+  async function selectProductionFromUi() {
+    state.selectedProductionId = els.productionSelect.value || null;
+    const episodes = currentProductionEpisodes();
+    state.selectedEpisodeId = episodes[0] ? episodes[0].id : null;
+    renderProjectSelectors();
+    await loadProductionStyles();
+    await loadCurrentEpisode();
+  }
+
+  async function selectEpisodeFromUi() {
+    state.selectedEpisodeId = els.episodeSelect.value || null;
+    updateProjectStatus();
+    await loadCurrentEpisode();
+  }
+
+  async function createProductionFromUi() {
+    if (!state.databasePath) {
+      window.alert('Selecciona primero una base de datos.');
+      return;
+    }
+    const name = els.newProductionNameInput.value.trim();
+    const episodeCount = Math.max(1, Math.round(Number(els.newProductionEpisodeCountInput.value) || 1));
+    if (!name) {
+      window.alert('Escribe el nombre de la producción.');
+      return;
+    }
+    try {
+      const overview = await dbPost('/api/db/create-production', { name, episode_count: episodeCount });
+      state.selectedProductionId = overview.production_id;
+      state.selectedEpisodeId = null;
+      els.newProductionNameInput.value = '';
+      applyDatabaseOverview(overview);
+    } catch (error) {
+      window.alert('No se pudo crear la producción: ' + error.message);
+    }
+  }
+
+  async function loadProductionStyles() {
+    if (!state.databasePath || !state.selectedProductionId) return;
+    const result = await dbPost('/api/db/load-styles', { production_id: state.selectedProductionId });
+    loadStyleObjects(result.styles || []);
+  }
+
+  async function loadCurrentEpisode() {
+    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
+      return;
+    }
+    const result = await dbPost('/api/db/load-episode', {
+      production_id: state.selectedProductionId,
+      episode_id: state.selectedEpisodeId,
+    });
+    loadStyleObjects(result.styles || []);
+    if (result.source) {
+      state.source = normalizeSource(result.source, result.source.meta && result.source.meta.loaded_file);
+      state.materials = createMaterialsFromSource(state.source);
+      state.structure = result.structure
+        ? createStructureFromSource(state.source, state.materials, migrateStructure(result.structure))
+        : createStructureFromSource(state.source, state.materials, null);
+      state.render = result.render || buildRenderJson(state.source, state.materials, state.structure);
+      state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
+    } else {
+      state.source = null;
+      state.materials = [];
+      state.structure = null;
+      state.render = null;
+      state.selectedCartelaId = null;
+    }
+    updateProjectStatus();
+    rebuild();
+  }
+
+  async function saveProjectDocument(kind) {
+    const data = kind === 'structure' ? getStructureJsonForOutput() : state.render;
+    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
+      window.alert('Selecciona base de datos, producción y episodio.');
+      return;
+    }
+    if (!data) {
+      window.alert(kind === 'structure' ? 'Carga primero un Excel.' : 'Genera primero un render final.');
+      return;
+    }
+    try {
+      await dbPost('/api/db/save-document', {
+        production_id: state.selectedProductionId,
+        episode_id: state.selectedEpisodeId,
+        kind,
+        data,
+      });
+      updateProjectStatus();
+    } catch (error) {
+      window.alert('No se pudo guardar en la base de datos: ' + error.message);
+    }
   }
 
   function readLocalPreference(key) {
@@ -235,11 +476,20 @@
   async function loadXlsxFile(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
+    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
+      window.alert('Selecciona base de datos, producción y episodio antes de importar un XLSX.');
+      event.target.value = '';
+      return;
+    }
     await parseXlsxFile(file);
     event.target.value = '';
   }
 
   async function openXlsxFile() {
+    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
+      window.alert('Selecciona base de datos, producción y episodio antes de importar un XLSX.');
+      return;
+    }
     const native = nativeBridge();
     if (native && native.openXlsx) {
       try {
@@ -268,7 +518,7 @@
       const response = await fetch('/api/parse-xlsx', { method: 'POST', body: form });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Error al parsear el XLSX.');
-      loadSourceJson(payload, file.name);
+      await loadSourceJson(payload, file.name);
       if (els.xlsxFileStatus) els.xlsxFileStatus.textContent = file.name;
     } catch (error) {
       window.alert(
@@ -339,7 +589,7 @@
     }
   }
 
-  function loadSourceJson(json, fileName) {
+  async function loadSourceJson(json, fileName) {
     state.source = normalizeSource(json, fileName);
     state.materials = createMaterialsFromSource(state.source);
     state.structure = createStructureFromSource(state.source, state.materials, state.structure);
@@ -347,9 +597,24 @@
     state.renderFileHandle = null;
     state.structureFilePath = null;
     state.renderFilePath = null;
-    if (els.structureFileStatus) els.structureFileStatus.textContent = 'Sin estructura abierta';
+    updateProjectStatus();
     state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
     rebuild();
+    if (state.databasePath && state.selectedProductionId && state.selectedEpisodeId) {
+      await dbPost('/api/db/save-document', {
+        production_id: state.selectedProductionId,
+        episode_id: state.selectedEpisodeId,
+        kind: 'source',
+        data: state.source,
+      });
+      await dbPost('/api/db/save-document', {
+        production_id: state.selectedProductionId,
+        episode_id: state.selectedEpisodeId,
+        kind: 'structure',
+        data: getStructureJsonForOutput(),
+      });
+      updateProjectStatus();
+    }
   }
 
   function loadStructureJson(json, _fileName, filePath = null) {
@@ -1111,7 +1376,11 @@
 
   function renderMeta() {
     if (!state.source) {
-      els.sourceMeta.textContent = 'Abre un Excel o una estructura de créditos para empezar.';
+      const production = selectedProduction();
+      const episode = selectedEpisode();
+      els.sourceMeta.textContent = production && episode
+        ? `${production.name} · ${episode.name} · importa un XLSX para empezar.`
+        : 'Selecciona una base de datos, producción y episodio para empezar.';
       return;
     }
 
@@ -1295,34 +1564,11 @@
   }
 
   async function chooseStylesDirectory() {
-    const native = nativeBridge();
     try {
-      if (native && native.chooseStyleDirectory) {
-        const result = await native.chooseStyleDirectory({ defaultPath: readLocalPreference(STORAGE_KEYS.stylesDir) });
-        if (!result || result.canceled) return;
-        loadStyleDirectoryResult(result);
-        return;
-      }
-
-      if (!window.showDirectoryPicker) {
-        window.alert('Este navegador no permite elegir una carpeta de estilos. Usa Electron o Chrome compatible.');
-        return;
-      }
-
-      const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
-      state.styleDirectoryHandle = directory;
-      state.styleDirectoryPath = directory.name || '';
-      writeLocalPreference(STORAGE_KEYS.stylesDir, directory.name || '');
-      const files = [];
-      for await (const [name, handle] of directory.entries()) {
-        if (handle.kind !== 'file' || !name.toLowerCase().endsWith('.json')) continue;
-        const file = await handle.getFile();
-        files.push({ name, handle, text: await file.text() });
-      }
-      loadStyleFiles(files);
+      await loadProductionStyles();
     } catch (error) {
       if (error.name !== 'AbortError') {
-        window.alert('No se pudo cargar la carpeta de estilos: ' + error.message);
+        window.alert('No se pudieron cargar los estilos: ' + error.message);
       }
     }
   }
@@ -1349,6 +1595,23 @@
       }
     });
     state.styles = styles.sort((a, b) => a.name.localeCompare(b.name));
+    syncLoadedStyleSnapshots();
+    updateStylesStatus();
+    if (state.source && state.structure) {
+      state.render = buildRenderJson(state.source, state.materials, state.structure);
+    }
+    renderEditor();
+    renderCartelaList();
+    renderPreview();
+    refreshPdfIfActive();
+  }
+
+  function loadStyleObjects(styleObjects) {
+    state.styleDirectoryPath = null;
+    state.styleDirectoryHandle = null;
+    state.styles = (styleObjects || [])
+      .map((style) => normalizeCartelaStyle(style, { name: style.file_name || `${style.id || 'estilo'}.json` }))
+      .sort((a, b) => a.name.localeCompare(b.name));
     syncLoadedStyleSnapshots();
     updateStylesStatus();
     if (state.source && state.structure) {
@@ -1412,13 +1675,16 @@
 
   function updateStylesStatus() {
     if (!els.stylesStatus) return;
-    const directory = state.styleDirectoryPath || (state.styleDirectoryHandle && state.styleDirectoryHandle.name) || '';
-    if (!directory) {
-      els.stylesStatus.textContent = 'No hay carpeta de estilos seleccionada';
+    const production = selectedProduction();
+    if (!state.databasePath) {
+      els.stylesStatus.textContent = 'Selecciona una base de datos';
       return;
     }
-    const prefix = directory ? `${directory} · ` : '';
-    els.stylesStatus.textContent = `${prefix}${state.styles.length} estilo${state.styles.length === 1 ? '' : 's'} cargado${state.styles.length === 1 ? '' : 's'}`;
+    if (!production) {
+      els.stylesStatus.textContent = 'Selecciona una producción';
+      return;
+    }
+    els.stylesStatus.textContent = `${production.name} · ${state.styles.length} estilo${state.styles.length === 1 ? '' : 's'} cargado${state.styles.length === 1 ? '' : 's'}`;
   }
 
   function safeStyleId(value) {
@@ -2244,8 +2510,8 @@
 
   async function saveCartelaStyle(cartela, forceSaveAs) {
     if (!cartela) return;
-    if (!state.styleDirectoryPath && !state.styleDirectoryHandle) {
-      window.alert('Elige primero una carpeta de estilos en Ajustes.');
+    if (!state.databasePath || !state.selectedProductionId) {
+      window.alert('Selecciona primero una base de datos y una producción.');
       return;
     }
 
@@ -2257,10 +2523,6 @@
         const newStyle = createStyleFromCartela(cartela, currentName || 'Nuevo estilo', id);
         const result = await writeStyleFile(newStyle, { forceSaveAs: true });
         if (!result || result.canceled) return;
-        newStyle.filePath = result.filePath || newStyle.filePath;
-        newStyle.file_name = result.name || newStyle.file_name;
-        rememberFileDirectory(STORAGE_KEYS.stylesDir, newStyle.filePath);
-        newStyle.name = styleNameFromFileName(newStyle.file_name, newStyle.name);
         state.styles.push(newStyle);
         state.styles.sort((a, b) => a.name.localeCompare(b.name));
         cartela.style_id = newStyle.id;
@@ -2269,9 +2531,6 @@
         if (!confirmed) return;
         const result = await writeStyleFile(style, { forceSaveAs: false });
         if (!result || result.canceled) return;
-        style.filePath = result.filePath || style.filePath;
-        style.file_name = result.name || style.file_name;
-        rememberFileDirectory(STORAGE_KEYS.stylesDir, style.filePath);
       }
       updateStylesStatus();
       state.render = buildRenderJson(state.source, state.materials, state.structure);
@@ -2310,27 +2569,11 @@
 
   async function writeStyleFile(style, options = {}) {
     const data = serializeCartelaStyle(style);
-    const fileName = style.file_name || `${safeStyleId(style.id)}.json`;
-    const native = nativeBridge();
-    if (native && native.saveStyleJson) {
-      const result = await native.saveStyleJson({
-        directory: state.styleDirectoryPath,
-        filePath: style.filePath,
-        fileName,
-        forceSaveAs: !!options.forceSaveAs,
-        data,
-      });
-      return result;
-    }
-
-    if (!state.styleDirectoryHandle) throw new Error('No hay carpeta de estilos disponible.');
-    const handle = style.fileHandle || await state.styleDirectoryHandle.getFileHandle(fileName, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(JSON.stringify(data, null, 2));
-    await writable.close();
-    style.fileHandle = handle;
-    style.file_name = fileName;
-    return { canceled: false, name: fileName };
+    await dbPost('/api/db/save-style', {
+      production_id: state.selectedProductionId,
+      data,
+    });
+    return { canceled: false, name: style.name };
   }
 
   function styleNameFromFileName(fileName, fallback) {

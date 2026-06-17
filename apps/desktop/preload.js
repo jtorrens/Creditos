@@ -3,6 +3,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('creditosNative', {
   openXlsx: (payload) => ipcRenderer.invoke('creditos:open-xlsx', payload),
   openJson: (payload) => ipcRenderer.invoke('creditos:open-json', payload),
+  chooseDatabase: (payload) => ipcRenderer.invoke('creditos:choose-database', payload),
   saveJson: (payload) => ipcRenderer.invoke('creditos:save-json', payload),
   savePng: (payload) => ipcRenderer.invoke('creditos:save-png', payload),
   exportPngSequence: (payload) => ipcRenderer.invoke('creditos:export-png-sequence', payload),
