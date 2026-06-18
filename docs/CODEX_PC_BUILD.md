@@ -21,10 +21,10 @@ Repositorio:
 https://github.com/jtorrens/Creditos
 ```
 
-Rama actual de trabajo:
+Rama principal de trabajo:
 
 ```text
-sqlite-storage
+main
 ```
 
 Ruta recomendada en Windows:
@@ -51,7 +51,7 @@ Desde PowerShell o Terminal:
 ```powershell
 cd D:\PROYECTOS\CREDITOS
 git status
-git switch sqlite-storage
+git switch main
 git pull
 scripts\updateCreditosPC.bat
 ```
