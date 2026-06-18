@@ -3,31 +3,26 @@ import cgi
 import datetime
 import json
 import mimetypes
-import re
+import os
 import sqlite3
 import sys
 import threading
 import time
 import webbrowser
-import zipfile
-import xml.etree.ElementTree as ET
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from io import BytesIO
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlsplit
+
+from import_models.registry import DEFAULT_IMPORT_MODEL_ID, list_import_models, parse_source
 
 
 ROOT = Path(__file__).resolve().parent
-NS = {
-    "a": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-    "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
-}
-XMLNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-DOCUMENT_KINDS = {"source", "structure", "render"}
+DOCUMENT_KINDS = {"source", "structure", "render", "reference"}
 
 
 def default_db_path():
+    if os.environ.get("CREDITOS_DB_PATH"):
+        return Path(os.environ["CREDITOS_DB_PATH"]).expanduser()
     return ROOT.parents[1] / "data" / "creditos.db"
 
 
@@ -51,6 +46,11 @@ def init_db(connection):
         CREATE TABLE IF NOT EXISTS productions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
+            page_width INTEGER NOT NULL DEFAULT 1920,
+            page_height INTEGER NOT NULL DEFAULT 1080,
+            preview_background TEXT NOT NULL DEFAULT '#ffffff',
+            import_model_id TEXT NOT NULL DEFAULT 'standard_credits_xls',
+            settings_json TEXT NOT NULL DEFAULT '{}',
             episode_count INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -95,28 +95,78 @@ def init_db(connection):
         );
         """
     )
+    columns = {row["name"] for row in connection.execute("PRAGMA table_info(productions)")}
+    if "page_width" not in columns:
+        connection.execute("ALTER TABLE productions ADD COLUMN page_width INTEGER NOT NULL DEFAULT 1920")
+    if "page_height" not in columns:
+        connection.execute("ALTER TABLE productions ADD COLUMN page_height INTEGER NOT NULL DEFAULT 1080")
+    if "preview_background" not in columns:
+        connection.execute("ALTER TABLE productions ADD COLUMN preview_background TEXT NOT NULL DEFAULT '#ffffff'")
+    if "import_model_id" not in columns:
+        connection.execute(
+            "ALTER TABLE productions ADD COLUMN import_model_id TEXT NOT NULL DEFAULT 'standard_credits_xls'"
+        )
+    if "settings_json" not in columns:
+        connection.execute("ALTER TABLE productions ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
     connection.commit()
 
 
 def row_to_dict(row):
-    return dict(row) if row is not None else None
+    if row is None:
+        return None
+    value = dict(row)
+    if "settings_json" in value:
+        try:
+            value["settings"] = json.loads(value.pop("settings_json") or "{}")
+        except json.JSONDecodeError:
+            value["settings"] = {}
+    return value
 
 
 def db_overview(connection):
     productions = [row_to_dict(row) for row in connection.execute(
-        "SELECT id, name, episode_count, created_at, updated_at FROM productions ORDER BY name COLLATE NOCASE"
+        """
+        SELECT id, name, page_width, page_height, preview_background, import_model_id, settings_json, episode_count, created_at, updated_at
+        FROM productions
+        ORDER BY name COLLATE NOCASE
+        """
     )]
     episodes = [row_to_dict(row) for row in connection.execute(
         """
-        SELECT id, production_id, episode_number, name, created_at, updated_at
+        SELECT
+            episodes.id,
+            episodes.production_id,
+            episodes.episode_number,
+            episodes.name,
+            episodes.created_at,
+            episodes.updated_at,
+            EXISTS (
+                SELECT 1
+                FROM documents
+                WHERE documents.episode_id = episodes.id
+            ) AS has_documents
         FROM episodes
         ORDER BY production_id, episode_number
         """
     )]
-    return {"db_path": str(default_db_path()), "productions": productions, "episodes": episodes}
+    return {
+        "db_path": str(default_db_path()),
+        "productions": productions,
+        "episodes": episodes,
+        "import_models": list_import_models(),
+    }
 
 
-def create_production(connection, name, episode_count):
+def create_production(
+    connection,
+    name,
+    episode_count,
+    page_width=1920,
+    page_height=1080,
+    preview_background="#ffffff",
+    import_model_id=None,
+    settings=None,
+):
     clean_name = str(name or "").strip()
     if not clean_name:
         raise ValueError("La produccion necesita nombre.")
@@ -124,10 +174,20 @@ def create_production(connection, name, episode_count):
     timestamp = now_iso()
     cursor = connection.execute(
         """
-        INSERT INTO productions (name, episode_count, created_at, updated_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO productions (name, page_width, page_height, preview_background, import_model_id, settings_json, episode_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        (clean_name, count, timestamp, timestamp),
+        (
+            clean_name,
+            max(1, int(page_width or 1920)),
+            max(1, int(page_height or 1080)),
+            str(preview_background or "#ffffff").strip() or "#ffffff",
+            str(import_model_id or DEFAULT_IMPORT_MODEL_ID),
+            json.dumps(settings if isinstance(settings, dict) else {}, ensure_ascii=False),
+            count,
+            timestamp,
+            timestamp,
+        ),
     )
     production_id = cursor.lastrowid
     width = max(2, len(str(count)))
@@ -141,6 +201,192 @@ def create_production(connection, name, episode_count):
         )
     connection.commit()
     return production_id
+
+
+def unique_production_name(connection, base_name):
+    clean_base = str(base_name or "Produccion").strip() or "Produccion"
+    existing = {
+        row["name"].lower()
+        for row in connection.execute("SELECT name FROM productions")
+    }
+    if clean_base.lower() not in existing:
+        return clean_base
+    index = 2
+    while True:
+        candidate = f"{clean_base} {index}"
+        if candidate.lower() not in existing:
+            return candidate
+        index += 1
+
+
+def delete_production(connection, production_id):
+    connection.execute("DELETE FROM productions WHERE id = ?", (int(production_id),))
+    connection.commit()
+
+
+def duplicate_production(connection, production_id):
+    source = connection.execute(
+        """
+        SELECT name, page_width, page_height, preview_background, import_model_id, settings_json, episode_count
+        FROM productions
+        WHERE id = ?
+        """,
+        (int(production_id),),
+    ).fetchone()
+    if not source:
+        raise ValueError("Produccion no encontrada.")
+
+    timestamp = now_iso()
+    name = unique_production_name(connection, f"{source['name']} copia")
+    cursor = connection.execute(
+        """
+        INSERT INTO productions (name, page_width, page_height, preview_background, import_model_id, settings_json, episode_count, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            name,
+            int(source["page_width"] or 1920),
+            int(source["page_height"] or 1080),
+            source["preview_background"] or "#ffffff",
+            source["import_model_id"] or DEFAULT_IMPORT_MODEL_ID,
+            source["settings_json"] or "{}",
+            int(source["episode_count"] or 0),
+            timestamp,
+            timestamp,
+        ),
+    )
+    new_production_id = cursor.lastrowid
+
+    episode_map = {}
+    episodes = connection.execute(
+        """
+        SELECT id, episode_number, name
+        FROM episodes
+        WHERE production_id = ?
+        ORDER BY episode_number
+        """,
+        (int(production_id),),
+    ).fetchall()
+    for episode in episodes:
+        new_episode = connection.execute(
+            """
+            INSERT INTO episodes (production_id, episode_number, name, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (new_production_id, episode["episode_number"], episode["name"], timestamp, timestamp),
+        )
+        episode_map[episode["id"]] = new_episode.lastrowid
+
+    for document in connection.execute(
+        """
+        SELECT episode_id, kind, schema, version, data_json
+        FROM documents
+        WHERE production_id = ?
+        """,
+        (int(production_id),),
+    ):
+        new_episode_id = episode_map.get(document["episode_id"])
+        if not new_episode_id:
+            continue
+        connection.execute(
+            """
+            INSERT INTO documents (production_id, episode_id, kind, schema, version, data_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                new_production_id,
+                new_episode_id,
+                document["kind"],
+                document["schema"],
+                document["version"],
+                document["data_json"],
+                timestamp,
+                timestamp,
+            ),
+        )
+
+    for style in connection.execute(
+        """
+        SELECT style_id, name, data_json
+        FROM styles
+        WHERE production_id = ?
+        """,
+        (int(production_id),),
+    ):
+        connection.execute(
+            """
+            INSERT INTO styles (production_id, style_id, name, data_json, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (new_production_id, style["style_id"], style["name"], style["data_json"], timestamp, timestamp),
+        )
+
+    connection.commit()
+    return new_production_id
+
+
+def update_production(connection, production_id, fields):
+    allowed = {}
+    timestamp = now_iso()
+    if "name" in fields:
+        name = str(fields.get("name") or "").strip()
+        if not name:
+            raise ValueError("La produccion necesita nombre.")
+        allowed["name"] = name
+    if "episode_count" in fields:
+        production_id = int(production_id)
+        next_count = max(1, int(fields.get("episode_count") or 1))
+        current_rows = connection.execute(
+            """
+            SELECT episode_number
+            FROM episodes
+            WHERE production_id = ?
+            ORDER BY episode_number
+            """,
+            (production_id,),
+        ).fetchall()
+        current_numbers = {int(row["episode_number"]) for row in current_rows}
+        current_count = max(current_numbers) if current_numbers else 0
+        width = max(2, len(str(next_count)))
+        for number in range(1, next_count + 1):
+            if number in current_numbers:
+                continue
+            connection.execute(
+                """
+                INSERT INTO episodes (production_id, episode_number, name, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (production_id, number, f"Episodio {number:0{width}d}", timestamp, timestamp),
+            )
+        if next_count < current_count:
+            connection.execute(
+                """
+                DELETE FROM episodes
+                WHERE production_id = ? AND episode_number > ?
+                """,
+                (production_id, next_count),
+            )
+        allowed["episode_count"] = next_count
+    if "page_width" in fields:
+        allowed["page_width"] = max(1, int(fields.get("page_width") or 1920))
+    if "page_height" in fields:
+        allowed["page_height"] = max(1, int(fields.get("page_height") or 1080))
+    if "preview_background" in fields:
+        allowed["preview_background"] = str(fields.get("preview_background") or "#ffffff").strip() or "#ffffff"
+    if "import_model_id" in fields:
+        allowed["import_model_id"] = str(fields.get("import_model_id") or DEFAULT_IMPORT_MODEL_ID)
+    if "settings" in fields:
+        settings = fields.get("settings")
+        allowed["settings_json"] = json.dumps(settings if isinstance(settings, dict) else {}, ensure_ascii=False)
+    if not allowed:
+        return
+    allowed["updated_at"] = timestamp
+    assignments = ", ".join(f"{key} = ?" for key in allowed)
+    connection.execute(
+        f"UPDATE productions SET {assignments} WHERE id = ?",
+        [*allowed.values(), int(production_id)],
+    )
+    connection.commit()
 
 
 def save_document(connection, production_id, episode_id, kind, data):
@@ -224,387 +470,25 @@ def load_styles(connection, production_id):
     return [json.loads(row["data_json"]) for row in rows]
 
 
-def col_from_ref(ref):
-    match = re.match(r"([A-Z]+)", ref or "")
-    return match.group(1) if match else ""
+def delete_style(connection, production_id, style_id):
+    connection.execute(
+        "DELETE FROM styles WHERE production_id = ? AND style_id = ?",
+        (int(production_id), str(style_id or "")),
+    )
+    connection.commit()
 
 
-def normalize_group(value):
-    if not value:
-        return None
-    try:
-        number = float(value)
-        return str(int(number)) if number.is_integer() else str(number)
-    except ValueError:
-        return value
-
-
-def read_shared_strings(zip_file):
-    if "xl/sharedStrings.xml" not in zip_file.namelist():
-        return []
-    root = ET.fromstring(zip_file.read("xl/sharedStrings.xml"))
-    strings = []
-    for si in root.findall("a:si", NS):
-        strings.append("".join((t.text or "") for t in si.iter(f"{XMLNS}t")))
-    return strings
-
-
-def read_bold_styles(zip_file):
-    if "xl/styles.xml" not in zip_file.namelist():
-        return {}
-
-    root = ET.fromstring(zip_file.read("xl/styles.xml"))
-    fonts_node = root.find("a:fonts", NS)
-    cell_xfs_node = root.find("a:cellXfs", NS)
-    if fonts_node is None or cell_xfs_node is None:
-        return {}
-
-    fonts = [font.find("a:b", NS) is not None for font in fonts_node]
-    bold_styles = {}
-    for index, xf in enumerate(cell_xfs_node):
-        font_id = int(xf.attrib.get("fontId", "0"))
-        bold_styles[str(index)] = fonts[font_id] if font_id < len(fonts) else False
-    return bold_styles
-
-
-def cell_value(cell, shared_strings):
-    cell_type = cell.attrib.get("t")
-    value = cell.find("a:v", NS)
-    inline = cell.find("a:is", NS)
-
-    if cell_type == "s" and value is not None:
-        return shared_strings[int(value.text)].strip()
-    if cell_type == "inlineStr" and inline is not None:
-        return "".join((t.text or "") for t in inline.iter(f"{XMLNS}t")).strip()
-    if cell_type == "e" and value is not None:
-        return value.text.strip()
-    if value is not None:
-        return value.text.strip()
-    return ""
-
-
-def row_values(row, shared_strings):
-    values = {"A": "", "B": "", "C": "", "D": ""}
-    styles = {}
-    for cell in row.findall("a:c", NS):
-        col = col_from_ref(cell.attrib.get("r"))
-        if col in values:
-            values[col] = cell_value(cell, shared_strings)
-            styles[col] = cell.attrib.get("s")
-    return values, styles
-
-
-def workbook_sheets(zip_file):
-    workbook = ET.fromstring(zip_file.read("xl/workbook.xml"))
-    rels = ET.fromstring(zip_file.read("xl/_rels/workbook.xml.rels"))
-    relmap = {rel.attrib["Id"]: rel.attrib["Target"] for rel in rels}
-
-    workbook_view = workbook.find("a:bookViews/a:workbookView", NS)
-    active_tab = int(workbook_view.attrib.get("activeTab", "0")) if workbook_view is not None else 0
-
-    sheets = []
-    for index, sheet in enumerate(workbook.find("a:sheets", NS)):
-        rel_id = sheet.attrib.get(f"{{{NS['r']}}}id")
-        target = relmap[rel_id]
-        if not target.startswith("xl/"):
-            target = "xl/" + target.lstrip("/")
-        sheets.append(
-            {
-                "index": index,
-                "name": sheet.attrib["name"],
-                "path": target,
-                "is_active": index == active_tab,
-            }
-        )
-    return sheets
-
-
-def choose_sheet(sheets):
-    for sheet in sheets:
-        if sheet["name"].lower() == "rodillo final":
-            return sheet
-    for sheet in sheets:
-        if sheet["is_active"]:
-            return sheet
-    return sheets[0]
-
-
-def read_sheet_rows(zip_file, sheet_path):
-    shared_strings = read_shared_strings(zip_file)
-    bold_styles = read_bold_styles(zip_file)
-    root = ET.fromstring(zip_file.read(sheet_path))
-
-    merged_rows = set()
-    merge_cells = root.find("a:mergeCells", NS)
-    if merge_cells is not None:
-        for merge in merge_cells.findall("a:mergeCell", NS):
-            ref = merge.attrib.get("ref", "")
-            match = re.match(r"B(\d+):D\1$", ref)
-            if match:
-                merged_rows.add(int(match.group(1)))
-
-    rows = []
-    for row in root.findall(".//a:sheetData/a:row", NS):
-        number = int(row.attrib.get("r", "0"))
-        values, styles = row_values(row, shared_strings)
-        if any(values.values()):
-            rows.append(
-                {
-                    "row": number,
-                    "values": values,
-                    "styles": styles,
-                    "bold": {col: bold_styles.get(style, False) for col, style in styles.items()},
-                    "merged_b_to_d": number in merged_rows,
-                }
-            )
-    return rows
-
-
-def new_block(row, group, title, block_type):
-    return {
-        "group": group,
-        "title": title,
-        "titles": [title],
-        "type": block_type,
-        "start_row": row,
-        "items": [],
-    }
-
-
-def classify_numbered_title(title):
-    if title in {"Han intervenido", "Pequeñas Partes"}:
-        return "cast"
-    if title == "RODILLO FINAL":
-        return "crew"
-    return "cards"
-
-
-def append_card_item(block, row, role):
-    item = {"kind": "credit", "row": row, "role": role, "names": []}
-    block["items"].append(item)
-    return item
-
-
-def parse_rows(rows, source_name, sheet_name):
-    result = {
-        "source": source_name,
-        "sheet": sheet_name,
-        "columns": {"A": "group", "B": "role_or_name", "C": "center_title_or_role", "D": "name_or_character"},
-        "blocks": [],
-    }
-
-    current_block = None
-    current_card = None
-    current_crew_item = None
-    last_data_row = None
-    active_section = None
-
-    for entry in rows:
-        row = entry["row"]
-        values = entry["values"]
-        a, b, c, d = values["A"], values["B"], values["C"], values["D"]
-        gap = 0 if last_data_row is None else row - last_data_row
-
-        if a and c:
-            group = normalize_group(a)
-            block_type = classify_numbered_title(c)
-            if current_block and current_block["group"] == group and current_block["type"] == "cards":
-                current_block["titles"].append(c)
-            else:
-                current_block = new_block(row, group, c, block_type)
-                result["blocks"].append(current_block)
-            current_card = None
-            current_crew_item = None
-            active_section = None
-            if current_block["type"] == "cards":
-                current_card = append_card_item(current_block, row, c)
-            last_data_row = row
-            continue
-
-        if current_block is None:
-            last_data_row = row
-            continue
-
-        if current_block["type"] == "cards":
-            if c:
-                if current_card is None or (gap > 1 and current_card["names"]):
-                    current_card = append_card_item(current_block, row, c)
-                else:
-                    current_card["names"].append({"row": row, "name": c})
-
-        elif current_block["type"] == "cast":
-            if b and d:
-                current_block["items"].append({"kind": "cast", "row": row, "actor": b, "character": d})
-            elif b or c or d:
-                current_block["items"].append({"kind": "unclassified", "row": row, "B": b, "C": c, "D": d})
-
-        elif current_block["type"] == "crew":
-            active_section, current_crew_item = parse_crew_row(
-                current_block, entry, row, b, c, d, gap, active_section, current_crew_item
-            )
-
-        last_data_row = row
-
-    normalize_trailing_closing_copy(result)
-    return result
-
-
-def section_item(row, title, source_column, source_bold=False):
-    return {
-        "kind": "section",
-        "row": row,
-        "title": title,
-        "source_column": source_column,
-        "source_bold": bool(source_bold),
-    }
-
-
-def parse_crew_row(block, entry, row, b, c, d, gap, active_section, current_crew_item):
-    if entry["merged_b_to_d"] and b:
-        if b in {"#VALUE!", "VOLSKWAGEN"}:
-            if active_section != "Logos":
-                active_section = "Logos"
-                current_crew_item = None
-                block["items"].append(section_item(row, active_section, "B:D", entry["bold"].get("B")))
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
-        elif active_section == "AGRADECIMIENTOS" and entry["bold"].get("B"):
-            active_section = b
-            current_crew_item = None
-            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
-        elif active_section == "AGRADECIMIENTOS":
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
-        elif active_section == "Licencias Musicales":
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
-        elif active_section not in {None, "Logos", "closing_copy"} and entry["bold"].get("B") and b != active_section:
-            active_section = b
-            current_crew_item = None
-            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
-        elif active_section == "closing_copy":
-            block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": b})
-        elif active_section == "Vestuario" and b != "Vestuario":
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
-        else:
-            active_section = b
-            current_crew_item = None
-            block["items"].append(section_item(row, b, "B:D", entry["bold"].get("B")))
-    elif c and not b and not d:
-        if active_section == "closing_copy":
-            block["items"].append({"kind": "closing_line", "row": row, "section": active_section, "value": c})
-        elif c == "Empresas de Servicios":
-            active_section = c
-            current_crew_item = None
-            block["items"].append(section_item(row, c, "C", entry["bold"].get("C")))
-        elif active_section in {"Doblaje de Figuracion", "Doblaje de Figuración"}:
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": c})
-        else:
-            active_section = c
-            current_crew_item = None
-            block["items"].append(section_item(row, c, "C", entry["bold"].get("C")))
-    elif b and d:
-        current_crew_item = {
-            "kind": "crew_credit",
-            "row": row,
-            "section": active_section,
-            "role": b,
-            "names": [{"row": row, "name": d}],
-        }
-        block["items"].append(current_crew_item)
-    elif d and current_crew_item:
-        current_crew_item["names"].append({"row": row, "name": d})
-    elif b and not c and not d:
-        if b == "Licencias Musicales":
-            active_section = b
-            current_crew_item = None
-            block["items"].append(section_item(row, b, "B", entry["bold"].get("B")))
-        else:
-            block["items"].append({"kind": "list_item", "row": row, "section": active_section, "value": b})
-    elif c or d:
-        block["items"].append({"kind": "unclassified", "row": row, "section": active_section, "B": b, "C": c, "D": d})
-
-    return active_section, current_crew_item
-
-
-def normalize_trailing_closing_copy(result):
-    for block in result.get("blocks", []):
-        if block.get("type") != "crew":
-            continue
-        items = block.get("items", [])
-        suffix_start = len(items)
-        while suffix_start > 0 and is_trailing_copy_suffix_candidate(items[suffix_start - 1]):
-            suffix_start -= 1
-        if suffix_start == len(items):
-            continue
-        suffix = items[suffix_start:]
-        marker_offset = next(
-            (index for index, item in enumerate(suffix) if looks_like_closing_copy_text(item.get("value") or item.get("title") or "")),
-            None,
-        )
-        start = suffix_start + marker_offset if marker_offset is not None else suffix_start
-        block["items"] = items[:start] + [
-            {
-                "kind": "closing_line",
-                "row": item.get("row"),
-                "section": "closing_copy",
-                "value": item.get("value") or item.get("title") or "",
-            }
-            for item in items[start:]
-        ]
-
-
-def is_trailing_copy_suffix_candidate(item):
-    if item.get("kind") == "closing_line":
-        return True
-    if item.get("kind") == "section":
-        return item.get("source_column") in {"B:D", "C"} and not item.get("source_bold")
-    if item.get("kind") == "list_item":
-        return True
-    return False
-
-
-def looks_like_closing_copy_text(value):
-    text = normalize_copy_text(value)
-    return any(
-        marker in text
-        for marker in [
-            "produccion",
-            "colaboracion",
-            "copyright",
-            "deposito legal",
-            "copy animado",
-            "atresmedia",
-        ]
-    ) or "©" in str(value or "")
-
-
-def normalize_copy_text(value):
-    text = str(value or "").lower()
-    replacements = {
-        "á": "a",
-        "é": "e",
-        "í": "i",
-        "ó": "o",
-        "ú": "u",
-        "ü": "u",
-        "ñ": "n",
-    }
-    for source, target in replacements.items():
-        text = text.replace(source, target)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def parse_xlsx(file_bytes, source_name):
-    with zipfile.ZipFile(BytesIO(file_bytes)) as zip_file:
-        sheets = workbook_sheets(zip_file)
-        sheet = choose_sheet(sheets)
-        rows = read_sheet_rows(zip_file, sheet["path"])
-        parsed = parse_rows(rows, source_name, sheet["name"])
-        parsed["workbook_sheets"] = [{"name": s["name"], "is_active": s["is_active"]} for s in sheets]
-        return parsed
+def import_credit_source(file_bytes, source_name, import_model_id=None, options=None):
+    return parse_source(file_bytes, source_name, import_model_id or DEFAULT_IMPORT_MODEL_ID, options)
 
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        path = unquote(self.path.split("?", 1)[0])
+        parsed_url = urlsplit(self.path)
+        path = unquote(parsed_url.path)
+        if path == "/api/reference-video":
+            self.handle_reference_video(parsed_url.query)
+            return
         if path == "/":
             path = "/index.html"
         file_path = (ROOT / path.lstrip("/")).resolve()
@@ -620,23 +504,72 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def handle_reference_video(self, query):
+        params = parse_qs(query)
+        source_path = params.get("path", [""])[0]
+        if not source_path:
+            self.send_error(404)
+            return
+        file_path = Path(source_path).expanduser()
+        if not file_path.exists() or not file_path.is_file():
+            self.send_error(404)
+            return
+
+        file_size = file_path.stat().st_size
+        content_type = mimetypes.guess_type(str(file_path))[0] or "application/octet-stream"
+        range_header = self.headers.get("Range")
+        start = 0
+        end = file_size - 1
+        status = 200
+
+        if range_header and range_header.startswith("bytes="):
+            status = 206
+            range_value = range_header.split("=", 1)[1].split(",", 1)[0]
+            start_text, _, end_text = range_value.partition("-")
+            if start_text:
+                start = max(0, int(start_text))
+            if end_text:
+                end = min(file_size - 1, int(end_text))
+            if start > end:
+                self.send_error(416)
+                return
+
+        chunk_size = end - start + 1
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(chunk_size))
+        if status == 206:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{file_size}")
+        self.end_headers()
+        with file_path.open("rb") as handle:
+            handle.seek(start)
+            remaining = chunk_size
+            while remaining > 0:
+                data = handle.read(min(1024 * 1024, remaining))
+                if not data:
+                    break
+                self.wfile.write(data)
+                remaining -= len(data)
+
     def do_POST(self):
         path = unquote(self.path.split("?", 1)[0])
         if path == "/api/parse-xlsx":
-            self.handle_parse_xlsx()
+            self.handle_import_credit_source()
             return
         if path.startswith("/api/db/"):
             self.handle_db(path)
             return
         self.send_error(404)
 
-    def handle_parse_xlsx(self):
+    def handle_import_credit_source(self):
         try:
             form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
             uploaded = form["file"]
             file_bytes = uploaded.file.read()
-            source_name = uploaded.filename or "uploaded.xlsx"
-            parsed = parse_xlsx(file_bytes, source_name)
+            source_name = uploaded.filename or "uploaded_source"
+            import_model_id = form.getfirst("import_model_id") or DEFAULT_IMPORT_MODEL_ID
+            parsed = import_credit_source(file_bytes, source_name, import_model_id)
             self.send_json(200, parsed)
         except Exception as error:
             self.send_json(500, {"error": str(error)})
@@ -655,8 +588,28 @@ class Handler(BaseHTTPRequestHandler):
                         connection,
                         payload.get("name"),
                         payload.get("episode_count"),
+                        payload.get("page_width"),
+                        payload.get("page_height"),
+                        payload.get("preview_background"),
+                        payload.get("import_model_id"),
+                        payload.get("settings"),
                     )
                     self.send_json(200, {**db_overview(connection), "production_id": production_id})
+                    return
+
+                if path == "/api/db/update-production":
+                    update_production(connection, payload.get("production_id"), payload.get("fields") or {})
+                    self.send_json(200, db_overview(connection))
+                    return
+
+                if path == "/api/db/duplicate-production":
+                    production_id = duplicate_production(connection, payload.get("production_id"))
+                    self.send_json(200, {**db_overview(connection), "production_id": production_id})
+                    return
+
+                if path == "/api/db/delete-production":
+                    delete_production(connection, payload.get("production_id"))
+                    self.send_json(200, db_overview(connection))
                     return
 
                 if path == "/api/db/save-document":
@@ -689,6 +642,7 @@ class Handler(BaseHTTPRequestHandler):
                             "source": load_document(connection, production_id, episode_id, "source"),
                             "structure": load_document(connection, production_id, episode_id, "structure"),
                             "render": load_document(connection, production_id, episode_id, "render"),
+                            "reference": load_document(connection, production_id, episode_id, "reference"),
                             "styles": load_styles(connection, production_id),
                         },
                     )
@@ -697,6 +651,11 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/db/save-style":
                     save_style(connection, payload.get("production_id"), payload.get("data"))
                     self.send_json(200, {"ok": True})
+                    return
+
+                if path == "/api/db/delete-style":
+                    delete_style(connection, payload.get("production_id"), payload.get("style_id"))
+                    self.send_json(200, {"styles": load_styles(connection, payload.get("production_id"))})
                     return
 
                 if path == "/api/db/load-styles":

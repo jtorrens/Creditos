@@ -16,17 +16,17 @@
     </header>
 
     <nav class="app-tabs" aria-label="Secciones">
-      <button class="active" type="button" data-tab="settings">Proyecto</button>
+      <button class="active" type="button" data-tab="settings">Producciones</button>
+      <button type="button" data-tab="styles">Estilos</button>
       <button type="button" data-tab="structure">Cartelas</button>
       <button type="button" data-tab="pdf">Preview</button>
-      <button type="button" data-tab="json">Datos</button>
     </nav>
 
     <main>
       <section id="settingsPane" class="tab-pane active">
         <div class="settings-panel">
           <div class="panel-heading">
-            <h2>Proyecto</h2>
+            <h2>Producciones</h2>
           </div>
           <div class="settings-body">
             <div class="project-db-panel">
@@ -34,33 +34,51 @@
                 <label for="databaseStatus">Base de datos</label>
                 <span id="databaseStatus" class="settings-status">Inicializando base de datos...</span>
               </div>
-              <div class="field-grid">
-                <label for="productionSelect">Producción</label>
-                <select id="productionSelect" class="text-input"></select>
-              </div>
-              <div class="field-grid">
-                <label for="episodeSelect">Episodio</label>
-                <select id="episodeSelect" class="text-input"></select>
-              </div>
-              <div class="field-grid">
-                <label for="newProductionNameInput">Nueva producción</label>
-                <div class="inline-actions">
-                  <input id="newProductionNameInput" class="text-input" type="text" placeholder="Nombre producción">
-                  <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de episodios">
-                  <button id="createProductionBtn" type="button">Crear</button>
+              <select id="productionSelect" class="hidden-input" aria-hidden="true" tabindex="-1"></select>
+              <div class="production-manager">
+                <div class="production-toolbar">
+                  <button id="showCreateProductionBtn" type="button">Nueva producción</button>
+                  <button id="duplicateProductionBtn" type="button">Duplicar</button>
+                  <button id="deleteProductionBtn" type="button">Eliminar</button>
+                </div>
+                <div id="productionList" class="production-list" role="listbox" aria-label="Producciones"></div>
+                <div id="productionCreateBox" class="production-create-box">
+                  <div class="field-grid">
+                    <label for="newProductionNameInput">Nueva producción</label>
+                    <div class="inline-actions">
+                      <input id="newProductionNameInput" class="text-input" type="text" placeholder="Nombre producción">
+                      <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de episodios">
+                      <button id="createProductionBtn" type="button">Guardar</button>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="field-grid">
-                <label for="autosaveStatus">Cambios</label>
+                <label>Formato producción</label>
                 <div class="inline-actions">
-                  <span id="autosaveStatus">Autoguardado listo</span>
-                  <span id="structureFileStatus">Sin episodio seleccionado</span>
+                  <label class="compact-field" for="productionPageWidthInput">
+                    <span>Ancho</span>
+                    <input id="productionPageWidthInput" class="text-input production-dimension-input" type="number" min="1" step="1">
+                  </label>
+                  <label class="compact-field" for="productionPageHeightInput">
+                    <span>Alto</span>
+                    <input id="productionPageHeightInput" class="text-input production-dimension-input" type="number" min="1" step="1">
+                  </label>
+                  <label class="compact-field" for="productionPreviewBackgroundInput">
+                    <span>Fondo preview</span>
+                    <input id="productionPreviewBackgroundInput" class="color-input" type="color">
+                  </label>
                 </div>
+              </div>
+              <div class="field-grid">
+                <label for="productionImportModelSelect">Modelo de importación</label>
+                <select id="productionImportModelSelect" class="text-input"></select>
               </div>
             </div>
+            <div class="section-title">Valores por defecto</div>
             <div class="field-grid">
               <label for="defaultDurationInput">Duración por página</label>
-              <input id="defaultDurationInput" class="text-input" type="number" min="0" step="0.1">
+              <input id="defaultDurationInput" class="text-input" type="text" inputmode="numeric">
             </div>
             <div class="field-grid">
               <label for="defaultAutoLinesInput">Líneas por página</label>
@@ -70,30 +88,68 @@
               <label for="movieFpsInput">FPS del MOV</label>
               <input id="movieFpsInput" class="text-input" type="number" min="1" step="1" value="25">
             </div>
-            <div id="fontStatus" class="settings-status">Fuentes básicas cargadas</div>
-            <div class="font-actions">
-              <button id="chooseStylesDirBtn" type="button">Recargar estilos</button>
-              <span id="stylesStatus">Selecciona una producción</span>
-            </div>
             <div id="typographySettings" class="typography-settings"></div>
           </div>
         </div>
       </section>
 
+      <section id="stylesPane" class="tab-pane">
+        <div class="styles-workspace">
+          <aside class="styles-list-panel">
+            <div class="panel-heading">
+              <h2>Estilos</h2>
+              <span id="styleCount">0</span>
+            </div>
+            <div class="style-actions">
+              <button id="createStyleBtn" type="button">Nuevo estilo</button>
+              <button id="duplicateStyleBtn" type="button">Duplicar</button>
+              <button id="deleteStyleBtn" type="button">Eliminar</button>
+            </div>
+            <div id="styleList" class="style-list"></div>
+          </aside>
+          <div class="panel-resizer" data-resizer="styles-left" aria-hidden="true"></div>
+          <section class="style-editor-panel">
+            <div class="panel-heading">
+              <h2 id="styleEditorTitle">Sin estilo seleccionado</h2>
+              <span id="styleEditorMeta"></span>
+            </div>
+            <div id="styleEditorBody" class="editor-body empty-state">Crea o selecciona un estilo.</div>
+          </section>
+          <div class="panel-resizer" data-resizer="styles-right" aria-hidden="true"></div>
+          <aside class="style-preview-panel">
+            <div class="panel-heading">
+              <h2>Preview estilo</h2>
+              <button id="toggleStyleMarginsBtn" type="button">Márgenes</button>
+            </div>
+            <div id="stylePreview" class="style-preview empty-state">Sin estilo seleccionado.</div>
+          </aside>
+        </div>
+      </section>
+
       <section id="structurePane" class="tab-pane">
         <div class="structure-file-panel">
-          <button id="openXlsxBtn" class="primary" type="button">Abrir XLSX</button>
+          <label for="episodeSelect">Capítulo</label>
+          <select id="episodeSelect" class="text-input"></select>
+          <button id="openXlsxBtn" class="primary" type="button">Asociar XLS</button>
+          <button id="openReferenceVideoBtn" type="button">Asociar vídeo</button>
+          <button id="clearReferenceVideoBtn" type="button">Quitar vídeo</button>
+          <button id="copyEpisodeStylesBtn" type="button">Asignar estilos...</button>
           <input id="xlsxInput" class="hidden-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-          <span id="xlsxFileStatus">Sin XLSX abierto</span>
+          <span id="xlsxFileStatus">Sin XLS asociado</span>
+          <span id="referenceVideoStatus">Sin vídeo de referencia</span>
         </div>
-        <div class="workspace">
+        <div class="workspace cartelas-workspace">
           <aside class="block-list-panel">
             <div class="panel-heading">
               <h2>Cartelas</h2>
               <span id="blockCount">0</span>
             </div>
+            <div class="block-list-actions">
+              <button id="newCartelaBtn" class="wide-action" type="button">Nueva cartela</button>
+            </div>
             <div id="blockList" class="block-list"></div>
           </aside>
+          <div class="panel-resizer" data-resizer="cartelas-left" aria-hidden="true"></div>
 
           <section class="editor-panel">
             <div class="panel-heading">
@@ -104,22 +160,21 @@
               Carga un XLSX y selecciona una cartela.
             </div>
           </section>
-        </div>
-      </section>
-
-      <section id="jsonPane" class="tab-pane">
-        <aside class="json-panel">
-          <div class="panel-heading">
-            <h2>Datos</h2>
-            <div class="json-actions">
-              <div class="segmented" role="tablist">
-                <button id="structureTab" class="active" type="button">Estructura</button>
-                <button id="renderTab" type="button">Render final</button>
+          <div class="panel-resizer" data-resizer="cartelas-right" aria-hidden="true"></div>
+          <aside class="cartela-preview-panel">
+            <div class="panel-heading">
+              <h2>Preview cartela</h2>
+              <div class="panel-heading-actions">
+                <label class="check-row compact-check">
+                  <input id="showCartelaReferenceVideoInput" type="checkbox">
+                  <span>Mostrar vídeo</span>
+                </label>
+                <button id="toggleCartelaMarginsBtn" type="button">Márgenes</button>
               </div>
             </div>
-          </div>
-          <textarea id="jsonPreview" spellcheck="false" readonly></textarea>
-        </aside>
+            <div id="cartelaPreview" class="cartela-preview empty-state">Selecciona una cartela.</div>
+          </aside>
+        </div>
       </section>
 
       <section id="pdfPane" class="tab-pane">
@@ -139,7 +194,6 @@
                   <button id="pdfNextPageBtn" type="button" title="Página siguiente" aria-label="Página siguiente">&#x25B6;</button>
                   <button id="pdfLastPageBtn" type="button" title="Última página" aria-label="Última página">&#x23ED;</button>
                 </div>
-                <input id="pdfPageTitleInput" class="text-input" type="text" placeholder="Título de página">
                 <div class="pdf-lines-control">
                   <button id="pdfMinusLinesBtn" type="button">-</button>
                   <span id="pdfLineStatus">0/0</span>
@@ -150,28 +204,87 @@
                   <span id="pngZoomStatus">100%</span>
                   <button id="pngZoomInBtn" type="button" title="Acercar" aria-label="Acercar">+</button>
                 </div>
+                <div class="preview-playback">
+                  <div class="mini-label">Animación</div>
+                  <div class="preview-playback-buttons">
+                    <button id="previewStartBtn" type="button" title="Ir al inicio" aria-label="Ir al inicio">&#x23EE;</button>
+                    <button id="previewPlayBtn" type="button">Play</button>
+                  </div>
+                  <input id="previewFrameInput" class="preview-frame-input" type="range" min="0" max="0" step="1" value="0">
+                  <span id="previewFrameStatus">0/0</span>
+                </div>
+                <label class="check-row">
+                  <input id="showPreviewReferenceVideoInput" type="checkbox">
+                  <span>Mostrar vídeo</span>
+                </label>
                 <button id="toggleMarginsBtn" type="button">Mostrar márgenes</button>
                 <div class="pdf-cartela-controls">
-                  <label for="pdfFontMultiplierInput">Escala de texto</label>
-                  <input id="pdfFontMultiplierInput" class="text-input" type="number" min="0.1" step="0.1">
-                  <label for="pdfLineMultiplierInput">Escala de interlineado</label>
-                  <input id="pdfLineMultiplierInput" class="text-input" type="number" min="0.1" step="0.1">
                   <label for="pdfVerticalOffsetInput">Desplazamiento vertical</label>
                   <input id="pdfVerticalOffsetInput" class="text-input" type="number" step="1">
                 </div>
               </div>
               <div class="pdf-control-panel">
-                <div class="section-title">Exportar PNG</div>
+                <div class="section-title">Exportación</div>
                 <input id="pdfBaseNameInput" class="text-input" type="text" placeholder="Nombre base PNG">
-                <div class="pdf-export-range">
-                  <label for="exportFromPageInput">Desde</label>
-                  <input id="exportFromPageInput" class="text-input" type="number" min="1" step="1" value="1">
-                  <label for="exportToPageInput">Hasta</label>
-                  <input id="exportToPageInput" class="text-input" type="number" min="1" step="1" value="1">
+                <div class="export-subgroup">
+                  <div class="mini-label">Rango páginas</div>
+                  <div class="pdf-export-range">
+                    <label for="exportFromPageInput">Desde</label>
+                    <input id="exportFromPageInput" class="text-input" type="number" min="1" step="1" value="1">
+                    <label for="exportToPageInput">Hasta</label>
+                    <input id="exportToPageInput" class="text-input" type="number" min="1" step="1" value="1">
+                  </div>
                 </div>
-                <button id="exportCurrentPdfBtn" type="button">Exportar página actual</button>
-                <button id="exportAllPdfBtn" type="button">Exportar rango PNG</button>
-                <button id="exportMovBtn" type="button">Exportar MOV</button>
+                <div class="export-subgroup">
+                  <div class="mini-label">Modo MOV</div>
+                  <div class="movie-mode-fields">
+                    <label for="movieModeSelect">Tipo</label>
+                    <select id="movieModeSelect" class="text-input">
+                      <option value="pages">Páginas</option>
+                      <option value="scroll">Scroll</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="export-subgroup">
+                  <div class="mini-label">Duración MOV</div>
+                  <div class="movie-duration-fields">
+                    <label for="movieRangeDurationInput">Actual</label>
+                    <input id="movieRangeDurationInput" class="text-input" type="text" readonly value="00:00:00">
+                    <label for="movieTargetDurationInput">Nueva</label>
+                    <input id="movieTargetDurationInput" class="text-input" type="text" inputmode="numeric" value="00:00:00">
+                    <label for="referenceVideoDurationInput">Vídeo</label>
+                    <input id="referenceVideoDurationInput" class="text-input" type="text" readonly value="--:--:--">
+                  </div>
+                </div>
+                <div class="export-subgroup">
+                  <div class="mini-label">Segmentos vídeo</div>
+                  <div class="movie-segment-fields">
+                    <label for="moviePrerollCountInput">Pre-roll</label>
+                    <input id="moviePrerollCountInput" class="text-input" type="number" min="0" step="1" value="0">
+                    <label for="moviePrerollDurationInput">Duración</label>
+                    <input id="moviePrerollDurationInput" class="text-input" type="text" inputmode="numeric" value="00:00:00">
+                    <label for="moviePostrollCountInput">Post-roll</label>
+                    <input id="moviePostrollCountInput" class="text-input" type="number" min="0" step="1" value="0">
+                    <label for="moviePostrollDurationInput">Duración</label>
+                    <input id="moviePostrollDurationInput" class="text-input" type="text" inputmode="numeric" value="00:00:00">
+                  </div>
+                </div>
+                <div class="export-subgroup">
+                  <div class="mini-label">Render</div>
+                  <label class="check-row">
+                    <input id="exportIncludeBackgroundInput" type="checkbox">
+                    <span>Incluir fondo</span>
+                  </label>
+                  <label class="check-row">
+                    <input id="exportIncludeVideoInput" type="checkbox">
+                    <span>Incluir vídeo</span>
+                  </label>
+                </div>
+                <div class="export-actions">
+                  <button id="exportCurrentPdfBtn" type="button">Exportar página actual</button>
+                  <button id="exportAllPdfBtn" type="button">Exportar rango PNG</button>
+                  <button id="exportMovBtn" type="button">Exportar MOV</button>
+                </div>
               </div>
             </aside>
             <div id="pdfPreview" class="pdf-preview empty-state">

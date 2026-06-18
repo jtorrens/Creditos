@@ -2,12 +2,22 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('creditosNative', {
   openXlsx: (payload) => ipcRenderer.invoke('creditos:open-xlsx', payload),
+  openImage: (payload) => ipcRenderer.invoke('creditos:open-image', payload),
+  openReferenceVideo: (payload) => ipcRenderer.invoke('creditos:open-reference-video', payload),
   savePng: (payload) => ipcRenderer.invoke('creditos:save-png', payload),
   exportPngSequence: (payload) => ipcRenderer.invoke('creditos:export-png-sequence', payload),
   chooseMovPath: (payload) => ipcRenderer.invoke('creditos:choose-mov-path', payload),
   exportMovSequence: (payload) => ipcRenderer.invoke('creditos:export-mov-sequence', payload),
+  startMovExport: (payload) => ipcRenderer.invoke('creditos:start-mov-export', payload),
+  addMovFrame: (payload) => ipcRenderer.invoke('creditos:add-mov-frame', payload),
+  finishMovExport: (payload) => ipcRenderer.invoke('creditos:finish-mov-export', payload),
+  cancelMovExport: (payload) => ipcRenderer.invoke('creditos:cancel-mov-export', payload),
+  importStyleJsonFiles: (payload) => ipcRenderer.invoke('creditos:import-style-json-files', payload),
+  chooseStyleOverrideAction: (payload) => ipcRenderer.invoke('creditos:choose-style-override-action', payload),
   confirm: (payload) => ipcRenderer.invoke('creditos:confirm', payload),
   getAppInfo: () => ipcRenderer.invoke('creditos:get-app-info'),
+  readPreferences: () => ipcRenderer.invoke('creditos:read-preferences'),
+  writePreference: (payload) => ipcRenderer.invoke('creditos:write-preference', payload),
   onServerExit: (callback) => {
     ipcRenderer.on('creditos-server-exit', (_event, value) => callback(value));
   },

@@ -13,6 +13,8 @@ apps/desktop/out/
 dist/
 out/
 build/
+!apps/desktop/build/
+!apps/desktop/build/icon.png
 
 # Packaged apps / installers
 *.exe
@@ -25,6 +27,8 @@ build/
 
 # Generated media
 *.mov
+*.mp4
+*.m4v
 test/renders/
 
 # Logs
