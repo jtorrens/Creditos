@@ -443,10 +443,21 @@
     state.databaseSyncPromptShown = true;
 
     if (status.conflict || status.localChanged) {
-      window.alert(
-        'GitHub tiene una DB mas reciente, pero tambien hay cambios locales pendientes. ' +
-        'Sincroniza desde Git/VS para resolver el conflicto antes de seguir trabajando en otro equipo.'
-      );
+      if (!native || !native.chooseDatabaseConflictAction) {
+        window.alert(
+          'GitHub tiene una DB mas reciente, pero tambien hay cambios locales pendientes. ' +
+          'Sincroniza desde Git/VS para resolver el conflicto antes de seguir trabajando en otro equipo.'
+        );
+        return;
+      }
+      const result = await native.chooseDatabaseConflictAction();
+      if (!result || result.action === 'cancel') return;
+      try {
+        await applyDatabaseSyncAction(result.action);
+      } catch (error) {
+        window.alert('No se pudo resolver el conflicto de DB: ' + error.message);
+        await refreshDatabaseSyncStatus();
+      }
       return;
     }
 
@@ -469,13 +480,29 @@
       return;
     }
     try {
-      state.databaseSyncStatus = await native.syncDatabase();
-      updateDatabaseStatus();
-      await initializeDatabase({ silent: true });
+      await applyDatabaseSyncAction('sync');
     } catch (error) {
       window.alert('No se pudo actualizar la DB: ' + error.message);
       await refreshDatabaseSyncStatus();
     }
+  }
+
+  async function applyDatabaseSyncAction(action) {
+    const native = nativeBridge();
+    if (!native) throw new Error('La sincronizacion solo esta disponible desde la app de escritorio.');
+    if (action === 'download') {
+      if (!native.forceDatabaseFromGitHub) throw new Error('No esta disponible la actualizacion desde GitHub.');
+      state.databaseSyncStatus = await native.forceDatabaseFromGitHub();
+    } else if (action === 'upload') {
+      if (!native.forceDatabaseToGitHub) throw new Error('No esta disponible la subida de DB local.');
+      state.databaseSyncStatus = await native.forceDatabaseToGitHub();
+    } else {
+      if (!native.syncDatabase) throw new Error('No esta disponible la sincronizacion de DB.');
+      state.databaseSyncStatus = await native.syncDatabase();
+    }
+    updateDatabaseStatus();
+    await initializeDatabase({ silent: true });
+    await refreshDatabaseSyncStatus();
   }
 
   function renderProjectSelectors() {
