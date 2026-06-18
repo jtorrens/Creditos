@@ -390,16 +390,18 @@ async function databaseGitStatus(options = {}) {
 
     const upstream = await gitUpstream(repoPath);
     const localStatus = await gitOutput(['status', '--porcelain', '--', relativeDbPath], repoPath);
-    const localChanged = Boolean(localStatus);
     let behindCount = 0;
     try {
       behindCount = Number(await gitOutput(['rev-list', '--count', `HEAD..${upstream}`], repoPath)) || 0;
     } catch (_error) {
       behindCount = 0;
     }
-    const remoteChanged = behindCount > 0
+    const workingDiffersFromUpstream = await gitHasDiff(['diff', '--quiet', upstream, '--', relativeDbPath], repoPath);
+    const localChanged = Boolean(localStatus) && workingDiffersFromUpstream;
+    const upstreamHasDbChange = behindCount > 0
       ? await gitHasDiff(['diff', '--quiet', `HEAD..${upstream}`, '--', relativeDbPath], repoPath)
       : false;
+    const remoteChanged = upstreamHasDbChange && workingDiffersFromUpstream;
     const conflict = localChanged && remoteChanged;
     let message = 'DB sincronizada.';
     if (conflict) {
@@ -457,41 +459,44 @@ async function synchronizeDatabaseWithGit() {
 }
 
 async function forceDatabaseFromGitHub() {
-  let status = await databaseGitStatus({ fetch: true });
+  const status = await databaseGitStatus({ fetch: true });
   if (!status.available || !status.repoPath) {
     throw new Error(status.message || 'La DB no esta dentro del repositorio.');
   }
-  if (status.localChanged) {
-    await runGit(['checkout', '--', status.relativeDbPath], { cwd: status.repoPath });
-  }
-  if (status.remoteAhead) {
-    await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
-  }
+  await runGit(['checkout', status.upstream, '--', status.relativeDbPath], { cwd: status.repoPath });
   return databaseGitStatus({ fetch: true });
 }
 
 async function forceDatabaseToGitHub() {
-  let status = await databaseGitStatus({ fetch: true });
+  const status = await databaseGitStatus({ fetch: true });
   if (!status.available || !status.repoPath) {
     throw new Error(status.message || 'La DB no esta dentro del repositorio.');
   }
   if (!status.localChanged) return status;
 
-  const localDbCopy = path.join(os.tmpdir(), `creditos-db-local-${Date.now()}.sqlite`);
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-db-sync-'));
+  const worktreePath = path.join(tempRoot, 'repo');
+  const localDbCopy = path.join(tempRoot, 'local.sqlite');
   await fs.copyFile(status.dbPath, localDbCopy);
   try {
-    await runGit(['checkout', '--', status.relativeDbPath], { cwd: status.repoPath });
-    if (status.remoteAhead) {
-      await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
+    await runGit(['worktree', 'add', '--detach', worktreePath, status.upstream], { cwd: status.repoPath });
+    const worktreeDbPath = path.join(worktreePath, status.relativeDbPath);
+    await fs.mkdir(path.dirname(worktreeDbPath), { recursive: true });
+    await fs.copyFile(localDbCopy, worktreeDbPath);
+    const hasChanges = await gitHasDiff(['diff', '--quiet', '--', status.relativeDbPath], worktreePath);
+    if (hasChanges) {
+      await runGit(['add', status.relativeDbPath], { cwd: worktreePath });
+      await runGit(['commit', '-m', 'Update credits database'], { cwd: worktreePath });
+      await runGit(['push', 'origin', 'HEAD:main'], { cwd: worktreePath });
     }
-    status = await databaseGitStatus({ fetch: false });
-    await fs.copyFile(localDbCopy, status.dbPath);
-    await runGit(['add', status.relativeDbPath], { cwd: status.repoPath });
-    await runGit(['commit', '-m', 'Update credits database'], { cwd: status.repoPath });
-    await runGit(['push'], { cwd: status.repoPath });
     return databaseGitStatus({ fetch: true });
   } finally {
-    await fs.rm(localDbCopy, { force: true });
+    try {
+      await runGit(['worktree', 'remove', '--force', worktreePath], { cwd: status.repoPath });
+    } catch (_error) {
+      await fs.rm(worktreePath, { recursive: true, force: true });
+    }
+    await fs.rm(tempRoot, { recursive: true, force: true });
   }
 }
 
