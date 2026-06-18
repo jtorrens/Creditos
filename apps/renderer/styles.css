@@ -283,10 +283,10 @@ button.primary:hover {
 }
 
 .movie-segment-fields input[type="number"] {
-  max-width: 7ch;
-  min-width: 7ch;
+  max-width: 9ch;
+  min-width: 9ch;
   text-align: right;
-  width: 7ch;
+  width: 9ch;
 }
 
 .export-subgroup {
@@ -393,8 +393,8 @@ button.primary:hover {
 }
 
 .inline-actions .compact-number {
-  min-width: 80px;
-  width: 88px;
+  min-width: 96px;
+  width: 104px;
 }
 
 .compact-field {
@@ -414,13 +414,13 @@ button.primary:hover {
 }
 
 .compact-field .compact-number {
-  min-width: 76px;
-  width: 84px;
+  min-width: 92px;
+  width: 100px;
 }
 
 .compact-field .production-dimension-input {
-  min-width: 104px;
-  width: 112px;
+  min-width: 124px;
+  width: 132px;
 }
 
 .hidden-input {
@@ -1024,18 +1024,18 @@ select.text-input {
 
 input[type="number"].text-input,
 .compact-number-input {
-  max-width: 7ch;
-  min-width: 7ch;
+  max-width: 9ch;
+  min-width: 9ch;
   padding-left: 6px;
   padding-right: 6px;
   text-align: right;
-  width: 7ch;
+  width: 9ch;
 }
 
 .compact-field input[type="number"].production-dimension-input {
-  max-width: 11ch;
-  min-width: 11ch;
-  width: 11ch;
+  max-width: 13ch;
+  min-width: 13ch;
+  width: 13ch;
 }
 
 textarea.text-input {
