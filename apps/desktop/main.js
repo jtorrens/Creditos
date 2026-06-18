@@ -530,7 +530,7 @@ async function promptDatabaseSyncBeforeClose(event) {
 
     const buttons = status.conflict
       ? ['Cancelar', 'Usar DB de GitHub', 'Subir DB local', 'Salir sin sincronizar']
-      : ['Cancelar', 'Salir sin sincronizar', 'Sincronizar DB'];
+      : ['Cancelar', 'Salir sin sincronizar', 'Subir DB local'];
     const result = await dialog.showMessageBox(mainWindow, {
       type: status.conflict ? 'warning' : 'question',
       buttons,
@@ -542,7 +542,7 @@ async function promptDatabaseSyncBeforeClose(event) {
         : 'Hay cambios locales en la base de datos.',
       detail: status.conflict
         ? 'Sincroniza desde Git para resolver el conflicto antes de seguir trabajando en otro equipo.'
-        : 'Puedes sincronizarlos ahora con GitHub o salir sin subirlos.',
+        : 'Puedes subir esta DB local a GitHub o salir sin subirla.',
     });
 
     if (result.response === 0) return;
@@ -561,12 +561,12 @@ async function promptDatabaseSyncBeforeClose(event) {
       }
     } else if (!status.conflict && result.response === 2) {
       try {
-        await synchronizeDatabaseWithGit();
+        await forceDatabaseToGitHub();
       } catch (error) {
         await dialog.showMessageBox(mainWindow, {
           type: 'error',
           buttons: ['Aceptar'],
-          title: 'No se pudo sincronizar la DB',
+          title: 'No se pudo subir la DB',
           message: error.message,
         });
         return;
