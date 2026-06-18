@@ -60,6 +60,7 @@ El `.bat` intenta hacer el flujo completo:
 
 ```text
 git pull
+configurar CREDITOS_DB_PATH a data\creditos.db del repositorio
 npm install
 npm run dist:win
 ejecutar el instalador .exe mas reciente
@@ -93,6 +94,36 @@ dir dist
 ```
 
 Si se genera un `.exe`, ejecutar el instalador mas reciente desde `apps\desktop\dist`.
+
+## DB compartida
+
+La DB que debe sincronizarse por Git es:
+
+```text
+D:\PROYECTOS\CREDITOS\data\creditos.db
+```
+
+La app instalada en Windows puede arrancar fuera del repositorio. Por eso el script `scripts\updateCreditosPC.bat` deja configurada una variable de entorno de usuario:
+
+```text
+CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos.db
+```
+
+Comprobar en PowerShell:
+
+```powershell
+echo $env:CREDITOS_DB_PATH
+Test-Path $env:CREDITOS_DB_PATH
+```
+
+Si la app aparece vacia en PC, lo primero es comprobar esta variable. Si esta vacia o apunta a otro sitio, ejecutar de nuevo:
+
+```powershell
+cd D:\PROYECTOS\CREDITOS
+scripts\updateCreditosPC.bat
+```
+
+Luego cerrar y volver a abrir la app instalada.
 
 ## Requisitos de entorno
 
@@ -201,6 +232,8 @@ git log --oneline -5
 node -v
 npm -v
 py --version
+echo $env:CREDITOS_DB_PATH
+Test-Path $env:CREDITOS_DB_PATH
 where ffmpeg
 where ffprobe
 ```

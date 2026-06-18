@@ -4,6 +4,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "REPO=%~dp0.."
 set "DESKTOP=%REPO%\apps\desktop"
 set "DIST=%DESKTOP%\dist"
+set "DB_PATH=%REPO%\data\creditos.db"
 set "STASH_CREATED="
 set "RESTORE_NEEDED="
 
@@ -22,6 +23,13 @@ if errorlevel 1 goto pull_error
 
 call :restore_local_changes
 if errorlevel 1 goto restore_error
+
+echo.
+echo === Configurando DB compartida ===
+set "CREDITOS_DB_PATH=%DB_PATH%"
+setx CREDITOS_DB_PATH "%DB_PATH%" >nul
+if errorlevel 1 goto error
+echo CREDITOS_DB_PATH=%DB_PATH%
 
 echo.
 echo === Instalando/actualizando dependencias ===
