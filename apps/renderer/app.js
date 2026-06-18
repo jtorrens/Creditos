@@ -442,47 +442,16 @@
     if (state.databaseSyncPromptShown || !status || !status.remoteChanged) return;
     state.databaseSyncPromptShown = true;
 
-    if (status.conflict || status.localChanged) {
-      if (!native || !native.chooseDatabaseConflictAction) {
-        window.alert(
-          'GitHub tiene una DB mas reciente, pero tambien hay cambios locales pendientes. ' +
-          'Sincroniza desde Git/VS para resolver el conflicto antes de seguir trabajando en otro equipo.'
-        );
-        return;
-      }
-      const result = await native.chooseDatabaseConflictAction();
-      if (!result || result.action === 'cancel') return;
-      try {
-        await applyDatabaseSyncAction(result.action);
-      } catch (error) {
-        window.alert('No se pudo resolver el conflicto de DB: ' + error.message);
-        await refreshDatabaseSyncStatus();
-      }
+    if (!native || !native.chooseDatabaseConflictAction) {
+      window.alert('GitHub tiene una version distinta de la base de datos. Sincroniza desde Git/VS para elegir que version conservar.');
       return;
     }
-
-    const message = 'GitHub tiene una version mas reciente de la base de datos. ¿Quieres actualizarla ahora?';
-    let confirmed = false;
-    if (native && native.confirm) {
-      const result = await native.confirm({
-        title: 'Actualizar DB',
-        message,
-        confirmLabel: 'Actualizar DB',
-      });
-      confirmed = Boolean(result && result.confirmed);
-    } else {
-      confirmed = window.confirm(message);
-    }
-    if (!confirmed) return;
-
-    if (!native || !native.syncDatabase) {
-      window.alert('La sincronizacion solo esta disponible desde la app de escritorio.');
-      return;
-    }
+    const result = await native.chooseDatabaseConflictAction({ conflict: status.conflict, localChanged: status.localChanged });
+    if (!result || result.action === 'cancel') return;
     try {
-      await applyDatabaseSyncAction('sync');
+      await applyDatabaseSyncAction(result.action);
     } catch (error) {
-      window.alert('No se pudo actualizar la DB: ' + error.message);
+      window.alert('No se pudo resolver la sincronizacion de DB: ' + error.message);
       await refreshDatabaseSyncStatus();
     }
   }

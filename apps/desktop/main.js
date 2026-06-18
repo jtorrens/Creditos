@@ -472,7 +472,8 @@ async function forceDatabaseToGitHub() {
   if (!status.available || !status.repoPath) {
     throw new Error(status.message || 'La DB no esta dentro del repositorio.');
   }
-  if (!status.localChanged) return status;
+  const databaseDiffersFromGitHub = await gitHasDiff(['diff', '--quiet', status.upstream, '--', status.relativeDbPath], status.repoPath);
+  if (!status.localChanged && !databaseDiffersFromGitHub) return status;
 
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-db-sync-'));
   const worktreePath = path.join(tempRoot, 'repo');
@@ -500,14 +501,14 @@ async function forceDatabaseToGitHub() {
   }
 }
 
-async function showDatabaseConflictDialog() {
+async function showDatabaseConflictDialog(_payload = {}) {
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'warning',
     buttons: ['Cancelar', 'Usar DB de GitHub', 'Subir DB local'],
     defaultId: 0,
     cancelId: 0,
-    title: 'Conflicto de DB',
-    message: 'Hay cambios locales en la DB y GitHub tiene una version mas reciente.',
+    title: 'Sincronizar DB',
+    message: 'GitHub tiene una version distinta de la base de datos.',
     detail: 'Elige que version debe ganar. Usar GitHub descarta la DB local. Subir local reemplaza la DB de GitHub por esta copia.',
   });
   if (result.response === 1) return { action: 'download' };
@@ -633,8 +634,8 @@ ipcMain.handle('creditos:force-database-to-github', async () => {
   return forceDatabaseToGitHub();
 });
 
-ipcMain.handle('creditos:choose-database-conflict-action', async () => {
-  return showDatabaseConflictDialog();
+ipcMain.handle('creditos:choose-database-conflict-action', async (_event, payload) => {
+  return showDatabaseConflictDialog(payload);
 });
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
