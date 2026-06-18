@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('creditosNative', {
   chooseStyleOverrideAction: (payload) => ipcRenderer.invoke('creditos:choose-style-override-action', payload),
   confirm: (payload) => ipcRenderer.invoke('creditos:confirm', payload),
   getAppInfo: () => ipcRenderer.invoke('creditos:get-app-info'),
+  getDatabaseSyncStatus: () => ipcRenderer.invoke('creditos:get-database-sync-status'),
+  syncDatabase: () => ipcRenderer.invoke('creditos:sync-database'),
   readPreferences: () => ipcRenderer.invoke('creditos:read-preferences'),
   writePreference: (payload) => ipcRenderer.invoke('creditos:write-preference', payload),
   onServerExit: (callback) => {

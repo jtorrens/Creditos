@@ -721,6 +721,14 @@ button.primary:hover {
   padding-bottom: 14px;
 }
 
+.settings-status.db-sync-warning {
+  color: #ff5a63;
+}
+
+.settings-status.db-sync-pending {
+  color: #f4b54a;
+}
+
 .panel-heading {
   align-items: center;
   background: rgba(255, 255, 255, 0.018);

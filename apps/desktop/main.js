@@ -10,6 +10,8 @@ const appPackage = require('./package.json');
 let mainWindow = null;
 let serverProcess = null;
 let preferenceWriteQueue = Promise.resolve();
+let pendingDatabaseSyncCheck = false;
+let quittingAfterDatabasePrompt = false;
 const movExportSessions = new Map();
 
 function windowStatePath() {
@@ -102,6 +104,11 @@ async function persistentDatabasePath() {
   }
 
   return path.join(app.getPath('userData'), 'data', 'creditos.db');
+}
+
+async function repositoryRootForDatabase() {
+  const dbPath = await persistentDatabasePath();
+  return findRepositoryRoot(path.dirname(dbPath));
 }
 
 function rendererPath() {
@@ -227,7 +234,8 @@ async function createMainWindow() {
     },
   });
   if (windowState.isMaximized) mainWindow.maximize();
-  mainWindow.on('close', () => {
+  mainWindow.on('close', (event) => {
+    promptDatabaseSyncBeforeClose(event);
     writeWindowState(mainWindow);
   });
 
@@ -304,6 +312,199 @@ function runCommand(command, args) {
   });
 }
 
+function runGit(args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('git', args, {
+      cwd: options.cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', (error) => {
+      if (error.code === 'ENOENT') {
+        reject(new Error('No se encontro Git en este equipo.'));
+        return;
+      }
+      reject(error);
+    });
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+        return;
+      }
+      const message = (stderr.trim() || stdout.trim() || `git termino con codigo ${code}`).slice(-4000);
+      reject(new Error(message));
+    });
+  });
+}
+
+async function gitOutput(args, cwd) {
+  const result = await runGit(args, { cwd });
+  return result.stdout;
+}
+
+async function gitHasDiff(args, cwd) {
+  try {
+    await runGit(args, { cwd });
+    return false;
+  } catch (_error) {
+    return true;
+  }
+}
+
+async function gitUpstream(cwd) {
+  try {
+    const upstream = await gitOutput(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], cwd);
+    if (upstream) return upstream;
+  } catch (_error) {
+    // Use the shared branch if the local branch has no upstream configured.
+  }
+  return 'origin/main';
+}
+
+async function databaseGitStatus(options = {}) {
+  const dbPath = await persistentDatabasePath();
+  const repoPath = await repositoryRootForDatabase();
+  const unavailable = {
+    available: false,
+    dbPath,
+    repoPath,
+    localChanged: false,
+    remoteChanged: false,
+    remoteAhead: false,
+    conflict: false,
+    message: 'La DB no esta dentro del repositorio.',
+  };
+
+  if (!repoPath) return unavailable;
+
+  const relativeDbPath = path.relative(repoPath, dbPath).split(path.sep).join('/');
+  try {
+    if (options.fetch) await runGit(['fetch', '--quiet'], { cwd: repoPath });
+
+    const upstream = await gitUpstream(repoPath);
+    const localStatus = await gitOutput(['status', '--porcelain', '--', relativeDbPath], repoPath);
+    const localChanged = Boolean(localStatus);
+    let behindCount = 0;
+    try {
+      behindCount = Number(await gitOutput(['rev-list', '--count', `HEAD..${upstream}`], repoPath)) || 0;
+    } catch (_error) {
+      behindCount = 0;
+    }
+    const remoteChanged = behindCount > 0
+      ? await gitHasDiff(['diff', '--quiet', `HEAD..${upstream}`, '--', relativeDbPath], repoPath)
+      : false;
+    const conflict = localChanged && remoteChanged;
+    let message = 'DB sincronizada.';
+    if (conflict) {
+      message = 'Hay cambios locales y una DB mas reciente en GitHub.';
+    } else if (remoteChanged) {
+      message = 'GitHub tiene una DB mas reciente.';
+    } else if (localChanged) {
+      message = 'Hay cambios locales de DB pendientes de subir.';
+    }
+
+    return {
+      available: true,
+      dbPath,
+      repoPath,
+      relativeDbPath,
+      upstream,
+      localChanged,
+      remoteChanged,
+      remoteAhead: behindCount > 0,
+      conflict,
+      message,
+    };
+  } catch (error) {
+    return {
+      ...unavailable,
+      available: true,
+      relativeDbPath,
+      message: error.message,
+      error: error.message,
+    };
+  }
+}
+
+async function synchronizeDatabaseWithGit() {
+  let status = await databaseGitStatus({ fetch: true });
+  if (!status.available || !status.repoPath) {
+    throw new Error(status.message || 'La DB no esta dentro del repositorio.');
+  }
+  if (status.conflict) {
+    throw new Error('Hay cambios locales y remotos en la DB. Sincroniza desde Git para resolver el conflicto.');
+  }
+
+  if (status.remoteChanged || status.remoteAhead) {
+    await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
+    status = await databaseGitStatus({ fetch: false });
+  }
+
+  if (status.localChanged) {
+    await runGit(['add', status.relativeDbPath], { cwd: status.repoPath });
+    await runGit(['commit', '-m', 'Update credits database'], { cwd: status.repoPath });
+    await runGit(['push'], { cwd: status.repoPath });
+  }
+
+  return databaseGitStatus({ fetch: true });
+}
+
+async function promptDatabaseSyncBeforeClose(event) {
+  if (quittingAfterDatabasePrompt || pendingDatabaseSyncCheck) return;
+  pendingDatabaseSyncCheck = true;
+  event.preventDefault();
+  try {
+    const status = await databaseGitStatus({ fetch: false });
+    if (!status.localChanged) {
+      quittingAfterDatabasePrompt = true;
+      mainWindow.close();
+      return;
+    }
+
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: status.conflict ? 'warning' : 'question',
+      buttons: status.conflict
+        ? ['Cancelar', 'Salir sin sincronizar']
+        : ['Cancelar', 'Salir sin sincronizar', 'Sincronizar DB'],
+      defaultId: status.conflict ? 0 : 2,
+      cancelId: 0,
+      title: 'Cambios de DB pendientes',
+      message: status.conflict
+        ? 'Hay cambios locales en la DB y tambien cambios en GitHub.'
+        : 'Hay cambios locales en la base de datos.',
+      detail: status.conflict
+        ? 'Sincroniza desde Git para resolver el conflicto antes de seguir trabajando en otro equipo.'
+        : 'Puedes sincronizarlos ahora con GitHub o salir sin subirlos.',
+    });
+
+    if (result.response === 0) return;
+    if (!status.conflict && result.response === 2) {
+      try {
+        await synchronizeDatabaseWithGit();
+      } catch (error) {
+        await dialog.showMessageBox(mainWindow, {
+          type: 'error',
+          buttons: ['Aceptar'],
+          title: 'No se pudo sincronizar la DB',
+          message: error.message,
+        });
+        return;
+      }
+    }
+    quittingAfterDatabasePrompt = true;
+    mainWindow.close();
+  } finally {
+    pendingDatabaseSyncCheck = false;
+  }
+}
+
 async function writeMovFrameSequence(tempDir, bytes, frameCount, startIndex) {
   const buffer = Buffer.from(bytes);
   let frameIndex = startIndex;
@@ -338,6 +539,14 @@ ipcMain.handle('creditos:get-app-info', async () => {
     platform: process.platform,
     arch: process.arch,
   };
+});
+
+ipcMain.handle('creditos:get-database-sync-status', async () => {
+  return databaseGitStatus({ fetch: true });
+});
+
+ipcMain.handle('creditos:sync-database', async () => {
+  return synchronizeDatabaseWithGit();
 });
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {

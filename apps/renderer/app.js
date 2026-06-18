@@ -9,6 +9,7 @@
     preview: 'structure',
     activeTab: 'settings',
     databasePath: null,
+    databaseSyncStatus: null,
     productions: [],
     episodes: [],
     importModels: [],
@@ -328,6 +329,7 @@
     await loadNativePreferences();
     setupResizablePanels();
     await initializeDatabase();
+    refreshDatabaseSyncStatus();
 
     loadSystemFonts({ silent: true });
     renderProjectSelectors();
@@ -409,7 +411,27 @@
 
   function updateDatabaseStatus() {
     if (!els.databaseStatus) return;
-    els.databaseStatus.textContent = state.databasePath ? state.databasePath : 'data/creditos.db';
+    const status = state.databaseSyncStatus;
+    const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
+    let suffix = '';
+    if (status && status.conflict) suffix = ' · conflicto con GitHub';
+    else if (status && status.remoteChanged) suffix = ' · DB mas reciente en GitHub';
+    else if (status && status.localChanged) suffix = ' · cambios locales pendientes';
+    els.databaseStatus.textContent = `${pathText}${suffix}`;
+    els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && (status.remoteChanged || status.conflict)));
+    els.databaseStatus.classList.toggle('db-sync-pending', Boolean(status && status.localChanged && !status.remoteChanged && !status.conflict));
+    els.databaseStatus.title = status && status.message ? status.message : pathText;
+  }
+
+  async function refreshDatabaseSyncStatus() {
+    const native = nativeBridge();
+    if (!native || !native.getDatabaseSyncStatus) return;
+    try {
+      state.databaseSyncStatus = await native.getDatabaseSyncStatus();
+    } catch (error) {
+      state.databaseSyncStatus = { message: error.message, error: error.message };
+    }
+    updateDatabaseStatus();
   }
 
   function renderProjectSelectors() {
