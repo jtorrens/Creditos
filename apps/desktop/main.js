@@ -456,6 +456,60 @@ async function synchronizeDatabaseWithGit() {
   return databaseGitStatus({ fetch: true });
 }
 
+async function forceDatabaseFromGitHub() {
+  let status = await databaseGitStatus({ fetch: true });
+  if (!status.available || !status.repoPath) {
+    throw new Error(status.message || 'La DB no esta dentro del repositorio.');
+  }
+  if (status.localChanged) {
+    await runGit(['checkout', '--', status.relativeDbPath], { cwd: status.repoPath });
+  }
+  if (status.remoteAhead) {
+    await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
+  }
+  return databaseGitStatus({ fetch: true });
+}
+
+async function forceDatabaseToGitHub() {
+  let status = await databaseGitStatus({ fetch: true });
+  if (!status.available || !status.repoPath) {
+    throw new Error(status.message || 'La DB no esta dentro del repositorio.');
+  }
+  if (!status.localChanged) return status;
+
+  const localDbCopy = path.join(os.tmpdir(), `creditos-db-local-${Date.now()}.sqlite`);
+  await fs.copyFile(status.dbPath, localDbCopy);
+  try {
+    await runGit(['checkout', '--', status.relativeDbPath], { cwd: status.repoPath });
+    if (status.remoteAhead) {
+      await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
+    }
+    status = await databaseGitStatus({ fetch: false });
+    await fs.copyFile(localDbCopy, status.dbPath);
+    await runGit(['add', status.relativeDbPath], { cwd: status.repoPath });
+    await runGit(['commit', '-m', 'Update credits database'], { cwd: status.repoPath });
+    await runGit(['push'], { cwd: status.repoPath });
+    return databaseGitStatus({ fetch: true });
+  } finally {
+    await fs.rm(localDbCopy, { force: true });
+  }
+}
+
+async function showDatabaseConflictDialog() {
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    buttons: ['Cancelar', 'Usar DB de GitHub', 'Subir DB local'],
+    defaultId: 0,
+    cancelId: 0,
+    title: 'Conflicto de DB',
+    message: 'Hay cambios locales en la DB y GitHub tiene una version mas reciente.',
+    detail: 'Elige que version debe ganar. Usar GitHub descarta la DB local. Subir local reemplaza la DB de GitHub por esta copia.',
+  });
+  if (result.response === 1) return { action: 'download' };
+  if (result.response === 2) return { action: 'upload' };
+  return { action: 'cancel' };
+}
+
 async function promptDatabaseSyncBeforeClose(event) {
   if (quittingAfterDatabasePrompt || pendingDatabaseSyncCheck) return;
   pendingDatabaseSyncCheck = true;
@@ -468,11 +522,12 @@ async function promptDatabaseSyncBeforeClose(event) {
       return;
     }
 
+    const buttons = status.conflict
+      ? ['Cancelar', 'Usar DB de GitHub', 'Subir DB local', 'Salir sin sincronizar']
+      : ['Cancelar', 'Salir sin sincronizar', 'Sincronizar DB'];
     const result = await dialog.showMessageBox(mainWindow, {
       type: status.conflict ? 'warning' : 'question',
-      buttons: status.conflict
-        ? ['Cancelar', 'Salir sin sincronizar']
-        : ['Cancelar', 'Salir sin sincronizar', 'Sincronizar DB'],
+      buttons,
       defaultId: status.conflict ? 0 : 2,
       cancelId: 0,
       title: 'Cambios de DB pendientes',
@@ -485,7 +540,20 @@ async function promptDatabaseSyncBeforeClose(event) {
     });
 
     if (result.response === 0) return;
-    if (!status.conflict && result.response === 2) {
+    if (status.conflict && (result.response === 1 || result.response === 2)) {
+      try {
+        if (result.response === 1) await forceDatabaseFromGitHub();
+        if (result.response === 2) await forceDatabaseToGitHub();
+      } catch (error) {
+        await dialog.showMessageBox(mainWindow, {
+          type: 'error',
+          buttons: ['Aceptar'],
+          title: 'No se pudo resolver el conflicto de DB',
+          message: error.message,
+        });
+        return;
+      }
+    } else if (!status.conflict && result.response === 2) {
       try {
         await synchronizeDatabaseWithGit();
       } catch (error) {
@@ -497,6 +565,9 @@ async function promptDatabaseSyncBeforeClose(event) {
         });
         return;
       }
+    }
+    if (status.conflict && result.response === 3) {
+      // Continue closing without touching the DB.
     }
     quittingAfterDatabasePrompt = true;
     mainWindow.close();
@@ -547,6 +618,18 @@ ipcMain.handle('creditos:get-database-sync-status', async () => {
 
 ipcMain.handle('creditos:sync-database', async () => {
   return synchronizeDatabaseWithGit();
+});
+
+ipcMain.handle('creditos:force-database-from-github', async () => {
+  return forceDatabaseFromGitHub();
+});
+
+ipcMain.handle('creditos:force-database-to-github', async () => {
+  return forceDatabaseToGitHub();
+});
+
+ipcMain.handle('creditos:choose-database-conflict-action', async () => {
+  return showDatabaseConflictDialog();
 });
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
