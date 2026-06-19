@@ -6639,14 +6639,16 @@
     const bodyStartIndex = safeSegments.preCount;
     const bodyEndIndex = items.length - safeSegments.postCount - 1;
     const lastPreItem = preEndIndex >= 0 ? items[preEndIndex] : null;
+    const firstBodyItem = bodyStartIndex <= bodyEndIndex ? items[bodyStartIndex] : null;
     const lastBodyItem = bodyEndIndex >= bodyStartIndex ? items[bodyEndIndex] : lastPreItem;
     const lastPostItem = safeSegments.postCount ? items[items.length - 1] : null;
     const preEndOffset = lastPreItem ? scrollItemExitOffset(lastPreItem) : 0;
+    const bodyStartOffset = firstBodyItem ? Math.max(preEndOffset, scrollItemEnterOffset(firstBodyItem)) : preEndOffset;
     const bodyEndTarget = lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset;
-    const bodyEndOffset = Math.max(preEndOffset, bodyEndTarget);
+    const bodyEndOffset = Math.max(bodyStartOffset, bodyEndTarget);
     const postEndOffset = lastPostItem ? Math.max(bodyEndOffset, scrollItemNormalOffset(lastPostItem)) : bodyEndOffset;
     const prePhase = buildIntegerScrollPhase('pre', 0, safeSegments.preFrames, 0, preEndOffset);
-    const bodyPhase = buildIntegerScrollPhase('body', prePhase.startFrame + prePhase.frames, bodyFrames, preEndOffset, bodyEndOffset);
+    const bodyPhase = buildIntegerScrollPhase('body', prePhase.startFrame + prePhase.frames, bodyFrames, bodyStartOffset, bodyEndOffset);
     const postPhase = buildIntegerScrollPhase('post', bodyPhase.startFrame + bodyPhase.frames, safeSegments.postFrames, bodyEndOffset, postEndOffset);
     const phases = [prePhase, bodyPhase, postPhase];
     const totalFrames = Math.max(1, postPhase.startFrame + postPhase.frames);
@@ -6669,6 +6671,11 @@
 
   function scrollItemNormalOffset(item) {
     return Math.max(0, (Number(item.stackTop) || 0) - (Number(item.normalTop) || 0));
+  }
+
+  function scrollItemEnterOffset(item) {
+    const clip = scrollClipRect(item.layout);
+    return Math.max(0, (Number(item.stackTop) || 0) - (clip.y + clip.height));
   }
 
   function buildIntegerScrollPhase(name, startFrame, requestedFrames, startOffset, endOffset) {
