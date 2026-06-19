@@ -6734,15 +6734,16 @@
     const x = Math.max(0, Number(effectiveLayout.page_left_margin) || 0);
     const width = Math.max(0, effectiveLayout.page_width - x - (Number(effectiveLayout.page_right_margin) || 0));
     const blocks = scrollBlocksForPages(group.pages);
+    const textBlocks = blocks.filter(scrollBlockHasVisibleText);
     const title = String(cartela && cartela.title || '').trim();
     const titleMetrics = title ? canvasTextMetrics('page_header', cartela, effectiveLayout, cartela.title_typography) : null;
     const titleHeight = titleMetrics ? titleMetrics.lineHeight : 0;
     const blockGap = cartelaBlockGap(cartela, effectiveLayout);
-    const blockHeights = blocks.map((block) => measureCanvasBlock(null, block, cartela, effectiveLayout, width));
-    const contentHeight = titleHeight + (titleHeight && blocks.length ? blockGap : 0) + blockHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, blocks.length - 1) * blockGap;
+    const blockHeights = textBlocks.map((block) => measureCanvasBlock(null, block, cartela, effectiveLayout, width));
+    const contentHeight = titleHeight + (titleHeight && textBlocks.length ? blockGap : 0) + blockHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, textBlocks.length - 1) * blockGap;
     const areaHeight = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
-    const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length);
-    const fullAreaCartela = !!(cartela && !blocks.length && (cartela.manual || imageOnlyCartela));
+    const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !textBlocks.length);
+    const fullAreaCartela = !!(cartela && !textBlocks.length && (cartela.manual || imageOnlyCartela));
     const minHeight = fullAreaCartela ? areaHeight : 1;
     const positioningHeight = fullAreaCartela ? areaHeight : contentHeight;
     const normalTop = effectiveLayout.page_top_margin + verticalOffset(areaHeight, positioningHeight, pdfPageVerticalJustify(group.pages[0])) + (Number(cartela.vertical_offset) || 0);
@@ -6752,7 +6753,7 @@
       pages: group.pages,
       title,
       titleMetrics,
-      blocks,
+      blocks: textBlocks,
       blockHeights,
       blockGap,
       contentHeight,
@@ -6773,6 +6774,20 @@
         seen.set(key, index + 1);
         return blockForTitleRepeat(block, false, index);
       }));
+  }
+
+  function scrollBlockHasVisibleText(block) {
+    if (!block || block.missing_source) return false;
+    if (String(block.title || '').trim()) return true;
+    const units = block.type === 'music_licenses' ? (block.themes || []) : (block.items || []);
+    return units.some(scrollUnitHasVisibleText);
+  }
+
+  function scrollUnitHasVisibleText(unit) {
+    if (!unit) return false;
+    if (Array.isArray(unit.lines)) return unit.lines.some((line) => String(line && line.value || '').trim());
+    return ['section', 'role', 'name', 'actor', 'character', 'value', 'title']
+      .some((key) => String(unit[key] || '').trim());
   }
 
   function scrollOffsetForFrame(plan, frame) {
