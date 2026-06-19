@@ -422,13 +422,12 @@
     const status = state.databaseSyncStatus;
     const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
     let suffix = '';
-    if (status && status.conflict) suffix = ' · DB distinta en local y GitHub';
-    else if (status && status.remoteChanged) suffix = ' · GitHub tiene otra DB';
+    if (status && status.remoteIsNewer) suffix = ' · GitHub tiene una DB mas reciente';
     else if (status && status.localChanged) suffix = ' · DB local pendiente de subir';
     else if (status && status.available) suffix = ' · sincronizada';
     els.databaseStatus.textContent = `${pathText}${suffix}`;
-    els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && (status.remoteChanged || status.conflict)));
-    els.databaseStatus.classList.toggle('db-sync-ok', Boolean(status && !status.remoteChanged && !status.conflict));
+    els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && status.remoteIsNewer));
+    els.databaseStatus.classList.toggle('db-sync-ok', Boolean(status && !status.remoteIsNewer));
     els.databaseStatus.title = status && status.message ? status.message : pathText;
   }
 
@@ -6729,12 +6728,9 @@
       const y = Math.round(item.stackTop - offset);
       const clip = scrollClipRect(item.layout);
       if (!scrollItemIntersectsClip(item, y, clip)) continue;
-      const itemClipY = Math.max(clip.y, y);
-      const itemClipBottom = Math.min(clip.y + clip.height, y + Math.max(1, Number(item.height) || 1));
-      if (itemClipBottom <= itemClipY) continue;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(clip.x, itemClipY, clip.width, itemClipBottom - itemClipY);
+      ctx.rect(clip.x, clip.y, clip.width, clip.height);
       ctx.clip();
       await drawCanvasScrollItem(ctx, item, y);
       ctx.restore();
