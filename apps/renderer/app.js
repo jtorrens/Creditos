@@ -6741,7 +6741,7 @@
     const blockHeights = blocks.map((block) => measureCanvasBlock(null, block, cartela, effectiveLayout, width));
     const contentHeight = titleHeight + (titleHeight && blocks.length ? blockGap : 0) + blockHeights.reduce((sum, value) => sum + value, 0) + Math.max(0, blocks.length - 1) * blockGap;
     const areaHeight = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
-    const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length && !title);
+    const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length);
     const fullAreaCartela = !!(cartela && !blocks.length && (cartela.manual || imageOnlyCartela));
     const minHeight = fullAreaCartela ? areaHeight : 1;
     const positioningHeight = fullAreaCartela ? areaHeight : contentHeight;
