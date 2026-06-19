@@ -1688,7 +1688,7 @@
 
   async function loadSourceJson(json, fileName) {
     state.source = normalizeSource(json, fileName);
-    state.materials = createMaterialsFromSource(state.source);
+    state.materials = applyLockedMaterials(createMaterialsFromSource(state.source), state.structure);
     state.structure = createStructureFromSource(state.source, state.materials, state.structure);
     state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
     rebuild();
@@ -2338,8 +2338,49 @@
       } else {
         delete normalized.source_ref_settings[ref].typography;
       }
+      normalized.source_ref_settings[ref].locked = !!normalized.source_ref_settings[ref].locked;
+      if (normalized.source_ref_settings[ref].locked && normalized.source_ref_settings[ref].frozen_material) {
+        normalized.source_ref_settings[ref].frozen_material = normalizeFrozenMaterial(normalized.source_ref_settings[ref].frozen_material);
+      } else {
+        delete normalized.source_ref_settings[ref].frozen_material;
+      }
     });
     return normalized;
+  }
+
+  function normalizeFrozenMaterial(material) {
+    if (!material || !material.id) return null;
+    return JSON.parse(JSON.stringify(material));
+  }
+
+  function applyLockedMaterials(materials, structure) {
+    const nextMaterials = (materials || []).map((material) => JSON.parse(JSON.stringify(material)));
+    const indexById = new Map(nextMaterials.map((material, index) => [material.id, index]));
+    getLockedSourceRefSettings(structure).forEach(({ ref, settings }) => {
+      const frozen = normalizeFrozenMaterial(settings.frozen_material);
+      if (!frozen) return;
+      frozen.id = ref;
+      frozen.source_block_id = frozen.source_block_id || ref;
+      if (indexById.has(ref)) {
+        nextMaterials[indexById.get(ref)] = frozen;
+      } else {
+        indexById.set(ref, nextMaterials.length);
+        nextMaterials.push(frozen);
+      }
+    });
+    return nextMaterials;
+  }
+
+  function getLockedSourceRefSettings(structure) {
+    const locked = [];
+    (structure && structure.cartelas || []).forEach((cartela) => {
+      (cartela.pages || []).forEach((page) => {
+        Object.entries(page.source_ref_settings || {}).forEach(([ref, settings]) => {
+          if (settings && settings.locked) locked.push({ ref, settings, page, cartela });
+        });
+      });
+    });
+    return locked;
   }
 
   function normalizeCartelaImage(image) {
@@ -3913,12 +3954,21 @@
 
     const header = document.createElement('div');
     header.className = 'material-header';
+    const isLocked = isSourceRefLocked(ref);
     header.innerHTML = `
       <div>
         <strong>${escapeHtml(material.title || 'Sin titulo')}</strong>
-        <span>${escapeHtml(material.type || '')} · ${(material.items || []).length} items</span>
+        <span>${escapeHtml(material.type || '')} · ${(material.items || []).length} items${isLocked ? ' · bloqueado' : ''}</span>
       </div>
     `;
+
+    const lockButton = document.createElement('button');
+    lockButton.type = 'button';
+    lockButton.className = 'icon-button block-lock-button' + (isLocked ? ' active' : '');
+    lockButton.textContent = isLocked ? '🔒' : '🔓';
+    lockButton.title = isLocked ? 'Desbloquear actualización desde XLS' : 'Bloquear actualización desde XLS';
+    lockButton.setAttribute('aria-label', lockButton.title);
+    lockButton.addEventListener('click', () => toggleSourceRefLock(ref));
 
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
@@ -3935,7 +3985,11 @@
       });
       rebuild();
     });
-    header.appendChild(removeButton);
+    const actions = document.createElement('div');
+    actions.className = 'material-actions';
+    actions.appendChild(lockButton);
+    actions.appendChild(removeButton);
+    header.appendChild(actions);
     wrap.appendChild(header);
 
     wrap.appendChild(inputRow('Título del bloque', material.id, 'title', material.default_title || ''));
@@ -3951,6 +4005,35 @@
       wrap.appendChild(renderItemEditor(item, material.id, isLastItem));
     });
     return wrap;
+  }
+
+  function getSourceRefSettingsObject(ref) {
+    const cartela = getSelectedCartela();
+    const page = findPageWithRef(cartela, ref);
+    if (!page) return null;
+    page.source_ref_settings = page.source_ref_settings || {};
+    page.source_ref_settings[ref] = page.source_ref_settings[ref] || { columns: 1 };
+    return page.source_ref_settings[ref];
+  }
+
+  function isSourceRefLocked(ref) {
+    const settings = getSourceRefSettingsObject(ref);
+    return !!(settings && settings.locked);
+  }
+
+  function toggleSourceRefLock(ref) {
+    const settings = getSourceRefSettingsObject(ref);
+    if (!settings) return;
+    if (settings.locked) {
+      delete settings.locked;
+      delete settings.frozen_material;
+    } else {
+      const material = state.materials.find((candidate) => candidate.id === ref);
+      if (!material) return;
+      settings.locked = true;
+      settings.frozen_material = normalizeFrozenMaterial(material);
+    }
+    rebuild();
   }
 
   function renderBlockAlignmentControls(material, ref) {
@@ -6728,9 +6811,11 @@
       const y = Math.round(item.stackTop - offset);
       const clip = scrollClipRect(item.layout);
       if (!scrollItemIntersectsClip(item, y, clip)) continue;
+      const itemClip = item.fullAreaCartela ? scrollFullAreaItemClip(item, y, clip) : clip;
+      if (itemClip.height <= 0) continue;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(clip.x, clip.y, clip.width, clip.height);
+      ctx.rect(itemClip.x, itemClip.y, itemClip.width, itemClip.height);
       ctx.clip();
       await drawCanvasScrollItem(ctx, item, y);
       ctx.restore();
@@ -6742,6 +6827,17 @@
     const top = y;
     const bottom = y + Math.max(1, Number(item.height) || 1);
     return bottom >= clip.y && top <= clip.y + clip.height;
+  }
+
+  function scrollFullAreaItemClip(item, y, clip) {
+    const itemTop = Math.max(clip.y, y);
+    const itemBottom = Math.min(clip.y + clip.height, y + Math.max(1, Number(item.height) || 1));
+    return {
+      x: clip.x,
+      y: itemTop,
+      width: clip.width,
+      height: Math.max(0, itemBottom - itemTop),
+    };
   }
 
   function scrollClipRect(layout) {
