@@ -245,6 +245,44 @@ function stopPythonServer() {
   serverProcess = null;
 }
 
+function stopPythonServerAndWait(timeoutMs = 3000) {
+  if (!serverProcess) return Promise.resolve();
+  const processToStop = serverProcess;
+  serverProcess = null;
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      try {
+        if (!processToStop.killed) processToStop.kill('SIGKILL');
+      } catch (_error) {
+        // The process may already be gone.
+      }
+      finish();
+    }, timeoutMs);
+    processToStop.once('exit', () => {
+      clearTimeout(timer);
+      finish();
+    });
+    try {
+      processToStop.kill();
+    } catch (_error) {
+      clearTimeout(timer);
+      finish();
+    }
+  });
+}
+
+async function reloadMainWindowServer() {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const serverUrl = await startPythonServer();
+  await mainWindow.loadURL(serverUrl);
+}
+
 function pngFilters() {
   return [{ name: 'PNG', extensions: ['png'] }];
 }
@@ -478,8 +516,13 @@ async function forceDatabaseFromGitHub() {
   if (!status.available || !status.repoPath) {
     throw new Error(status.message || 'La DB no esta dentro del repositorio.');
   }
-  await runGit(['checkout', status.upstream, '--', status.relativeDbPath], { cwd: status.repoPath });
-  return databaseGitStatus({ fetch: true });
+  await stopPythonServerAndWait();
+  try {
+    await runGit(['checkout', status.upstream, '--', status.relativeDbPath], { cwd: status.repoPath });
+    return await databaseGitStatus({ fetch: true });
+  } finally {
+    await reloadMainWindowServer();
+  }
 }
 
 async function forceDatabaseToGitHub() {
