@@ -10,8 +10,6 @@ const appPackage = require('./package.json');
 let mainWindow = null;
 let serverProcess = null;
 let preferenceWriteQueue = Promise.resolve();
-let pendingDatabaseSyncCheck = false;
-let quittingAfterDatabasePrompt = false;
 const movExportSessions = new Map();
 
 function windowStatePath() {
@@ -234,8 +232,7 @@ async function createMainWindow() {
     },
   });
   if (windowState.isMaximized) mainWindow.maximize();
-  mainWindow.on('close', (event) => {
-    promptDatabaseSyncBeforeClose(event);
+  mainWindow.on('close', () => {
     writeWindowState(mainWindow);
   });
 
@@ -501,87 +498,6 @@ async function forceDatabaseToGitHub() {
   }
 }
 
-async function showDatabaseConflictDialog(_payload = {}) {
-  const result = await dialog.showMessageBox(mainWindow, {
-    type: 'warning',
-    buttons: ['Cancelar', 'Usar DB de GitHub', 'Subir DB local'],
-    defaultId: 0,
-    cancelId: 0,
-    title: 'Sincronizar DB',
-    message: 'GitHub tiene una version distinta de la base de datos.',
-    detail: 'Elige que version debe ganar. Usar GitHub descarta la DB local. Subir local reemplaza la DB de GitHub por esta copia.',
-  });
-  if (result.response === 1) return { action: 'download' };
-  if (result.response === 2) return { action: 'upload' };
-  return { action: 'cancel' };
-}
-
-async function promptDatabaseSyncBeforeClose(event) {
-  if (quittingAfterDatabasePrompt || pendingDatabaseSyncCheck) return;
-  pendingDatabaseSyncCheck = true;
-  event.preventDefault();
-  try {
-    const status = await databaseGitStatus({ fetch: false });
-    if (!status.localChanged) {
-      quittingAfterDatabasePrompt = true;
-      mainWindow.close();
-      return;
-    }
-
-    const buttons = status.conflict
-      ? ['Cancelar', 'Usar DB de GitHub', 'Subir DB local', 'Salir sin sincronizar']
-      : ['Cancelar', 'Salir sin sincronizar', 'Subir DB local'];
-    const result = await dialog.showMessageBox(mainWindow, {
-      type: status.conflict ? 'warning' : 'question',
-      buttons,
-      defaultId: status.conflict ? 0 : 2,
-      cancelId: 0,
-      title: 'Cambios de DB pendientes',
-      message: status.conflict
-        ? 'Hay cambios locales en la DB y tambien cambios en GitHub.'
-        : 'Hay cambios locales en la base de datos.',
-      detail: status.conflict
-        ? 'Sincroniza desde Git para resolver el conflicto antes de seguir trabajando en otro equipo.'
-        : 'Puedes subir esta DB local a GitHub o salir sin subirla.',
-    });
-
-    if (result.response === 0) return;
-    if (status.conflict && (result.response === 1 || result.response === 2)) {
-      try {
-        if (result.response === 1) await forceDatabaseFromGitHub();
-        if (result.response === 2) await forceDatabaseToGitHub();
-      } catch (error) {
-        await dialog.showMessageBox(mainWindow, {
-          type: 'error',
-          buttons: ['Aceptar'],
-          title: 'No se pudo resolver el conflicto de DB',
-          message: error.message,
-        });
-        return;
-      }
-    } else if (!status.conflict && result.response === 2) {
-      try {
-        await forceDatabaseToGitHub();
-      } catch (error) {
-        await dialog.showMessageBox(mainWindow, {
-          type: 'error',
-          buttons: ['Aceptar'],
-          title: 'No se pudo subir la DB',
-          message: error.message,
-        });
-        return;
-      }
-    }
-    if (status.conflict && result.response === 3) {
-      // Continue closing without touching the DB.
-    }
-    quittingAfterDatabasePrompt = true;
-    mainWindow.close();
-  } finally {
-    pendingDatabaseSyncCheck = false;
-  }
-}
-
 async function writeMovFrameSequence(tempDir, bytes, frameCount, startIndex) {
   const buffer = Buffer.from(bytes);
   let frameIndex = startIndex;
@@ -632,10 +548,6 @@ ipcMain.handle('creditos:force-database-from-github', async () => {
 
 ipcMain.handle('creditos:force-database-to-github', async () => {
   return forceDatabaseToGitHub();
-});
-
-ipcMain.handle('creditos:choose-database-conflict-action', async (_event, payload) => {
-  return showDatabaseConflictDialog(payload);
 });
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {

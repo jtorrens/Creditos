@@ -721,12 +721,28 @@ button.primary:hover {
   padding-bottom: 14px;
 }
 
+.database-sync-row {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.database-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.database-sync-actions button {
+  flex: 0 0 auto;
+}
+
 .settings-status.db-sync-warning {
   color: #ff5a63;
 }
 
-.settings-status.db-sync-pending {
-  color: #f4b54a;
+.settings-status.db-sync-ok {
+  color: #4fd07a;
 }
 
 .panel-heading {

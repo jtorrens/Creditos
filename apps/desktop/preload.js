@@ -20,7 +20,6 @@ contextBridge.exposeInMainWorld('creditosNative', {
   syncDatabase: () => ipcRenderer.invoke('creditos:sync-database'),
   forceDatabaseFromGitHub: () => ipcRenderer.invoke('creditos:force-database-from-github'),
   forceDatabaseToGitHub: () => ipcRenderer.invoke('creditos:force-database-to-github'),
-  chooseDatabaseConflictAction: () => ipcRenderer.invoke('creditos:choose-database-conflict-action'),
   readPreferences: () => ipcRenderer.invoke('creditos:read-preferences'),
   writePreference: (payload) => ipcRenderer.invoke('creditos:write-preference', payload),
   onServerExit: (callback) => {
