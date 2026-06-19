@@ -6625,13 +6625,14 @@
   }
 
   function buildScrollPlan(groups, layout, sourceFrames, segments = {}) {
-    const items = buildScrollItems(groups, layout);
     const safeSegments = {
-      preCount: Math.max(0, Math.min(items.length, Math.round(Number(segments.preCount) || 0))),
+      preCount: Math.max(0, Math.round(Number(segments.preCount) || 0)),
       preFrames: Math.max(0, Math.round(Number(segments.preFrames) || 0)),
       postCount: Math.max(0, Math.round(Number(segments.postCount) || 0)),
       postFrames: Math.max(0, Math.round(Number(segments.postFrames) || 0)),
     };
+    const items = buildScrollItems(groups, layout, safeSegments);
+    safeSegments.preCount = Math.max(0, Math.min(items.length, safeSegments.preCount));
     safeSegments.postCount = Math.max(0, Math.min(items.length - safeSegments.preCount, safeSegments.postCount));
     const bodyFrames = getMovieBodyTargetFramesOrSource(sourceFrames, getMovieFps());
     const preEndIndex = safeSegments.preCount - 1;
@@ -6639,10 +6640,9 @@
     const bodyEndIndex = items.length - safeSegments.postCount - 1;
     const lastPreItem = preEndIndex >= 0 ? items[preEndIndex] : null;
     const lastBodyItem = bodyEndIndex >= bodyStartIndex ? items[bodyEndIndex] : lastPreItem;
-    const firstPostItem = safeSegments.postCount ? items[items.length - safeSegments.postCount] : null;
     const lastPostItem = safeSegments.postCount ? items[items.length - 1] : null;
     const preEndOffset = lastPreItem ? scrollItemExitOffset(lastPreItem) : 0;
-    const bodyEndTarget = firstPostItem ? scrollItemEnterOffset(firstPostItem) : (lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset);
+    const bodyEndTarget = lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset;
     const bodyEndOffset = Math.max(preEndOffset, bodyEndTarget);
     const postEndOffset = lastPostItem ? Math.max(bodyEndOffset, scrollItemNormalOffset(lastPostItem)) : bodyEndOffset;
     const prePhase = buildIntegerScrollPhase('pre', 0, safeSegments.preFrames, 0, preEndOffset);
@@ -6669,11 +6669,6 @@
 
   function scrollItemNormalOffset(item) {
     return Math.max(0, (Number(item.stackTop) || 0) - (Number(item.normalTop) || 0));
-  }
-
-  function scrollItemEnterOffset(item) {
-    const clip = scrollClipRect(item.layout);
-    return Math.max(0, (Number(item.stackTop) || 0) - (clip.y + clip.height));
   }
 
   function buildIntegerScrollPhase(name, startFrame, requestedFrames, startOffset, endOffset) {
@@ -6704,16 +6699,33 @@
     };
   }
 
-  function buildScrollItems(groups, layout) {
+  function buildScrollItems(groups, layout, segments = {}) {
     let stackTop = Number(layout.page_height) || 0;
     const gap = Math.max(0, Number(layout.scroll_page_gap) || 0);
     const lastGap = Math.max(0, Number(layout.scroll_last_page_gap) || 0);
+    const postCount = Math.max(0, Math.min(groups.length, Math.round(Number(segments.postCount) || 0)));
+    const firstPostIndex = postCount ? groups.length - postCount : -1;
     return groups.map((group, index) => {
       const item = buildScrollItem(group, layout, stackTop);
-      const nextGap = index === groups.length - 2 ? Math.max(gap, lastGap) : gap;
+      const nextIsFirstPost = firstPostIndex >= 0 && index === firstPostIndex - 1;
+      const nextGap = scrollGapAfterItem({
+        item,
+        gap,
+        lastGap,
+        isBeforeLastItem: index === groups.length - 2,
+        isBeforePostroll: nextIsFirstPost,
+      });
       stackTop += item.height + (index < groups.length - 1 ? nextGap : 0);
       return item;
     });
+  }
+
+  function scrollGapAfterItem({ item, gap, lastGap, isBeforeLastItem, isBeforePostroll }) {
+    let nextGap = isBeforeLastItem ? Math.max(gap, lastGap) : gap;
+    if (isBeforePostroll) {
+      nextGap = Math.max(nextGap, scrollClipRect(item.layout).height);
+    }
+    return nextGap;
   }
 
   function buildScrollItem(group, layout, stackTop) {
