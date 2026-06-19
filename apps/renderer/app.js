@@ -6779,14 +6779,14 @@
   function scrollBlockHasVisibleText(block) {
     if (!block || block.missing_source) return false;
     if (String(block.title || '').trim()) return true;
-    const units = block.type === 'music_licenses' ? (block.themes || []) : (block.items || []);
+    const units = getRenderedBlockUnits(block);
     return units.some(scrollUnitHasVisibleText);
   }
 
   function scrollUnitHasVisibleText(unit) {
     if (!unit) return false;
     if (Array.isArray(unit.lines)) return unit.lines.some((line) => String(line && line.value || '').trim());
-    return ['section', 'role', 'name', 'actor', 'character', 'value', 'title']
+    return ['role', 'name', 'actor', 'character', 'value', 'title']
       .some((key) => String(unit[key] || '').trim());
   }
 
