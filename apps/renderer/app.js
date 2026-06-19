@@ -146,7 +146,7 @@
     ['name', 'Nombre'],
   ];
   const BLOCK_TYPOGRAPHY_FIELDS = TYPOGRAPHY_FIELDS.filter(([key]) => key !== 'page_header');
-  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'text_capitalization'];
+  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'text_capitalization'];
   const LANGUAGE_OPTIONS = [
     ['es', 'Español'],
     ['en', 'English'],
@@ -157,6 +157,10 @@
     ['lowercase', 'Minúsculas'],
     ['title', 'Capitalizado cada palabra'],
     ['title_editorial', 'Capitalizado editorial'],
+  ];
+  const YES_NO_OPTIONS = [
+    ['true', 'Sí'],
+    ['false', 'No'],
   ];
   const LANGUAGE_LOCALES = {
     es: 'es-ES',
@@ -2138,6 +2142,7 @@
         scroll_last_page_gap: 0,
         scroll_fade_up: 0,
         scroll_fade_down: 0,
+        repeat_block_titles: true,
       },
     };
   }
@@ -2182,6 +2187,7 @@
     normalized.layout.scroll_last_page_gap = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_last_page_gap)) ? Number(normalized.layout.scroll_last_page_gap) : defaults.layout.scroll_last_page_gap);
     normalized.layout.scroll_fade_up = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_fade_up)) ? Number(normalized.layout.scroll_fade_up) : defaults.layout.scroll_fade_up);
     normalized.layout.scroll_fade_down = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_fade_down)) ? Number(normalized.layout.scroll_fade_down) : defaults.layout.scroll_fade_down);
+    normalized.layout.repeat_block_titles = normalizeBoolean(normalized.layout.repeat_block_titles, defaults.layout.repeat_block_titles);
     normalized.language = normalizeLanguage(normalized.language);
     normalized.text_capitalization = normalizeTextCapitalization(normalized.text_capitalization);
     normalized.movie_fps = Math.max(1, Math.round(Number(normalized.movie_fps) || defaults.movie_fps));
@@ -2851,6 +2857,7 @@
       page_bottom_margin: Math.max(0, Number(value.page_bottom_margin) || 0),
       page_left_margin: Math.max(0, Number(value.page_left_margin) || 0),
       page_right_margin: Math.max(0, Number(value.page_right_margin) || 0),
+      repeat_block_titles: normalizeBoolean(value.repeat_block_titles, true),
       text_capitalization: normalizeTextCapitalization(value.text_capitalization),
     };
   }
@@ -2880,6 +2887,7 @@
     if (value.page_bottom_margin !== undefined) output.page_bottom_margin = Math.max(0, Number(value.page_bottom_margin) || 0);
     if (value.page_left_margin !== undefined) output.page_left_margin = Math.max(0, Number(value.page_left_margin) || 0);
     if (value.page_right_margin !== undefined) output.page_right_margin = Math.max(0, Number(value.page_right_margin) || 0);
+    if (value.repeat_block_titles !== undefined) output.repeat_block_titles = normalizeBoolean(value.repeat_block_titles, true);
     if (value.text_capitalization !== undefined) output.text_capitalization = normalizeTextCapitalization(value.text_capitalization);
     return output;
   }
@@ -2915,6 +2923,7 @@
       page_bottom_margin: settings.layout.page_bottom_margin,
       page_left_margin: settings.layout.page_left_margin,
       page_right_margin: settings.layout.page_right_margin,
+      repeat_block_titles: settings.layout.repeat_block_titles,
       text_capitalization: settings.text_capitalization,
     });
   }
@@ -3009,6 +3018,7 @@
     wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
     wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => updateLayoutSetting({ page_left_margin: value })));
     wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => updateLayoutSetting({ page_right_margin: value })));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(settings.layout.repeat_block_titles), YES_NO_OPTIONS, (value) => updateLayoutSetting({ repeat_block_titles: normalizeBoolean(value, true) })));
     wrap.appendChild(sectionLabel('Scroll'));
     wrap.appendChild(settingsNumberRow('Separación entre cartelas', settings.layout.scroll_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_page_gap: value })));
     wrap.appendChild(settingsNumberRow('Separación antes de última cartela', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_last_page_gap: value })));
@@ -3303,6 +3313,7 @@
     wrap.appendChild(localNumberRow('Margen inferior', cartela.page_bottom_margin, 0, null, (value) => updateStyleCartela(style, { page_bottom_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_bottom_margin'), reset: () => resetStyleCartelaOverride(style, 'page_bottom_margin') }));
     wrap.appendChild(localNumberRow('Margen izquierdo', cartela.page_left_margin, 0, null, (value) => updateStyleCartela(style, { page_left_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_left_margin'), reset: () => resetStyleCartelaOverride(style, 'page_left_margin') }));
     wrap.appendChild(localNumberRow('Margen derecho', cartela.page_right_margin, 0, null, (value) => updateStyleCartela(style, { page_right_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_right_margin'), reset: () => resetStyleCartelaOverride(style, 'page_right_margin') }));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(cartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { repeat_block_titles: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'repeat_block_titles'), reset: () => resetStyleCartelaOverride(style, 'repeat_block_titles') }));
     wrap.appendChild(localSelectRow('Capitalización', cartela.text_capitalization, TEXT_CAPITALIZATION_OPTIONS, (value) => updateStyleCartela(style, { text_capitalization: value }), { override: hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => resetStyleCartelaOverride(style, 'text_capitalization') }));
 
     wrap.appendChild(sectionLabel('Bloque'));
@@ -3713,6 +3724,7 @@
     wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateCartela({ page_bottom_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetCartelaOverride('page_bottom_margin') }));
     wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateCartela({ page_left_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_left_margin'), reset: () => resetCartelaOverride('page_left_margin') }));
     wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateCartela({ page_right_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_right_margin'), reset: () => resetCartelaOverride('page_right_margin') }));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: isCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetCartelaOverride('repeat_block_titles') }));
     wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateCartela({ text_capitalization: value }), { override: isCartelaOverride(cartela, 'text_capitalization'), reset: () => resetCartelaOverride('text_capitalization') }));
     wrap.appendChild(renderCartelaImageControls(cartela));
     wrap.appendChild(renderCartelaTitleTypographyControls(cartela));
@@ -4713,7 +4725,7 @@
     const settings = getProductionSettings();
     state.styles.forEach((style) => {
       const defaultCartela = baseStyleCartelaFromSettings();
-      ['duration', 'line_spacing', 'column_gap', 'role_name_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'text_capitalization'].forEach((key) => {
+      ['duration', 'line_spacing', 'column_gap', 'role_name_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'text_capitalization'].forEach((key) => {
         if (style.cartela && Object.prototype.hasOwnProperty.call(style.cartela, key) && sameStyleValue(style.cartela[key], defaultCartela[key])) {
           delete style.cartela[key];
         }
@@ -5874,6 +5886,7 @@
     const physicalAdjustments = pageLineAdjustments.__physical || {};
 
     cartelas.forEach((cartela) => {
+      const repeatBlockTitles = repeatBlockTitlesForCartela(cartela);
       let cartelaPhysicalIndex = 0;
       (cartela.pages || []).forEach((cartelaPage) => {
         const blocks = cartelaPage.blocks || [];
@@ -5918,8 +5931,9 @@
           const lastBlock = currentPage.blocks[currentPage.blocks.length - 1];
           if (lastBlock && lastBlock.id === block.id) return lastBlock;
           const blockPageIndex = nextBlockPageIndex(block);
+          const displayBlock = blockForTitleRepeat(block, repeatBlockTitles, blockPageIndex);
           const physicalBlock = {
-            ...block,
+            ...displayBlock,
             block_page_index: blockPageIndex,
             pages: [{
               id: `block_page_${String(blockPageIndex + 1).padStart(2, '0')}`,
@@ -5934,13 +5948,17 @@
         const addUnitToPage = (block, unit, unitIndex) => {
           if (!currentPage) startPage();
           let physicalBlock = currentPage.blocks[currentPage.blocks.length - 1];
+          const candidateBlockPageIndex = physicalBlock && physicalBlock.id === block.id
+            ? Number(physicalBlock.block_page_index) || 0
+            : blockPageIndexes.get(block.id) || 0;
+          const candidateBlock = blockForTitleRepeat(block, repeatBlockTitles, candidateBlockPageIndex);
           const existingItems = physicalBlock && physicalBlock.id === block.id && physicalBlock.pages[0]
             ? physicalBlock.pages[0].items
             : [];
           const existingBlockLines = physicalBlock && physicalBlock.id === block.id && physicalBlock.pages[0]
             ? Number(physicalBlock.pages[0].line_count) || 0
             : 0;
-          const candidateBlockLines = countBlockVisualLines(block, cartela, existingItems.concat(unit));
+          const candidateBlockLines = countBlockVisualLines(candidateBlock, cartela, existingItems.concat(unit));
           const addedLines = candidateBlockLines - existingBlockLines;
           if (pageHasBlocks() && currentPage.line_count + addedLines > currentPage.line_limit) {
             finishPage();
@@ -5981,14 +5999,18 @@
           const units = getRenderedBlockUnits(block);
           if (!units.length && String(block.title || '').trim()) {
             if (!currentPage) startPage();
-            if (pageHasBlocks() && currentPage.line_count + countTitleLine(block.title) > currentPage.line_limit) {
+            const blockPageIndex = blockPageIndexes.get(block.id) || 0;
+            const displayBlock = blockForTitleRepeat(block, repeatBlockTitles, blockPageIndex);
+            const titleLines = countTitleLine(displayBlock.title);
+            if (!titleLines) return;
+            if (pageHasBlocks() && currentPage.line_count + titleLines > currentPage.line_limit) {
               finishPage();
               startPage();
             }
             const physicalBlock = ensureBlockOnPage(block);
             const page = physicalBlock.pages[0];
             const previousBlockLines = Number(page.line_count) || 0;
-            page.line_count = countTitleLine(block.title);
+            page.line_count = countTitleLine(physicalBlock.title);
             currentPage.line_count += page.line_count - previousBlockLines;
             return;
           }
@@ -6062,6 +6084,15 @@
 
   function creditSourceId(unit) {
     return unit && (unit.kind === 'credit' || unit.kind === 'crew_credit') ? unit.source_item_id || null : null;
+  }
+
+  function repeatBlockTitlesForCartela(cartela) {
+    return getEffectiveCartela(cartela).repeat_block_titles !== false;
+  }
+
+  function blockForTitleRepeat(block, repeatBlockTitles, blockPageIndex) {
+    if (repeatBlockTitles || !blockPageIndex || !String(block && block.title || '').trim()) return block;
+    return { ...block, title: '' };
   }
 
   function countTitleLine(title) {
@@ -6506,7 +6537,7 @@
     const effectiveLayout = layoutForCartela(layout, cartela);
     const x = Math.max(0, Number(effectiveLayout.page_left_margin) || 0);
     const width = Math.max(0, effectiveLayout.page_width - x - (Number(effectiveLayout.page_right_margin) || 0));
-    const blocks = group.pages.flatMap((page) => (page.blocks || []).filter((block) => !block.missing_source));
+    const blocks = scrollBlocksForPages(group.pages);
     const title = String(cartela && cartela.title || '').trim();
     const titleMetrics = title ? canvasTextMetrics('page_header', cartela, effectiveLayout, cartela.title_typography) : null;
     const titleHeight = titleMetrics ? titleMetrics.lineHeight : 0;
@@ -6530,6 +6561,18 @@
       stackTop,
       normalTop,
     };
+  }
+
+  function scrollBlocksForPages(pages) {
+    const seen = new Map();
+    return (pages || []).flatMap((page) => (page.blocks || [])
+      .filter((block) => !block.missing_source)
+      .map((block) => {
+        const key = block.id || block.title || 'block';
+        const index = seen.get(key) || 0;
+        seen.set(key, index + 1);
+        return blockForTitleRepeat(block, false, index);
+      }));
   }
 
   function scrollOffsetForFrame(plan, frame) {
@@ -7541,11 +7584,13 @@
       return blockEl;
     }
 
+    const repeatBlockTitles = repeatBlockTitlesForCartela(cartela);
     (block.pages || []).forEach((blockPage, index) => {
       const blockPageEl = document.createElement('div');
       blockPageEl.className = 'render-block-page';
+      const displayBlock = blockForTitleRepeat(block, repeatBlockTitles, index);
 
-      const blockTitle = makeVisualStaticText(block.title, 'render-block-title-input', 'block_title', {
+      const blockTitle = makeVisualStaticText(displayBlock.title, 'render-block-title-input', 'block_title', {
         multiplier: cartela.font_size_multiplier,
         lineMultiplier: cartela.line_spacing_multiplier,
         typography: block.typography,
@@ -7731,6 +7776,16 @@
 
   function normalizeColor(value) {
     return /^#[0-9a-fA-F]{6}$/.test(String(value || '')) ? value : '#171b1f';
+  }
+
+  function normalizeBoolean(value, defaultValue = true) {
+    if (value === undefined || value === null || value === '') return defaultValue;
+    if (typeof value === 'string') return !['false', '0', 'no', 'off'].includes(value.trim().toLowerCase());
+    return Boolean(value);
+  }
+
+  function boolSelectValue(value) {
+    return normalizeBoolean(value, true) ? 'true' : 'false';
   }
 
   function escapeHtml(value) {
