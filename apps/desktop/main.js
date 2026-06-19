@@ -355,6 +355,11 @@ async function gitHasDiff(args, cwd) {
   }
 }
 
+function parseGitTimestamp(value) {
+  const timestamp = Number(String(value || '').trim());
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp * 1000 : null;
+}
+
 async function gitUpstream(cwd) {
   try {
     const upstream = await gitOutput(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], cwd);
@@ -387,6 +392,14 @@ async function databaseGitStatus(options = {}) {
 
     const upstream = await gitUpstream(repoPath);
     const localStatus = await gitOutput(['status', '--porcelain', '--', relativeDbPath], repoPath);
+    const localStat = await fs.stat(dbPath);
+    const localTimestamp = localStat.mtimeMs;
+    let remoteTimestamp = null;
+    try {
+      remoteTimestamp = parseGitTimestamp(await gitOutput(['log', '-1', '--format=%ct', upstream, '--', relativeDbPath], repoPath));
+    } catch (_error) {
+      remoteTimestamp = null;
+    }
     let behindCount = 0;
     try {
       behindCount = Number(await gitOutput(['rev-list', '--count', `HEAD..${upstream}`], repoPath)) || 0;
@@ -398,12 +411,12 @@ async function databaseGitStatus(options = {}) {
     const upstreamHasDbChange = behindCount > 0
       ? await gitHasDiff(['diff', '--quiet', `HEAD..${upstream}`, '--', relativeDbPath], repoPath)
       : false;
-    const remoteChanged = upstreamHasDbChange && workingDiffersFromUpstream;
-    const conflict = localChanged && remoteChanged;
+    const remoteIsNewer = remoteTimestamp !== null && remoteTimestamp > localTimestamp + 1000;
+    const localIsNewerOrEqual = remoteTimestamp === null || localTimestamp + 1000 >= remoteTimestamp;
+    const remoteChanged = workingDiffersFromUpstream && remoteIsNewer;
+    const conflict = false;
     let message = 'DB sincronizada.';
-    if (conflict) {
-      message = 'Hay cambios locales y una DB mas reciente en GitHub.';
-    } else if (remoteChanged) {
+    if (remoteChanged) {
       message = 'GitHub tiene una DB mas reciente.';
     } else if (localChanged) {
       message = 'Hay cambios locales de DB pendientes de subir.';
@@ -418,6 +431,11 @@ async function databaseGitStatus(options = {}) {
       localChanged,
       remoteChanged,
       remoteAhead: behindCount > 0,
+      upstreamHasDbChange,
+      localTimestamp,
+      remoteTimestamp,
+      localIsNewerOrEqual,
+      remoteIsNewer,
       conflict,
       message,
     };
