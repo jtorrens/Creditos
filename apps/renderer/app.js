@@ -6548,7 +6548,8 @@
     const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length && !title);
     const fullAreaCartela = !!(cartela && !blocks.length && (cartela.manual || imageOnlyCartela));
     const minHeight = fullAreaCartela ? areaHeight : 1;
-    const normalTop = effectiveLayout.page_top_margin + verticalOffset(areaHeight, contentHeight, pdfPageVerticalJustify(group.pages[0])) + (Number(cartela.vertical_offset) || 0);
+    const positioningHeight = fullAreaCartela ? areaHeight : contentHeight;
+    const normalTop = effectiveLayout.page_top_margin + verticalOffset(areaHeight, positioningHeight, pdfPageVerticalJustify(group.pages[0])) + (Number(cartela.vertical_offset) || 0);
     return {
       cartela,
       layout: effectiveLayout,
