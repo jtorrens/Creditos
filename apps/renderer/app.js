@@ -5414,8 +5414,7 @@
       const groups = getSelectedScrollCartelaGroups();
       if (!groups.length) return null;
       const sourceFrames = getSelectedScrollSourceFrames(fps);
-      const targetFrames = getMovieTargetFramesOrSource(sourceFrames, fps);
-      const scrollPlan = buildScrollPlan(groups, layout, sourceFrames, targetFrames);
+      const scrollPlan = buildScrollPlan(groups, layout, sourceFrames, segments);
       return {
         mode: 'scroll',
         layout,
@@ -6477,8 +6476,7 @@
     if (!groups.length) return;
     const sourceFrames = getSelectedScrollSourceFrames(fps);
     const segments = readMovieSegmentSettings(fps);
-    const targetFrames = getMovieTargetFramesOrSource(sourceFrames, fps);
-    const plan = buildScrollPlan(groups, layout, sourceFrames, targetFrames);
+    const plan = buildScrollPlan(groups, layout, sourceFrames, segments);
     updateMovExportProgress(0, plan.totalFrames);
     await exportMovFramesIncrementally(native, filePath, fps, async (writeFrame) => {
       for (let frame = 0; frame < plan.totalFrames; frame += 1) {
@@ -6499,15 +6497,25 @@
     });
   }
 
-  function buildScrollPlan(groups, layout, sourceFrames, targetFrames) {
+  function buildScrollPlan(groups, layout, sourceFrames, segments = {}) {
     const items = buildScrollItems(groups, layout);
-    const lastItem = items[items.length - 1];
-    const distance = Math.max(0, lastItem ? lastItem.stackTop - lastItem.normalTop : 0);
-    const safeTargetFrames = Math.max(1, Math.round(Number(targetFrames) || 1));
+    const safeSegments = {
+      preCount: Math.max(0, Math.round(Number(segments.preCount) || 0)),
+      preFrames: Math.max(0, Math.round(Number(segments.preFrames) || 0)),
+      postCount: Math.max(0, Math.round(Number(segments.postCount) || 0)),
+      postFrames: Math.max(0, Math.round(Number(segments.postFrames) || 0)),
+    };
+    const bodyFrames = getMovieBodyTargetFramesOrSource(sourceFrames, getMovieFps());
+    const safeTargetFrames = Math.max(1, safeSegments.preFrames + bodyFrames + safeSegments.postFrames);
+    const lastBodyIndex = Math.max(0, Math.min(items.length - 1, items.length - safeSegments.postCount - 1));
+    const lastBodyItem = items[lastBodyIndex];
+    const bodyEndFrame = Math.max(1, safeSegments.preFrames + bodyFrames);
+    const bodyClip = lastBodyItem ? scrollClipRect(lastBodyItem.layout || layout) : scrollClipRect(layout);
+    const distance = Math.max(0, lastBodyItem ? (lastBodyItem.stackTop + lastBodyItem.height) - bodyClip.y : 0);
     if (!distance) {
       return { items, distance, totalFrames: safeTargetFrames, speed: 0, freezeFrames: safeTargetFrames };
     }
-    const speed = Math.max(1, Math.ceil(distance / Math.max(1, safeTargetFrames - 1)));
+    const speed = Math.max(1, Math.ceil(distance / Math.max(1, bodyEndFrame - 1)));
     const moveFrames = Math.max(2, Math.ceil(distance / speed) + 1);
     const freezeFrames = Math.max(0, safeTargetFrames - moveFrames);
     return {
@@ -6605,9 +6613,12 @@
       const y = Math.round(item.stackTop - offset);
       const clip = scrollClipRect(item.layout);
       if (!scrollItemIntersectsClip(item, y, clip)) continue;
+      const itemClipY = Math.max(clip.y, y);
+      const itemClipBottom = Math.min(clip.y + clip.height, y + Math.max(1, Number(item.height) || 1));
+      if (itemClipBottom <= itemClipY) continue;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(clip.x, clip.y, clip.width, clip.height);
+      ctx.rect(clip.x, itemClipY, clip.width, itemClipBottom - itemClipY);
       ctx.clip();
       await drawCanvasScrollItem(ctx, item, y);
       ctx.restore();
