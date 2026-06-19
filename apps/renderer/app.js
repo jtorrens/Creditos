@@ -193,7 +193,6 @@
     'Trebuchet MS',
   ];
   const canvasImageCache = new Map();
-  const canvasImageSizeCache = new Map();
 
   els.openXlsxBtn.addEventListener('click', openXlsxFile);
   if (els.openReferenceVideoBtn) els.openReferenceVideoBtn.addEventListener('click', associateReferenceVideo);
@@ -5416,11 +5415,12 @@
       if (!groups.length) return null;
       const sourceFrames = getSelectedScrollSourceFrames(fps);
       const scrollPlan = buildScrollPlan(groups, layout, sourceFrames, segments);
+      const bodyPhase = scrollPlan.phases.find((phase) => phase.name === 'body');
       return {
         mode: 'scroll',
         layout,
         fps,
-        videoStartFrame: segments.preFrames,
+        videoStartFrame: bodyPhase ? bodyPhase.startFrame : segments.preFrames,
         totalFrames: Math.max(1, scrollPlan.totalFrames),
         scrollPlan,
       };
@@ -5656,9 +5656,9 @@
       const max = Math.max(start, end);
       if (offset < min || offset > max) continue;
       const frames = Math.max(1, Math.round(Number(phase.frames) || 1));
+      const speed = Math.max(1, Math.round(Number(phase.speed) || 0));
       if (frames <= 1 || start === end) return Math.max(0, Math.min(totalFrames - 1, Math.round(Number(phase.startFrame) || 0)));
-      const progress = (offset - start) / (end - start);
-      const localFrame = Math.round(progress * (frames - 1));
+      const localFrame = Math.ceil(Math.max(0, offset - start) / speed);
       return Math.max(0, Math.min(totalFrames - 1, Math.round(Number(phase.startFrame) || 0) + localFrame));
     }
     const first = phases[0];
@@ -6520,12 +6520,14 @@
     const sourceFrames = getSelectedScrollSourceFrames(fps);
     const segments = readMovieSegmentSettings(fps);
     const plan = buildScrollPlan(groups, layout, sourceFrames, segments);
+    const bodyPhase = plan.phases.find((phase) => phase.name === 'body');
+    const videoStartFrame = bodyPhase ? bodyPhase.startFrame : segments.preFrames;
     updateMovExportProgress(0, plan.totalFrames);
     await exportMovFramesIncrementally(native, filePath, fps, async (writeFrame) => {
       for (let frame = 0; frame < plan.totalFrames; frame += 1) {
         const blob = await renderScrollFrameToPngBlob(plan, frame, layout, {
           ...renderOptions,
-          videoTime: frame >= segments.preFrames ? (frame - segments.preFrames) / fps : null,
+          videoTime: frame >= videoStartFrame ? (frame - videoStartFrame) / fps : null,
         });
         await writeFrame({
           frameCount: 1,
@@ -6550,7 +6552,6 @@
     };
     safeSegments.postCount = Math.max(0, Math.min(items.length - safeSegments.preCount, safeSegments.postCount));
     const bodyFrames = getMovieBodyTargetFramesOrSource(sourceFrames, getMovieFps());
-    const totalFrames = Math.max(1, safeSegments.preFrames + bodyFrames + safeSegments.postFrames);
     const preEndIndex = safeSegments.preCount - 1;
     const bodyStartIndex = safeSegments.preCount;
     const bodyEndIndex = items.length - safeSegments.postCount - 1;
@@ -6559,33 +6560,15 @@
     const firstPostItem = safeSegments.postCount ? items[items.length - safeSegments.postCount] : null;
     const lastPostItem = safeSegments.postCount ? items[items.length - 1] : null;
     const preEndOffset = lastPreItem ? scrollItemExitOffset(lastPreItem) : 0;
-    const bodyEndTarget = firstPostItem ? scrollItemNormalOffset(firstPostItem) : (lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset);
+    const bodyEndTarget = firstPostItem ? scrollItemEnterOffset(firstPostItem) : (lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset);
     const bodyEndOffset = Math.max(preEndOffset, bodyEndTarget);
     const postEndOffset = lastPostItem ? Math.max(bodyEndOffset, scrollItemNormalOffset(lastPostItem)) : bodyEndOffset;
-    const phases = [
-      {
-        name: 'pre',
-        startFrame: 0,
-        frames: safeSegments.preFrames,
-        startOffset: 0,
-        endOffset: preEndOffset,
-      },
-      {
-        name: 'body',
-        startFrame: safeSegments.preFrames,
-        frames: bodyFrames,
-        startOffset: preEndOffset,
-        endOffset: bodyEndOffset,
-      },
-      {
-        name: 'post',
-        startFrame: safeSegments.preFrames + bodyFrames,
-        frames: safeSegments.postFrames,
-        startOffset: bodyEndOffset,
-        endOffset: postEndOffset,
-      },
-    ];
-    const bodySpeed = bodyFrames > 1 ? Math.max(0, (bodyEndOffset - preEndOffset) / (bodyFrames - 1)) : 0;
+    const prePhase = buildIntegerScrollPhase('pre', 0, safeSegments.preFrames, 0, preEndOffset);
+    const bodyPhase = buildIntegerScrollPhase('body', prePhase.startFrame + prePhase.frames, bodyFrames, preEndOffset, bodyEndOffset);
+    const postPhase = buildIntegerScrollPhase('post', bodyPhase.startFrame + bodyPhase.frames, safeSegments.postFrames, bodyEndOffset, postEndOffset);
+    const phases = [prePhase, bodyPhase, postPhase];
+    const totalFrames = Math.max(1, postPhase.startFrame + postPhase.frames);
+    const bodySpeed = bodyPhase.speed;
     return {
       items,
       distance: postEndOffset,
@@ -6604,6 +6587,39 @@
 
   function scrollItemNormalOffset(item) {
     return Math.max(0, (Number(item.stackTop) || 0) - (Number(item.normalTop) || 0));
+  }
+
+  function scrollItemEnterOffset(item) {
+    const clip = scrollClipRect(item.layout);
+    return Math.max(0, (Number(item.stackTop) || 0) - (clip.y + clip.height));
+  }
+
+  function buildIntegerScrollPhase(name, startFrame, requestedFrames, startOffset, endOffset) {
+    const start = Math.round(Math.max(0, Number(startOffset) || 0));
+    const end = Math.round(Math.max(start, Number(endOffset) || 0));
+    const distance = Math.max(0, end - start);
+    const baseFrames = Math.max(0, Math.round(Number(requestedFrames) || 0));
+    if (!distance) {
+      return {
+        name,
+        startFrame: Math.max(0, Math.round(Number(startFrame) || 0)),
+        frames: baseFrames,
+        startOffset: start,
+        endOffset: end,
+        speed: 0,
+      };
+    }
+    const requestedMoveFrames = Math.max(1, baseFrames - 1);
+    const speed = Math.max(1, Math.floor(distance / requestedMoveFrames) || 1);
+    const frames = Math.max(baseFrames, Math.ceil(distance / speed) + 1);
+    return {
+      name,
+      startFrame: Math.max(0, Math.round(Number(startFrame) || 0)),
+      frames,
+      startOffset: start,
+      endOffset: end,
+      speed,
+    };
   }
 
   function buildScrollItems(groups, layout) {
@@ -6633,7 +6649,7 @@
     const areaHeight = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
     const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length && !title);
     const fullAreaCartela = !!(cartela && !blocks.length && (cartela.manual || imageOnlyCartela));
-    const minHeight = fullAreaCartela ? scrollImageOnlyHeight(cartela, effectiveLayout, areaHeight) : 1;
+    const minHeight = fullAreaCartela ? areaHeight : 1;
     const positioningHeight = fullAreaCartela ? areaHeight : contentHeight;
     const normalTop = effectiveLayout.page_top_margin + verticalOffset(areaHeight, positioningHeight, pdfPageVerticalJustify(group.pages[0])) + (Number(cartela.vertical_offset) || 0);
     return {
@@ -6649,16 +6665,8 @@
       height: Math.max(minHeight, contentHeight),
       stackTop,
       normalTop,
+      fullAreaCartela,
     };
-  }
-
-  function scrollImageOnlyHeight(cartela, layout, areaHeight) {
-    if (!(cartela && cartela.image && cartela.image.data_url)) return Math.max(1, areaHeight);
-    const imageSize = cachedCanvasImageSize(cartela.image.data_url);
-    if (!imageSize) return Math.max(1, Number(layout.page_height) || areaHeight);
-    const scale = Math.max(0.01, Number(cartela.image.scale) || 1);
-    const offsetY = Math.abs(Number(cartela.image.offset_y) || 0);
-    return Math.max(1, areaHeight, (imageSize.height * scale) + (offsetY * 2));
   }
 
   function scrollBlocksForPages(pages) {
@@ -6684,19 +6692,19 @@
       const frames = Math.max(1, Math.round(Number(phase.frames) || 1));
       if (clampedFrame < startFrame) return Math.max(0, Number(phase.startOffset) || 0);
       if (clampedFrame < startFrame + frames) {
-        return interpolateScrollOffset(phase.startOffset, phase.endOffset, clampedFrame - startFrame, frames);
+        return scrollOffsetForPhaseFrame(phase, clampedFrame - startFrame);
       }
     }
     return Math.max(0, Number(phases[phases.length - 1].endOffset) || 0);
   }
 
-  function interpolateScrollOffset(startOffset, endOffset, localFrame, frames) {
-    const start = Math.max(0, Number(startOffset) || 0);
-    const end = Math.max(0, Number(endOffset) || 0);
-    const safeFrames = Math.max(1, Math.round(Number(frames) || 1));
-    if (safeFrames <= 1) return Math.round(end);
-    const clamped = Math.max(0, Math.min(safeFrames - 1, Math.round(Number(localFrame) || 0)));
-    return Math.round(start + ((end - start) * clamped) / (safeFrames - 1));
+  function scrollOffsetForPhaseFrame(phase, localFrame) {
+    const start = Math.round(Math.max(0, Number(phase.startOffset) || 0));
+    const end = Math.round(Math.max(start, Number(phase.endOffset) || 0));
+    const speed = Math.max(0, Math.round(Number(phase.speed) || 0));
+    if (!speed) return start;
+    const clamped = Math.max(0, Math.round(Number(localFrame) || 0));
+    return Math.min(end, start + (clamped * speed));
   }
 
   async function renderScrollFrameToPngBlob(plan, frame, layout, options = {}) {
@@ -6721,9 +6729,12 @@
       const y = Math.round(item.stackTop - offset);
       const clip = scrollClipRect(item.layout);
       if (!scrollItemIntersectsClip(item, y, clip)) continue;
+      const itemClipY = Math.max(clip.y, y);
+      const itemClipBottom = Math.min(clip.y + clip.height, y + Math.max(1, Number(item.height) || 1));
+      if (itemClipBottom <= itemClipY) continue;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(clip.x, clip.y, clip.width, clip.height);
+      ctx.rect(clip.x, itemClipY, clip.width, itemClipBottom - itemClipY);
       ctx.clip();
       await drawCanvasScrollItem(ctx, item, y);
       ctx.restore();
@@ -6793,8 +6804,9 @@
     const width = bitmap.naturalWidth * scale;
     const height = bitmap.naturalHeight * scale;
     const centerX = area.x + (area.width / 2) + (Number(image.offset_x) || 0);
-    const independentCenterY = area.y + (area.height / 2) + (Number(image.offset_y) || 0);
-    const centerY = itemY + (independentCenterY - item.normalTop);
+    const centerY = item.fullAreaCartela
+      ? itemY + (Math.max(1, Number(item.height) || 1) / 2) + (Number(image.offset_y) || 0)
+      : itemY + ((area.y + (area.height / 2) + (Number(image.offset_y) || 0)) - item.normalTop);
     ctx.drawImage(bitmap, centerX - (width / 2), centerY - (height / 2), width, height);
   }
 
@@ -7303,36 +7315,15 @@
     if (canvasImageCache.has(src)) return canvasImageCache.get(src);
     const promise = new Promise((resolve, reject) => {
       const image = new Image();
-      image.onload = () => {
-        canvasImageSizeCache.set(src, {
-          width: image.naturalWidth || image.width || 0,
-          height: image.naturalHeight || image.height || 0,
-        });
-        resolve(image);
-      };
+      image.onload = () => resolve(image);
       image.onerror = () => {
         canvasImageCache.delete(src);
-        canvasImageSizeCache.delete(src);
         reject(new Error('No se pudo cargar la imagen asociada.'));
       };
       image.src = src;
     });
     canvasImageCache.set(src, promise);
     return promise;
-  }
-
-  function cachedCanvasImageSize(src) {
-    const size = canvasImageSizeCache.get(src);
-    if (size) return size;
-    const cached = canvasImageCache.get(src);
-    if (!cached) return null;
-    cached.then((image) => {
-      canvasImageSizeCache.set(src, {
-        width: image.naturalWidth || image.width || 0,
-        height: image.naturalHeight || image.height || 0,
-      });
-    }).catch(() => {});
-    return null;
   }
 
   function verticalOffset(availableHeight, contentHeight, justify) {
