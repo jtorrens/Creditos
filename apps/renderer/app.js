@@ -3010,8 +3010,8 @@
     wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => updateLayoutSetting({ page_left_margin: value })));
     wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => updateLayoutSetting({ page_right_margin: value })));
     wrap.appendChild(sectionLabel('Scroll'));
-    wrap.appendChild(settingsNumberRow('Separación entre páginas', settings.layout.scroll_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_page_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación antes de última', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_last_page_gap: value })));
+    wrap.appendChild(settingsNumberRow('Separación entre cartelas', settings.layout.scroll_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_page_gap: value })));
+    wrap.appendChild(settingsNumberRow('Separación antes de última cartela', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_last_page_gap: value })));
     wrap.appendChild(settingsNumberRow('Fade superior', settings.layout.scroll_fade_up, 0, null, 1, (value) => updateLayoutSetting({ scroll_fade_up: value })));
     wrap.appendChild(settingsNumberRow('Fade inferior', settings.layout.scroll_fade_down, 0, null, 1, (value) => updateLayoutSetting({ scroll_fade_down: value })));
     els.typographySettings.after(wrap);
