@@ -5738,9 +5738,8 @@
       const max = Math.max(start, end);
       if (offset < min || offset > max) continue;
       const frames = Math.max(1, Math.round(Number(phase.frames) || 1));
-      const speed = Math.max(1, Math.round(Number(phase.speed) || 0));
       if (frames <= 1 || start === end) return Math.max(0, Math.min(totalFrames - 1, Math.round(Number(phase.startFrame) || 0)));
-      const localFrame = Math.ceil(Math.max(0, offset - start) / speed);
+      const localFrame = Math.round((Math.max(0, offset - start) * (frames - 1)) / Math.max(1, end - start));
       return Math.max(0, Math.min(totalFrames - 1, Math.round(Number(phase.startFrame) || 0) + localFrame));
     }
     const first = phases[0];
@@ -5782,6 +5781,7 @@
   }
 
   function formatScrollSpeed(value) {
+    if (typeof value === 'string') return value;
     const number = Number(value);
     if (!Number.isFinite(number)) return '0';
     return number.toFixed(2).replace(/\.?0+$/, '');
@@ -6652,7 +6652,7 @@
     const postPhase = buildIntegerScrollPhase('post', bodyPhase.startFrame + bodyPhase.frames, safeSegments.postFrames, bodyEndOffset, postEndOffset);
     const phases = [prePhase, bodyPhase, postPhase];
     const totalFrames = Math.max(1, postPhase.startFrame + postPhase.frames);
-    const bodySpeed = bodyPhase.speed;
+    const bodySpeed = bodyPhase.speedLabel || bodyPhase.speed;
     return {
       items,
       distance: postEndOffset,
@@ -6691,18 +6691,22 @@
         startOffset: start,
         endOffset: end,
         speed: 0,
+        speedLabel: '0',
       };
     }
-    const requestedMoveFrames = Math.max(1, baseFrames - 1);
-    const speed = Math.max(1, Math.floor(distance / requestedMoveFrames) || 1);
-    const frames = Math.max(baseFrames, Math.ceil(distance / speed) + 1);
+    const frames = Math.max(2, baseFrames);
+    const moveFrames = Math.max(1, frames - 1);
+    const averageSpeed = distance / moveFrames;
+    const minStep = Math.floor(averageSpeed);
+    const maxStep = Math.ceil(averageSpeed);
     return {
       name,
       startFrame: Math.max(0, Math.round(Number(startFrame) || 0)),
       frames,
       startOffset: start,
       endOffset: end,
-      speed,
+      speed: averageSpeed,
+      speedLabel: minStep === maxStep ? String(minStep) : `${minStep}-${maxStep}`,
     };
   }
 
@@ -6817,10 +6821,11 @@
   function scrollOffsetForPhaseFrame(phase, localFrame) {
     const start = Math.round(Math.max(0, Number(phase.startOffset) || 0));
     const end = Math.round(Math.max(start, Number(phase.endOffset) || 0));
-    const speed = Math.max(0, Math.round(Number(phase.speed) || 0));
-    if (!speed) return start;
+    const distance = Math.max(0, end - start);
+    const frames = Math.max(1, Math.round(Number(phase.frames) || 1));
+    if (!distance || frames <= 1) return start;
     const clamped = Math.max(0, Math.round(Number(localFrame) || 0));
-    return Math.min(end, start + (clamped * speed));
+    return Math.min(end, start + Math.round((distance * Math.min(clamped, frames - 1)) / (frames - 1)));
   }
 
   async function renderScrollFrameToPngBlob(plan, frame, layout, options = {}) {
