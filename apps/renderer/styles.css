@@ -1257,6 +1257,7 @@ textarea.text-input {
   align-items: center;
   border-bottom: 1px solid var(--line);
   display: flex;
+  gap: 12px;
   justify-content: space-between;
   margin: -2px 0 10px;
   padding-bottom: 10px;
@@ -1270,6 +1271,23 @@ textarea.text-input {
 .material-header span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.material-actions {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.block-lock-button {
+  min-width: 36px;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.block-lock-button.active {
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .music-themes {
