@@ -193,6 +193,7 @@
     'Trebuchet MS',
   ];
   const canvasImageCache = new Map();
+  const canvasImageSizeCache = new Map();
 
   els.openXlsxBtn.addEventListener('click', openXlsxFile);
   if (els.openReferenceVideoBtn) els.openReferenceVideoBtn.addEventListener('click', associateReferenceVideo);
@@ -5689,10 +5690,19 @@
       els.previewFrameInput.value = String(Math.max(0, Math.min(totalFrames - 1, state.previewAnimation.frame)));
     }
     if (els.previewFrameStatus) {
+      const speedText = plan.mode === 'scroll' && plan.scrollPlan
+        ? ` · ${formatScrollSpeed(plan.scrollPlan.bodySpeed)} px/frame`
+        : '';
       els.previewFrameStatus.textContent = totalFrames
-        ? `${formatFrameDuration(state.previewAnimation.frame, plan.fps)} / ${formatFrameDuration(totalFrames, plan.fps)}`
+        ? `${formatFrameDuration(state.previewAnimation.frame, plan.fps)} / ${formatFrameDuration(totalFrames, plan.fps)}${speedText}`
         : '0/0';
     }
+  }
+
+  function formatScrollSpeed(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return '0';
+    return number.toFixed(2).replace(/\.?0+$/, '');
   }
 
   function togglePreviewAnimation() {
@@ -6546,9 +6556,11 @@
     const bodyEndIndex = items.length - safeSegments.postCount - 1;
     const lastPreItem = preEndIndex >= 0 ? items[preEndIndex] : null;
     const lastBodyItem = bodyEndIndex >= bodyStartIndex ? items[bodyEndIndex] : lastPreItem;
+    const firstPostItem = safeSegments.postCount ? items[items.length - safeSegments.postCount] : null;
     const lastPostItem = safeSegments.postCount ? items[items.length - 1] : null;
     const preEndOffset = lastPreItem ? scrollItemExitOffset(lastPreItem) : 0;
-    const bodyEndOffset = lastBodyItem ? Math.max(preEndOffset, scrollItemExitOffset(lastBodyItem)) : preEndOffset;
+    const bodyEndTarget = firstPostItem ? scrollItemNormalOffset(firstPostItem) : (lastBodyItem ? scrollItemExitOffset(lastBodyItem) : preEndOffset);
+    const bodyEndOffset = Math.max(preEndOffset, bodyEndTarget);
     const postEndOffset = lastPostItem ? Math.max(bodyEndOffset, scrollItemNormalOffset(lastPostItem)) : bodyEndOffset;
     const phases = [
       {
@@ -6579,6 +6591,7 @@
       distance: postEndOffset,
       totalFrames,
       speed: bodySpeed,
+      bodySpeed,
       phases,
       segments: safeSegments,
     };
@@ -6620,7 +6633,7 @@
     const areaHeight = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
     const imageOnlyCartela = !!(cartela && cartela.image && cartela.image.data_url && !blocks.length && !title);
     const fullAreaCartela = !!(cartela && !blocks.length && (cartela.manual || imageOnlyCartela));
-    const minHeight = fullAreaCartela ? areaHeight : 1;
+    const minHeight = fullAreaCartela ? scrollImageOnlyHeight(cartela, effectiveLayout, areaHeight) : 1;
     const positioningHeight = fullAreaCartela ? areaHeight : contentHeight;
     const normalTop = effectiveLayout.page_top_margin + verticalOffset(areaHeight, positioningHeight, pdfPageVerticalJustify(group.pages[0])) + (Number(cartela.vertical_offset) || 0);
     return {
@@ -6637,6 +6650,15 @@
       stackTop,
       normalTop,
     };
+  }
+
+  function scrollImageOnlyHeight(cartela, layout, areaHeight) {
+    if (!(cartela && cartela.image && cartela.image.data_url)) return Math.max(1, areaHeight);
+    const imageSize = cachedCanvasImageSize(cartela.image.data_url);
+    if (!imageSize) return Math.max(1, Number(layout.page_height) || areaHeight);
+    const scale = Math.max(0.01, Number(cartela.image.scale) || 1);
+    const offsetY = Math.abs(Number(cartela.image.offset_y) || 0);
+    return Math.max(1, areaHeight, (imageSize.height * scale) + (offsetY * 2));
   }
 
   function scrollBlocksForPages(pages) {
@@ -7281,15 +7303,36 @@
     if (canvasImageCache.has(src)) return canvasImageCache.get(src);
     const promise = new Promise((resolve, reject) => {
       const image = new Image();
-      image.onload = () => resolve(image);
+      image.onload = () => {
+        canvasImageSizeCache.set(src, {
+          width: image.naturalWidth || image.width || 0,
+          height: image.naturalHeight || image.height || 0,
+        });
+        resolve(image);
+      };
       image.onerror = () => {
         canvasImageCache.delete(src);
+        canvasImageSizeCache.delete(src);
         reject(new Error('No se pudo cargar la imagen asociada.'));
       };
       image.src = src;
     });
     canvasImageCache.set(src, promise);
     return promise;
+  }
+
+  function cachedCanvasImageSize(src) {
+    const size = canvasImageSizeCache.get(src);
+    if (size) return size;
+    const cached = canvasImageCache.get(src);
+    if (!cached) return null;
+    cached.then((image) => {
+      canvasImageSizeCache.set(src, {
+        width: image.naturalWidth || image.width || 0,
+        height: image.naturalHeight || image.height || 0,
+      });
+    }).catch(() => {});
+    return null;
   }
 
   function verticalOffset(availableHeight, contentHeight, justify) {
