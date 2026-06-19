@@ -32,7 +32,13 @@
             <div class="project-db-panel">
               <div class="field-grid">
                 <label for="databaseStatus">Base de datos</label>
-                <span id="databaseStatus" class="settings-status">Inicializando base de datos...</span>
+                <div class="database-sync-row">
+                  <span id="databaseStatus" class="settings-status">Inicializando base de datos...</span>
+                  <div class="database-sync-actions">
+                    <button id="downloadDatabaseBtn" type="button">Bajar de GitHub</button>
+                    <button id="uploadDatabaseBtn" type="button">Subir a GitHub</button>
+                  </div>
+                </div>
               </div>
               <select id="productionSelect" class="hidden-input" aria-hidden="true" tabindex="-1"></select>
               <div class="production-manager">

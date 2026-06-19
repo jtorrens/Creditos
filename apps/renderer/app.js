@@ -10,7 +10,6 @@
     activeTab: 'settings',
     databasePath: null,
     databaseSyncStatus: null,
-    databaseSyncPromptShown: false,
     productions: [],
     episodes: [],
     importModels: [],
@@ -54,6 +53,8 @@
     newCartelaBtn: document.getElementById('newCartelaBtn'),
     xlsxInput: document.getElementById('xlsxInput'),
     databaseStatus: document.getElementById('databaseStatus'),
+    downloadDatabaseBtn: document.getElementById('downloadDatabaseBtn'),
+    uploadDatabaseBtn: document.getElementById('uploadDatabaseBtn'),
     productionSelect: document.getElementById('productionSelect'),
     productionList: document.getElementById('productionList'),
     showCreateProductionBtn: document.getElementById('showCreateProductionBtn'),
@@ -301,6 +302,8 @@
   els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
   els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
   els.exportMovBtn.addEventListener('click', exportMov);
+  if (els.downloadDatabaseBtn) els.downloadDatabaseBtn.addEventListener('click', () => syncDatabaseManually('download'));
+  if (els.uploadDatabaseBtn) els.uploadDatabaseBtn.addEventListener('click', () => syncDatabaseManually('upload'));
   window.addEventListener('resize', () => {
     renderVisiblePanelPreviews();
     if (state.activeTab === 'pdf' && state.pngPreviewZoomMode === 'auto') renderPdfPreview();
@@ -330,7 +333,7 @@
     await loadNativePreferences();
     setupResizablePanels();
     await initializeDatabase();
-    await refreshDatabaseSyncStatus({ promptOnRemote: true });
+    await refreshDatabaseSyncStatus();
 
     loadSystemFonts({ silent: true });
     renderProjectSelectors();
@@ -415,16 +418,17 @@
     const status = state.databaseSyncStatus;
     const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
     let suffix = '';
-    if (status && status.conflict) suffix = ' · conflicto con GitHub';
-    else if (status && status.remoteChanged) suffix = ' · DB mas reciente en GitHub';
-    else if (status && status.localChanged) suffix = ' · cambios locales pendientes';
+    if (status && status.conflict) suffix = ' · DB distinta en local y GitHub';
+    else if (status && status.remoteChanged) suffix = ' · GitHub tiene otra DB';
+    else if (status && status.localChanged) suffix = ' · DB local pendiente de subir';
+    else if (status && status.available) suffix = ' · sincronizada';
     els.databaseStatus.textContent = `${pathText}${suffix}`;
     els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && (status.remoteChanged || status.conflict)));
-    els.databaseStatus.classList.toggle('db-sync-pending', Boolean(status && status.localChanged && !status.remoteChanged && !status.conflict));
+    els.databaseStatus.classList.toggle('db-sync-ok', Boolean(status && !status.remoteChanged && !status.conflict));
     els.databaseStatus.title = status && status.message ? status.message : pathText;
   }
 
-  async function refreshDatabaseSyncStatus(options = {}) {
+  async function refreshDatabaseSyncStatus() {
     const native = nativeBridge();
     if (!native || !native.getDatabaseSyncStatus) return;
     try {
@@ -433,27 +437,6 @@
       state.databaseSyncStatus = { message: error.message, error: error.message };
     }
     updateDatabaseStatus();
-    if (options.promptOnRemote) await promptForRemoteDatabaseIfNeeded();
-  }
-
-  async function promptForRemoteDatabaseIfNeeded() {
-    const status = state.databaseSyncStatus;
-    const native = nativeBridge();
-    if (state.databaseSyncPromptShown || !status || !status.remoteChanged) return;
-    state.databaseSyncPromptShown = true;
-
-    if (!native || !native.chooseDatabaseConflictAction) {
-      window.alert('GitHub tiene una version distinta de la base de datos. Sincroniza desde Git/VS para elegir que version conservar.');
-      return;
-    }
-    const result = await native.chooseDatabaseConflictAction({ conflict: status.conflict, localChanged: status.localChanged });
-    if (!result || result.action === 'cancel') return;
-    try {
-      await applyDatabaseSyncAction(result.action);
-    } catch (error) {
-      window.alert('No se pudo resolver la sincronizacion de DB: ' + error.message);
-      await refreshDatabaseSyncStatus();
-    }
   }
 
   async function applyDatabaseSyncAction(action) {
@@ -472,6 +455,29 @@
     updateDatabaseStatus();
     await initializeDatabase({ silent: true });
     await refreshDatabaseSyncStatus();
+  }
+
+  async function syncDatabaseManually(action) {
+    const native = nativeBridge();
+    if (!native || !native.confirm) {
+      window.alert('La sincronizacion solo esta disponible desde la app de escritorio.');
+      return;
+    }
+    const isDownload = action === 'download';
+    const result = await native.confirm({
+      title: isDownload ? 'Bajar DB de GitHub' : 'Subir DB a GitHub',
+      message: isDownload
+        ? 'Esto reemplazara la base de datos local por la version de GitHub.'
+        : 'Esto subira la base de datos local a GitHub y reemplazara la version remota.',
+      confirmLabel: isDownload ? 'Bajar de GitHub' : 'Subir a GitHub',
+    });
+    if (!result || !result.confirmed) return;
+    try {
+      await applyDatabaseSyncAction(action);
+    } catch (error) {
+      window.alert('No se pudo sincronizar la DB: ' + error.message);
+      await refreshDatabaseSyncStatus();
+    }
   }
 
   function renderProjectSelectors() {
