@@ -323,9 +323,10 @@ async function resolveFfprobePath() {
   ]);
 }
 
-function runCommand(command, args) {
+function runCommand(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    if (options.onSpawn) options.onSpawn(child);
     let stderr = '';
     child.stderr.on('data', (chunk) => {
       stderr += chunk.toString();
@@ -570,20 +571,33 @@ async function writeMovFrameSequence(tempDir, bytes, frameCount, startIndex) {
   return frameIndex;
 }
 
-async function finalizeMovExport(tempDir, outputPath, fps) {
+const MOV_ENCODING_ARGS = {
+  prores_proxy: ['-c:v', 'prores_ks', '-profile:v', '0', '-pix_fmt', 'yuv422p10le', '-vendor', 'apl0'],
+  prores_lt: ['-c:v', 'prores_ks', '-profile:v', '1', '-pix_fmt', 'yuv422p10le', '-vendor', 'apl0'],
+  prores_422: ['-c:v', 'prores_ks', '-profile:v', '2', '-pix_fmt', 'yuv422p10le', '-vendor', 'apl0'],
+  prores_422_hq: ['-c:v', 'prores_ks', '-profile:v', '3', '-pix_fmt', 'yuv422p10le', '-vendor', 'apl0'],
+  prores_4444: ['-c:v', 'prores_ks', '-profile:v', '4', '-pix_fmt', 'yuva444p10le', '-alpha_bits', '16', '-vendor', 'apl0'],
+  prores_4444_xq: ['-c:v', 'prores_ks', '-profile:v', '5', '-pix_fmt', 'yuva444p10le', '-alpha_bits', '16', '-vendor', 'apl0'],
+  h264_light: ['-c:v', 'libx264', '-preset', 'medium', '-b:v', '8M', '-maxrate', '10M', '-bufsize', '16M', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'],
+  h264_standard: ['-c:v', 'libx264', '-preset', 'medium', '-b:v', '20M', '-maxrate', '25M', '-bufsize', '40M', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'],
+  h264_high: ['-c:v', 'libx264', '-preset', 'slow', '-b:v', '40M', '-maxrate', '50M', '-bufsize', '80M', '-pix_fmt', 'yuv420p', '-movflags', '+faststart'],
+};
+
+function normalizeMovEncodingProfile(value) {
+  return Object.prototype.hasOwnProperty.call(MOV_ENCODING_ARGS, value) ? value : 'prores_4444';
+}
+
+async function finalizeMovExport(tempDir, outputPath, fps, encodingProfile = 'prores_4444', options = {}) {
   const ffmpegPath = await resolveFfmpegPath();
+  const profile = normalizeMovEncodingProfile(encodingProfile);
   await runCommand(ffmpegPath, [
     '-y',
     '-framerate', String(fps),
     '-start_number', '0',
     '-i', path.join(tempDir, 'frame_%08d.png'),
-    '-c:v', 'prores_ks',
-    '-profile:v', '4',
-    '-pix_fmt', 'yuva444p10le',
-    '-alpha_bits', '16',
-    '-vendor', 'apl0',
+    ...MOV_ENCODING_ARGS[profile],
     outputPath,
-  ]);
+  ], options);
 }
 
 ipcMain.handle('creditos:get-app-info', async () => {
@@ -613,10 +627,10 @@ ipcMain.handle('creditos:force-database-to-github', async () => {
 
 ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Abrir XLSX',
+    title: 'Asociar archivo de créditos',
     defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
     properties: ['openFile'],
-    filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    filters: [{ name: 'Hojas de cálculo', extensions: ['xlsx', 'ods'] }],
   });
   if (result.canceled || !result.filePaths[0]) return { canceled: true };
   const filePath = result.filePaths[0];
@@ -681,8 +695,9 @@ ipcMain.handle('creditos:export-png-sequence', async (_event, payload) => {
 });
 
 ipcMain.handle('creditos:choose-mov-path', async (_event, payload) => {
+  const profile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
   const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Exportar MOV ProRes 4444',
+    title: profile.startsWith('h264_') ? 'Exportar MOV H.264' : 'Exportar MOV ProRes',
     defaultPath: payload && payload.defaultPath ? payload.defaultPath : 'creditos.mov',
     filters: movFilters(),
   });
@@ -694,6 +709,7 @@ ipcMain.handle('creditos:choose-mov-path', async (_event, payload) => {
 ipcMain.handle('creditos:export-mov-sequence', async (_event, payload) => {
   const pages = (payload && payload.pages) || [];
   const fps = Math.max(1, Math.round(Number(payload && payload.fps) || 25));
+  const encodingProfile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
   const outputPath = payload && payload.filePath ? ensureMovExtension(payload.filePath) : null;
   if (!outputPath) throw new Error('No hay ruta de salida para el MOV.');
   if (!pages.length) throw new Error('No hay páginas para exportar.');
@@ -709,7 +725,7 @@ ipcMain.handle('creditos:export-mov-sequence', async (_event, payload) => {
     }
 
     if (!frameIndex) throw new Error('No se generaron frames para el MOV.');
-    await finalizeMovExport(tempDir, outputPath, fps);
+    await finalizeMovExport(tempDir, outputPath, fps, encodingProfile);
     return { canceled: false, filePath: outputPath, name: path.basename(outputPath), frames: frameIndex, fps };
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
@@ -718,11 +734,12 @@ ipcMain.handle('creditos:export-mov-sequence', async (_event, payload) => {
 
 ipcMain.handle('creditos:start-mov-export', async (_event, payload) => {
   const fps = Math.max(1, Math.round(Number(payload && payload.fps) || 25));
+  const encodingProfile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
   const outputPath = payload && payload.filePath ? ensureMovExtension(payload.filePath) : null;
   if (!outputPath) throw new Error('No hay ruta de salida para el MOV.');
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-mov-'));
   const exportId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  movExportSessions.set(exportId, { tempDir, outputPath, fps, frameIndex: 0 });
+  movExportSessions.set(exportId, { tempDir, outputPath, fps, encodingProfile, frameIndex: 0 });
   return { exportId };
 });
 
@@ -740,13 +757,20 @@ ipcMain.handle('creditos:finish-mov-export', async (_event, payload) => {
   const exportId = payload && payload.exportId;
   const session = movExportSessions.get(exportId);
   if (!session) throw new Error('La sesión de exportación MOV ya no existe.');
-  movExportSessions.delete(exportId);
+  session.finalizing = true;
   try {
     if (!session.frameIndex) throw new Error('No se generaron frames para el MOV.');
-    await finalizeMovExport(session.tempDir, session.outputPath, session.fps);
+    await finalizeMovExport(session.tempDir, session.outputPath, session.fps, session.encodingProfile, {
+      onSpawn: (child) => {
+        session.ffmpegProcess = child;
+        if (session.cancelRequested) child.kill('SIGTERM');
+      },
+    });
     return { canceled: false, filePath: session.outputPath, name: path.basename(session.outputPath), frames: session.frameIndex, fps: session.fps };
   } finally {
+    movExportSessions.delete(exportId);
     await fs.rm(session.tempDir, { recursive: true, force: true });
+    if (session.cancelRequested) await fs.rm(session.outputPath, { force: true });
   }
 });
 
@@ -754,6 +778,11 @@ ipcMain.handle('creditos:cancel-mov-export', async (_event, payload) => {
   const exportId = payload && payload.exportId;
   const session = movExportSessions.get(exportId);
   if (!session) return { canceled: true };
+  if (session.finalizing) {
+    session.cancelRequested = true;
+    if (session.ffmpegProcess) session.ffmpegProcess.kill('SIGTERM');
+    return { canceled: true };
+  }
   movExportSessions.delete(exportId);
   await fs.rm(session.tempDir, { recursive: true, force: true });
   return { canceled: true };

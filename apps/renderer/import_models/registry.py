@@ -1,10 +1,11 @@
-from . import standard_credits_xls
+from . import standard_credits_xls, traz_credits_ods
 
 
 DEFAULT_IMPORT_MODEL_ID = standard_credits_xls.IMPORT_MODEL["id"]
 
 IMPORT_MODELS = {
     standard_credits_xls.IMPORT_MODEL["id"]: standard_credits_xls.IMPORT_MODEL,
+    traz_credits_ods.IMPORT_MODEL["id"]: traz_credits_ods.IMPORT_MODEL,
 }
 
 

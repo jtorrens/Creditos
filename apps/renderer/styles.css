@@ -271,6 +271,7 @@ button.primary:hover {
 
 .movie-duration-fields,
 .movie-mode-fields,
+.movie-encoding-fields,
 .movie-segment-fields {
   align-items: center;
   display: grid;
@@ -826,6 +827,19 @@ button.primary:hover {
   justify-content: flex-end;
 }
 
+.mov-export-progress {
+  accent-color: var(--accent);
+  height: 12px;
+  width: 100%;
+}
+
+.mov-export-counter {
+  color: var(--ink);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 .block-list {
   height: calc(100% - 96px);
   overflow: auto;
@@ -864,10 +878,75 @@ button.primary:hover {
 
 .image-file-name {
   color: var(--muted);
+  display: block;
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.cartela-image-actions {
+  margin-bottom: 8px;
+}
+
+.cartela-images-empty {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+.cartela-images-table-wrap {
+  margin-bottom: 14px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.cartela-images-table {
+  border-collapse: collapse;
+  min-width: 520px;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.cartela-images-table th,
+.cartela-images-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 4px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.cartela-images-table th {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cartela-images-table th:first-child,
+.cartela-images-table td:first-child {
+  min-width: 14ch;
+}
+
+.cartela-images-table th:not(:first-child),
+.cartela-images-table td:not(:first-child) {
+  white-space: nowrap;
+  width: 9ch;
+}
+
+.cartela-images-table th:last-child,
+.cartela-images-table td:last-child {
+  width: 74px;
+}
+
+.cartela-images-table .compact-number-input {
+  max-width: 8ch;
+  min-width: 8ch;
+  width: 8ch;
+}
+
+.cartela-images-table .compact-action {
+  min-height: 30px;
+  padding: 5px 7px;
 }
 
 .style-preview,
@@ -1134,6 +1213,13 @@ textarea.text-input {
   min-height: 30px;
   padding: 5px 7px;
   width: 100%;
+}
+
+textarea.preview-input,
+textarea.visual-input {
+  min-height: 30px;
+  overflow: hidden;
+  resize: none;
 }
 
 .preview-input:hover,
@@ -1479,7 +1565,7 @@ textarea.text-input {
   min-width: 0;
   overflow: visible;
   text-overflow: clip;
-  white-space: nowrap;
+  white-space: pre-wrap;
 }
 
 .visual-input {
@@ -1627,15 +1713,29 @@ textarea.text-input {
 .margin-guide.vertical {
   height: 100%;
   top: 0;
-  transform: translateX(-1px);
-  width: 2px;
+  transform: translateX(-0.5px);
+  width: 1px;
 }
 
 .margin-guide.horizontal {
-  height: 2px;
+  height: 1px;
   left: 0;
-  transform: translateY(-1px);
+  transform: translateY(-0.5px);
   width: 100%;
+}
+
+.margin-guide.vertical.center {
+  background: none;
+  border-left: 1px dashed #ff2438;
+  transform: none;
+  width: 0;
+}
+
+.margin-guide.horizontal.center {
+  background: none;
+  border-top: 1px dashed #ff2438;
+  height: 0;
+  transform: none;
 }
 
 .pdf-page-inner {
@@ -1679,6 +1779,12 @@ textarea.text-input {
   text-align: center;
 }
 
+.visual-static,
+.pdf-page-title,
+.pdf-block-title {
+  white-space: pre-line;
+}
+
 .pdf-block-content {
   display: grid;
   row-gap: 0;
@@ -1704,7 +1810,7 @@ textarea.text-input {
   min-width: 0;
   overflow: visible;
   text-overflow: clip;
-  white-space: nowrap;
+  white-space: pre-line;
 }
 
 .pdf-role,

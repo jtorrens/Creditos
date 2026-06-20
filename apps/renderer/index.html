@@ -136,12 +136,12 @@
         <div class="structure-file-panel">
           <label for="episodeSelect">Capítulo</label>
           <select id="episodeSelect" class="text-input"></select>
-          <button id="openXlsxBtn" class="primary" type="button">Asociar XLS</button>
+          <button id="openXlsxBtn" class="primary" type="button">Asociar archivo</button>
           <button id="openReferenceVideoBtn" type="button">Asociar vídeo</button>
           <button id="clearReferenceVideoBtn" type="button">Quitar vídeo</button>
           <button id="copyEpisodeStylesBtn" type="button">Asignar estilos...</button>
-          <input id="xlsxInput" class="hidden-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-          <span id="xlsxFileStatus">Sin XLS asociado</span>
+          <input id="xlsxInput" class="hidden-input" type="file" accept=".xlsx,.ods,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.oasis.opendocument.spreadsheet">
+          <span id="xlsxFileStatus">Sin archivo asociado</span>
           <span id="referenceVideoStatus">Sin vídeo de referencia</span>
         </div>
         <div class="workspace cartelas-workspace">
@@ -163,7 +163,7 @@
               <span id="editorKind"></span>
             </div>
             <div id="editorBody" class="editor-body empty-state">
-              Carga un XLSX y selecciona una cartela.
+              Asocia un archivo de créditos y selecciona una cartela.
             </div>
           </section>
           <div class="panel-resizer" data-resizer="cartelas-right" aria-hidden="true"></div>
@@ -252,6 +252,18 @@
                   </div>
                 </div>
                 <div class="export-subgroup">
+                  <div class="mini-label">Codificación MOV</div>
+                  <div class="movie-encoding-fields">
+                    <label for="movieCodecSelect">Códec</label>
+                    <select id="movieCodecSelect" class="text-input">
+                      <option value="prores">ProRes</option>
+                      <option value="h264">H.264</option>
+                    </select>
+                    <label for="movieEncodingProfileSelect">Perfil</label>
+                    <select id="movieEncodingProfileSelect" class="text-input"></select>
+                  </div>
+                </div>
+                <div class="export-subgroup">
                   <div class="mini-label">Duración MOV</div>
                   <div class="movie-duration-fields">
                     <label for="movieRangeDurationInput">Actual</label>
@@ -285,6 +297,10 @@
                     <input id="exportIncludeVideoInput" type="checkbox">
                     <span>Incluir vídeo</span>
                   </label>
+                  <label class="check-row">
+                    <input id="exportIncludeMarginsInput" type="checkbox">
+                    <span>Incluir márgenes</span>
+                  </label>
                 </div>
                 <div class="export-actions">
                   <button id="exportCurrentPdfBtn" type="button">Exportar página actual</button>
@@ -294,7 +310,7 @@
               </div>
             </aside>
             <div id="pdfPreview" class="pdf-preview empty-state">
-              Carga un XLSX para ver las páginas.
+              Asocia un archivo de créditos para ver las páginas.
             </div>
           </div>
         </div>

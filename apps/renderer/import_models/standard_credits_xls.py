@@ -10,6 +10,17 @@ NS = {
     "rel": "http://schemas.openxmlformats.org/package/2006/relationships",
 }
 XMLNS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
+ODS_NS = {
+    "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
+    "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
+    "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0",
+    "style": "urn:oasis:names:tc:opendocument:xmlns:style:1.0",
+    "fo": "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0",
+}
+
+
+def ods_attr(namespace, name):
+    return f"{{{ODS_NS[namespace]}}}{name}"
 
 
 def col_from_ref(ref):
@@ -109,7 +120,8 @@ def workbook_sheets(zip_file):
 
 def choose_sheet(sheets):
     for sheet in sheets:
-        if sheet["name"].lower() == "rodillo final":
+        normalized_name = re.sub(r"[\s_]+", " ", sheet["name"].lower()).strip()
+        if normalized_name == "rodillo final":
             return sheet
     for sheet in sheets:
         if sheet["is_active"]:
@@ -146,6 +158,120 @@ def read_sheet_rows(zip_file, sheet_path):
                 }
             )
     return rows
+
+
+def read_ods_styles(zip_file, content_root):
+    style_nodes = list(content_root.findall(".//style:style", ODS_NS))
+    if "styles.xml" in zip_file.namelist():
+        styles_root = ET.fromstring(zip_file.read("styles.xml"))
+        style_nodes.extend(styles_root.findall(".//style:style", ODS_NS))
+
+    definitions = {}
+    for node in style_nodes:
+        name = node.attrib.get(ods_attr("style", "name"))
+        if not name:
+            continue
+        text_properties = node.find("style:text-properties", ODS_NS)
+        definitions[name] = {
+            "parent": node.attrib.get(ods_attr("style", "parent-style-name")),
+            "bold": bool(
+                text_properties is not None
+                and text_properties.attrib.get(ods_attr("fo", "font-weight")) == "bold"
+            ),
+        }
+
+    def is_bold(style_name, seen=None):
+        if not style_name or style_name not in definitions:
+            return False
+        seen = set(seen or ())
+        if style_name in seen:
+            return False
+        seen.add(style_name)
+        definition = definitions[style_name]
+        return definition["bold"] or is_bold(definition["parent"], seen)
+
+    return {name: is_bold(name) for name in definitions}
+
+
+def ods_cell_text(cell):
+    paragraphs = cell.findall("text:p", ODS_NS)
+    if paragraphs:
+        text = "\n".join("".join(paragraph.itertext()) for paragraph in paragraphs).strip()
+        if text:
+            return text
+    for attribute in ("string-value", "value", "boolean-value", "date-value", "time-value"):
+        value = cell.attrib.get(ods_attr("office", attribute))
+        if value is not None:
+            return str(value).strip()
+    return ""
+
+
+def read_ods_sheet_rows(table, bold_styles):
+    rows = []
+    logical_row = 0
+    cell_tag = ods_attr("table", "table-cell")
+    covered_tag = ods_attr("table", "covered-table-cell")
+
+    for row_node in table.findall("table:table-row", ODS_NS):
+        row_repeats = max(1, int(row_node.attrib.get(ods_attr("table", "number-rows-repeated"), "1")))
+        values = {"A": "", "B": "", "C": "", "D": ""}
+        styles = {}
+        bold = {}
+        merged_b_to_d = False
+        column_index = 0
+
+        for cell in row_node:
+            if cell.tag not in {cell_tag, covered_tag}:
+                continue
+            repeats = max(1, int(cell.attrib.get(ods_attr("table", "number-columns-repeated"), "1")))
+            span = max(1, int(cell.attrib.get(ods_attr("table", "number-columns-spanned"), "1")))
+            style_name = cell.attrib.get(ods_attr("table", "style-name"))
+            value = ods_cell_text(cell) if cell.tag == cell_tag else ""
+            if column_index == 1 and span >= 3:
+                merged_b_to_d = True
+            for offset in range(repeats):
+                current_index = column_index + offset
+                if current_index > 3:
+                    break
+                column = chr(ord("A") + current_index)
+                values[column] = value if offset == 0 else ""
+                if style_name:
+                    styles[column] = style_name
+                    bold[column] = bold_styles.get(style_name, False)
+            column_index += repeats
+            if column_index > 3:
+                break
+
+        for _ in range(row_repeats):
+            logical_row += 1
+            if any(values.values()):
+                rows.append(
+                    {
+                        "row": logical_row,
+                        "values": dict(values),
+                        "styles": dict(styles),
+                        "bold": dict(bold),
+                        "merged_b_to_d": merged_b_to_d,
+                    }
+                )
+    return rows
+
+
+def read_ods_workbook(zip_file):
+    root = ET.fromstring(zip_file.read("content.xml"))
+    bold_styles = read_ods_styles(zip_file, root)
+    tables = root.findall(".//table:table", ODS_NS)
+    sheets = [
+        {
+            "index": index,
+            "name": table.attrib.get(ods_attr("table", "name"), f"Hoja {index + 1}"),
+            "table": table,
+            "is_active": index == 0,
+        }
+        for index, table in enumerate(tables)
+    ]
+    sheet = choose_sheet(sheets)
+    return sheets, sheet, read_ods_sheet_rows(sheet["table"], bold_styles)
 
 
 def new_block(row, group, title, block_type):
@@ -394,6 +520,6 @@ def parse(file_bytes, source_name, options=None):
 IMPORT_MODEL = {
     "id": "standard_credits_xls",
     "label": "XLS Créditos Buendía",
-    "source_kinds": ["xls", "xlsx"],
+    "source_kinds": ["xlsx"],
     "parse": parse,
 }
