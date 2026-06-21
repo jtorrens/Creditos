@@ -151,7 +151,7 @@
     ['name', 'Nombre'],
   ];
   const BLOCK_TYPOGRAPHY_FIELDS = TYPOGRAPHY_FIELDS.filter(([key]) => key !== 'page_header');
-  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'];
+  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'];
   const LANGUAGE_OPTIONS = [
     ['es', 'Español'],
     ['en', 'English'],
@@ -1051,7 +1051,10 @@
       delete target.block_style;
     }
 
-    const explicitTitleTypography = explicitCartelaTitleTypography(sourceRaw && sourceRaw.title_typography);
+    const explicitTitleTypography = explicitCartelaTitleTypography(
+      sourceRaw && sourceRaw.title_typography,
+      getEffectiveStyleTitleTypography(getStyleById(target.style_id)).page_header
+    );
     if (Object.keys(explicitTitleTypography).length) {
       target.title_typography = explicitTitleTypography;
     } else {
@@ -1061,10 +1064,10 @@
     applyExplicitSourceRefSettings(target, source, sourceRaw);
   }
 
-  function explicitCartelaTitleTypography(rawTypography) {
+  function explicitCartelaTitleTypography(rawTypography, upperTypography = getProductionSettings().typography.page_header) {
     const output = {};
     const normalized = normalizeTitleTypographyOverrides(rawTypography);
-    const base = getProductionSettings().typography.page_header;
+    const base = upperTypography || getProductionSettings().typography.page_header;
     const value = normalized.page_header || {};
     Object.keys(value).forEach((key) => {
       if (sameStyleValue(value[key], base && base[key])) return;
@@ -2043,7 +2046,7 @@
 
     return {
       schema: 'credits_structure_json',
-      version: 11,
+      version: 12,
       source_sheet: source.sheet || '',
       source_file: source.meta && source.meta.loaded_file ? source.meta.loaded_file : source.source || '',
       cartelas: cleanCartelas,
@@ -2156,7 +2159,7 @@
   function migrateStructure(structure) {
     if (!structure) return null;
     if (Array.isArray(structure.cartelas)) {
-      structure.version = Math.max(Number(structure.version) || 0, 11);
+      structure.version = Math.max(Number(structure.version) || 0, 12);
       structure.page_breaks = structure.page_breaks || {};
       structure.page_line_adjustments = structure.page_line_adjustments || {};
       structure.preview_settings = normalizePreviewSettings(structure.preview_settings || {});
@@ -2172,7 +2175,7 @@
     if (Array.isArray(structure.pages)) {
       return {
         schema: 'credits_structure_json',
-        version: 11,
+        version: 12,
         source_sheet: structure.source_sheet || '',
         source_file: structure.source_file || '',
         cartelas: structure.pages.map((page, index) => ({
@@ -2203,7 +2206,7 @@
       };
     }
 
-    structure.version = Math.max(Number(structure.version) || 0, 11);
+    structure.version = Math.max(Number(structure.version) || 0, 12);
     structure.page_breaks = structure.page_breaks || {};
     structure.page_line_adjustments = structure.page_line_adjustments || {};
     delete structure.settings;
@@ -2244,6 +2247,7 @@
         page_height: 1080,
         page_background: '#ffffff',
         block_gap: 10,
+        block_title_gap: 10,
         scroll_page_gap: 0,
         scroll_last_page_gap: 0,
         scroll_fade_up: 0,
@@ -2256,6 +2260,7 @@
 
   function normalizeSettings(settings) {
     const defaults = defaultSettings();
+    const hasBlockTitleGap = !!(settings && settings.layout && settings.layout.block_title_gap !== undefined);
     const normalized = {
       ...defaults,
       ...settings,
@@ -2291,6 +2296,9 @@
     normalized.layout.page_height = Math.max(1, Number(normalized.layout.page_height) || defaults.layout.page_height);
     normalized.layout.page_background = normalizeColor(normalized.layout.page_background || defaults.layout.page_background);
     normalized.layout.block_gap = Math.max(0, Number.isFinite(Number(normalized.layout.block_gap)) ? Number(normalized.layout.block_gap) : defaults.layout.block_gap);
+    normalized.layout.block_title_gap = hasBlockTitleGap
+      ? Math.max(0, Number.isFinite(Number(normalized.layout.block_title_gap)) ? Number(normalized.layout.block_title_gap) : defaults.layout.block_title_gap)
+      : normalized.layout.block_gap;
     normalized.layout.scroll_page_gap = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_page_gap)) ? Number(normalized.layout.scroll_page_gap) : defaults.layout.scroll_page_gap);
     normalized.layout.scroll_last_page_gap = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_last_page_gap)) ? Number(normalized.layout.scroll_last_page_gap) : defaults.layout.scroll_last_page_gap);
     normalized.layout.scroll_fade_up = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_fade_up)) ? Number(normalized.layout.scroll_fade_up) : defaults.layout.scroll_fade_up);
@@ -2581,7 +2589,7 @@
 
     const render = {
       schema: 'credits_render_json',
-      version: 8,
+      version: 9,
       source_sheet: source.sheet || '',
       settings: {
         language: productionSettings.language,
@@ -2614,12 +2622,13 @@
             use_protected_capitalization: normalizeBoolean(effectiveCartela.use_protected_capitalization, true),
             auto_text_wrap: normalizeBoolean(effectiveCartela.auto_text_wrap, false),
             images: cartelaImages(cartela),
-            title_typography: normalizeTitleTypographyOverrides(cartela.title_typography),
+            title_typography: getEffectiveCartelaTitleTypography(cartela),
             line_spacing: Math.max(0.1, Number(effectiveCartela.line_spacing) || 1.12),
             column_gap: Math.max(0, Number(effectiveCartela.column_gap) || 0),
             role_name_gap: Math.max(0, Number(effectiveCartela.role_name_gap) || 0),
             source_group_gap: Math.max(0, Number(effectiveCartela.source_group_gap) || 0),
             block_gap: Math.max(0, Number(effectiveCartela.block_gap) || 0),
+            block_title_gap: Math.max(0, Number(effectiveCartela.block_title_gap) || 0),
             page_top_margin: Math.max(0, Number(effectiveCartela.page_top_margin) || 0),
             page_bottom_margin: Math.max(0, Number(effectiveCartela.page_bottom_margin) || 0),
             page_left_margin: Math.max(0, Number(effectiveCartela.page_left_margin) || 0),
@@ -3139,13 +3148,14 @@
     const id = safeStyleId(json.id || fileBase);
     return {
       schema: 'credits_cartela_style_json',
-      version: 1,
+      version: 2,
       id,
       name: String(json.name || fileBase || id),
       file_name: file.name || `${id}.json`,
       filePath: file.filePath || null,
       fileHandle: file.handle || null,
       cartela: sanitizeStyleCartelaOverrides(json.cartela || json),
+      title_typography: normalizeTitleTypographyOverrides(json.title_typography || {}),
       block: sanitizeStyleBlockOverrides(json.block || {}),
     };
   }
@@ -3161,6 +3171,7 @@
       role_name_gap: Math.max(0, Number(value.role_name_gap) || 0),
       source_group_gap: Math.max(0, Number(value.source_group_gap) || 0),
       block_gap: Math.max(0, Number(value.block_gap) || 0),
+      block_title_gap: Math.max(0, Number(value.block_title_gap) || 0),
       page_top_margin: Math.max(0, Number(value.page_top_margin) || 0),
       page_bottom_margin: Math.max(0, Number(value.page_bottom_margin) || 0),
       page_left_margin: Math.max(0, Number(value.page_left_margin) || 0),
@@ -3196,6 +3207,7 @@
     if (value.role_name_gap !== undefined) output.role_name_gap = Math.max(0, Number(value.role_name_gap) || 0);
     if (value.source_group_gap !== undefined) output.source_group_gap = Math.max(0, Number(value.source_group_gap) || 0);
     if (value.block_gap !== undefined) output.block_gap = Math.max(0, Number(value.block_gap) || 0);
+    if (value.block_title_gap !== undefined) output.block_title_gap = Math.max(0, Number(value.block_title_gap) || 0);
     if (value.page_top_margin !== undefined) output.page_top_margin = Math.max(0, Number(value.page_top_margin) || 0);
     if (value.page_bottom_margin !== undefined) output.page_bottom_margin = Math.max(0, Number(value.page_bottom_margin) || 0);
     if (value.page_left_margin !== undefined) output.page_left_margin = Math.max(0, Number(value.page_left_margin) || 0);
@@ -3225,6 +3237,29 @@
     };
   }
 
+  function getEffectiveStyleTitleTypography(style) {
+    const base = getProductionSettings().typography.page_header;
+    const overrides = normalizeTitleTypographyOverrides(style && style.title_typography ? style.title_typography : {});
+    return {
+      page_header: {
+        ...base,
+        ...(overrides.page_header || {}),
+      },
+    };
+  }
+
+  function getEffectiveCartelaTitleTypography(cartela) {
+    const style = getStyleById(cartela && cartela.style_id);
+    const upper = getEffectiveStyleTitleTypography(style).page_header;
+    const overrides = normalizeTitleTypographyOverrides(cartela && cartela.title_typography ? cartela.title_typography : {});
+    return {
+      page_header: {
+        ...upper,
+        ...(overrides.page_header || {}),
+      },
+    };
+  }
+
   function baseStyleCartelaFromSettings() {
     const settings = getProductionSettings();
     return normalizeStyleCartela({
@@ -3237,6 +3272,7 @@
       role_name_gap: settings.layout.role_name_gap,
       source_group_gap: settings.layout.source_group_gap,
       block_gap: settings.layout.block_gap,
+      block_title_gap: settings.layout.block_title_gap,
       page_top_margin: settings.layout.page_top_margin,
       page_bottom_margin: settings.layout.page_bottom_margin,
       page_left_margin: settings.layout.page_left_margin,
@@ -3284,13 +3320,18 @@
     return !!(style && style.block && style.block.typography && style.block.typography[key] && Object.keys(style.block.typography[key]).length);
   }
 
+  function hasStyleTitleTypographyOverride(style) {
+    return !!(style && style.title_typography && style.title_typography.page_header && Object.keys(style.title_typography.page_header).length);
+  }
+
   function serializeCartelaStyle(style) {
     return {
       schema: 'credits_cartela_style_json',
-      version: 1,
+      version: 2,
       id: style.id,
       name: style.name,
       cartela: sanitizeStyleCartelaOverrides(style.cartela || {}),
+      title_typography: normalizeTitleTypographyOverrides(style.title_typography || {}),
       block: sanitizeStyleBlockOverrides(style.block || {}),
     };
   }
@@ -3337,6 +3378,7 @@
     wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
     wrap.appendChild(settingsNumberRow('Separación de grupos del origen', settings.layout.source_group_gap, 0, null, 1, (value) => updateLayoutSetting({ source_group_gap: value })));
     wrap.appendChild(settingsNumberRow('Separación entre bloques', settings.layout.block_gap, 0, null, 1, (value) => updateLayoutSetting({ block_gap: value })));
+    wrap.appendChild(settingsNumberRow('Separación título/primera fila', settings.layout.block_title_gap, 0, null, 1, (value) => updateLayoutSetting({ block_title_gap: value })));
     wrap.appendChild(settingsNumberRow('Margen superior de página', settings.layout.page_top_margin, 0, null, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
     wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
     wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => updateLayoutSetting({ page_left_margin: value })));
@@ -3645,6 +3687,7 @@
     wrap.appendChild(localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => updateStyleCartela(style, { role_name_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => resetStyleCartelaOverride(style, 'role_name_gap') }));
     wrap.appendChild(localNumberRow('Separación de grupos del origen', cartela.source_group_gap, 0, null, (value) => updateStyleCartela(style, { source_group_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'source_group_gap'), reset: () => resetStyleCartelaOverride(style, 'source_group_gap') }));
     wrap.appendChild(localNumberRow('Separación entre bloques', cartela.block_gap, 0, null, (value) => updateStyleCartela(style, { block_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_gap'), reset: () => resetStyleCartelaOverride(style, 'block_gap') }));
+    wrap.appendChild(localNumberRow('Separación título/primera fila', cartela.block_title_gap, 0, null, (value) => updateStyleCartela(style, { block_title_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_title_gap'), reset: () => resetStyleCartelaOverride(style, 'block_title_gap') }));
     wrap.appendChild(localNumberRow('Margen superior', cartela.page_top_margin, 0, null, (value) => updateStyleCartela(style, { page_top_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_top_margin'), reset: () => resetStyleCartelaOverride(style, 'page_top_margin') }));
     wrap.appendChild(localNumberRow('Margen inferior', cartela.page_bottom_margin, 0, null, (value) => updateStyleCartela(style, { page_bottom_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_bottom_margin'), reset: () => resetStyleCartelaOverride(style, 'page_bottom_margin') }));
     wrap.appendChild(localNumberRow('Margen izquierdo', cartela.page_left_margin, 0, null, (value) => updateStyleCartela(style, { page_left_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_left_margin'), reset: () => resetStyleCartelaOverride(style, 'page_left_margin') }));
@@ -3653,6 +3696,7 @@
     wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(cartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { auto_text_wrap: normalizeBoolean(value, false) }), { override: hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => resetStyleCartelaOverride(style, 'auto_text_wrap') }));
     wrap.appendChild(localSelectRow('Capitalización', cartela.text_capitalization, TEXT_CAPITALIZATION_OPTIONS, (value) => updateStyleCartela(style, { text_capitalization: value }), { override: hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => resetStyleCartelaOverride(style, 'text_capitalization') }));
     wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(cartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => resetStyleCartelaOverride(style, 'use_protected_capitalization') }));
+    wrap.appendChild(renderStyleTitleTypographyControls(style));
 
     wrap.appendChild(sectionLabel('Bloque'));
     const block = getEffectiveStyleBlock(style);
@@ -3836,6 +3880,114 @@
     return wrap;
   }
 
+  function renderStyleTitleTypographyControls(style) {
+    const wrap = document.createElement('div');
+    wrap.className = 'block-typography-settings';
+    wrap.appendChild(sectionLabel('Tipografía del título de cartela'));
+    const base = getProductionSettings().typography.page_header;
+    const value = getEffectiveStyleTitleTypography(style).page_header;
+    const fontCatalog = getFontCatalog();
+    const row = document.createElement('div');
+    row.className = 'typography-row block-typography-row' + (hasStyleTitleTypographyOverride(style) ? ' override-field' : '');
+    const label = document.createElement('label');
+    label.textContent = 'Cabecera';
+    row.appendChild(label);
+
+    const sizeInput = document.createElement('input');
+    sizeInput.className = 'text-input compact-number-input';
+    sizeInput.type = 'number';
+    sizeInput.min = '1';
+    sizeInput.value = String(value.font_size);
+    sizeInput.addEventListener('change', () => updateStyleTitleTypography(style, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+    row.appendChild(sizeInput);
+
+    const fontSelect = document.createElement('select');
+    fontSelect.className = 'text-input font-family-select';
+    fontCatalog.families.forEach((font) => {
+      const option = document.createElement('option');
+      option.value = font;
+      option.textContent = font;
+      fontSelect.appendChild(option);
+    });
+    if (!fontCatalog.families.includes(value.font_family)) {
+      const option = document.createElement('option');
+      option.value = value.font_family;
+      option.textContent = value.font_family;
+      fontSelect.appendChild(option);
+    }
+    fontSelect.value = value.font_family;
+    fontSelect.addEventListener('change', () => {
+      const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+      updateStyleTitleTypography(style, {
+        font_family: fontSelect.value,
+        font_style: nextStyle.style,
+        font_postscript_name: nextStyle.postscript_name,
+      });
+    });
+    row.appendChild(fontSelect);
+
+    const styleSelect = document.createElement('select');
+    styleSelect.className = 'text-input compact-select';
+    const styles = getFontStyles(value.font_family);
+    styles.forEach((fontStyle) => {
+      const option = document.createElement('option');
+      option.value = fontStyle.style;
+      option.textContent = fontStyle.style;
+      option.dataset.postscriptName = fontStyle.postscript_name || '';
+      styleSelect.appendChild(option);
+    });
+    if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
+      const option = document.createElement('option');
+      option.value = value.font_style;
+      option.textContent = value.font_style;
+      option.dataset.postscriptName = value.font_postscript_name || '';
+      styleSelect.appendChild(option);
+    }
+    styleSelect.value = value.font_style;
+    styleSelect.addEventListener('change', () => {
+      const selected = styleSelect.selectedOptions[0];
+      updateStyleTitleTypography(style, {
+        font_style: styleSelect.value,
+        font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+      });
+    });
+    row.appendChild(styleSelect);
+
+    const colorInput = document.createElement('input');
+    colorInput.className = 'color-input';
+    colorInput.type = 'color';
+    colorInput.value = normalizeColor(value.color);
+    colorInput.addEventListener('input', () => updateStyleTitleTypography(style, { color: colorInput.value }));
+    row.appendChild(colorInput);
+
+    if (hasStyleTitleTypographyOverride(style)) {
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.textContent = 'Restablecer';
+      resetButton.addEventListener('click', () => resetStyleTitleTypographyOverride(style));
+      row.appendChild(resetButton);
+    }
+    wrap.appendChild(row);
+    return wrap;
+  }
+
+  function updateStyleTitleTypography(style, fields) {
+    const current = style.title_typography && style.title_typography.page_header ? style.title_typography.page_header : {};
+    const next = normalizeTitleTypographyOverrides({ page_header: { ...current, ...fields } });
+    const base = getProductionSettings().typography.page_header;
+    Object.keys(next.page_header || {}).forEach((key) => {
+      if (sameStyleValue(next.page_header[key], base && base[key])) delete next.page_header[key];
+    });
+    style.title_typography = next.page_header && Object.keys(next.page_header).length ? next : {};
+    updateStyleAfterOverrideChange(style);
+  }
+
+  function resetStyleTitleTypographyOverride(style) {
+    if (!style) return;
+    style.title_typography = {};
+    updateStyleAfterOverrideChange(style);
+  }
+
   function updateStyleTypography(style, key, fields) {
     const block = sanitizeStyleBlockOverrides(style.block || {});
     block.typography = normalizeTypographyOverrides({
@@ -3864,11 +4016,12 @@
     const id = uniqueStyleId('nuevo_estilo');
     const style = {
       schema: 'credits_cartela_style_json',
-      version: 1,
+      version: 2,
       id,
       name: 'Nuevo estilo',
       file_name: `${id}.json`,
       cartela: {},
+      title_typography: {},
       block: {},
     };
     state.styles.push(style);
@@ -3883,11 +4036,12 @@
     const id = uniqueStyleId(safeStyleId(`${source.id}_copia`));
     const style = {
       schema: 'credits_cartela_style_json',
-      version: 1,
+      version: 2,
       id,
       name: `${source.name} copia`,
       file_name: `${id}.json`,
       cartela: sanitizeStyleCartelaOverrides(source.cartela || {}),
+      title_typography: normalizeTitleTypographyOverrides(source.title_typography || {}),
       block: sanitizeStyleBlockOverrides(source.block || {}),
     };
     state.styles.push(style);
@@ -3980,6 +4134,7 @@
       id: 'style_preview',
       title: style.name,
       ...getEffectiveStyleCartela(style),
+      title_typography: getEffectiveStyleTitleTypography(style),
       style_id: style.id,
     };
     const block = getEffectiveStyleBlock(style);
@@ -4061,6 +4216,7 @@
     wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateCartela({ role_name_gap: value }), 1, { override: isCartelaOverride(cartela, 'role_name_gap'), reset: () => resetCartelaOverride('role_name_gap') }));
     wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateCartela({ source_group_gap: value }), 1, { override: isCartelaOverride(cartela, 'source_group_gap'), reset: () => resetCartelaOverride('source_group_gap') }));
     wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateCartela({ block_gap: value }), 1, { override: isCartelaOverride(cartela, 'block_gap'), reset: () => resetCartelaOverride('block_gap') }));
+    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateCartela({ block_title_gap: value }), 1, { override: isCartelaOverride(cartela, 'block_title_gap'), reset: () => resetCartelaOverride('block_title_gap') }));
     wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateCartela({ page_top_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_top_margin'), reset: () => resetCartelaOverride('page_top_margin') }));
     wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateCartela({ page_bottom_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetCartelaOverride('page_bottom_margin') }));
     wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateCartela({ page_left_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_left_margin'), reset: () => resetCartelaOverride('page_left_margin') }));
@@ -4230,7 +4386,7 @@
   function hasCartelaStyleOverrides(cartela) {
     if (!cartela || !cartela.style_id) return false;
     if (STYLE_CARTELA_FIELDS.some((key) => cartela[key] !== undefined)) return true;
-    return !!(cartela.block_style && Object.keys(cartela.block_style).length);
+    return hasCartelaTitleTypographyOverride(cartela) || !!(cartela.block_style && Object.keys(cartela.block_style).length);
   }
 
   function clearCartelaStyleOverrides(cartela) {
@@ -4238,6 +4394,7 @@
     STYLE_CARTELA_FIELDS.forEach((key) => {
       delete cartela[key];
     });
+    delete cartela.title_typography;
     delete cartela.block_style;
   }
 
@@ -4516,7 +4673,7 @@
     const fontCatalog = getFontCatalog();
     const key = 'page_header';
     const label = 'Cabecera';
-    const base = settings.typography[key];
+    const base = getEffectiveStyleTitleTypography(getStyleById(cartela && cartela.style_id)).page_header;
     const override = cartela && cartela.title_typography && cartela.title_typography[key] ? cartela.title_typography[key] : {};
     const value = { ...base, ...override };
     const isOverride = hasCartelaTitleTypographyOverride(cartela);
@@ -5062,7 +5219,7 @@
         ...fields,
       },
     });
-    const base = getProductionSettings().typography.page_header;
+    const base = getEffectiveStyleTitleTypography(getStyleById(cartela.style_id)).page_header;
     if (typography.page_header) {
       Object.keys(typography.page_header).forEach((key) => {
         if (sameStyleValue(typography.page_header[key], base && base[key])) delete typography.page_header[key];
@@ -5117,14 +5274,17 @@
   function pruneRedundantStyleOverrides() {
     if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
     state.structure.cartelas.forEach((cartela) => {
-      const titleTypography = explicitCartelaTitleTypography(cartela.title_typography);
+      const style = getStyleById(cartela.style_id);
+      const titleTypography = explicitCartelaTitleTypography(
+        cartela.title_typography,
+        getEffectiveStyleTitleTypography(style).page_header
+      );
       if (Object.keys(titleTypography).length) {
         cartela.title_typography = titleTypography;
       } else {
         delete cartela.title_typography;
       }
 
-      const style = getStyleById(cartela.style_id);
       if (!style) return;
       const styleCartela = getEffectiveStyleCartela(style);
       STYLE_CARTELA_FIELDS.forEach((key) => {
@@ -5159,12 +5319,19 @@
     const settings = getProductionSettings();
     state.styles.forEach((style) => {
       const defaultCartela = baseStyleCartelaFromSettings();
-      ['duration', 'line_spacing', 'column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'].forEach((key) => {
+      ['duration', 'line_spacing', 'column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'].forEach((key) => {
         if (style.cartela && Object.prototype.hasOwnProperty.call(style.cartela, key) && sameStyleValue(style.cartela[key], defaultCartela[key])) {
           delete style.cartela[key];
         }
       });
       if (style.cartela && !Object.keys(style.cartela).length) style.cartela = {};
+
+      const defaultTitle = getProductionSettings().typography.page_header;
+      const titleTypography = normalizeTitleTypographyOverrides(style.title_typography || {});
+      Object.keys(titleTypography.page_header || {}).forEach((key) => {
+        if (sameStyleValue(titleTypography.page_header[key], defaultTitle && defaultTitle[key])) delete titleTypography.page_header[key];
+      });
+      style.title_typography = titleTypography.page_header && Object.keys(titleTypography.page_header).length ? titleTypography : {};
 
       if (!style.block) return;
       const defaultBlock = normalizeStyleBlock({
@@ -6291,6 +6458,7 @@
       role_name_gap: Math.max(0, numberWithFallback(cartela && cartela.role_name_gap, layout.role_name_gap, 0)),
       source_group_gap: Math.max(0, numberWithFallback(cartela && cartela.source_group_gap, layout.source_group_gap, 0)),
       block_gap: Math.max(0, numberWithFallback(cartela && cartela.block_gap, layout.block_gap, 0)),
+      block_title_gap: Math.max(0, numberWithFallback(cartela && cartela.block_title_gap, layout.block_title_gap, 0)),
       page_top_margin: Math.max(0, numberWithFallback(cartela && cartela.page_top_margin, layout.page_top_margin, 0)),
       page_bottom_margin: Math.max(0, numberWithFallback(cartela && cartela.page_bottom_margin, layout.page_bottom_margin, 0)),
       page_left_margin: Math.max(0, numberWithFallback(cartela && cartela.page_left_margin, layout.page_left_margin, 0)),
@@ -8091,7 +8259,7 @@
     if (title) {
       const titleMetrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
       height += canvasTextHeight(title, titleMetrics, width);
-      if (units.length) height += cartelaBlockGap(cartela, layout);
+      if (units.length) height += cartelaBlockTitleGap(cartela, layout);
     }
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
@@ -8116,7 +8284,7 @@
     if (title) {
       const metrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
       drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
-      cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockGap(cartela, layout) : 0);
+      cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(cartela, layout) : 0);
     }
     const columns = Math.max(1, Number(block.columns) || 1);
     const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
@@ -8159,6 +8327,10 @@
 
   function cartelaBlockGap(cartela, layout) {
     return Math.max(0, Number(layout.block_gap) || 0);
+  }
+
+  function cartelaBlockTitleGap(cartela, layout) {
+    return Math.max(0, Number(layout.block_title_gap) || 0);
   }
 
   function roleNameGapForOrientation(layout, orientation) {
@@ -8404,7 +8576,7 @@
     const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela, block.typography, options);
     const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
     if (blockTitle) {
-      if (units.length) blockTitle.style.marginBottom = `${cartelaBlockGap(cartela, layout)}px`;
+      if (units.length) blockTitle.style.marginBottom = `${cartelaBlockTitleGap(cartela, layout)}px`;
       blockEl.appendChild(blockTitle);
     }
 
@@ -8587,7 +8759,7 @@
 
       const units = blockPage.items || [];
       if (blockTitle) {
-        if (units.length) blockTitle.style.marginBottom = `${cartelaBlockGap(cartela, layout)}px`;
+        if (units.length) blockTitle.style.marginBottom = `${cartelaBlockTitleGap(cartela, layout)}px`;
         blockPageEl.appendChild(blockTitle);
       }
       let previousCreditSourceId = null;
