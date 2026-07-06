@@ -797,6 +797,7 @@
     localSelectRow,
   } = appFormRows;
   const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
+    buildPhysicalPages,
     els,
     fitPreviewZoom,
     getPngPreviewZoom: () => state.pngPreviewZoom,
@@ -811,6 +812,7 @@
   });
   const {
     calculateFitPreviewZoom: calculateFitPreviewZoomFromPreviewRender,
+    getCurrentPhysicalPages: getCurrentPhysicalPagesFromPreviewRender,
     getCurrentPngPreviewZoom: getCurrentPngPreviewZoomFromPreviewRender,
     makeMarginOverlay: makeMarginOverlayFromPreviewRender,
     makePdfSheetElement: makePdfSheetElementFromPreviewRender,
@@ -1006,7 +1008,6 @@
     removeCartelaImage,
     updateCartelaImage,
   } = appCartelaImages;
-  let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
   globalThis.CreditosUiBindings.bindAppUi({
@@ -2778,14 +2779,7 @@
   }
 
   function getCurrentPhysicalPages() {
-    if (!state.render || !state.structure) return [];
-    if (currentPhysicalPagesCache.render === state.render) return currentPhysicalPagesCache.pages;
-    const pages = buildPhysicalPages(state.render.cartelas || [], state.structure.overrides || {}, {
-      settings: getProductionSettings(),
-      pageLineAdjustments: state.structure.page_line_adjustments,
-    });
-    currentPhysicalPagesCache = { render: state.render, pages };
-    return pages;
+    return getCurrentPhysicalPagesFromPreviewRender();
   }
 
   function updatePdfToolbar(current, total) {

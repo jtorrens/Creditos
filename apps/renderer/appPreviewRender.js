@@ -1,5 +1,7 @@
 (function (root) {
   function createAppPreviewRender(options = {}) {
+    let currentPhysicalPagesCache = { render: null, pages: [] };
+
     function previewZoomForContainer(container, layout) {
       const availableWidth = Math.max(120, (container && container.clientWidth ? container.clientWidth : 360) - 24);
       const availableHeight = Math.max(120, (container && container.clientHeight ? container.clientHeight : 260) - 24);
@@ -72,9 +74,21 @@
       });
     }
 
+    function getCurrentPhysicalPages() {
+      if (!options.state.render || !options.state.structure) return [];
+      if (currentPhysicalPagesCache.render === options.state.render) return currentPhysicalPagesCache.pages;
+      const pages = options.buildPhysicalPages(options.state.render.cartelas || [], options.state.structure.overrides || {}, {
+        settings: options.getProductionSettings(),
+        pageLineAdjustments: options.state.structure.page_line_adjustments,
+      });
+      currentPhysicalPagesCache = { render: options.state.render, pages };
+      return pages;
+    }
+
     return {
       calculateFitPreviewZoom,
       getCurrentPngPreviewZoom,
+      getCurrentPhysicalPages,
       makeMarginOverlay,
       makePdfSheetElement,
       previewZoomForContainer,
