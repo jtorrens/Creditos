@@ -296,6 +296,7 @@
     getSourceRefColumns,
     getSourceRefTypography,
     getSourceRefVerticalAlign,
+    mergeBlockTypography,
     normalizeBlockAlignment,
     normalizeCartelaStyle,
     normalizeStyleCartela,
@@ -4009,10 +4010,7 @@
           ...((styleBlock && styleBlock.alignment) || {}),
           ...((cartela.block_style && cartela.block_style.alignment) || {}),
         },
-        typography: {
-          ...((styleBlock && styleBlock.typography) || {}),
-          ...((cartela.block_style && cartela.block_style.typography) || {}),
-        },
+        typography: mergeBlockTypography(styleBlock.typography, cartela.block_style.typography),
       });
     }
     if (Object.keys(styleBlock).length) return normalizeStyleBlock(styleBlock);

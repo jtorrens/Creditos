@@ -160,10 +160,7 @@
           ...(base.alignment || {}),
           ...(overrides.alignment || {}),
         },
-        typography: {
-          ...(base.typography || {}),
-          ...(overrides.typography || {}),
-        },
+        typography: mergeBlockTypography(base.typography, overrides.typography),
       });
     }
 
@@ -330,6 +327,25 @@
         : {};
     }
 
+    function mergeBlockTypography(baseTypography = {}, overrideTypography = {}) {
+      const keys = new Set([
+        ...blockTypographyFields.map(([key]) => key),
+        ...Object.keys(baseTypography || {}),
+        ...Object.keys(overrideTypography || {}),
+      ]);
+      const output = {};
+      keys.forEach((key) => {
+        const base = baseTypography && baseTypography[key] ? baseTypography[key] : {};
+        const override = overrideTypography && overrideTypography[key] ? overrideTypography[key] : {};
+        const merged = {
+          ...base,
+          ...override,
+        };
+        if (Object.keys(merged).length) output[key] = merged;
+      });
+      return output;
+    }
+
     return {
       baseStyleCartelaFromSettings,
       clonePlainValue,
@@ -344,6 +360,7 @@
       getSourceRefColumns,
       getSourceRefTypography,
       getSourceRefVerticalAlign,
+      mergeBlockTypography,
       normalizeBlockAlignment,
       normalizeCartelaStyle,
       normalizeStyleCartela,
