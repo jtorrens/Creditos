@@ -838,11 +838,15 @@
     renderPreview,
     renderSettings,
     renderStylesPane,
+    resetCartelaBlockAlignmentOverrideInDomain,
+    resetCartelaBlockOverrideInDomain,
     resetCartelaOverrideInStructure,
     selectedProduction,
     setSelectedProductionLocalFields,
     state,
     stripProductionLayoutFromSettings,
+    updateCartelaBlockAlignmentInDomain,
+    updateCartelaBlockStyleInDomain,
     updateCartelaInStructure,
     windowRef: window,
   });
@@ -2557,39 +2561,19 @@
   }
 
   function updateSelectedCartelaBlockStyle(fields) {
-    const cartela = getSelectedCartela();
-    if (!updateCartelaBlockStyleInDomain(cartela, fields)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedCartelaBlockStyle(fields);
   }
 
   function resetSelectedCartelaBlockOverride(key) {
-    const cartela = getSelectedCartela();
-    if (!resetCartelaBlockOverrideInDomain(cartela, key)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedCartelaBlockOverride(key);
   }
 
   function updateSelectedCartelaBlockAlignment(key, value) {
-    const cartela = getSelectedCartela();
-    if (!updateCartelaBlockAlignmentInDomain(cartela, key, value)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedCartelaBlockAlignment(key, value);
   }
 
   function resetSelectedCartelaBlockAlignmentOverride(key) {
-    const cartela = getSelectedCartela();
-    if (!resetCartelaBlockAlignmentOverrideInDomain(cartela, key)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedCartelaBlockAlignmentOverride(key);
   }
 
   function resetSelectedCartelaBlockTypographyOverride(key) {

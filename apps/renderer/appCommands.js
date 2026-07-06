@@ -99,11 +99,51 @@
       options.refreshPdfIfActive();
     }
 
+    function updateSelectedCartelaBlockStyle(fields) {
+      const cartela = options.getSelectedCartela();
+      if (!options.updateCartelaBlockStyleInDomain(cartela, fields)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetSelectedCartelaBlockOverride(key) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaBlockOverrideInDomain(cartela, key)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function updateSelectedCartelaBlockAlignment(key, value) {
+      const cartela = options.getSelectedCartela();
+      if (!options.updateCartelaBlockAlignmentInDomain(cartela, key, value)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetSelectedCartelaBlockAlignmentOverride(key) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaBlockAlignmentOverrideInDomain(cartela, key)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
     return {
       addEmptyCartela,
       deleteSelectedManualCartela,
       moveSelectedCartelaVisualOrder,
+      resetSelectedCartelaBlockAlignmentOverride,
+      resetSelectedCartelaBlockOverride,
       resetSelectedCartelaOverride,
+      updateSelectedCartelaBlockAlignment,
+      updateSelectedCartelaBlockStyle,
       updateLayoutSetting,
       updateSelectedCartela,
       updateSettings,
