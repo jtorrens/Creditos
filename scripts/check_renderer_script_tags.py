@@ -37,7 +37,14 @@ def main():
 
     if "appComposition.js" in script_set:
         composition_index = scripts.index("appComposition.js")
-        for script in ["export/movPlan.js", "export/frameSequence.js", "ui/field_controls/registry.js"]:
+        for script in [
+            "preview/domPreview.js",
+            "preview/canvasPreview.js",
+            "preview/referenceVideoPreview.js",
+            "export/movPlan.js",
+            "export/frameSequence.js",
+            "ui/field_controls/registry.js",
+        ]:
             if script in script_set and scripts.index(script) > composition_index:
                 errors.append(f"{script} must load before appComposition.js.")
 

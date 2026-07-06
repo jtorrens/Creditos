@@ -556,96 +556,6 @@
     pageIndexForAnimationFrame,
     videoTimeForPage,
   } = timelineDomain;
-  const domPreview = globalThis.CreditosPreviewDom.createDomPreview({
-    applyTypography,
-    cartelaBlockGap,
-    cartelaBlockTitleGap,
-    cartelaImages,
-    contentAreaRect,
-    creditSourceId,
-    documentRef: document,
-    layoutForCartela,
-    normalizeBoolean,
-    normalizeSettings,
-    pdfPageVerticalJustify,
-    roleNameGapForOrientation,
-    transformCartelaText,
-    unitGapBefore,
-    unitRenderOptions,
-  });
-  const {
-    applyTextWrapStyle: applyTextWrapStyleInPreview,
-    makeMarginOverlay: makeMarginOverlayInPreview,
-    makePdfSheetElement: makePdfSheetElementInPreview,
-  } = domPreview;
-  const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview({
-    applyTextCapitalization,
-    cartelaBlockGap,
-    cartelaBlockTitleGap,
-    cartelaImages,
-    contentAreaRect,
-    creditSourceId,
-    documentRef: document,
-    explicitTextLines,
-    fontStyleFromStyle,
-    fontWeightFromStyle,
-    getProductionSettings,
-    layoutForCartela,
-    normalizeBoolean,
-    normalizeLanguage,
-    normalizeTextCapitalization,
-    pdfPageVerticalJustify,
-    quoteFontFamily,
-    roleNameGapForOrientation,
-    scrollClipRect,
-    scrollFullAreaItemClip,
-    scrollItemIntersectsClip,
-    scrollOffsetForFrame,
-    unitGapBefore,
-    unitRenderOptions,
-    verticalOffset,
-  });
-  const {
-    canvasTextHeight: canvasTextHeightInPreview,
-    canvasTextMetrics: canvasTextMetricsInPreview,
-    canvasWrappedTextLines: canvasWrappedTextLinesInPreview,
-    drawCanvasMarginOverlay: drawCanvasMarginOverlayInPreview,
-    drawCanvasPage: drawCanvasPageInPreview,
-    drawCanvasScrollFrame: drawCanvasScrollFrameInPreview,
-    measureCanvasBlock: measureCanvasBlockInPreview,
-  } = canvasPreview;
-  const referenceVideoPreview = globalThis.CreditosPreviewReferenceVideo.createReferenceVideoPreview({
-    documentRef: document,
-    getCurrentFrame: () => state.previewAnimation.frame,
-    getReferenceVideo: () => state.referenceVideo,
-    getReferenceVideoCanvasElement: () => state.referenceVideoCanvasElement,
-    getReferenceVideoCanvasSrc: () => state.referenceVideoCanvasSrc,
-    getReferenceVideoElement: () => state.referenceVideoElement,
-    getReferenceVideoSrc: () => state.referenceVideoSrc,
-    isPlaying: () => state.previewAnimation.playing,
-    normalizeReferenceVideo,
-    setReferenceVideoCanvasElement: (videoEl) => {
-      state.referenceVideoCanvasElement = videoEl;
-    },
-    setReferenceVideoCanvasSrc: (src) => {
-      state.referenceVideoCanvasSrc = src;
-    },
-    setReferenceVideoDuration: (duration) => {
-      state.referenceVideoDuration = duration;
-      updateReferenceVideoDurationField();
-    },
-    setReferenceVideoElement: (videoEl) => {
-      state.referenceVideoElement = videoEl;
-    },
-    setReferenceVideoSrc: (src) => {
-      state.referenceVideoSrc = src;
-    },
-  });
-  const {
-    drawReferenceVideoFrame: drawReferenceVideoFrameInPreview,
-    makeReferenceVideoElement: makeReferenceVideoElementInPreview,
-    referenceVideoForCanvas: referenceVideoForCanvasInPreview,
-  } = referenceVideoPreview;
   const appComposition = globalThis.CreditosAppComposition.createAppComposition({
     documentRef: document,
     exportDependencies: {
@@ -661,12 +571,78 @@
       throwIfCancelled: throwIfMovExportCancelled,
       wait,
     },
+    previewDependencies: {
+      applyTextCapitalization,
+      applyTypography,
+      cartelaBlockGap,
+      cartelaBlockTitleGap,
+      cartelaImages,
+      contentAreaRect,
+      creditSourceId,
+      explicitTextLines,
+      fontStyleFromStyle,
+      fontWeightFromStyle,
+      getCurrentFrame: () => state.previewAnimation.frame,
+      getProductionSettings,
+      getReferenceVideo: () => state.referenceVideo,
+      getReferenceVideoCanvasElement: () => state.referenceVideoCanvasElement,
+      getReferenceVideoCanvasSrc: () => state.referenceVideoCanvasSrc,
+      getReferenceVideoElement: () => state.referenceVideoElement,
+      getReferenceVideoSrc: () => state.referenceVideoSrc,
+      isPlaying: () => state.previewAnimation.playing,
+      layoutForCartela,
+      normalizeBoolean,
+      normalizeLanguage,
+      normalizeReferenceVideo,
+      normalizeSettings,
+      normalizeTextCapitalization,
+      pdfPageVerticalJustify,
+      quoteFontFamily,
+      roleNameGapForOrientation,
+      scrollClipRect,
+      scrollFullAreaItemClip,
+      scrollItemIntersectsClip,
+      scrollOffsetForFrame,
+      setReferenceVideoCanvasElement: (videoEl) => {
+        state.referenceVideoCanvasElement = videoEl;
+      },
+      setReferenceVideoCanvasSrc: (src) => {
+        state.referenceVideoCanvasSrc = src;
+      },
+      setReferenceVideoDuration: (duration) => {
+        state.referenceVideoDuration = duration;
+        updateReferenceVideoDurationField();
+      },
+      setReferenceVideoElement: (videoEl) => {
+        state.referenceVideoElement = videoEl;
+      },
+      setReferenceVideoSrc: (src) => {
+        state.referenceVideoSrc = src;
+      },
+      transformCartelaText,
+      unitGapBefore,
+      unitRenderOptions,
+      verticalOffset,
+    },
   });
   const {
+    applyTextWrapStyle: applyTextWrapStyleInPreview,
     buildPageMoviePlan,
     buildScrollMoviePlan,
+    canvasTextHeight: canvasTextHeightInPreview,
+    canvasTextMetrics: canvasTextMetricsInPreview,
+    canvasWrappedTextLines: canvasWrappedTextLinesInPreview,
+    drawCanvasMarginOverlay: drawCanvasMarginOverlayInPreview,
+    drawCanvasPage: drawCanvasPageInPreview,
+    drawCanvasScrollFrame: drawCanvasScrollFrameInPreview,
+    drawReferenceVideoFrame: drawReferenceVideoFrameInPreview,
     exportMovFramesIncrementally,
     fieldControlRegistry,
+    makeMarginOverlay: makeMarginOverlayInPreview,
+    makePdfSheetElement: makePdfSheetElementInPreview,
+    makeReferenceVideoElement: makeReferenceVideoElementInPreview,
+    measureCanvasBlock: measureCanvasBlockInPreview,
+    referenceVideoForCanvas: referenceVideoForCanvasInPreview,
     writeAnimatedFrames,
     writeRepeatedFrames,
   } = appComposition;
