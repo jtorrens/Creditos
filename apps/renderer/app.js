@@ -796,6 +796,33 @@
     localNumberRow,
     localSelectRow,
   } = appFormRows;
+  const settingsPanel = globalThis.CreditosSettingsPanel.createSettingsPanel({
+    boolSelectValue,
+    currentMovieFps,
+    documentRef: document,
+    els,
+    fieldControlRegistry,
+    formatSecondsAsFrameDuration,
+    getFontCatalog,
+    getFontStyles,
+    getProductionSettings,
+    languageOptions: LANGUAGE_OPTIONS,
+    localInputRow,
+    localSelectRow,
+    makeFontFamilyControl,
+    makeFontSizeControl,
+    makeFontStyleControl,
+    normalizeBoolean,
+    normalizeColor,
+    normalizeProtectedCapitalizationText,
+    sectionLabel,
+    textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
+    typographyFields: TYPOGRAPHY_FIELDS,
+    updateLayoutSetting,
+    updateSettings,
+    updateTypographySetting,
+    yesNoOptions: YES_NO_OPTIONS,
+  });
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1478,58 +1505,7 @@
   }
 
   function renderSettings() {
-    const settings = getProductionSettings();
-    els.defaultDurationInput.value = formatSecondsAsFrameDuration(settings.default_cartela_duration, currentMovieFps());
-    els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
-    els.movieFpsInput.value = String(settings.movie_fps);
-    renderTypographySettings(settings);
-    renderLayoutSettings(settings);
-  }
-
-  function renderTypographySettings(settings) {
-    els.typographySettings.innerHTML = '';
-    els.typographySettings.appendChild(sectionLabel('Tipografia base'));
-    const fontCatalog = getFontCatalog();
-
-    TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
-      const value = settings.typography[key];
-      const row = document.createElement('div');
-      row.className = 'typography-row';
-
-      const labelEl = document.createElement('label');
-      labelEl.textContent = label;
-      row.appendChild(labelEl);
-
-      const sizeInput = makeFontSizeControl(value.font_size, 1, (fontSize) => updateTypographySetting(key, { font_size: fontSize }));
-      row.appendChild(sizeInput);
-
-      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-        updateTypographySetting(key, {
-          font_family: fontFamily,
-          font_style: nextStyle.style,
-          font_postscript_name: nextStyle.postscript_name,
-        });
-        renderSettings();
-      });
-      row.appendChild(fontSelect);
-
-      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-        updateTypographySetting(key, {
-          font_style: fontStyle,
-          font_postscript_name: postscriptName,
-        });
-      });
-      row.appendChild(styleSelect);
-
-      const colorInput = fieldControlRegistry.create('color', {
-        value: normalizeColor(value.color),
-        onInput: (color) => updateTypographySetting(key, { color }),
-      });
-      row.appendChild(colorInput);
-
-      els.typographySettings.appendChild(row);
-    });
+    return settingsPanel.renderSettings();
   }
 
   async function loadSystemFonts(options = {}) {
@@ -1592,69 +1568,6 @@
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
-  }
-
-  function renderLayoutSettings(settings) {
-    const existing = document.getElementById('layoutSettings');
-    if (existing) existing.remove();
-
-    const wrap = document.createElement('div');
-    wrap.id = 'layoutSettings';
-    wrap.className = 'layout-settings';
-    wrap.appendChild(sectionLabel('Composición base'));
-    wrap.appendChild(localSelectRow('Idioma', settings.language, LANGUAGE_OPTIONS, (value) => updateSettings({ language: value })));
-    wrap.appendChild(localSelectRow('Capitalización', settings.text_capitalization, TEXT_CAPITALIZATION_OPTIONS, (value) => updateSettings({ text_capitalization: value })));
-    wrap.appendChild(localInputRow('Capitalización protegida', settings.protected_capitalizations, (value) => updateSettings({ protected_capitalizations: normalizeProtectedCapitalizationText(value) }), { multiline: true, commitOnChange: true }));
-    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(settings.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateSettings({ use_protected_capitalization: normalizeBoolean(value, true) })));
-    wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => updateLayoutSetting({ line_spacing: value })));
-    wrap.appendChild(settingsNumberRow('Separación entre columnas', settings.layout.column_gap, 0, null, 1, (value) => updateLayoutSetting({ column_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => updateLayoutSetting({ role_name_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación de grupos del origen', settings.layout.source_group_gap, 0, null, 1, (value) => updateLayoutSetting({ source_group_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación entre bloques', settings.layout.block_gap, 0, null, 1, (value) => updateLayoutSetting({ block_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación título/primera fila', settings.layout.block_title_gap, 0, null, 1, (value) => updateLayoutSetting({ block_title_gap: value })));
-    wrap.appendChild(settingsNumberRow('Margen superior de página', settings.layout.page_top_margin, 0, null, 1, (value) => updateLayoutSetting({ page_top_margin: value })));
-    wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => updateLayoutSetting({ page_bottom_margin: value })));
-    wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => updateLayoutSetting({ page_left_margin: value })));
-    wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => updateLayoutSetting({ page_right_margin: value })));
-    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(settings.layout.repeat_block_titles), YES_NO_OPTIONS, (value) => updateLayoutSetting({ repeat_block_titles: normalizeBoolean(value, true) })));
-    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(settings.layout.auto_text_wrap), YES_NO_OPTIONS, (value) => updateLayoutSetting({ auto_text_wrap: normalizeBoolean(value, false) })));
-    wrap.appendChild(sectionLabel('Scroll'));
-    wrap.appendChild(settingsNumberRow('Separación entre cartelas', settings.layout.scroll_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_page_gap: value })));
-    wrap.appendChild(settingsNumberRow('Separación antes de última cartela', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => updateLayoutSetting({ scroll_last_page_gap: value })));
-    wrap.appendChild(settingsNumberRow('Fade superior', settings.layout.scroll_fade_up, 0, null, 1, (value) => updateLayoutSetting({ scroll_fade_up: value })));
-    wrap.appendChild(settingsNumberRow('Fade inferior', settings.layout.scroll_fade_down, 0, null, 1, (value) => updateLayoutSetting({ scroll_fade_down: value })));
-    els.typographySettings.after(wrap);
-  }
-
-  function settingsNumberRow(label, value, min, max, step, onInput) {
-    const row = document.createElement('div');
-    row.className = 'field-grid';
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const input = fieldControlRegistry.create('number', {
-      value,
-      min,
-      max,
-      step,
-      onInput,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(input);
-    return row;
-  }
-
-  function settingsColorRow(label, value, onInput) {
-    const row = document.createElement('div');
-    row.className = 'field-grid';
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const input = fieldControlRegistry.create('color', {
-      value: normalizeColor(value),
-      onInput,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(input);
-    return row;
   }
 
   function updateLayoutSetting(fields) {

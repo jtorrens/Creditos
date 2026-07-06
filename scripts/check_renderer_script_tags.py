@@ -17,7 +17,7 @@ def main():
     errors = []
 
     expected_files = ["appApi.js", "appFileOutput.js", "appDatabaseSync.js", "appPreferences.js", "appBootstrap.js", "appProjectState.js", "appAutosave.js", "appReferenceVideo.js", "appSourceImport.js", "appPreviewSettings.js", "appComposition.js", "appFonts.js", "appFormRows.js", "ui/bindings.js"]
-    for folder in ["domain", "preview", "export", "ui/field_controls"]:
+    for folder in ["domain", "preview", "export", "ui/field_controls", "ui/panels"]:
         expected_files.extend(
             path.relative_to(RENDERER_ROOT).as_posix()
             for path in sorted((RENDERER_ROOT / folder).glob("*.js"))
