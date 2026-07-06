@@ -227,6 +227,8 @@
   });
   const {
     createMaterialsFromSource,
+    defaultLayoutForMaterial,
+    defaultOrientationForMaterial,
   } = materialsDomain;
 
   const FONT_OPTIONS = [
@@ -8645,29 +8647,6 @@
       textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
     }));
     return unitEl;
-  }
-
-  function defaultLayoutForMaterial(material) {
-    if (material.type === 'crew_section') return 'roll_section';
-    if (material.type === 'cast') return 'cast_page';
-    if (material.type === 'music_licenses') return 'music_licenses';
-    if (material.type === 'thanks') return 'thanks';
-    if (material.type === 'logos') return 'logos';
-    if (material.type === 'closing') return 'closing';
-    return 'card';
-  }
-
-  function defaultOrientationForMaterial(material) {
-    if (material.type === 'cards') return 'vertical';
-    if (material.type === 'music_licenses') return 'vertical';
-    if (material.type === 'thanks') return 'vertical';
-    if (material.type === 'logos') return 'vertical';
-    if (material.type === 'closing') return 'vertical';
-    if (material.type === 'crew_section') {
-      const hasRoleAndName = (material.items || []).some((item) => item.kind === 'crew_credit');
-      return hasRoleAndName ? 'horizontal' : 'vertical';
-    }
-    return 'horizontal';
   }
 
   function safeFilePart(value) {
