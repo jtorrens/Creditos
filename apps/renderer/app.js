@@ -429,6 +429,7 @@
     resetCartelaOverride: resetCartelaOverrideInStructure,
     structureJsonForOutput,
     updateCartela: updateCartelaInStructure,
+    uniqueCartelaImageId,
   } = structureDomain;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
@@ -2390,17 +2391,6 @@
       if (error && error.name === 'AbortError') return;
       window.alert('No se pudo asociar la imagen: ' + error.message);
     }
-  }
-
-  function uniqueCartelaImageId(images) {
-    const existing = new Set((images || []).map((image) => image.id));
-    let index = existing.size + 1;
-    let candidate = `image_${String(index).padStart(3, '0')}`;
-    while (existing.has(candidate)) {
-      index += 1;
-      candidate = `image_${String(index).padStart(3, '0')}`;
-    }
-    return candidate;
   }
 
   function removeCartelaImage(imageId) {

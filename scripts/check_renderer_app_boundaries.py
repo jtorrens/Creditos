@@ -49,6 +49,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "migrateCartelaImages",
     "cartelaImages",
     "cartelaHasImages",
+    "uniqueCartelaImageId",
     "getCartelaRefs",
     "enforceUniqueMaterialRefs",
     "renderMaterial",

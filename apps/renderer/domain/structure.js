@@ -479,6 +479,17 @@
       return cartelaImages(cartela).length > 0;
     }
 
+    function uniqueCartelaImageId(images) {
+      const existing = new Set((images || []).map((image) => image.id));
+      let index = existing.size + 1;
+      let candidate = `image_${String(index).padStart(3, '0')}`;
+      while (existing.has(candidate)) {
+        index += 1;
+        candidate = `image_${String(index).padStart(3, '0')}`;
+      }
+      return candidate;
+    }
+
     function updateCartela(cartela, fields) {
       if (!cartela) return false;
       Object.assign(cartela, fields || {});
@@ -576,6 +587,7 @@
       resetCartelaOverride,
       structureJsonForOutput,
       updateCartela,
+      uniqueCartelaImageId,
       uniqueCartelaId,
     };
   }
