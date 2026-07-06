@@ -2,7 +2,9 @@
   function createStyleDomain(dependencies = {}) {
     const {
       blockTypographyFields,
-      getEffectiveCartelaBlockStyle,
+      findPageWithRef = () => null,
+      getCartelaRefs = () => [],
+      getCartelaStyleBlock = () => null,
       normalizeBoolean,
       normalizeColor,
       normalizeTextCapitalization,
@@ -321,6 +323,28 @@
       return normalizeTypographyOverrides(settings.typography);
     }
 
+    function getEffectiveCartelaBlockStyle(cartela) {
+      const styleBlock = getCartelaStyleBlock(cartela) || {};
+      if (cartela && cartela.block_style) {
+        return normalizeStyleBlock({
+          ...styleBlock,
+          ...cartela.block_style,
+          alignment: {
+            ...((styleBlock && styleBlock.alignment) || {}),
+            ...((cartela.block_style && cartela.block_style.alignment) || {}),
+          },
+          typography: mergeBlockTypography(styleBlock.typography, cartela.block_style.typography),
+        });
+      }
+      if (Object.keys(styleBlock).length) return normalizeStyleBlock(styleBlock);
+      const firstRef = getCartelaRefs(cartela)[0];
+      const firstPage = firstRef ? findPageWithRef(cartela, firstRef) : null;
+      const settings = firstPage && firstPage.source_ref_settings && firstPage.source_ref_settings[firstRef]
+        ? firstPage.source_ref_settings[firstRef]
+        : {};
+      return normalizeStyleBlock(settings);
+    }
+
     function sourceRefSettings(page, ref) {
       return page && page.source_ref_settings && page.source_ref_settings[ref]
         ? page.source_ref_settings[ref]
@@ -598,6 +622,7 @@
       explicitCartelaTitleTypography,
       explicitSourceRefSettings,
       getEffectiveCartelaTitleTypography,
+      getEffectiveCartelaBlockStyle,
       getEffectiveStyleBlock,
       getEffectiveStyleCartela,
       getEffectiveStyleTitleTypography,

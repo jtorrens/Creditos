@@ -155,6 +155,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "getSourceRefAlignment",
     "getSourceRefVerticalAlign",
     "getSourceRefTypography",
+    "getEffectiveCartelaBlockStyle",
     "hasStyleCartelaOverride",
     "hasStyleBlockOverride",
     "hasStyleBlockAlignmentOverride",

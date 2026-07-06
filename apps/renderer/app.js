@@ -288,7 +288,9 @@
   } = paginationUnitsDomain;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
-    getEffectiveCartelaBlockStyle,
+    findPageWithRef: (cartela, ref) => findPageWithRef(cartela, ref),
+    getCartelaRefs: (cartela) => getCartelaRefs(cartela),
+    getCartelaStyleBlock,
     normalizeBoolean,
     normalizeColor,
     normalizeTextCapitalization,
@@ -301,6 +303,7 @@
     explicitCartelaBlockStyle,
     explicitCartelaTitleTypography,
     explicitSourceRefSettings,
+    getEffectiveCartelaBlockStyle,
     getEffectiveCartelaTitleTypography: getEffectiveCartelaTitleTypographyWithSettings,
     getEffectiveStyleBlock: getEffectiveStyleBlockWithSettings,
     getEffectiveStyleCartela: getEffectiveStyleCartelaWithSettings,
@@ -3975,28 +3978,6 @@
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
-  }
-
-  function getEffectiveCartelaBlockStyle(cartela) {
-    const styleBlock = getCartelaStyleBlock(cartela) || {};
-    if (cartela && cartela.block_style) {
-      return normalizeStyleBlock({
-        ...styleBlock,
-        ...cartela.block_style,
-        alignment: {
-          ...((styleBlock && styleBlock.alignment) || {}),
-          ...((cartela.block_style && cartela.block_style.alignment) || {}),
-        },
-        typography: mergeBlockTypography(styleBlock.typography, cartela.block_style.typography),
-      });
-    }
-    if (Object.keys(styleBlock).length) return normalizeStyleBlock(styleBlock);
-    const firstRef = getCartelaRefs(cartela)[0];
-    const firstPage = firstRef ? findPageWithRef(cartela, firstRef) : null;
-    const settings = firstPage && firstPage.source_ref_settings && firstPage.source_ref_settings[firstRef]
-      ? firstPage.source_ref_settings[firstRef]
-      : {};
-    return normalizeStyleBlock(settings);
   }
 
   function updateSelectedCartelaBlockStyle(fields) {
