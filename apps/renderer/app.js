@@ -2093,7 +2093,6 @@
       .map((style) => normalizeCartelaStyle(style, { name: style.file_name || `${style.id || 'estilo'}.json` }))
       .sort((a, b) => a.name.localeCompare(b.name));
     pruneCurrentRedundantStyleDefaults();
-    syncLoadedStyleSnapshots();
     pruneCurrentRedundantStyleOverrides();
     if (state.source && state.structure) {
       state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
@@ -2495,7 +2494,6 @@
   function updateEditableStyleCartela(style, fields) {
     if (!updateStyleCartelaInDomain(style, fields)) return;
     pruneCurrentRedundantStyleDefaults();
-    syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
@@ -2512,7 +2510,6 @@
   function updateEditableStyleBlock(style, fields) {
     if (!updateStyleBlockInDomain(style, fields)) return;
     pruneCurrentRedundantStyleDefaults();
-    syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
@@ -2524,7 +2521,6 @@
   function updateEditableStyleBlockAlignment(style, key, value) {
     if (!updateStyleBlockAlignmentInDomain(style, key, value)) return;
     pruneCurrentRedundantStyleDefaults();
-    syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
@@ -2545,7 +2541,6 @@
 
   function updateStyleAfterOverrideChange(style) {
     pruneCurrentRedundantStyleDefaults();
-    syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
@@ -2755,7 +2750,6 @@
   function updateEditableStyleTypography(style, key, fields) {
     if (!updateStyleTypographyInDomain(style, key, fields)) return;
     pruneCurrentRedundantStyleDefaults();
-    syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
@@ -3831,23 +3825,6 @@
     renderCartelaPreview();
     refreshPdfIfActive();
     if (options.rerenderEditor) renderEditor();
-  }
-
-  function syncLoadedStyleSnapshots() {
-    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
-    state.structure.cartelas.forEach((cartela) => applyStyleSnapshotToCartela(cartela, getStyleById(cartela.style_id)));
-  }
-
-  function syncStyleSnapshot(styleId) {
-    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
-    const style = getStyleById(styleId);
-    state.structure.cartelas
-      .filter((cartela) => cartela.style_id === styleId)
-      .forEach((cartela) => applyStyleSnapshotToCartela(cartela, style));
-  }
-
-  function applyStyleSnapshotToCartela(cartela, style) {
-    if (!cartela || !style) return;
   }
 
   function pruneCurrentRedundantStyleOverrides() {
