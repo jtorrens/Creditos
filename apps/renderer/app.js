@@ -920,14 +920,22 @@
     state,
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
+    buildPhysicalPages,
     documentRef: document,
     els,
     fieldControlRegistry,
+    getProductionSettings,
+    getRenderLayout,
     getStyleById,
+    layoutForCartela,
+    makeMarginOverlay,
+    makePdfSheetElement,
+    makeSampleStyleRender,
+    previewZoomForContainer,
     renderStyleEditor,
-    renderStylePreview,
     selectedProduction,
     state,
+    updatePanelMarginButtons,
     updateStyleName,
   });
   const appCartelaImages = globalThis.CreditosAppCartelaImages.createAppCartelaImages({
@@ -1571,6 +1579,10 @@
     return stylesPanel.renderStylesPane();
   }
 
+  function renderStylePreview(style) {
+    return stylesPanel.renderStylePreview(style);
+  }
+
   function updateStyleName(style, name) {
     return appCommands.updateStyleName(style, name);
   }
@@ -1782,42 +1794,6 @@
 
   async function deleteSelectedStyle() {
     return appCommands.deleteSelectedStyle();
-  }
-
-  function renderStylePreview(style) {
-    if (!els.stylePreview) return;
-    els.stylePreview.innerHTML = '';
-    if (!style) {
-      els.stylePreview.className = 'style-preview empty-state';
-      els.stylePreview.textContent = 'Sin estilo seleccionado.';
-      return;
-    }
-    els.stylePreview.className = 'style-preview';
-    const layout = getRenderLayout();
-    const settings = getProductionSettings();
-    const pages = buildPhysicalPages(makeSampleStyleRender(style).cartelas, {}, {
-      settings,
-      pageLineAdjustments: {},
-    });
-    const page = pages[0];
-    if (!page) {
-      els.stylePreview.className = 'style-preview empty-state';
-      els.stylePreview.textContent = 'Sin contenido de preview.';
-      return;
-    }
-    const zoom = previewZoomForContainer(els.stylePreview, layout);
-    const frame = document.createElement('div');
-    frame.className = 'png-preview-frame';
-    frame.style.width = `${layout.page_width * zoom}px`;
-    frame.style.height = `${layout.page_height * zoom}px`;
-    const sheet = makePdfSheetElement(page, layout, {
-      settings,
-    });
-    sheet.style.transform = `scale(${zoom})`;
-    frame.appendChild(sheet);
-    if (state.showPanelMarginOverlay) frame.appendChild(makeMarginOverlay(layoutForCartela(layout, page.cartela), zoom));
-    els.stylePreview.appendChild(frame);
-    updatePanelMarginButtons();
   }
 
   function renderEditor() {

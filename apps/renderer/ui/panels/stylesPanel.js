@@ -5,6 +5,44 @@
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
 
+    function renderStylePreview(style) {
+      if (!els.stylePreview) return;
+      els.stylePreview.innerHTML = '';
+      if (!style) {
+        els.stylePreview.className = 'style-preview empty-state';
+        els.stylePreview.textContent = 'Sin estilo seleccionado.';
+        return;
+      }
+      els.stylePreview.className = 'style-preview';
+      const layout = options.getRenderLayout();
+      const settings = options.getProductionSettings();
+      const pages = options.buildPhysicalPages(options.makeSampleStyleRender(style).cartelas, {}, {
+        settings,
+        pageLineAdjustments: {},
+      });
+      const page = pages[0];
+      if (!page) {
+        els.stylePreview.className = 'style-preview empty-state';
+        els.stylePreview.textContent = 'Sin contenido de preview.';
+        return;
+      }
+      const zoom = options.previewZoomForContainer(els.stylePreview, layout);
+      const frame = documentRef.createElement('div');
+      frame.className = 'png-preview-frame';
+      frame.style.width = `${layout.page_width * zoom}px`;
+      frame.style.height = `${layout.page_height * zoom}px`;
+      const sheet = options.makePdfSheetElement(page, layout, {
+        settings,
+      });
+      sheet.style.transform = `scale(${zoom})`;
+      frame.appendChild(sheet);
+      if (state.showPanelMarginOverlay) {
+        frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
+      }
+      els.stylePreview.appendChild(frame);
+      options.updatePanelMarginButtons();
+    }
+
     function renderStylesPane() {
       if (!els.styleList) return;
       els.styleList.innerHTML = '';
@@ -64,7 +102,7 @@
         els.styleEditorMeta.textContent = '';
         els.styleEditorBody.className = 'editor-body empty-state';
         els.styleEditorBody.textContent = options.selectedProduction() ? 'Crea o importa un estilo.' : 'Selecciona una producción.';
-        options.renderStylePreview(null);
+        renderStylePreview(null);
         return;
       }
 
@@ -73,10 +111,11 @@
       els.styleEditorBody.className = 'editor-body';
       els.styleEditorBody.innerHTML = '';
       els.styleEditorBody.appendChild(options.renderStyleEditor(style));
-      options.renderStylePreview(style);
+      renderStylePreview(style);
     }
 
     return {
+      renderStylePreview,
       renderStylesPane,
     };
   }
