@@ -222,6 +222,18 @@
     syncDatabaseManually,
     updateDatabaseStatus,
   } = appDatabaseSync;
+  const appFileOutput = globalThis.CreditosAppFileOutput.createAppFileOutput({
+    documentRef: document,
+    nativeBridge,
+    windowRef: window,
+  });
+  const {
+    blobToBytes,
+    downloadBlob,
+    saveBlobAs,
+    wait,
+    writeBlobToDirectory,
+  } = appFileOutput;
   const coreDomainComposition = globalThis.CreditosAppComposition.createCoreDomainComposition({
     languageLocales: LANGUAGE_LOCALES,
     languageOptions: LANGUAGE_OPTIONS,
@@ -4264,56 +4276,6 @@
 
   function canvasWrappedTextLines(text, metrics, width = Infinity) {
     return canvasWrappedTextLinesInPreview(text, metrics, width);
-  }
-
-  function downloadBlob(blob, fileName) {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(link.href);
-  }
-
-  async function saveBlobAs(blob, fileName) {
-    const native = nativeBridge();
-    if (native && native.savePng) {
-      await native.savePng({ fileName, bytes: await blobToBytes(blob) });
-      return;
-    }
-
-    if (!window.showSaveFilePicker) {
-      downloadBlob(blob, fileName);
-      return;
-    }
-    const handle = await window.showSaveFilePicker({
-      suggestedName: fileName,
-      types: [
-        {
-          description: 'PNG',
-          accept: { 'image/png': ['.png'] },
-        },
-      ],
-    });
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-  }
-
-  async function blobToBytes(blob) {
-    return await blob.arrayBuffer();
-  }
-
-  async function writeBlobToDirectory(directory, fileName, blob) {
-    const handle = await directory.getFileHandle(fileName, { create: true });
-    const writable = await handle.createWritable();
-    await writable.write(blob);
-    await writable.close();
-  }
-
-  function wait(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
   function applyTextWrapStyle(element, cartela) {
