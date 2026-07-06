@@ -52,6 +52,12 @@ MOVED_DOMAIN_FUNCTIONS = [
     "normalizePreviewSettings",
     "normalizeRenderCodec",
     "normalizeRenderProfile",
+    "getPageFrameCount",
+    "formatFrameDuration",
+    "formatSecondsAsFrameDuration",
+    "parseFrameDuration",
+    "distributeFrames",
+    "fitPageFrameCountsToTarget",
 ]
 
 
