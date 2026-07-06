@@ -1236,6 +1236,21 @@
     windowRef: window,
     yesNoOptions: YES_NO_OPTIONS,
   });
+  const appMainEditor = globalThis.CreditosAppMainEditor.createAppMainEditor({
+    documentRef: document,
+    els,
+    escapeHtml,
+    getCartelaDisplayName,
+    getCartelaRefs,
+    getEffectiveCartela,
+    getSelectedCartela,
+    renderCartelaFields,
+    renderCartelaPreview,
+    renderMaterialEditor,
+    renderSourceRefControls,
+    sectionLabel,
+    state,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -1744,35 +1759,7 @@
   }
 
   function renderEditor() {
-    if (!state.source || !state.selectedCartelaId) {
-      els.editorTitle.textContent = 'Sin cartela seleccionada';
-      els.editorKind.textContent = '';
-      els.editorBody.className = 'editor-body empty-state';
-      els.editorBody.textContent = 'Asocia un archivo de créditos y selecciona una cartela.';
-      renderCartelaPreview();
-      return;
-    }
-
-    const cartela = getSelectedCartela();
-    if (!cartela) return;
-
-    els.editorTitle.textContent = getCartelaDisplayName(cartela, state.materials);
-    els.editorKind.innerHTML = `<span class="tag cards">${escapeHtml(cartela.type || 'cartela')}</span>`;
-    els.editorBody.className = 'editor-body preview-mode';
-    els.editorBody.innerHTML = '';
-    els.editorBody.appendChild(renderCartelaFields(cartela));
-    els.editorBody.appendChild(sectionLabel('Bloques en esta cartela'));
-    els.editorBody.appendChild(renderSourceRefControls(cartela));
-
-    const materialsGrid = document.createElement('div');
-    materialsGrid.className = 'cartela-materials-grid';
-    materialsGrid.style.gridTemplateColumns = `repeat(${Math.max(1, Number(getEffectiveCartela(cartela).columns) || 1)}, minmax(0, 1fr))`;
-    getCartelaRefs(cartela).forEach((ref) => {
-      const material = state.materials.find((candidate) => candidate.id === ref);
-      materialsGrid.appendChild(renderMaterialEditor(material, ref));
-    });
-    els.editorBody.appendChild(materialsGrid);
-    renderCartelaPreview();
+    return appMainEditor.renderEditor();
   }
 
   function renderCartelaFields(cartela) {
