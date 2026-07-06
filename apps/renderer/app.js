@@ -1166,6 +1166,19 @@
     updateSelectedCartelaBlockTypography,
     updateSelectedCartelaTitleTypography,
   });
+  const appMaterialEditor = globalThis.CreditosAppMaterialEditor.createAppMaterialEditor({
+    documentRef: document,
+    escapeHtml,
+    getMaterialContentItems,
+    getSelectedCartela,
+    groupMusicLicenseThemes,
+    inputRow,
+    makePreviewInput,
+    rebuild,
+    sourceRefIsLocked,
+    state,
+    toggleSourceRefLock,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -1861,67 +1874,7 @@
   }
 
   function renderMaterialEditor(material, ref) {
-    const wrap = document.createElement('div');
-    wrap.className = 'material-panel';
-
-    if (!material) {
-      wrap.innerHTML = `<div class="material-header"><strong>Fuente no encontrada</strong><span>${escapeHtml(ref)}</span></div>`;
-      return wrap;
-    }
-
-    const header = document.createElement('div');
-    header.className = 'material-header';
-    const isLocked = sourceRefIsLocked(getSelectedCartela(), ref);
-    header.innerHTML = `
-      <div>
-        <strong>${escapeHtml(material.title || 'Sin titulo')}</strong>
-        <span>${escapeHtml(material.type || '')} · ${(material.items || []).length} items${isLocked ? ' · bloqueado' : ''}</span>
-      </div>
-    `;
-
-    const lockButton = document.createElement('button');
-    lockButton.type = 'button';
-    lockButton.className = 'icon-button block-lock-button' + (isLocked ? ' active' : '');
-    lockButton.textContent = isLocked ? '🔒' : '🔓';
-    lockButton.title = isLocked ? 'Desbloquear actualización desde XLS' : 'Bloquear actualización desde XLS';
-    lockButton.setAttribute('aria-label', lockButton.title);
-    lockButton.addEventListener('click', () => toggleSourceRefLock(ref));
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.textContent = 'Quitar';
-    removeButton.addEventListener('click', () => {
-      const cartela = getSelectedCartela();
-      if (!cartela) return;
-      cartela.pages = (cartela.pages || []).map((page) => ({
-        ...page,
-        source_refs: (page.source_refs || []).filter((sourceRef) => sourceRef !== ref),
-      }));
-      cartela.pages.forEach((page) => {
-        if (page.source_ref_settings) delete page.source_ref_settings[ref];
-      });
-      rebuild();
-    });
-    const actions = document.createElement('div');
-    actions.className = 'material-actions';
-    actions.appendChild(lockButton);
-    actions.appendChild(removeButton);
-    header.appendChild(actions);
-    wrap.appendChild(header);
-
-    wrap.appendChild(inputRow('Título del bloque', material.id, 'title', material.default_title || ''));
-
-    if (material.type === 'music_licenses') {
-      wrap.appendChild(renderMusicThemesEditor(material));
-      return wrap;
-    }
-
-    const breakUnits = getMaterialContentItems(material);
-    breakUnits.forEach((item, index) => {
-      const isLastItem = index === breakUnits.length - 1;
-      wrap.appendChild(renderItemEditor(item, material.id, isLastItem));
-    });
-    return wrap;
+    return appMaterialEditor.renderMaterialEditor(material, ref);
   }
 
   function toggleSourceRefLock(ref) {
@@ -1968,101 +1921,6 @@
 
   function renderBlockTypographyControls(ref) {
     return appCartelaTypography.renderBlockTypographyControls(ref);
-  }
-
-  function renderMusicThemesEditor(material) {
-    const wrap = document.createElement('div');
-    wrap.className = 'music-themes';
-    const themes = groupMusicLicenseThemes(getMaterialContentItems(material), state.structure.overrides || {});
-    themes.forEach((theme, index) => {
-      const themeWrap = document.createElement('div');
-      themeWrap.className = 'music-theme';
-      const header = document.createElement('div');
-      header.className = 'music-theme-header';
-      header.textContent = `Tema ${index + 1}`;
-      themeWrap.appendChild(header);
-      theme.lines.forEach((line, lineIndex) => {
-        const row = document.createElement('div');
-        row.className = 'preview-line music-line' + (lineIndex === 0 ? ' theme-title' : '');
-        row.innerHTML = `<div class="row-label">Fila ${line.row}</div>`;
-        row.appendChild(makePreviewInput(line.id, 'value', line.value || '', 'line-input'));
-        themeWrap.appendChild(row);
-      });
-      wrap.appendChild(themeWrap);
-    });
-    return wrap;
-  }
-
-  function renderItemEditor(item, materialId, isLastItem) {
-    const row = document.createElement('div');
-    const cartela = getSelectedCartela();
-    const orientation = cartela && cartela.orientation ? cartela.orientation : 'horizontal';
-
-    if (item.kind === 'credit' || item.kind === 'crew_credit') {
-      row.className = `preview-credit ${orientation}`;
-      row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-      const roleWrap = document.createElement('div');
-      roleWrap.className = 'preview-role';
-      roleWrap.appendChild(makePreviewInput(item.id, 'role', item.role || '', 'role-input'));
-
-      const namesWrap = document.createElement('div');
-      namesWrap.className = 'preview-names';
-      (item.names || []).forEach((name, nameIndex) => {
-        const nameLine = document.createElement('div');
-        nameLine.className = 'preview-name-line';
-        nameLine.appendChild(makePreviewInput(name.id, 'name', name.name || '', 'name-input'));
-        namesWrap.appendChild(nameLine);
-      });
-
-      row.appendChild(roleWrap);
-      row.appendChild(namesWrap);
-      return row;
-    }
-
-    if (item.kind === 'cast') {
-      row.className = `preview-credit ${orientation}`;
-      row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-      const actorWrap = document.createElement('div');
-      actorWrap.className = 'preview-role';
-      actorWrap.appendChild(makePreviewInput(item.id, 'actor', item.actor || '', 'role-input'));
-      const characterWrap = document.createElement('div');
-      characterWrap.className = 'preview-names';
-      characterWrap.appendChild(makePreviewInput(item.id, 'character', item.character || '', 'name-input'));
-      row.appendChild(actorWrap);
-      row.appendChild(characterWrap);
-      return row;
-    }
-
-    if (item.kind === 'section') {
-      row.className = 'preview-section';
-      row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-      row.appendChild(makePreviewInput(item.id, 'title', item.title || '', 'section-input'));
-      return row;
-    }
-
-    if (item.kind === 'list_item' || item.kind === 'closing_line') {
-      row.className = 'preview-line';
-      row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-      row.appendChild(makePreviewInput(item.id, 'value', item.value || '', 'line-input'));
-      return row;
-    }
-
-    row.className = 'line-row';
-    row.innerHTML = `<div class="row-label">Fila ${item.row || '-'}<br>${escapeHtml(item.kind || 'item')}</div><pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`;
-    return row;
-  }
-
-  function renderNames(names) {
-    const wrap = document.createElement('div');
-    wrap.className = 'names-list';
-    names.forEach((name) => {
-      const item = document.createElement('div');
-      item.className = 'chip';
-      item.innerHTML = `<span>Fila ${name.row}</span>`;
-      item.appendChild(makeInput(name.id, 'name', name.name || ''));
-      wrap.appendChild(item);
-    });
-    return wrap;
   }
 
   function addEmptyCartela() {
