@@ -2154,11 +2154,10 @@
       });
       row.appendChild(styleSelect);
 
-      const colorInput = document.createElement('input');
-      colorInput.className = 'color-input';
-      colorInput.type = 'color';
-      colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateTypographySetting(key, { color: colorInput.value }));
+      const colorInput = fieldControlRegistry.create('color', {
+        value: normalizeColor(value.color),
+        onInput: (color) => updateTypographySetting(key, { color }),
+      });
       row.appendChild(colorInput);
 
       els.typographySettings.appendChild(row);
@@ -2726,11 +2725,10 @@
       });
       row.appendChild(styleSelect);
 
-      const colorInput = document.createElement('input');
-      colorInput.className = 'color-input';
-      colorInput.type = 'color';
-      colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateEditableStyleTypography(style, key, { color: colorInput.value }));
+      const colorInput = fieldControlRegistry.create('color', {
+        value: normalizeColor(value.color),
+        onInput: (color) => updateEditableStyleTypography(style, key, { color }),
+      });
       row.appendChild(colorInput);
       if (isOverride) {
         const resetButton = document.createElement('button');
@@ -2817,11 +2815,10 @@
     });
     row.appendChild(styleSelect);
 
-    const colorInput = document.createElement('input');
-    colorInput.className = 'color-input';
-    colorInput.type = 'color';
-    colorInput.value = normalizeColor(value.color);
-    colorInput.addEventListener('input', () => updateEditableStyleTitleTypography(style, { color: colorInput.value }));
+    const colorInput = fieldControlRegistry.create('color', {
+      value: normalizeColor(value.color),
+      onInput: (color) => updateEditableStyleTitleTypography(style, { color }),
+    });
     row.appendChild(colorInput);
 
     if (hasStyleTitleTypographyOverride(style)) {
@@ -3434,11 +3431,10 @@
       });
       row.appendChild(styleSelect);
 
-      const colorInput = document.createElement('input');
-      colorInput.className = 'color-input';
-      colorInput.type = 'color';
-      colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateSelectedCartelaBlockTypography(key, { color: colorInput.value }));
+      const colorInput = fieldControlRegistry.create('color', {
+        value: normalizeColor(value.color),
+        onInput: (color) => updateSelectedCartelaBlockTypography(key, { color }),
+      });
       row.appendChild(colorInput);
 
       if (isOverride) {
@@ -3537,11 +3533,10 @@
     });
     row.appendChild(styleSelect);
 
-    const colorInput = document.createElement('input');
-    colorInput.className = 'color-input';
-    colorInput.type = 'color';
-    colorInput.value = normalizeColor(value.color);
-    colorInput.addEventListener('input', () => updateSelectedCartelaTitleTypography({ color: colorInput.value }));
+    const colorInput = fieldControlRegistry.create('color', {
+      value: normalizeColor(value.color),
+      onInput: (color) => updateSelectedCartelaTitleTypography({ color }),
+    });
     row.appendChild(colorInput);
 
     if (isOverride) {
@@ -3638,11 +3633,10 @@
       });
       row.appendChild(styleSelect);
 
-      const colorInput = document.createElement('input');
-      colorInput.className = 'color-input';
-      colorInput.type = 'color';
-      colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateSelectedBlockTypography(ref, key, { color: colorInput.value }));
+      const colorInput = fieldControlRegistry.create('color', {
+        value: normalizeColor(value.color),
+        onInput: (color) => updateSelectedBlockTypography(ref, key, { color }),
+      });
       row.appendChild(colorInput);
 
       wrap.appendChild(row);
