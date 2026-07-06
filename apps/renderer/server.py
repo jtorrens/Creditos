@@ -3,8 +3,6 @@ import cgi
 import datetime
 import json
 import mimetypes
-import os
-import sqlite3
 import sys
 import threading
 import time
@@ -14,101 +12,15 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID, list_import_models, parse_source
+from server_db.connection import db_connect, default_db_path
 
 
 ROOT = Path(__file__).resolve().parent
 DOCUMENT_KINDS = {"source", "structure", "render", "reference"}
 
 
-def default_db_path():
-    if os.environ.get("CREDITOS_DB_PATH"):
-        return Path(os.environ["CREDITOS_DB_PATH"]).expanduser()
-    return ROOT.parents[1] / "data" / "creditos.db"
-
-
 def now_iso():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
-
-
-def db_connect(db_path):
-    path = Path(db_path).expanduser() if db_path else default_db_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(str(path))
-    connection.row_factory = sqlite3.Row
-    connection.execute("PRAGMA foreign_keys = ON")
-    init_db(connection)
-    return connection
-
-
-def init_db(connection):
-    connection.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS productions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            page_width INTEGER NOT NULL DEFAULT 1920,
-            page_height INTEGER NOT NULL DEFAULT 1080,
-            preview_background TEXT NOT NULL DEFAULT '#ffffff',
-            import_model_id TEXT NOT NULL DEFAULT 'standard_credits_xls',
-            settings_json TEXT NOT NULL DEFAULT '{}',
-            episode_count INTEGER NOT NULL DEFAULT 0,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS episodes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            production_id INTEGER NOT NULL,
-            episode_number INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE (production_id, episode_number),
-            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS documents (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            production_id INTEGER NOT NULL,
-            episode_id INTEGER NOT NULL,
-            kind TEXT NOT NULL,
-            schema TEXT,
-            version INTEGER,
-            data_json TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE (production_id, episode_id, kind),
-            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
-            FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS styles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            production_id INTEGER NOT NULL,
-            style_id TEXT NOT NULL,
-            name TEXT NOT NULL,
-            data_json TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE (production_id, style_id),
-            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
-        );
-        """
-    )
-    columns = {row["name"] for row in connection.execute("PRAGMA table_info(productions)")}
-    if "page_width" not in columns:
-        connection.execute("ALTER TABLE productions ADD COLUMN page_width INTEGER NOT NULL DEFAULT 1920")
-    if "page_height" not in columns:
-        connection.execute("ALTER TABLE productions ADD COLUMN page_height INTEGER NOT NULL DEFAULT 1080")
-    if "preview_background" not in columns:
-        connection.execute("ALTER TABLE productions ADD COLUMN preview_background TEXT NOT NULL DEFAULT '#ffffff'")
-    if "import_model_id" not in columns:
-        connection.execute(
-            "ALTER TABLE productions ADD COLUMN import_model_id TEXT NOT NULL DEFAULT 'standard_credits_xls'"
-        )
-    if "settings_json" not in columns:
-        connection.execute("ALTER TABLE productions ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
-    connection.commit()
 
 
 def row_to_dict(row):
