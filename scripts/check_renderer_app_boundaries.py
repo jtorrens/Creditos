@@ -148,6 +148,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "fitMovieTargetFrames",
     "normalizeMovieSegments",
     "normalizeReferenceVideo",
+    "buildRenderJson",
     "buildPhysicalPages",
     "countBlockVisualLines",
     "countRenderedUnitLines",

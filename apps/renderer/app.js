@@ -398,20 +398,6 @@
     roleNameGapForOrientation,
     verticalOffset,
   } = layoutDomain;
-  const renderDomain = globalThis.CreditosDomainRender.createRenderDomain({
-    applyTextCapitalization,
-    canvasTextMetrics,
-    canvasWrappedTextLines,
-    getRenderedBlockUnits,
-    layoutForCartela,
-    normalizeSettings,
-    renderedUnitText,
-    settingsWithProductionLayout,
-    sourceUnitStartRow,
-  });
-  const {
-    concatenateRenderedBlockRows,
-  } = renderDomain;
   const structureDomain = globalThis.CreditosDomainStructure.createStructureDomain({
     defaultLayoutForMaterial,
     defaultOrientationForMaterial,
@@ -486,6 +472,36 @@
     repeatBlockTitlesForCartela,
     unitGapBefore,
   } = paginationDomain;
+  const renderDomain = globalThis.CreditosDomainRender.createRenderDomain({
+    applyTextCapitalization,
+    buildPhysicalPages,
+    canvasTextMetrics,
+    canvasWrappedTextLines,
+    cartelaHasRenderableRefs,
+    cartelaImages,
+    forceRenderedRoleNameColumns,
+    getEffectiveCartela,
+    getEffectiveCartelaBlockStyle,
+    getEffectiveCartelaTitleTypography,
+    getSourceRefAlignment,
+    getSourceRefColumns,
+    getSourceRefTypography,
+    getSourceRefVerticalAlign,
+    getVisualCartelas,
+    getRenderedBlockUnits,
+    layoutForCartela,
+    normalizeBoolean,
+    normalizeSettings,
+    normalizeTextCapitalization,
+    renderMaterial,
+    renderedUnitText,
+    resolveOverride,
+    settingsWithProductionLayout,
+    sourceUnitStartRow,
+  });
+  const {
+    buildRenderJson: buildRenderJsonInDomain,
+  } = renderDomain;
   const timelineDomain = globalThis.CreditosDomainTimeline.createTimelineDomain({
     scrollOffsetForFrame,
   });
@@ -1246,7 +1262,7 @@
         applyExplicitCartelaOverridesFromSource(cartela, sourceCartela, sourceRawById.get(cartela.id) || sourceCartela);
         assigned += 1;
       });
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
       renderCartelaList();
       renderEditor();
       renderPreview();
@@ -1462,7 +1478,7 @@
     try {
       await persistSelectedProductionFields(fields);
       if (state.source && state.structure) {
-        state.render = buildRenderJson(state.source, state.materials, state.structure);
+        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
         renderSettings();
         renderEditor();
         renderStylesPane();
@@ -1586,7 +1602,7 @@
         state.structure = result.structure
           ? createStructureFromSource(state.source, state.materials, migrateStructure(result.structure))
           : createStructureFromSource(state.source, state.materials, null);
-        state.render = result.render || buildRenderJson(state.source, state.materials, state.structure);
+        state.render = result.render || buildCurrentRenderJson(state.source, state.materials, state.structure);
         state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
         applyPreviewSettingsToUi(state.structure.preview_settings);
         state.pngPreviewZoomMode = 'auto';
@@ -1955,101 +1971,16 @@
     return createStructureFromSourceWithSettings(source, materials, previousStructure, getProductionSettings());
   }
 
-  function buildRenderJson(source, materials, structure) {
-    const materialById = new Map(materials.map((material) => [material.id, material]));
-    const overrides = structure.overrides || {};
-    const productionSettings = getProductionSettings();
-    const productionLayout = getProductionLayout();
-    const maxAutoLines = Number(productionSettings.default_auto_page_lines) || 0;
-
-    const render = {
-      schema: 'credits_render_json',
-      version: 9,
-      source_sheet: source.sheet || '',
-      settings: {
-        language: productionSettings.language,
-        text_capitalization: productionSettings.text_capitalization,
-        protected_capitalizations: productionSettings.protected_capitalizations,
-        use_protected_capitalization: productionSettings.use_protected_capitalization,
-        typography: productionSettings.typography,
-        layout: settingsWithProductionLayout(productionSettings, productionLayout).layout,
-      },
-      cartelas: getVisualCartelas(structure.cartelas || [])
-        .filter((cartela) => cartela.enabled !== false)
-        .filter((cartela) => cartelaHasRenderableRefs(cartela, materialById))
-        .map((cartela, cartelaIndex) => {
-          const effectiveCartela = getEffectiveCartela(cartela);
-          return {
-            id: cartela.id,
-            style_id: cartela.style_id || '',
-            manual: !!cartela.manual,
-            cartela_number: cartelaIndex + 1,
-            label: cartela.title || '',
-            title: cartela.title || '',
-            type: cartela.type,
-            orientation: effectiveCartela.orientation || 'horizontal',
-            columns: Number(effectiveCartela.columns) || 1,
-            font_size_multiplier: 1,
-            line_spacing_multiplier: 1,
-            vertical_offset: Number(effectiveCartela.vertical_offset) || 0,
-            duration: Number(effectiveCartela.duration) || 0,
-            text_capitalization: normalizeTextCapitalization(effectiveCartela.text_capitalization),
-            use_protected_capitalization: normalizeBoolean(effectiveCartela.use_protected_capitalization, true),
-            auto_text_wrap: normalizeBoolean(effectiveCartela.auto_text_wrap, false),
-            images: cartelaImages(cartela),
-            title_typography: getEffectiveCartelaTitleTypography(cartela),
-            line_spacing: Math.max(0.1, Number(effectiveCartela.line_spacing) || 1.12),
-            column_gap: Math.max(0, Number(effectiveCartela.column_gap) || 0),
-            role_name_gap: Math.max(0, Number(effectiveCartela.role_name_gap) || 0),
-            source_group_gap: Math.max(0, Number(effectiveCartela.source_group_gap) || 0),
-            block_gap: Math.max(0, Number(effectiveCartela.block_gap) || 0),
-            block_title_gap: Math.max(0, Number(effectiveCartela.block_title_gap) || 0),
-            page_top_margin: Math.max(0, Number(effectiveCartela.page_top_margin) || 0),
-            page_bottom_margin: Math.max(0, Number(effectiveCartela.page_bottom_margin) || 0),
-            page_left_margin: Math.max(0, Number(effectiveCartela.page_left_margin) || 0),
-            page_right_margin: Math.max(0, Number(effectiveCartela.page_right_margin) || 0),
-            pages: (cartela.pages || []).map((page, pageIndex) => ({
-              id: page.id,
-              page_number: pageIndex + 1,
-              title: resolveOverride(overrides, page.id, 'title', page.title || ''),
-              blocks: (page.source_refs || []).map((ref) => {
-                const material = materialById.get(ref);
-                const lineAdjustments = structure.page_line_adjustments || {};
-                const block = renderMaterial(material, ref, overrides, structure.page_breaks || {}, 0, lineAdjustments);
-                block.columns = getSourceRefColumns(page, ref, cartela);
-                block.alignment = getSourceRefAlignment(page, ref, material, effectiveCartela, cartela);
-                block.vertical_align = getSourceRefVerticalAlign(page, ref, cartela);
-                block.typography = getSourceRefTypography(page, ref, cartela);
-                const effectiveBlockStyle = getEffectiveCartelaBlockStyle(cartela);
-                block.force_role_name_columns = effectiveBlockStyle.force_role_name_columns;
-                if (block.force_role_name_columns) forceRenderedRoleNameColumns(block);
-                block.concatenate_rows = effectiveBlockStyle.concatenate_rows;
-                if (block.concatenate_rows) concatenateRenderedBlockRows(block, effectiveCartela, productionSettings, productionLayout);
-                return block;
-              }),
-            })),
-          };
-        }),
-    };
-    render.physical_pages = buildPhysicalPages(render.cartelas, overrides, {
-      settings: productionSettings,
-      pageLineAdjustments: structure.page_line_adjustments,
-    }).map((page, index) => ({
-      id: page.id,
-      page_number: index + 1,
-      title: page.title || '',
-      line_count: page.line_count || 0,
-      line_limit: page.line_limit || 0,
-      cartela_id: page.cartela.id,
-      cartela_page_id: page.cartela_page.id,
-      blocks: page.blocks,
-    }));
-    return render;
+  function buildCurrentRenderJson(source, materials, structure) {
+    return buildRenderJsonInDomain(source, materials, structure, {
+      productionSettings: getProductionSettings(),
+      productionLayout: getProductionLayout(),
+    });
   }
 
   function rebuild() {
     if (state.source && state.structure) {
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     }
 
     renderMeta();
@@ -2265,7 +2196,7 @@
     syncLoadedStyleSnapshots();
     pruneRedundantStyleOverrides();
     if (state.source && state.structure) {
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     }
     renderEditor();
     renderCartelaList();
@@ -2309,7 +2240,7 @@
     };
     setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
     persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
-    state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     renderStylesPane();
     renderEditor();
     renderPreview();
@@ -2396,7 +2327,7 @@
     };
     setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
     persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
-    state.render = state.source ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     renderStylesPane();
     renderEditor();
     renderPreview();
@@ -2412,7 +2343,7 @@
     setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
     persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
     if (state.source) {
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     }
     renderSettings();
     renderPreview();
@@ -2676,7 +2607,7 @@
     if (!updateStyleCartelaInDomain(style, fields)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
-    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
     renderCartelaList();
@@ -2693,7 +2624,7 @@
     if (!updateStyleBlockInDomain(style, fields)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
-    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
     renderEditor();
@@ -2705,7 +2636,7 @@
     if (!updateStyleBlockAlignmentInDomain(style, key, value)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
-    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
     renderEditor();
@@ -2726,7 +2657,7 @@
   function updateStyleAfterOverrideChange(style) {
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
-    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
     renderEditor();
@@ -2936,7 +2867,7 @@
     if (!updateStyleTypographyInDomain(style, key, fields)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
-    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
     scheduleStyleAutosave(style.id);
     renderStylesPane();
     renderEditor();
@@ -3023,7 +2954,7 @@
       }
       state.styles = state.styles.filter((candidate) => candidate.id !== style.id);
       state.selectedStyleId = state.styles[0] ? state.styles[0].id : null;
-      if (state.source && state.structure) state.render = buildRenderJson(state.source, state.materials, state.structure);
+      if (state.source && state.structure) state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
       renderStylesPane();
       renderCartelaList();
       renderEditor();
@@ -3297,7 +3228,7 @@
       }
       cartela.style_id = nextStyleId;
       if (action === 'discard') clearCartelaStyleOverrides(cartela);
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
       renderCartelaList();
       renderEditor();
       renderPreview();
@@ -3909,7 +3840,7 @@
   function moveSelectedCartelaVisualOrder(cartelaId, delta) {
     if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
     if (!moveCartelaVisualOrderInStructure(state.structure.cartelas, cartelaId, delta)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
     refreshPdfIfActive();
@@ -3918,7 +3849,7 @@
   function updateSelectedCartela(fields) {
     const cartela = getSelectedCartela();
     if (!updateCartelaInStructure(cartela, fields)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
     renderPreview();
@@ -3928,7 +3859,7 @@
   function resetSelectedCartelaOverride(key) {
     const cartela = getSelectedCartela();
     if (!resetCartelaOverrideInStructure(cartela, key)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
     renderPreview();
@@ -3938,7 +3869,7 @@
   function updateSelectedCartelaBlockStyle(fields) {
     const cartela = getSelectedCartela();
     if (!updateCartelaBlockStyleInDomain(cartela, fields)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3947,7 +3878,7 @@
   function resetSelectedCartelaBlockOverride(key) {
     const cartela = getSelectedCartela();
     if (!resetCartelaBlockOverrideInDomain(cartela, key)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3956,7 +3887,7 @@
   function updateSelectedCartelaBlockAlignment(key, value) {
     const cartela = getSelectedCartela();
     if (!updateCartelaBlockAlignmentInDomain(cartela, key, value)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3965,7 +3896,7 @@
   function resetSelectedCartelaBlockAlignmentOverride(key) {
     const cartela = getSelectedCartela();
     if (!resetCartelaBlockAlignmentOverrideInDomain(cartela, key)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3974,7 +3905,7 @@
   function resetSelectedCartelaBlockTypographyOverride(key) {
     const cartela = getSelectedCartela();
     if (!resetCartelaBlockTypographyOverrideInDomain(cartela, key)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3983,7 +3914,7 @@
   function updateSelectedCartelaBlockTypography(key, fields, options = {}) {
     const cartela = getSelectedCartela();
     if (!updateCartelaBlockTypographyInDomain(cartela, key, fields)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -3993,7 +3924,7 @@
   function resetSelectedCartelaTitleTypographyOverride() {
     const cartela = getSelectedCartela();
     if (!resetCartelaTitleTypographyOverrideInDomain(cartela)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     renderCartelaPreview();
@@ -4005,7 +3936,7 @@
     if (!cartela) return;
     const base = getEffectiveStyleTitleTypography(getStyleById(cartela.style_id)).page_header;
     if (!updateCartelaTitleTypographyInDomain(cartela, fields, base)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
     renderCartelaPreview();
@@ -4150,7 +4081,7 @@
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
     if (!updateSourceRefAlignment(page, ref, fields)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
   }
@@ -4165,7 +4096,7 @@
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
     if (!updateSourceRefVerticalAlign(page, ref, value)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
   }
@@ -4180,7 +4111,7 @@
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
     if (!updateSourceRefTypography(page, ref, key, fields)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     if (options.rerenderEditor) renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -4190,7 +4121,7 @@
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
     if (!resetSourceRefTypography(page, ref)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -4206,7 +4137,7 @@
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
     if (!updateSourceRefColumns(page, ref, columns)) return;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
   }
@@ -4370,7 +4301,7 @@
       const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
       const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
       setOverride(refId, field, parsedValue, parsedFallback);
-      state.render = buildRenderJson(state.source, state.materials, state.structure);
+      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
       renderPreview();
     });
     if (opts.multiline) window.requestAnimationFrame(() => resizeMultilineInput(input));
@@ -5471,7 +5402,7 @@
     } else {
       state.structure.page_line_adjustments.__physical[page.id] = next;
     }
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     renderPdfPreview();
   }
@@ -5559,7 +5490,7 @@
     state.selectedCartelaId = cartela.id;
     updateSelectedCartela(fields);
     state.selectedCartelaId = previousSelected;
-    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
     renderPreview();
