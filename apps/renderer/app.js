@@ -335,6 +335,10 @@
     serializeCartelaStyle,
     sameStyleValue,
     uniqueStyleId,
+    updateCartelaBlockAlignment: updateCartelaBlockAlignmentInDomain,
+    updateCartelaBlockStyle: updateCartelaBlockStyleInDomain,
+    updateCartelaBlockTypography: updateCartelaBlockTypographyInDomain,
+    updateCartelaTitleTypography: updateCartelaTitleTypographyInDomain,
     updateSourceRefAlignment,
     updateSourceRefColumns,
     updateSourceRefTypography,
@@ -3368,17 +3372,17 @@
       ['center', 'Centro'],
       ['right', 'Derecha'],
     ];
-    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateCartelaBlockStyle({ columns: next }), 1, { override: !!(cartela.block_style && cartela.block_style.columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('columns') }));
-    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(value.concatenate_rows), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ concatenate_rows: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.concatenate_rows !== undefined), reset: () => resetSelectedCartelaBlockOverride('concatenate_rows') }));
-    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(value.force_role_name_columns), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ force_role_name_columns: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.force_role_name_columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('force_role_name_columns') }));
-    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateCartelaBlockAlignment('role', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'role'), reset: () => resetSelectedCartelaBlockAlignmentOverride('role') }));
-    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateCartelaBlockAlignment('name', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'name'), reset: () => resetSelectedCartelaBlockAlignmentOverride('name') }));
-    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateCartelaBlockAlignment('text', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'text'), reset: () => resetSelectedCartelaBlockAlignmentOverride('text') }));
+    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateSelectedCartelaBlockStyle({ columns: next }), 1, { override: !!(cartela.block_style && cartela.block_style.columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('columns') }));
+    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(value.concatenate_rows), YES_NO_OPTIONS, (next) => updateSelectedCartelaBlockStyle({ concatenate_rows: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.concatenate_rows !== undefined), reset: () => resetSelectedCartelaBlockOverride('concatenate_rows') }));
+    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(value.force_role_name_columns), YES_NO_OPTIONS, (next) => updateSelectedCartelaBlockStyle({ force_role_name_columns: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.force_role_name_columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('force_role_name_columns') }));
+    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateSelectedCartelaBlockAlignment('role', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'role'), reset: () => resetSelectedCartelaBlockAlignmentOverride('role') }));
+    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateSelectedCartelaBlockAlignment('name', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'name'), reset: () => resetSelectedCartelaBlockAlignmentOverride('name') }));
+    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateSelectedCartelaBlockAlignment('text', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'text'), reset: () => resetSelectedCartelaBlockAlignmentOverride('text') }));
     wrap.appendChild(localSelectRow('Alineación vertical del bloque', value.vertical_align || 'top', [
       ['top', 'Arriba'],
       ['center', 'Centrado'],
       ['bottom', 'Abajo'],
-    ], (next) => updateCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => resetSelectedCartelaBlockOverride('vertical_align') }));
+    ], (next) => updateSelectedCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => resetSelectedCartelaBlockOverride('vertical_align') }));
     wrap.appendChild(renderCartelaBlockTypographyControls(cartela, value.typography || {}));
     return wrap;
   }
@@ -3548,7 +3552,7 @@
       sizeInput.step = '1';
       sizeInput.value = String(value.font_size);
       sizeInput.placeholder = String(base.font_size);
-      sizeInput.addEventListener('change', () => updateCartelaBlockTypography(key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+      sizeInput.addEventListener('change', () => updateSelectedCartelaBlockTypography(key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
       row.appendChild(sizeInput);
 
       const fontSelect = document.createElement('select');
@@ -3568,7 +3572,7 @@
       fontSelect.value = value.font_family;
       fontSelect.addEventListener('change', () => {
         const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
-        updateCartelaBlockTypography(key, {
+        updateSelectedCartelaBlockTypography(key, {
           font_family: fontSelect.value,
           font_style: nextStyle.style,
           font_postscript_name: nextStyle.postscript_name,
@@ -3596,7 +3600,7 @@
       styleSelect.value = value.font_style;
       styleSelect.addEventListener('change', () => {
         const selected = styleSelect.selectedOptions[0];
-        updateCartelaBlockTypography(key, {
+        updateSelectedCartelaBlockTypography(key, {
           font_style: styleSelect.value,
           font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
         });
@@ -3607,7 +3611,7 @@
       colorInput.className = 'color-input';
       colorInput.type = 'color';
       colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateCartelaBlockTypography(key, { color: colorInput.value }));
+      colorInput.addEventListener('input', () => updateSelectedCartelaBlockTypography(key, { color: colorInput.value }));
       row.appendChild(colorInput);
 
       if (isOverride) {
@@ -3651,7 +3655,7 @@
     sizeInput.step = '1';
     sizeInput.value = String(value.font_size);
     sizeInput.placeholder = String(base.font_size);
-    sizeInput.addEventListener('change', () => updateCartelaTitleTypography({ font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+    sizeInput.addEventListener('change', () => updateSelectedCartelaTitleTypography({ font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
     row.appendChild(sizeInput);
 
     const fontSelect = document.createElement('select');
@@ -3671,7 +3675,7 @@
     fontSelect.value = value.font_family;
     fontSelect.addEventListener('change', () => {
       const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
-      updateCartelaTitleTypography({
+      updateSelectedCartelaTitleTypography({
         font_family: fontSelect.value,
         font_style: nextStyle.style,
         font_postscript_name: nextStyle.postscript_name,
@@ -3699,7 +3703,7 @@
     styleSelect.value = value.font_style;
     styleSelect.addEventListener('change', () => {
       const selected = styleSelect.selectedOptions[0];
-      updateCartelaTitleTypography({
+      updateSelectedCartelaTitleTypography({
         font_style: styleSelect.value,
         font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
       });
@@ -3710,7 +3714,7 @@
     colorInput.className = 'color-input';
     colorInput.type = 'color';
     colorInput.value = normalizeColor(value.color);
-    colorInput.addEventListener('input', () => updateCartelaTitleTypography({ color: colorInput.value }));
+    colorInput.addEventListener('input', () => updateSelectedCartelaTitleTypography({ color: colorInput.value }));
     row.appendChild(colorInput);
 
     if (isOverride) {
@@ -3995,19 +3999,9 @@
     return normalizeStyleBlock(settings);
   }
 
-  function updateCartelaBlockStyle(fields) {
+  function updateSelectedCartelaBlockStyle(fields) {
     const cartela = getSelectedCartela();
-    if (!cartela) return;
-    if (cartela.style_id) {
-      const nextBlockStyle = mergeStyleBlockOverrides(cartela.block_style || {}, fields);
-      if (Object.keys(nextBlockStyle).length) {
-        cartela.block_style = nextBlockStyle;
-      } else {
-        delete cartela.block_style;
-      }
-    } else {
-      applyBlockStyleToCartelaRefs(cartela, fields);
-    }
+    if (!updateCartelaBlockStyleInDomain(cartela, fields)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
@@ -4023,16 +4017,13 @@
     refreshPdfIfActive();
   }
 
-  function updateCartelaBlockAlignment(key, value) {
+  function updateSelectedCartelaBlockAlignment(key, value) {
     const cartela = getSelectedCartela();
-    if (!cartela) return;
-    const current = cartela.block_style && cartela.block_style.alignment ? cartela.block_style.alignment : {};
-    updateCartelaBlockStyle({
-      alignment: {
-        ...current,
-        [key]: value,
-      },
-    });
+    if (!updateCartelaBlockAlignmentInDomain(cartela, key, value)) return;
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderEditor();
+    renderPreview();
+    refreshPdfIfActive();
   }
 
   function resetSelectedCartelaBlockAlignmentOverride(key) {
@@ -4053,18 +4044,13 @@
     refreshPdfIfActive();
   }
 
-  function updateCartelaBlockTypography(key, fields, options = {}) {
+  function updateSelectedCartelaBlockTypography(key, fields, options = {}) {
     const cartela = getSelectedCartela();
-    if (!cartela) return;
-    const current = cartela.block_style && cartela.block_style.typography ? cartela.block_style.typography : {};
-    const typography = normalizeTypographyOverrides({
-      ...current,
-      [key]: {
-        ...(current[key] || {}),
-        ...fields,
-      },
-    });
-    updateCartelaBlockStyle({ typography });
+    if (!updateCartelaBlockTypographyInDomain(cartela, key, fields)) return;
+    state.render = buildRenderJson(state.source, state.materials, state.structure);
+    renderEditor();
+    renderPreview();
+    refreshPdfIfActive();
     if (options.rerenderEditor) renderEditor();
   }
 
@@ -4078,28 +4064,11 @@
     refreshPdfIfActive();
   }
 
-  function updateCartelaTitleTypography(fields, options = {}) {
+  function updateSelectedCartelaTitleTypography(fields, options = {}) {
     const cartela = getSelectedCartela();
     if (!cartela) return;
-    const current = cartela.title_typography && cartela.title_typography.page_header ? cartela.title_typography.page_header : {};
-    const typography = normalizeTitleTypographyOverrides({
-      page_header: {
-        ...current,
-        ...fields,
-      },
-    });
     const base = getEffectiveStyleTitleTypography(getStyleById(cartela.style_id)).page_header;
-    if (typography.page_header) {
-      Object.keys(typography.page_header).forEach((key) => {
-        if (sameStyleValue(typography.page_header[key], base && base[key])) delete typography.page_header[key];
-      });
-      if (!Object.keys(typography.page_header).length) delete typography.page_header;
-    }
-    if (typography.page_header) {
-      cartela.title_typography = typography;
-    } else {
-      delete cartela.title_typography;
-    }
+    if (!updateCartelaTitleTypographyInDomain(cartela, fields, base)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();

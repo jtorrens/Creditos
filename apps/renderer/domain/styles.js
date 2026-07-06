@@ -390,6 +390,68 @@
       });
     }
 
+    function updateCartelaBlockStyle(cartela, fields) {
+      if (!cartela) return false;
+      if (cartela.style_id) {
+        const nextBlockStyle = mergeStyleBlockOverrides(cartela.block_style || {}, fields);
+        if (Object.keys(nextBlockStyle).length) {
+          cartela.block_style = nextBlockStyle;
+        } else {
+          delete cartela.block_style;
+        }
+      } else {
+        applyBlockStyleToCartelaRefs(cartela, fields);
+      }
+      return true;
+    }
+
+    function updateCartelaBlockAlignment(cartela, key, value) {
+      if (!cartela) return false;
+      const current = cartela.block_style && cartela.block_style.alignment ? cartela.block_style.alignment : {};
+      return updateCartelaBlockStyle(cartela, {
+        alignment: {
+          ...current,
+          [key]: value,
+        },
+      });
+    }
+
+    function updateCartelaBlockTypography(cartela, key, fields) {
+      if (!cartela) return false;
+      const current = cartela.block_style && cartela.block_style.typography ? cartela.block_style.typography : {};
+      const typography = normalizeTypographyOverrides({
+        ...current,
+        [key]: {
+          ...(current[key] || {}),
+          ...(fields || {}),
+        },
+      });
+      return updateCartelaBlockStyle(cartela, { typography });
+    }
+
+    function updateCartelaTitleTypography(cartela, fields, base = {}) {
+      if (!cartela) return false;
+      const current = cartela.title_typography && cartela.title_typography.page_header ? cartela.title_typography.page_header : {};
+      const typography = normalizeTitleTypographyOverrides({
+        page_header: {
+          ...current,
+          ...(fields || {}),
+        },
+      });
+      if (typography.page_header) {
+        Object.keys(typography.page_header).forEach((key) => {
+          if (sameStyleValue(typography.page_header[key], base && base[key])) delete typography.page_header[key];
+        });
+        if (!Object.keys(typography.page_header).length) delete typography.page_header;
+      }
+      if (typography.page_header) {
+        cartela.title_typography = typography;
+      } else {
+        delete cartela.title_typography;
+      }
+      return true;
+    }
+
     function mergeBlockTypography(baseTypography = {}, overrideTypography = {}) {
       const keys = new Set([
         ...blockTypographyFields.map(([key]) => key),
@@ -571,6 +633,10 @@
       serializeCartelaStyle,
       sameStyleValue,
       uniqueStyleId,
+      updateCartelaBlockAlignment,
+      updateCartelaBlockStyle,
+      updateCartelaBlockTypography,
+      updateCartelaTitleTypography,
       updateSourceRefAlignment,
       updateSourceRefColumns,
       updateSourceRefTypography,
