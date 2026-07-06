@@ -476,6 +476,7 @@
     unitRenderOptions,
   });
   const {
+    adjustPdfPageLineAdjustment,
     buildPhysicalPages,
     getPdfLineStatus,
     repeatBlockTitlesForCartela,
@@ -5243,15 +5244,12 @@
     const page = getCurrentPhysicalPages()[state.pdfPageIndex];
     if (!page) return;
     state.structure.page_line_adjustments = state.structure.page_line_adjustments || {};
-    state.structure.page_line_adjustments.__physical = state.structure.page_line_adjustments.__physical || {};
-    const current = Number(state.structure.page_line_adjustments.__physical[page.id]) || 0;
-    const defaultLines = Number(getProductionSettings().default_auto_page_lines) || 1;
-    const next = Math.max(1 - defaultLines, current + delta);
-    if (next === 0) {
-      delete state.structure.page_line_adjustments.__physical[page.id];
-    } else {
-      state.structure.page_line_adjustments.__physical[page.id] = next;
-    }
+    adjustPdfPageLineAdjustment(
+      state.structure.page_line_adjustments,
+      page.id,
+      getProductionSettings().default_auto_page_lines,
+      delta
+    );
     state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     renderPdfPreview();

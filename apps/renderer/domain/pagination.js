@@ -243,7 +243,22 @@
       return `${defaultLines}/${Math.max(1, defaultLines + adjustment)}`;
     }
 
+    function adjustPdfPageLineAdjustment(pageLineAdjustments, pageId, defaultLineCount, delta) {
+      const adjustments = pageLineAdjustments || {};
+      adjustments.__physical = adjustments.__physical || {};
+      const current = Number(adjustments.__physical[pageId]) || 0;
+      const defaultLines = Number(defaultLineCount) || 1;
+      const next = Math.max(1 - defaultLines, current + delta);
+      if (next === 0) {
+        delete adjustments.__physical[pageId];
+      } else {
+        adjustments.__physical[pageId] = next;
+      }
+      return adjustments;
+    }
+
     return {
+      adjustPdfPageLineAdjustment,
       buildPhysicalPages,
       countBlockVisualLines,
       countRenderedUnitLines,
