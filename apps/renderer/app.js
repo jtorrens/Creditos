@@ -549,11 +549,13 @@
     videoTimeForPage,
   } = timelineDomain;
   const domPreview = globalThis.CreditosPreviewDom.createDomPreview({
+    cartelaImages,
     contentAreaRect,
     documentRef: document,
   });
   const {
     makeMarginOverlay: makeMarginOverlayInPreview,
+    makePdfCartelaImages,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -4593,20 +4595,6 @@
     pageInner.appendChild(pageBody);
     sheetEl.appendChild(pageInner);
     return sheetEl;
-  }
-
-  function makePdfCartelaImages(cartela, layout) {
-    const area = contentAreaRect(layout);
-    return cartelaImages(cartela).map((image) => {
-      const imageEl = document.createElement('img');
-      imageEl.className = 'pdf-cartela-image';
-      imageEl.alt = '';
-      imageEl.src = image.data_url;
-      imageEl.style.left = `${area.x + (area.width / 2) + (Number(image.offset_x) || 0)}px`;
-      imageEl.style.top = `${area.y + (area.height / 2) + (Number(image.offset_y) || 0)}px`;
-      imageEl.style.transform = `translate(-50%, -50%) scale(${Math.max(0.01, Number(image.scale) || 1)})`;
-      return imageEl;
-    });
   }
 
   function getCurrentPhysicalPages() {
