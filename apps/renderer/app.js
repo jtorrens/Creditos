@@ -635,6 +635,25 @@
     makeReferenceVideoElement: makeReferenceVideoElementInPreview,
     referenceVideoForCanvas: referenceVideoForCanvasInPreview,
   } = referenceVideoPreview;
+  const fieldControlRegistry = globalThis.CreditosFieldControlRegistry.createFieldControlRegistry();
+  fieldControlRegistry.register('text', globalThis.CreditosTextFieldControl.createTextFieldControl({
+    documentRef: document,
+  }));
+  fieldControlRegistry.register('number', globalThis.CreditosNumberFieldControl.createNumberFieldControl({
+    documentRef: document,
+  }));
+  fieldControlRegistry.register('color', globalThis.CreditosColorFieldControl.createColorFieldControl({
+    documentRef: document,
+  }));
+  fieldControlRegistry.register('duration', globalThis.CreditosDurationFieldControl.createDurationFieldControl({
+    documentRef: document,
+  }));
+  fieldControlRegistry.register('select', globalThis.CreditosSelectFieldControl.createSelectFieldControl({
+    documentRef: document,
+  }));
+  fieldControlRegistry.register('typography', globalThis.CreditosTypographyFieldControl.createTypographyFieldControl({
+    documentRef: document,
+  }));
 
   const FONT_OPTIONS = [
     'Arial',
@@ -3989,16 +4008,12 @@
     row.className = 'field-grid' + (options && options.override ? ' override-field' : '');
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const input = options && options.multiline ? document.createElement('textarea') : document.createElement('input');
-    input.className = 'text-input';
-    if (!(options && options.multiline)) input.type = 'text';
-    input.value = value;
-    const commit = () => onInput(input.value);
-    if (options && options.commitOnChange) {
-      input.addEventListener('change', commit);
-    } else {
-      input.addEventListener('input', commit);
-    }
+    const input = fieldControlRegistry.create('text', {
+      value,
+      multiline: options && options.multiline,
+      commitOnChange: options && options.commitOnChange,
+      onInput,
+    });
     row.appendChild(labelEl);
     row.appendChild(wrapOverrideControl(input, options));
     return row;
@@ -4009,18 +4024,11 @@
     row.className = 'field-grid' + (meta.override ? ' override-field' : '');
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const select = document.createElement('select');
-    select.className = 'text-input compact-select';
-    options.forEach(([optionValue, optionLabel]) => {
-      const option = document.createElement('option');
-      option.value = optionValue;
-      option.textContent = optionLabel;
-      select.appendChild(option);
-    });
-    select.value = value;
-    select.addEventListener('change', () => {
-      onInput(select.value);
-      renderEditor();
+    const select = fieldControlRegistry.create('select', {
+      value,
+      options,
+      onInput,
+      onAfterCommit: renderEditor,
     });
     row.appendChild(labelEl);
     row.appendChild(wrapOverrideControl(select, meta));
@@ -4032,23 +4040,15 @@
     row.className = 'field-grid' + (meta.override ? ' override-field' : '');
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const input = document.createElement('input');
-    const fps = currentMovieFps();
-    input.className = 'text-input';
-    input.type = 'text';
-    input.inputMode = 'numeric';
-    input.value = formatSecondsAsFrameDuration(secondsValue, fps);
-    input.addEventListener('change', () => {
-      const currentFps = currentMovieFps();
-      const frames = parseFrameDuration(input.value, currentFps);
-      if (frames === null) {
-        window.alert(`Introduce la duración como mm:ss:ff. También puedes escribir solo números, por ejemplo 35 = ${formatFrameDuration(35, currentFps)}.`);
-        input.value = formatSecondsAsFrameDuration(secondsValue, currentFps);
-        return;
-      }
-      input.value = formatFrameDuration(frames, currentFps);
-      onInput(frames / currentFps);
-      renderEditor();
+    const input = fieldControlRegistry.create('duration', {
+      secondsValue,
+      currentFps: currentMovieFps,
+      formatFrameDuration,
+      formatSecondsAsFrameDuration,
+      parseFrameDuration,
+      alertFn: (message) => window.alert(message),
+      onInput,
+      onAfterCommit: renderEditor,
     });
     row.appendChild(labelEl);
     row.appendChild(wrapOverrideControl(input, meta));
@@ -4060,21 +4060,13 @@
     row.className = 'field-grid' + (meta.override ? ' override-field' : '');
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const input = document.createElement('input');
-    input.className = 'text-input compact-number-input';
-    input.type = 'number';
-    if (min !== null && min !== undefined) input.min = String(min);
-    if (max !== null && max !== undefined) input.max = String(max);
-    input.step = String(step);
-    input.value = String(value);
-    input.addEventListener('change', () => {
-      const raw = Number(input.value);
-      let next = Number.isFinite(raw) ? raw : (min !== null && min !== undefined ? min : 0);
-      if (min !== null && min !== undefined) next = Math.max(min, next);
-      if (max !== null && max !== undefined) next = Math.min(max, next);
-      input.value = String(next);
-      onInput(next);
-      renderEditor();
+    const input = fieldControlRegistry.create('number', {
+      value,
+      min,
+      max,
+      step,
+      onInput,
+      onAfterCommit: renderEditor,
     });
     row.appendChild(labelEl);
     row.appendChild(wrapOverrideControl(input, meta));
