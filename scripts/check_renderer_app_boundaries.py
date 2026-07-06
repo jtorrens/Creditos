@@ -119,6 +119,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "movieBodySourceFrames",
     "movieBodySourceTotal",
     "normalizeMovieSegments",
+    "normalizeReferenceVideo",
 ]
 
 

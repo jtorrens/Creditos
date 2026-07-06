@@ -63,9 +63,20 @@
         : (codec === 'h264' ? 'h264_standard' : 'prores_4444');
     }
 
+    function normalizeReferenceVideo(value) {
+      if (!value || !value.file_path) return null;
+      return {
+        schema: 'credits_reference_video',
+        version: 1,
+        name: String(value.name || 'video'),
+        file_path: String(value.file_path),
+      };
+    }
+
     return {
       defaultPreviewSettings,
       normalizePreviewSettings,
+      normalizeReferenceVideo,
       normalizeRenderCodec,
       normalizeRenderProfile,
     };
