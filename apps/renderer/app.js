@@ -503,7 +503,6 @@
     resetCartelaBlockOverride: resetCartelaBlockOverrideInDomain,
     resetCartelaBlockTypographyOverride: resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaTitleTypographyOverride: resetCartelaTitleTypographyOverrideInDomain,
-    resetSourceRefTypography,
     resetStyleBlockAlignmentOverride: resetStyleBlockAlignmentOverrideInDomain,
     resetStyleBlockOverride: resetStyleBlockOverrideInDomain,
     resetStyleCartelaOverride: resetStyleCartelaOverrideInDomain,
@@ -518,10 +517,6 @@
     updateCartelaBlockStyle: updateCartelaBlockStyleInDomain,
     updateCartelaBlockTypography: updateCartelaBlockTypographyInDomain,
     updateCartelaTitleTypography: updateCartelaTitleTypographyInDomain,
-    updateSourceRefAlignment,
-    updateSourceRefColumns,
-    updateSourceRefTypography,
-    updateSourceRefVerticalAlign,
     updateStyleBlock: updateStyleBlockInDomain,
     updateStyleBlockAlignment: updateStyleBlockAlignmentInDomain,
     updateStyleCartela: updateStyleCartelaInDomain,
@@ -892,7 +887,6 @@
     resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaOverrideInStructure,
     resetCartelaTitleTypographyOverrideInDomain,
-    resetSourceRefTypography,
     resetStyleBlockAlignmentOverrideInDomain,
     resetStyleBlockOverrideInDomain,
     resetStyleCartelaOverrideInDomain,
@@ -915,10 +909,6 @@
     updateCartelaBlockTypographyInDomain,
     updateCartelaInStructure,
     updateCartelaTitleTypographyInDomain,
-    updateSourceRefAlignment,
-    updateSourceRefColumns,
-    updateSourceRefTypography,
-    updateSourceRefVerticalAlign,
     updateStyleBlockAlignmentInDomain,
     updateStyleBlockInDomain,
     updateStyleCartelaInDomain,
@@ -1200,7 +1190,6 @@
     getFontCatalog,
     getFontStyles,
     getProductionSettings,
-    getSelectedBlockTypography,
     getStyleById,
     hasCartelaBlockTypographyOverride,
     hasCartelaTitleTypographyOverride,
@@ -1208,11 +1197,9 @@
     makeFontSizeControl,
     makeFontStyleControl,
     normalizeColor,
-    resetSelectedBlockTypography,
     resetSelectedCartelaBlockTypographyOverride,
     resetSelectedCartelaTitleTypographyOverride,
     sectionLabel,
-    updateSelectedBlockTypography,
     updateSelectedCartelaBlockTypography,
     updateSelectedCartelaTitleTypography,
   });
@@ -1733,10 +1720,6 @@
     return appCartelaTypography.renderCartelaTitleTypographyControls(cartela);
   }
 
-  function renderBlockTypographyControls(ref) {
-    return appCartelaTypography.renderBlockTypographyControls(ref);
-  }
-
   function addEmptyCartela() {
     return appCommands.addEmptyCartela();
   }
@@ -1823,20 +1806,6 @@
   function getCartelaStyleBlock(cartela) {
     const style = getStyleById(cartela && cartela.style_id);
     return style ? getEffectiveStyleBlock(style) : null;
-  }
-
-  function getSelectedBlockTypography(ref) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    return getSourceRefTypography(page, ref);
-  }
-
-  function updateSelectedBlockTypography(ref, key, fields, options = {}) {
-    return appCommands.updateSelectedBlockTypography(ref, key, fields, options);
-  }
-
-  function resetSelectedBlockTypography(ref) {
-    return appCommands.resetSelectedBlockTypography(ref);
   }
 
   function inputRow(label, refId, field, fallback, options) {

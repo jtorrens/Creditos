@@ -242,53 +242,6 @@
       if (commandOptions.rerenderEditor) options.renderEditor();
     }
 
-    function updateSelectedBlockAlignment(ref, fields) {
-      const cartela = options.getSelectedCartela();
-      const page = options.findPageWithRef(cartela, ref);
-      if (!options.updateSourceRefAlignment(page, ref, fields)) return;
-      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-      options.renderPreview();
-      options.refreshPdfIfActive();
-    }
-
-    function updateSelectedBlockVerticalAlign(ref, value) {
-      const cartela = options.getSelectedCartela();
-      const page = options.findPageWithRef(cartela, ref);
-      if (!options.updateSourceRefVerticalAlign(page, ref, value)) return;
-      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-      options.renderPreview();
-      options.refreshPdfIfActive();
-    }
-
-    function updateSelectedBlockTypography(ref, key, fields, commandOptions = {}) {
-      const cartela = options.getSelectedCartela();
-      const page = options.findPageWithRef(cartela, ref);
-      if (!options.updateSourceRefTypography(page, ref, key, fields)) return;
-      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-      if (commandOptions.rerenderEditor) options.renderEditor();
-      options.renderPreview();
-      options.refreshPdfIfActive();
-    }
-
-    function resetSelectedBlockTypography(ref) {
-      const cartela = options.getSelectedCartela();
-      const page = options.findPageWithRef(cartela, ref);
-      if (!options.resetSourceRefTypography(page, ref)) return;
-      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-      options.renderEditor();
-      options.renderPreview();
-      options.refreshPdfIfActive();
-    }
-
-    function updateSelectedBlockColumns(ref, columns) {
-      const cartela = options.getSelectedCartela();
-      const page = options.findPageWithRef(cartela, ref);
-      if (!options.updateSourceRefColumns(page, ref, columns)) return;
-      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-      options.renderPreview();
-      options.refreshPdfIfActive();
-    }
-
     function updateStyleAfterOverrideChange(style) {
       options.pruneCurrentRedundantStyleDefaults();
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
@@ -727,7 +680,6 @@
       resetEditableStyleCartelaOverride,
       resetEditableStyleTitleTypographyOverride,
       resetEditableStyleTypographyOverride,
-      resetSelectedBlockTypography,
       resetSelectedCartelaBlockAlignmentOverride,
       resetSelectedCartelaBlockOverride,
       resetSelectedCartelaBlockTypographyOverride,
@@ -743,10 +695,6 @@
       updateProductionLayoutFromUi,
       updateProductionName,
       updateCurrentPdfCartela,
-      updateSelectedBlockAlignment,
-      updateSelectedBlockColumns,
-      updateSelectedBlockTypography,
-      updateSelectedBlockVerticalAlign,
       updateStyleAfterOverrideChange,
       updateStyleName,
       updateSelectedCartelaBlockAlignment,
