@@ -430,8 +430,8 @@
   const {
     frameForPdfPageIndex,
     pageForAnimationFrame,
-    pageIndexById,
     pageIndexForAnimationFrame,
+    videoTimeForPage,
   } = timelineDomain;
 
   const FONT_OPTIONS = [
@@ -5885,7 +5885,7 @@
           const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
           const blob = await renderPageToPngBlob(item.page, layout, {
             ...renderOptions,
-            videoTime: videoTimeForPage(item.page),
+            videoTime: currentVideoTimeForPage(item.page),
           });
           exportedPages.push({ fileName, bytes: await blobToBytes(blob) });
         }
@@ -5899,7 +5899,7 @@
           const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
           const blob = await renderPageToPngBlob(item.page, layout, {
             ...renderOptions,
-            videoTime: videoTimeForPage(item.page),
+            videoTime: currentVideoTimeForPage(item.page),
           });
           await writeBlobToDirectory(directory, fileName, blob);
         }
@@ -5910,7 +5910,7 @@
         const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
         const blob = await renderPageToPngBlob(item.page, layout, {
           ...renderOptions,
-          videoTime: videoTimeForPage(item.page),
+          videoTime: currentVideoTimeForPage(item.page),
         });
         if (mode === 'current') {
           await saveBlobAs(blob, fileName);
@@ -6055,15 +6055,10 @@
     };
   }
 
-  function videoTimeForPage(page) {
+  function currentVideoTimeForPage(page) {
     const plan = getPreviewAnimationPlan();
     if (!plan || !page) return null;
-    const pages = getCurrentPhysicalPages();
-    const pageIndex = pageIndexById(pages, page.id);
-    const frame = frameForPdfPageIndex(plan, pageIndex, pages);
-    const videoStartFrame = Math.max(0, Number(plan.videoStartFrame) || 0);
-    if (frame < videoStartFrame) return null;
-    return (frame - videoStartFrame) / Math.max(1, Number(plan.fps) || 25);
+    return videoTimeForPage(plan, page, getCurrentPhysicalPages());
   }
 
   async function drawExportBackground(ctx, layout, options = {}) {

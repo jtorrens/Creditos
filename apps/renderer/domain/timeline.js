@@ -117,6 +117,15 @@
       return (index * segment) + (segment / 2);
     }
 
+    function videoTimeForPage(plan, page, pages = []) {
+      if (!plan || !page) return null;
+      const pageIndex = pageIndexById(pages, page.id);
+      const frame = frameForPdfPageIndex(plan, pageIndex, pages);
+      const videoStartFrame = Math.max(0, Number(plan.videoStartFrame) || 0);
+      if (frame < videoStartFrame) return null;
+      return (frame - videoStartFrame) / Math.max(1, Number(plan.fps) || 25);
+    }
+
     return {
       dominantScrollPage,
       dominantScrollPageIndex,
@@ -127,6 +136,7 @@
       pageIndexById,
       pageIndexForAnimationFrame,
       scrollPageLocalCenter,
+      videoTimeForPage,
     };
   }
 

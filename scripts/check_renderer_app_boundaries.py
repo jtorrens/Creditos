@@ -151,6 +151,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "frameForScrollPage",
     "frameForScrollOffset",
     "scrollPageLocalCenter",
+    "videoTimeForPage",
     "moviePageItems",
     "groupMoviePageItemsByCartela",
     "groupPhysicalPagesByCartela",
