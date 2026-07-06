@@ -4,7 +4,8 @@ This project is functionally stable. Refactors should preserve behavior and move
 
 ## Current Pressure Points
 
-- `apps/renderer/app.js`: state, UI, editing, domain rules, styles, render, preview, and exports.
+- `apps/renderer/app.js`: renderer composition root and state wiring.
+- `apps/renderer/appLifecycle.js`: rebuild/render cycle, tab activation, source metadata, and JSON preview.
 - `apps/renderer/server.py`: HTTP routing, SQLite, persistence, endpoints, and import entrypoint.
 - `apps/desktop/main.js`: Electron host, dialogs, preferences, Git sync, FFmpeg/MOV, and server lifecycle.
 

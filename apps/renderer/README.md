@@ -38,7 +38,8 @@ apps/renderer/start.command
 
 - `server.py`: servidor local y parser XLSX.
 - `index.html`: estructura de la UI.
-- `app.js`: estado, estructura, render, preview, estilos y exportaciones.
+- `app.js`: composition root del renderer y cableado de estado.
+- `appLifecycle.js`: ciclo de rebuild/render, tabs y preview JSON.
 - `styles.css`: interfaz dark y layout de preview.
 
 ## Datos

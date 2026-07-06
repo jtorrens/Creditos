@@ -1306,6 +1306,26 @@
   const {
     renderCartelaImageControls: renderCartelaImageControlsFromImages,
   } = appCartelaImages;
+  const appLifecycle = globalThis.CreditosAppLifecycle.createAppLifecycle({
+    buildCurrentRenderJson,
+    documentRef: document,
+    els,
+    getStyleById,
+    renderCartelaList,
+    renderCartelaPreview,
+    renderEditor,
+    renderPdfPreview,
+    renderSettings,
+    renderStylePreview,
+    renderStylesPane,
+    scheduleAutosave,
+    selectedEpisode,
+    selectedProduction,
+    state,
+    structureJsonForOutput,
+    updateXlsxStatus,
+    windowRef: window,
+  });
 
   globalThis.CreditosUiBindings.bindAppUi({
     els,
@@ -1442,11 +1462,7 @@
   }
 
   function renderVisiblePanelPreviews() {
-    window.requestAnimationFrame(() => {
-      if (state.activeTab === 'styles') renderStylePreview(getStyleById(state.selectedStyleId));
-      if (state.activeTab === 'structure') renderCartelaPreview();
-      if (state.activeTab === 'pdf') renderPdfPreview();
-    });
+    return appLifecycle.renderVisiblePanelPreviews();
   }
 
   function createStructureFromSource(source, materials, previousStructure) {
@@ -1461,49 +1477,15 @@
   }
 
   function rebuild() {
-    if (state.source && state.structure) {
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    }
-
-    renderMeta();
-    renderSettings();
-    renderCartelaList();
-    renderEditor();
-    renderPreview();
-    renderCartelaPreview();
-    refreshPdfIfActive();
+    return appLifecycle.rebuild();
   }
 
   function renderMeta() {
-    if (!state.source) {
-      const production = selectedProduction();
-      const episode = selectedEpisode();
-      els.sourceMeta.textContent = production && episode
-        ? `${production.name} · ${episode.name} · asocia un archivo de créditos para empezar.`
-        : 'Crea o selecciona una producción y un episodio para empezar.';
-      updateXlsxStatus();
-      return;
-    }
-
-    const sheet = state.source.sheet || 'sin hoja';
-    els.sourceMeta.textContent = `${sheet} · ${state.materials.length} bloques de diseño · ${state.source.meta.loaded_file || ''}`;
-    updateXlsxStatus();
+    return appLifecycle.renderMeta();
   }
 
   function setActiveTab(tabName) {
-    if (!document.getElementById(`${tabName}Pane`)) tabName = 'settings';
-    state.activeTab = tabName;
-    els.tabButtons.forEach((button) => button.classList.toggle('active', button.dataset.tab === tabName));
-    els.tabPanes.forEach((pane) => pane.classList.toggle('active', pane.id === `${tabName}Pane`));
-    if (tabName === 'styles') {
-      renderStylesPane();
-      window.requestAnimationFrame(() => renderStylePreview(getStyleById(state.selectedStyleId)));
-    }
-    if (tabName === 'structure') {
-      renderCartelaPreview();
-      window.requestAnimationFrame(renderCartelaPreview);
-    }
-    if (tabName === 'pdf') renderPdfPreview();
+    return appLifecycle.setActiveTab(tabName);
   }
 
   function renderSettings() {
@@ -1834,18 +1816,11 @@
   }
 
   function renderPreview() {
-    if (!state.source && !state.structure && !state.render) {
-      if (els.jsonPreview) els.jsonPreview.value = '';
-      return;
-    }
-    if (els.jsonPreview) {
-      els.jsonPreview.value = JSON.stringify(state.preview === 'structure' ? getStructureJsonForOutput() : state.render, null, 2);
-    }
-    scheduleAutosave();
+    return appLifecycle.renderPreview();
   }
 
   function getStructureJsonForOutput() {
-    return structureJsonForOutput(state.structure, state.materials);
+    return appLifecycle.getStructureJsonForOutput();
   }
 
   function renderVisualPreview() {
@@ -1853,7 +1828,7 @@
   }
 
   function refreshPdfIfActive() {
-    if (state.activeTab === 'pdf') renderPdfPreview();
+    return appLifecycle.refreshPdfIfActive();
   }
 
   function renderPdfPreview() {

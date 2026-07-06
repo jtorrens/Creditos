@@ -79,7 +79,7 @@ python3 scripts/check_refactor_safety.py
 Validación completa habitual:
 
 ```bash
-node --check apps/renderer/domain/*.js apps/renderer/preview/*.js apps/renderer/export/*.js apps/renderer/ui/field_controls/*.js apps/renderer/app.js apps/desktop/main.js apps/desktop/native/*.js apps/desktop/repair-electron.js apps/desktop/run-electron.js
+node --check apps/renderer/*.js apps/renderer/domain/*.js apps/renderer/preview/*.js apps/renderer/export/*.js apps/renderer/ui/field_controls/*.js apps/desktop/main.js apps/desktop/native/*.js apps/desktop/repair-electron.js apps/desktop/run-electron.js
 python3 scripts/check_refactor_safety.py
 cd apps/desktop && npm run pack
 ```
