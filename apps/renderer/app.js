@@ -210,117 +210,111 @@
     nativeBridge,
     writeNativePreference,
   } = appApi;
-  const commonDomain = globalThis.CreditosDomainCommon.createCommonDomain();
-  const {
-    boolSelectValue,
-    clamp,
-    directoryFromPath,
-    escapeHtml,
-    joinPath,
-    normalizeBoolean,
-    normalizeColor,
-    normalizeEditableValue,
-    normalizeText,
-    safeFilePart,
-    safeStyleId,
-    styleNameFromFileName,
-  } = commonDomain;
-  const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
-  const {
-    buildFontCatalog,
-    fallbackFontCatalog,
-    fontStyleFromStyle,
-    fontStylesForFamily,
-    fontWeightFromStyle,
-    quoteFontFamily,
-  } = typographyDomain;
-  const settingsDomain = globalThis.CreditosDomainSettings.createSettingsDomain({
+  const coreDomainComposition = globalThis.CreditosAppComposition.createCoreDomainComposition({
     languageLocales: LANGUAGE_LOCALES,
     languageOptions: LANGUAGE_OPTIONS,
-    normalizeBoolean,
-    normalizeColor,
-    safeFilePart,
+    movEncodingProfiles: MOV_ENCODING_PROFILES,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     titleMinorWords: TITLE_MINOR_WORDS,
     typographyFields: TYPOGRAPHY_FIELDS,
   });
   const {
+    applyProductionFields,
     applyProtectedCapitalizations,
     applyTextCapitalization,
-    defaultSettings,
-    localeForLanguage,
-    normalizeLanguage,
-    normalizeProtectedCapitalizationTerms,
-    normalizeProtectedCapitalizationText,
-    normalizeSettings,
-    normalizeTextCapitalization,
-    selectedProductionHasStoredSettings,
-    settingsWithProductionLayout,
-    stripProductionLayoutFromSettings,
-    transformCartelaText,
-  } = settingsDomain;
-  const projectsDomain = globalThis.CreditosDomainProjects.createProjectsDomain({
-    normalizeColor,
-    normalizeSettings,
-  });
-  const {
-    applyProductionFields,
-    findSelectedProduction,
-    productionEpisodes,
-    productionLayout,
-    productionSettings,
-  } = projectsDomain;
-  const previewSettingsDomain = globalThis.CreditosDomainPreviewSettings.createPreviewSettingsDomain({
-    movEncodingProfiles: MOV_ENCODING_PROFILES,
-  });
-  const {
+    blockForTitleRepeat,
+    boolSelectValue,
+    buildFontCatalog,
+    cartelaBlockGap,
+    cartelaBlockTitleGap,
+    clamp,
+    contentAreaRect,
+    countTitleLine,
+    createMaterialsFromSource,
+    creditSourceId,
+    currentXlsxName,
+    defaultImportModelIdInDomain,
+    defaultLayoutForMaterial,
+    defaultOrientationForMaterial,
     defaultPreviewSettings,
+    defaultSettings,
+    directoryFromPath,
     encodingProfilesForCodec,
-    getExportRenderOptions: getExportRenderOptionsInDomain,
-    normalizePreviewSettings,
-    normalizeReferenceVideo,
-    normalizeRenderCodec,
-    normalizeRenderProfile,
-    renderProfileSupportsAlpha,
-  } = previewSettingsDomain;
-  const overridesDomain = globalThis.CreditosDomainOverrides.createOverridesDomain({
-    normalizeEditableValue,
-  });
-  const {
-    resolveOverride,
-    setOverride: setOverrideInDomain,
-  } = overridesDomain;
-  const timecodeDomain = globalThis.CreditosDomainTimecode.createTimecodeDomain();
-  const {
+    escapeHtml,
+    explicitTextLines,
     exportPageSelection,
+    fallbackFontCatalog,
+    findSelectedProduction,
     fitMovieTargetFrames,
+    fitPreviewZoom,
+    fontStyleFromStyle,
+    fontStylesForFamily,
+    fontWeightFromStyle,
+    forceRenderedRoleNameColumns,
     formatFrameDuration,
     formatSecondsAsFrameDuration,
+    getExportRenderOptionsInDomain,
+    getMaterialContentItems,
     getMovieBodyTargetFramesOrSource,
     getMovieExportFrameCounts,
     getMovieFps,
     getPageFrameCount,
+    getRenderedBlockUnits,
     groupMoviePageItemsByCartela,
+    groupMusicLicenseThemes,
     groupPhysicalPagesByCartela,
-    movieGroupFrameCounts,
-    moviePageItems,
+    importModelOptions,
+    joinPath,
+    labelForImportModel,
+    layoutForCartela,
+    localeForLanguage,
     movieBodySourceTotal,
     movieDurationFrameSummary,
-    normalizeDurationInputValue: normalizeDurationInputValueInDomain,
+    movieGroupFrameCounts,
+    moviePageItems,
+    normalizeBoolean,
+    normalizeColor,
+    normalizeDurationInputValueInDomain,
+    normalizeEditableValue,
+    normalizeLanguage,
     normalizeMovieSegmentSettings,
+    normalizePreviewSettings,
+    normalizeProtectedCapitalizationTerms,
+    normalizeProtectedCapitalizationText,
+    normalizeReferenceVideo,
+    normalizeRenderCodec,
+    normalizeRenderProfile,
+    normalizeSettings,
+    normalizeSource,
+    normalizeText,
+    normalizeTextCapitalization,
+    numberWithFallback,
     parseFrameDuration,
+    pdfPageVerticalJustify,
+    productionEpisodes,
+    productionLayout,
+    productionSettings,
+    quoteFontFamily,
+    renderMaterial,
+    renderedUnitText,
+    renderProfileSupportsAlpha,
+    resolveOverride,
+    roleNameGapForOrientation,
+    safeFilePart,
+    safeStyleId,
     scrollSourceFrameCounts,
-  } = timecodeDomain;
-  const paginationUnitsDomain = globalThis.CreditosDomainPaginationUnits.createPaginationUnitsDomain();
-  const {
-    blockForTitleRepeat,
-    countTitleLine,
-    creditSourceId,
-    explicitTextLines,
+    selectedImportModelIdInDomain,
+    selectedProductionHasStoredSettings,
+    setOverrideInDomain,
+    settingsWithProductionLayout,
     sourceBlankRowCounts,
     sourceUnitStartRow,
+    stripProductionLayoutFromSettings,
+    styleNameFromFileName,
+    transformCartelaText,
     unitRenderOptions,
-  } = paginationUnitsDomain;
+    verticalOffset,
+  } = coreDomainComposition;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
     baseStyleCartela: baseStyleCartelaFromSettings,
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
@@ -396,50 +390,6 @@
     updateStyleTitleTypography: updateStyleTitleTypographyInDomain,
     updateStyleTypography: updateStyleTypographyInDomain,
   } = styleDomain;
-  const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
-    safeFilePart,
-  });
-  const {
-    currentXlsxName,
-    defaultImportModelId: defaultImportModelIdInDomain,
-    importModelOptions,
-    labelForImportModel,
-    normalizeSource,
-    selectedImportModelId: selectedImportModelIdInDomain,
-  } = sourceDomain;
-  const materialsDomain = globalThis.CreditosDomainMaterials.createMaterialsDomain({
-    normalizeText,
-    safeFilePart,
-  });
-  const {
-    createMaterialsFromSource,
-    defaultLayoutForMaterial,
-    defaultOrientationForMaterial,
-  } = materialsDomain;
-  const renderUnitsDomain = globalThis.CreditosDomainRenderUnits.createRenderUnitsDomain({
-    normalizeText,
-    resolveOverride,
-  });
-  const {
-    forceRenderedRoleNameColumns,
-    getMaterialContentItems,
-    getRenderedBlockUnits,
-    groupMusicLicenseThemes,
-    renderMaterial,
-    renderedUnitText,
-  } = renderUnitsDomain;
-  const layoutDomain = globalThis.CreditosDomainLayout.createLayoutDomain();
-  const {
-    cartelaBlockGap,
-    cartelaBlockTitleGap,
-    contentAreaRect,
-    fitPreviewZoom,
-    layoutForCartela,
-    numberWithFallback,
-    pdfPageVerticalJustify,
-    roleNameGapForOrientation,
-    verticalOffset,
-  } = layoutDomain;
   const structureDomain = globalThis.CreditosDomainStructure.createStructureDomain({
     defaultLayoutForMaterial,
     defaultOrientationForMaterial,
