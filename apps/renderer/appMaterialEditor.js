@@ -28,7 +28,7 @@
       lockButton.textContent = isLocked ? '🔒' : '🔓';
       lockButton.title = isLocked ? 'Desbloquear actualización desde XLS' : 'Bloquear actualización desde XLS';
       lockButton.setAttribute('aria-label', lockButton.title);
-      lockButton.addEventListener('click', () => options.toggleSourceRefLock(ref));
+      lockButton.addEventListener('click', () => toggleSourceRefLock(ref));
 
       const removeButton = documentRef.createElement('button');
       removeButton.type = 'button';
@@ -147,6 +147,21 @@
       row.className = 'line-row';
       row.innerHTML = `<div class="row-label">Fila ${item.row || '-'}<br>${options.escapeHtml(item.kind || 'item')}</div><pre>${options.escapeHtml(JSON.stringify(item, null, 2))}</pre>`;
       return row;
+    }
+
+    function toggleSourceRefLock(ref) {
+      const settings = options.ensureCartelaSourceRefSettings(options.getSelectedCartela(), ref);
+      if (!settings) return;
+      if (settings.locked) {
+        delete settings.locked;
+        delete settings.frozen_material;
+      } else {
+        const material = state.materials.find((candidate) => candidate.id === ref);
+        if (!material) return;
+        settings.locked = true;
+        settings.frozen_material = options.normalizeFrozenMaterial(material);
+      }
+      options.rebuild();
     }
 
     return {

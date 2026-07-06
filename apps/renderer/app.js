@@ -1192,16 +1192,17 @@
   });
   const appMaterialEditor = globalThis.CreditosAppMaterialEditor.createAppMaterialEditor({
     documentRef: document,
+    ensureCartelaSourceRefSettings,
     escapeHtml,
     getMaterialContentItems,
     getSelectedCartela,
     groupMusicLicenseThemes,
     inputRow,
     makePreviewInput,
+    normalizeFrozenMaterial,
     rebuild,
     sourceRefIsLocked,
     state,
-    toggleSourceRefLock,
   });
   const appCartelaEditor = globalThis.CreditosAppCartelaEditor.createAppCartelaEditor({
     boolSelectValue,
@@ -1664,21 +1665,6 @@
 
   function renderMaterialEditor(material, ref) {
     return appMaterialEditor.renderMaterialEditor(material, ref);
-  }
-
-  function toggleSourceRefLock(ref) {
-    const settings = ensureCartelaSourceRefSettings(getSelectedCartela(), ref);
-    if (!settings) return;
-    if (settings.locked) {
-      delete settings.locked;
-      delete settings.frozen_material;
-    } else {
-      const material = state.materials.find((candidate) => candidate.id === ref);
-      if (!material) return;
-      settings.locked = true;
-      settings.frozen_material = normalizeFrozenMaterial(material);
-    }
-    rebuild();
   }
 
   function renderCartelaBlockTypographyControls(cartela, overrides) {
