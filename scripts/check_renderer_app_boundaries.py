@@ -120,6 +120,11 @@ MOVED_DOMAIN_FUNCTIONS = [
     "movieBodySourceTotal",
     "normalizeMovieSegments",
     "normalizeReferenceVideo",
+    "buildPhysicalPages",
+    "countBlockVisualLines",
+    "countRenderedUnitLines",
+    "unitGapBefore",
+    "repeatBlockTitlesForCartela",
 ]
 
 
