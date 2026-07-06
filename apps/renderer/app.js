@@ -1793,25 +1793,6 @@
     rebuild();
   }
 
-  function renderBlockAlignmentControls(material, ref) {
-    const wrap = document.createElement('div');
-    const alignment = getSelectedBlockAlignment(ref, material);
-    const options = [
-      ['left', 'Izquierda'],
-      ['center', 'Centro'],
-      ['right', 'Derecha'],
-    ];
-
-    if (!materialHasPairedText(material)) {
-      wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (value) => updateSelectedBlockAlignment(ref, { text: value })));
-      return wrap;
-    }
-
-    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (value) => updateSelectedBlockAlignment(ref, { role: value })));
-    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (value) => updateSelectedBlockAlignment(ref, { name: value })));
-    return wrap;
-  }
-
   function renderCartelaBlockTypographyControls(cartela, overrides) {
     return appCartelaTypography.renderCartelaBlockTypographyControls(cartela, overrides);
   }
@@ -1912,26 +1893,6 @@
     return style ? getEffectiveStyleBlock(style) : null;
   }
 
-  function getSelectedBlockAlignment(ref, material) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    return getSourceRefAlignment(page, ref, material, cartela);
-  }
-
-  function updateSelectedBlockAlignment(ref, fields) {
-    return appCommands.updateSelectedBlockAlignment(ref, fields);
-  }
-
-  function getSelectedBlockVerticalAlign(ref) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    return getSourceRefVerticalAlign(page, ref);
-  }
-
-  function updateSelectedBlockVerticalAlign(ref, value) {
-    return appCommands.updateSelectedBlockVerticalAlign(ref, value);
-  }
-
   function getSelectedBlockTypography(ref) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
@@ -1944,16 +1905,6 @@
 
   function resetSelectedBlockTypography(ref) {
     return appCommands.resetSelectedBlockTypography(ref);
-  }
-
-  function getSelectedBlockColumns(ref) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    return getSourceRefColumns(page, ref);
-  }
-
-  function updateSelectedBlockColumns(ref, columns) {
-    return appCommands.updateSelectedBlockColumns(ref, columns);
   }
 
   function inputRow(label, refId, field, fallback, options) {
