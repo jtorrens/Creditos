@@ -42,6 +42,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "enforceUniqueMaterialRefs",
     "renderMaterial",
     "renderedUnitText",
+    "getRenderedBlockUnits",
+    "forceRenderedRoleNameColumns",
     "splitRenderedUnitsByBreaks",
     "countThemeLines",
     "countItemLines",

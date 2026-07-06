@@ -308,7 +308,9 @@
     resolveOverride,
   });
   const {
+    forceRenderedRoleNameColumns,
     getMaterialContentItems,
+    getRenderedBlockUnits,
     groupMusicLicenseThemes,
     renderMaterial,
     renderedUnitText,
@@ -1999,33 +2001,6 @@
       end_index: Math.max(0, lines.length - 1),
       line_count: lines.length,
     }];
-    return block;
-  }
-
-  function forceRenderedRoleNameColumns(block) {
-    (block.pages || []).forEach((page) => {
-      page.items = (page.items || []).map((unit) => {
-        if (unit.kind === 'list_item' && String(unit.value || '').trim()) {
-          return {
-            ...unit,
-            kind: 'crew_credit',
-            source_item_id: unit.source_item_id || unit.id,
-            role: unit.value,
-            name: '',
-          };
-        }
-        if (unit.kind === 'unclassified' && String(unit.B || '').trim() && !unit.C && !unit.D) {
-          return {
-            ...unit,
-            kind: 'crew_credit',
-            source_item_id: unit.source_item_id || unit.id,
-            role: unit.B,
-            name: '',
-          };
-        }
-        return unit;
-      });
-    });
     return block;
   }
 
@@ -5611,21 +5586,6 @@
       });
     });
     return physicalPages;
-  }
-
-  function getRenderedBlockUnits(block) {
-    if (!block) return [];
-    if (block.pages && block.pages.length) {
-      return block.pages.flatMap((page, pageIndex) => {
-        const items = page.items || [];
-        return items.map((item, itemIndex) => ({
-          ...item,
-          __force_page_break_after: pageIndex < block.pages.length - 1 && itemIndex === items.length - 1,
-        }));
-      });
-    }
-    if (block.type === 'music_licenses') return block.themes || [];
-    return block.items || [];
   }
 
   function countBlockVisualLines(block, cartela, units) {
