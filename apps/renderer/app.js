@@ -978,6 +978,30 @@
     state,
     updatePanelMarginButtons,
   });
+  const appMovieControls = globalThis.CreditosAppMovieControls.createAppMovieControls({
+    els,
+    fitMovieTargetFrames,
+    formatFrameDuration,
+    getCurrentPhysicalPages,
+    getMovieFps,
+    getProductionSettings,
+    groupMoviePageItemsByCartela,
+    groupPhysicalPagesByCartela,
+    movieBodySourceTotal,
+    movieDurationFrameSummary,
+    movieGroupFrameCounts,
+    moviePageItems,
+    normalizeDurationInputValueInDomain,
+    normalizeMovieSegmentSettings,
+    parseFrameDuration,
+    readExportPageSelection,
+    renderPdfPreview,
+    savePreviewSettingsFromUi,
+    scrollSourceFrameCounts,
+    state,
+    updateReferenceVideoDurationField,
+    windowRef: window,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -2795,120 +2819,63 @@
   }
 
   function currentMovieFps() {
-    return getMovieFps(getProductionSettings());
+    return appMovieControls.currentMovieFps();
   }
 
   function normalizeDurationInputElement(input, fps) {
-    const result = normalizeDurationInputValueInDomain(input && input.value, fps);
-    if (result === null) return null;
-    if (input) input.value = result.value;
-    return result.frames;
+    return appMovieControls.normalizeDurationInputElement(input, fps);
   }
 
   function readMovieSegmentSettings(fps) {
-    return normalizeMovieSegmentSettings(selectedMovieGroupCount(), {
-      preCount: els.moviePrerollCountInput && els.moviePrerollCountInput.value,
-      postCount: els.moviePostrollCountInput && els.moviePostrollCountInput.value,
-      preFrames: normalizeDurationInputElement(els.moviePrerollDurationInput, fps) || 0,
-      postFrames: normalizeDurationInputElement(els.moviePostrollDurationInput, fps) || 0,
-    });
+    return appMovieControls.readMovieSegmentSettings(fps);
   }
 
   function updateMovieSegmentInputs() {
-    const fps = currentMovieFps();
-    const groupCount = Math.max(0, selectedMovieGroupCount());
-    const settings = readMovieSegmentSettings(fps);
-    if (els.moviePrerollCountInput) els.moviePrerollCountInput.value = String(settings.preCount);
-    if (els.moviePostrollCountInput) els.moviePostrollCountInput.value = String(settings.postCount);
-    if (els.moviePrerollDurationInput) {
-      els.moviePrerollDurationInput.disabled = settings.preCount === 0 || groupCount === 0;
-      els.moviePrerollDurationInput.value = formatFrameDuration(settings.preFrames, fps);
-    }
-    if (els.moviePostrollDurationInput) {
-      els.moviePostrollDurationInput.disabled = settings.postCount === 0 || groupCount === 0;
-      els.moviePostrollDurationInput.value = formatFrameDuration(settings.postFrames, fps);
-    }
-    updateMovieDurationFields();
-    renderPdfPreview();
-    savePreviewSettingsFromUi();
+    return appMovieControls.updateMovieSegmentInputs();
   }
 
   function getSelectedMoviePages() {
-    if (!state.render || !state.structure) return [];
-    const pages = getCurrentPhysicalPages();
-    const selection = readExportPageSelection(pages);
-    return moviePageItems(selection.pages, selection.start);
+    return appMovieControls.getSelectedMoviePages();
   }
 
   function getSelectedMoviePageGroups() {
-    return groupMoviePageItemsByCartela(getSelectedMoviePages());
+    return appMovieControls.getSelectedMoviePageGroups();
   }
 
   function getSelectedMovieGroupFrameCounts(fps) {
-    return movieGroupFrameCounts(getSelectedMoviePageGroups(), fps);
+    return appMovieControls.getSelectedMovieGroupFrameCounts(fps);
   }
 
   function getMovieMode() {
-    return els.movieModeSelect && els.movieModeSelect.value === 'scroll' ? 'scroll' : 'pages';
+    return appMovieControls.getMovieMode();
   }
 
   function getSelectedScrollCartelaGroups() {
-    if (!state.render || !state.structure) return [];
-    return groupPhysicalPagesByCartela(getCurrentPhysicalPages());
+    return appMovieControls.getSelectedScrollCartelaGroups();
   }
 
   function selectedMovieGroupCount() {
-    return getMovieMode() === 'scroll'
-      ? getSelectedScrollCartelaGroups().length
-      : getSelectedMoviePageGroups().length;
+    return appMovieControls.selectedMovieGroupCount();
   }
 
   function getSelectedScrollSourceFrames(fps) {
-    return scrollSourceFrameCounts(getSelectedScrollCartelaGroups(), fps);
+    return appMovieControls.getSelectedScrollSourceFrames(fps);
   }
 
   function updateMovieDurationFields(options = {}) {
-    if (!els.movieRangeDurationInput || !els.movieTargetDurationInput) return;
-    const fps = currentMovieFps();
-    const frames = getMovieMode() === 'scroll' ? getSelectedScrollSourceFrames(fps) : getSelectedMovieGroupFrameCounts(fps);
-    const segments = readMovieSegmentSettings(fps);
-    const summary = movieDurationFrameSummary(frames, segments);
-    const formatted = formatFrameDuration(summary.totalFrames, fps);
-    const bodyFormatted = formatFrameDuration(summary.bodyFrames, fps);
-    const disabled = frames.length === 0;
-    els.movieRangeDurationInput.disabled = disabled;
-    els.movieTargetDurationInput.disabled = disabled;
-    els.movieRangeDurationInput.value = formatted;
-    if (options.resetTarget || disabled || !els.movieTargetDurationInput.value || els.movieTargetDurationInput.dataset.auto !== '0') {
-      els.movieTargetDurationInput.value = bodyFormatted;
-      els.movieTargetDurationInput.dataset.auto = '1';
-    }
-    updateReferenceVideoDurationField();
+    return appMovieControls.updateMovieDurationFields(options);
   }
 
   function validateMovieTargetDuration() {
-    if (!els.movieTargetDurationInput || !state.render || !state.structure) return;
-    const fps = currentMovieFps();
-    const targetFrames = parseFrameDuration(els.movieTargetDurationInput.value, fps);
-    if (targetFrames === null) {
-      window.alert(`Introduce la duración como mm:ss:ff. Para ${fps} fps, ff debe estar entre 00 y ${String(fps - 1).padStart(2, '0')}.`);
-      updateMovieDurationFields({ resetTarget: true });
-      return;
-    }
-    const segments = readMovieSegmentSettings(fps);
-    const fittedTargetFrames = fitMovieTargetFrames(targetFrames, selectedMovieGroupCount(), segments);
-    els.movieTargetDurationInput.value = formatFrameDuration(fittedTargetFrames, fps);
-    const sourceFrames = getMovieMode() === 'scroll' ? getSelectedScrollSourceFrames(fps) : getSelectedMovieGroupFrameCounts(fps);
-    els.movieTargetDurationInput.dataset.auto = fittedTargetFrames === movieBodySourceTotal(sourceFrames, segments) ? '1' : '0';
-    savePreviewSettingsFromUi();
+    return appMovieControls.validateMovieTargetDuration();
   }
 
   function movieTargetDurationFrames(fps) {
-    return els.movieTargetDurationInput ? parseFrameDuration(els.movieTargetDurationInput.value, fps) : null;
+    return appMovieControls.movieTargetDurationFrames(fps);
   }
 
   function movieUsesCustomTargetDuration() {
-    return !!(els.movieTargetDurationInput && els.movieTargetDurationInput.dataset.auto === '0');
+    return appMovieControls.movieUsesCustomTargetDuration();
   }
 
   function updateMovExportProgress(currentFrame, totalFrames) {
