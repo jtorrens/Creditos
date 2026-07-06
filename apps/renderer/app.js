@@ -834,6 +834,7 @@
     insertManualCartela,
     moveCartelaVisualOrderInStructure,
     persistSelectedProductionFields,
+    pruneCurrentRedundantStyleDefaults,
     refreshPdfIfActive,
     rebuild,
     renderCartelaList,
@@ -848,6 +849,12 @@
     resetCartelaOverrideInStructure,
     resetCartelaTitleTypographyOverrideInDomain,
     resetSourceRefTypography,
+    resetStyleBlockAlignmentOverrideInDomain,
+    resetStyleBlockOverrideInDomain,
+    resetStyleCartelaOverrideInDomain,
+    resetStyleTitleTypographyOverrideInDomain,
+    resetStyleTypographyOverrideInDomain,
+    scheduleStyleAutosave,
     selectedProduction,
     setSelectedProductionLocalFields,
     state,
@@ -861,6 +868,11 @@
     updateSourceRefColumns,
     updateSourceRefTypography,
     updateSourceRefVerticalAlign,
+    updateStyleBlockAlignmentInDomain,
+    updateStyleBlockInDomain,
+    updateStyleCartelaInDomain,
+    updateStyleTitleTypographyInDomain,
+    updateStyleTypographyInDomain,
     windowRef: window,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
@@ -1610,61 +1622,31 @@
   }
 
   function updateEditableStyleCartela(style, fields) {
-    if (!updateStyleCartelaInDomain(style, fields)) return;
-    pruneCurrentRedundantStyleDefaults();
-    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    scheduleStyleAutosave(style.id);
-    renderStylesPane();
-    renderCartelaList();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateEditableStyleCartela(style, fields);
   }
 
   function resetEditableStyleCartelaOverride(style, key) {
-    if (!resetStyleCartelaOverrideInDomain(style, key)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.resetEditableStyleCartelaOverride(style, key);
   }
 
   function updateEditableStyleBlock(style, fields) {
-    if (!updateStyleBlockInDomain(style, fields)) return;
-    pruneCurrentRedundantStyleDefaults();
-    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    scheduleStyleAutosave(style.id);
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateEditableStyleBlock(style, fields);
   }
 
   function updateEditableStyleBlockAlignment(style, key, value) {
-    if (!updateStyleBlockAlignmentInDomain(style, key, value)) return;
-    pruneCurrentRedundantStyleDefaults();
-    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    scheduleStyleAutosave(style.id);
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateEditableStyleBlockAlignment(style, key, value);
   }
 
   function resetEditableStyleBlockOverride(style, key) {
-    if (!resetStyleBlockOverrideInDomain(style, key)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.resetEditableStyleBlockOverride(style, key);
   }
 
   function resetEditableStyleBlockAlignmentOverride(style, key) {
-    if (!resetStyleBlockAlignmentOverrideInDomain(style, key)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.resetEditableStyleBlockAlignmentOverride(style, key);
   }
 
   function updateStyleAfterOverrideChange(style) {
-    pruneCurrentRedundantStyleDefaults();
-    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    scheduleStyleAutosave(style.id);
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateStyleAfterOverrideChange(style);
   }
 
   function renderStyleTypographyControls(style) {
@@ -1775,30 +1757,19 @@
   }
 
   function updateEditableStyleTitleTypography(style, fields) {
-    const base = getProductionSettings().typography.page_header;
-    if (!updateStyleTitleTypographyInDomain(style, fields, base)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.updateEditableStyleTitleTypography(style, fields);
   }
 
   function resetEditableStyleTitleTypographyOverride(style) {
-    if (!resetStyleTitleTypographyOverrideInDomain(style)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.resetEditableStyleTitleTypographyOverride(style);
   }
 
   function updateEditableStyleTypography(style, key, fields) {
-    if (!updateStyleTypographyInDomain(style, key, fields)) return;
-    pruneCurrentRedundantStyleDefaults();
-    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    scheduleStyleAutosave(style.id);
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateEditableStyleTypography(style, key, fields);
   }
 
   function resetEditableStyleTypographyOverride(style, key) {
-    if (!resetStyleTypographyOverrideInDomain(style, key)) return;
-    updateStyleAfterOverrideChange(style);
+    return appCommands.resetEditableStyleTypographyOverride(style, key);
   }
 
   async function createStyleFromUi() {

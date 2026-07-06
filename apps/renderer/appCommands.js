@@ -224,20 +224,116 @@
       options.refreshPdfIfActive();
     }
 
+    function updateStyleAfterOverrideChange(style) {
+      options.pruneCurrentRedundantStyleDefaults();
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function updateEditableStyleCartela(style, fields) {
+      if (!options.updateStyleCartelaInDomain(style, fields)) return;
+      options.pruneCurrentRedundantStyleDefaults();
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderCartelaList();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetEditableStyleCartelaOverride(style, key) {
+      if (!options.resetStyleCartelaOverrideInDomain(style, key)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function updateEditableStyleBlock(style, fields) {
+      if (!options.updateStyleBlockInDomain(style, fields)) return;
+      options.pruneCurrentRedundantStyleDefaults();
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function updateEditableStyleBlockAlignment(style, key, value) {
+      if (!options.updateStyleBlockAlignmentInDomain(style, key, value)) return;
+      options.pruneCurrentRedundantStyleDefaults();
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetEditableStyleBlockOverride(style, key) {
+      if (!options.resetStyleBlockOverrideInDomain(style, key)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function resetEditableStyleBlockAlignmentOverride(style, key) {
+      if (!options.resetStyleBlockAlignmentOverrideInDomain(style, key)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function updateEditableStyleTitleTypography(style, fields) {
+      const base = options.getProductionSettings().typography.page_header;
+      if (!options.updateStyleTitleTypographyInDomain(style, fields, base)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function resetEditableStyleTitleTypographyOverride(style) {
+      if (!options.resetStyleTitleTypographyOverrideInDomain(style)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function updateEditableStyleTypography(style, key, fields) {
+      if (!options.updateStyleTypographyInDomain(style, key, fields)) return;
+      options.pruneCurrentRedundantStyleDefaults();
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetEditableStyleTypographyOverride(style, key) {
+      if (!options.resetStyleTypographyOverrideInDomain(style, key)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
     return {
       addEmptyCartela,
       deleteSelectedManualCartela,
       moveSelectedCartelaVisualOrder,
+      resetEditableStyleBlockAlignmentOverride,
+      resetEditableStyleBlockOverride,
+      resetEditableStyleCartelaOverride,
+      resetEditableStyleTitleTypographyOverride,
+      resetEditableStyleTypographyOverride,
       resetSelectedBlockTypography,
       resetSelectedCartelaBlockAlignmentOverride,
       resetSelectedCartelaBlockOverride,
       resetSelectedCartelaBlockTypographyOverride,
       resetSelectedCartelaTitleTypographyOverride,
       resetSelectedCartelaOverride,
+      updateEditableStyleBlock,
+      updateEditableStyleBlockAlignment,
+      updateEditableStyleCartela,
+      updateEditableStyleTitleTypography,
+      updateEditableStyleTypography,
       updateSelectedBlockAlignment,
       updateSelectedBlockColumns,
       updateSelectedBlockTypography,
       updateSelectedBlockVerticalAlign,
+      updateStyleAfterOverrideChange,
       updateSelectedCartelaBlockAlignment,
       updateSelectedCartelaBlockStyle,
       updateSelectedCartelaBlockTypography,
