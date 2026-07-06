@@ -826,7 +826,9 @@
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
     buildCurrentRenderJson,
     deleteManualCartela,
+    getEffectiveStyleTitleTypography,
     getSelectedCartela,
+    getStyleById,
     getProductionSettings,
     insertManualCartela,
     moveCartelaVisualOrderInStructure,
@@ -834,20 +836,25 @@
     refreshPdfIfActive,
     rebuild,
     renderCartelaList,
+    renderCartelaPreview,
     renderEditor,
     renderPreview,
     renderSettings,
     renderStylesPane,
     resetCartelaBlockAlignmentOverrideInDomain,
     resetCartelaBlockOverrideInDomain,
+    resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaOverrideInStructure,
+    resetCartelaTitleTypographyOverrideInDomain,
     selectedProduction,
     setSelectedProductionLocalFields,
     state,
     stripProductionLayoutFromSettings,
     updateCartelaBlockAlignmentInDomain,
     updateCartelaBlockStyleInDomain,
+    updateCartelaBlockTypographyInDomain,
     updateCartelaInStructure,
+    updateCartelaTitleTypographyInDomain,
     windowRef: window,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
@@ -2577,45 +2584,19 @@
   }
 
   function resetSelectedCartelaBlockTypographyOverride(key) {
-    const cartela = getSelectedCartela();
-    if (!resetCartelaBlockTypographyOverrideInDomain(cartela, key)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedCartelaBlockTypographyOverride(key);
   }
 
   function updateSelectedCartelaBlockTypography(key, fields, options = {}) {
-    const cartela = getSelectedCartela();
-    if (!updateCartelaBlockTypographyInDomain(cartela, key, fields)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
-    if (options.rerenderEditor) renderEditor();
+    return appCommands.updateSelectedCartelaBlockTypography(key, fields, options);
   }
 
   function resetSelectedCartelaTitleTypographyOverride() {
-    const cartela = getSelectedCartela();
-    if (!resetCartelaTitleTypographyOverrideInDomain(cartela)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    renderCartelaPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedCartelaTitleTypographyOverride();
   }
 
   function updateSelectedCartelaTitleTypography(fields, options = {}) {
-    const cartela = getSelectedCartela();
-    if (!cartela) return;
-    const base = getEffectiveStyleTitleTypography(getStyleById(cartela.style_id)).page_header;
-    if (!updateCartelaTitleTypographyInDomain(cartela, fields, base)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderCartelaList();
-    renderPreview();
-    renderCartelaPreview();
-    refreshPdfIfActive();
-    if (options.rerenderEditor) renderEditor();
+    return appCommands.updateSelectedCartelaTitleTypography(fields, options);
   }
 
   function pruneCurrentRedundantStyleOverrides() {

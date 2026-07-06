@@ -135,15 +135,61 @@
       options.refreshPdfIfActive();
     }
 
+    function resetSelectedCartelaBlockTypographyOverride(key) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaBlockTypographyOverrideInDomain(cartela, key)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function updateSelectedCartelaBlockTypography(key, fields, commandOptions = {}) {
+      const cartela = options.getSelectedCartela();
+      if (!options.updateCartelaBlockTypographyInDomain(cartela, key, fields)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+      if (commandOptions.rerenderEditor) options.renderEditor();
+    }
+
+    function resetSelectedCartelaTitleTypographyOverride() {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaTitleTypographyOverrideInDomain(cartela)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.renderCartelaPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function updateSelectedCartelaTitleTypography(fields, commandOptions = {}) {
+      const cartela = options.getSelectedCartela();
+      if (!cartela) return;
+      const base = options.getEffectiveStyleTitleTypography(options.getStyleById(cartela.style_id)).page_header;
+      if (!options.updateCartelaTitleTypographyInDomain(cartela, fields, base)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderCartelaList();
+      options.renderPreview();
+      options.renderCartelaPreview();
+      options.refreshPdfIfActive();
+      if (commandOptions.rerenderEditor) options.renderEditor();
+    }
+
     return {
       addEmptyCartela,
       deleteSelectedManualCartela,
       moveSelectedCartelaVisualOrder,
       resetSelectedCartelaBlockAlignmentOverride,
       resetSelectedCartelaBlockOverride,
+      resetSelectedCartelaBlockTypographyOverride,
+      resetSelectedCartelaTitleTypographyOverride,
       resetSelectedCartelaOverride,
       updateSelectedCartelaBlockAlignment,
       updateSelectedCartelaBlockStyle,
+      updateSelectedCartelaBlockTypography,
+      updateSelectedCartelaTitleTypography,
       updateLayoutSetting,
       updateSelectedCartela,
       updateSettings,
