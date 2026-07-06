@@ -603,6 +603,28 @@
     loadCanvasImage: loadCanvasImageInPreview,
     measureCanvasBlock: measureCanvasBlockInPreview,
   } = canvasPreview;
+  const referenceVideoPreview = globalThis.CreditosPreviewReferenceVideo.createReferenceVideoPreview({
+    documentRef: document,
+    getCurrentFrame: () => state.previewAnimation.frame,
+    getReferenceVideo: () => state.referenceVideo,
+    getReferenceVideoElement: () => state.referenceVideoElement,
+    getReferenceVideoSrc: () => state.referenceVideoSrc,
+    isPlaying: () => state.previewAnimation.playing,
+    normalizeReferenceVideo,
+    setReferenceVideoDuration: (duration) => {
+      state.referenceVideoDuration = duration;
+      updateReferenceVideoDurationField();
+    },
+    setReferenceVideoElement: (videoEl) => {
+      state.referenceVideoElement = videoEl;
+    },
+    setReferenceVideoSrc: (src) => {
+      state.referenceVideoSrc = src;
+    },
+  });
+  const {
+    makeReferenceVideoElement: makeReferenceVideoElementInPreview,
+  } = referenceVideoPreview;
 
   const FONT_OPTIONS = [
     'Arial',
@@ -4407,66 +4429,7 @@
   }
 
   function makeReferenceVideoElement(plan, zoom) {
-    const video = normalizeReferenceVideo(state.referenceVideo);
-    if (!video || !video.file_path) return null;
-    const currentFrame = Math.max(0, Number(state.previewAnimation.frame) || 0);
-    if (currentFrame < Math.max(0, Number(plan.videoStartFrame) || 0)) return null;
-    const src = `/api/reference-video?path=${encodeURIComponent(video.file_path)}`;
-    if (!state.referenceVideoElement || state.referenceVideoSrc !== src) {
-      state.referenceVideoElement = document.createElement('video');
-      state.referenceVideoElement.className = 'reference-video-preview';
-      state.referenceVideoElement.muted = true;
-      state.referenceVideoElement.playsInline = true;
-      state.referenceVideoElement.preload = 'auto';
-      state.referenceVideoElement.src = src;
-      state.referenceVideoSrc = src;
-    }
-    const videoEl = state.referenceVideoElement;
-    videoEl.style.width = `${Math.max(1, Math.round(plan.layout.page_width * zoom))}px`;
-    videoEl.style.height = `${Math.max(1, Math.round(plan.layout.page_height * zoom))}px`;
-    syncReferenceVideoElement(videoEl, plan);
-    return videoEl;
-  }
-
-  function syncReferenceVideoElement(videoEl, plan) {
-    const currentFrame = Math.max(0, Number(state.previewAnimation.frame) || 0);
-    const videoStartFrame = Math.max(0, Number(plan.videoStartFrame) || 0);
-    if (currentFrame < videoStartFrame) {
-      videoEl.pause();
-      videoEl.style.visibility = 'hidden';
-      return;
-    }
-    const targetFrame = currentFrame - videoStartFrame;
-    const targetTime = targetFrame / Math.max(1, Number(plan.fps) || 25);
-    const updateDuration = () => {
-      const duration = Number(videoEl.duration);
-      if (Number.isFinite(duration) && duration > 0) {
-        state.referenceVideoDuration = duration;
-        updateReferenceVideoDurationField();
-      }
-    };
-    const seek = () => {
-      updateDuration();
-      const duration = Number(videoEl.duration);
-      if (Number.isFinite(duration) && duration > 0 && targetTime >= duration) {
-        videoEl.pause();
-        videoEl.style.visibility = 'hidden';
-        return;
-      }
-      videoEl.style.visibility = 'visible';
-      if (Number.isFinite(duration) && duration > 0) {
-        videoEl.currentTime = targetTime;
-      } else {
-        videoEl.currentTime = targetTime;
-      }
-      if (state.previewAnimation.playing) {
-        videoEl.play().catch(() => {});
-      } else {
-        videoEl.pause();
-      }
-    };
-    if (videoEl.readyState >= 1) seek();
-    else videoEl.addEventListener('loadedmetadata', seek, { once: true });
+    return makeReferenceVideoElementInPreview(plan, zoom);
   }
 
   function syncPdfPageToAnimationFrame(plan, frame) {
