@@ -16,7 +16,7 @@ def main():
     script_set = set(scripts)
     errors = []
 
-    expected_files = ["appApi.js"]
+    expected_files = ["appApi.js", "appComposition.js"]
     for folder in ["domain", "preview", "export", "ui/field_controls"]:
         expected_files.extend(
             path.relative_to(RENDERER_ROOT).as_posix()
@@ -30,9 +30,16 @@ def main():
     if not scripts or scripts[-1] != "app.js":
         errors.append("index.html must load app.js as the last script.")
 
-    if "appApi.js" in script_set and "app.js" in script_set:
-        if scripts.index("appApi.js") > scripts.index("app.js"):
-            errors.append("appApi.js must load before app.js.")
+    for script in ["appApi.js", "appComposition.js"]:
+        if script in script_set and "app.js" in script_set:
+            if scripts.index(script) > scripts.index("app.js"):
+                errors.append(f"{script} must load before app.js.")
+
+    if "appComposition.js" in script_set:
+        composition_index = scripts.index("appComposition.js")
+        for script in ["export/movPlan.js", "export/frameSequence.js", "ui/field_controls/registry.js"]:
+            if script in script_set and scripts.index(script) > composition_index:
+                errors.append(f"{script} must load before appComposition.js.")
 
     if "ui/field_controls/registry.js" in script_set:
         registry_index = scripts.index("ui/field_controls/registry.js")

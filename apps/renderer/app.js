@@ -646,52 +646,30 @@
     makeReferenceVideoElement: makeReferenceVideoElementInPreview,
     referenceVideoForCanvas: referenceVideoForCanvasInPreview,
   } = referenceVideoPreview;
-  const frameSequenceExport = globalThis.CreditosExportFrameSequence.createFrameSequenceExport({
-    onCancelAvailable: (cancelHandler) => {
-      if (state.movExportProgress) state.movExportProgress.setCancelHandler(cancelHandler);
+  const appComposition = globalThis.CreditosAppComposition.createAppComposition({
+    documentRef: document,
+    exportDependencies: {
+      buildScrollPlan,
+      getMovieBodyTargetFramesOrSource,
+      getMovieExportFrameCounts,
+      onCancelAvailable: (cancelHandler) => {
+        if (state.movExportProgress) state.movExportProgress.setCancelHandler(cancelHandler);
+      },
+      onEncoding: () => {
+        if (state.movExportProgress) state.movExportProgress.setPhase('Codificando MOV...');
+      },
+      throwIfCancelled: throwIfMovExportCancelled,
+      wait,
     },
-    onEncoding: () => {
-      if (state.movExportProgress) state.movExportProgress.setPhase('Codificando MOV...');
-    },
-    throwIfCancelled: throwIfMovExportCancelled,
-    wait,
-  });
-  const {
-    exportMovFramesIncrementally,
-    writeAnimatedFrames,
-    writeRepeatedFrames,
-  } = frameSequenceExport;
-  const movPlanExport = globalThis.CreditosExportMovPlan.createMovPlanExport({
-    buildScrollPlan,
-    getMovieBodyTargetFramesOrSource,
-    getMovieExportFrameCounts,
   });
   const {
     buildPageMoviePlan,
     buildScrollMoviePlan,
-  } = movPlanExport;
-  const fieldControlRegistry = globalThis.CreditosFieldControlRegistry.createFieldControlRegistry();
-  fieldControlRegistry.register('text', globalThis.CreditosTextFieldControl.createTextFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('number', globalThis.CreditosNumberFieldControl.createNumberFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('color', globalThis.CreditosColorFieldControl.createColorFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('duration', globalThis.CreditosDurationFieldControl.createDurationFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('select', globalThis.CreditosSelectFieldControl.createSelectFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('checkbox', globalThis.CreditosCheckboxFieldControl.createCheckboxFieldControl({
-    documentRef: document,
-  }));
-  fieldControlRegistry.register('typography', globalThis.CreditosTypographyFieldControl.createTypographyFieldControl({
-    documentRef: document,
-  }));
+    exportMovFramesIncrementally,
+    fieldControlRegistry,
+    writeAnimatedFrames,
+    writeRepeatedFrames,
+  } = appComposition;
 
   const FONT_OPTIONS = [
     'Arial',
