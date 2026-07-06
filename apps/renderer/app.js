@@ -836,6 +836,7 @@
     yesNoOptions: YES_NO_OPTIONS,
   });
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
+    applyExplicitCartelaOverridesFromSource,
     applyDatabaseOverview,
     buildCurrentRenderJson,
     clearCartelaStyleOverrides,
@@ -852,6 +853,7 @@
     initializeDatabase,
     insertManualCartela,
     moveCartelaVisualOrderInStructure,
+    migrateStructure,
     nativeBridge,
     persistSelectedProductionFields,
     pruneCurrentRedundantStyleDefaults,
@@ -882,8 +884,10 @@
     sanitizeStyleBlockOverrides,
     sanitizeStyleCartelaOverrides,
     scheduleStyleAutosave,
+    scheduleAutosave,
     selectedProduction,
     setSelectedProductionLocalFields,
+    showEpisodeStyleSourceModal: (episodes) => projectPanel.showEpisodeStyleSourceModal(episodes),
     state,
     stripProductionLayoutFromSettings,
     updateCartelaBlockAlignmentInDomain,
@@ -1145,54 +1149,7 @@
   }
 
   async function copyStylesFromEpisodeFlow() {
-    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
-      window.alert('Selecciona una producción y un capítulo antes de copiar estilos.');
-      return;
-    }
-    const candidates = currentProductionEpisodes().filter((episode) => String(episode.id) !== String(state.selectedEpisodeId));
-    if (!candidates.length) {
-      window.alert('No hay otros capítulos en esta producción.');
-      return;
-    }
-    const sourceEpisodeId = await projectPanel.showEpisodeStyleSourceModal(candidates);
-    if (!sourceEpisodeId) return;
-    const sourceEpisode = candidates.find((episode) => String(episode.id) === String(sourceEpisodeId));
-    const native = nativeBridge();
-    const message = `Asignar a este capítulo los estilos usados en "${sourceEpisode ? sourceEpisode.name : 'otro capítulo'}"? Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.`;
-    let confirmed = false;
-    if (native && native.confirm) {
-      const result = await native.confirm({ title: 'Asignar estilos', message, confirmLabel: 'Asignar estilos' });
-      confirmed = !!(result && result.confirmed);
-    } else {
-      confirmed = window.confirm(message);
-    }
-    if (!confirmed) return;
-
-    try {
-      const result = await dbPost('/api/db/load-episode', {
-        production_id: state.selectedProductionId,
-        episode_id: sourceEpisodeId,
-      });
-      const sourceRawById = new Map(((result.structure && result.structure.cartelas) || []).map((cartela) => [cartela.id, cartela]));
-      const sourceStructure = migrateStructure(result.structure);
-      const sourceById = new Map((sourceStructure && sourceStructure.cartelas ? sourceStructure.cartelas : []).map((cartela) => [cartela.id, cartela]));
-      let assigned = 0;
-      (state.structure.cartelas || []).forEach((cartela) => {
-        const sourceCartela = sourceById.get(cartela.id);
-        if (!sourceCartela) return;
-        applyExplicitCartelaOverridesFromSource(cartela, sourceCartela, sourceRawById.get(cartela.id) || sourceCartela);
-        assigned += 1;
-      });
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-      renderCartelaList();
-      renderEditor();
-      renderPreview();
-      refreshPdfIfActive();
-      scheduleAutosave();
-      window.alert(`Estilos asignados en ${assigned} cartela${assigned === 1 ? '' : 's'}.`);
-    } catch (error) {
-      window.alert('No se pudieron asignar los estilos: ' + error.message);
-    }
+    return appCommands.copyStylesFromEpisodeFlow();
   }
 
   async function createProductionFromUi() {

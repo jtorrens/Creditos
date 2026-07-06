@@ -592,8 +592,60 @@
       }
     }
 
+    async function copyStylesFromEpisodeFlow() {
+      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
+        options.windowRef.alert('Selecciona una producción y un capítulo antes de copiar estilos.');
+        return;
+      }
+      const candidates = options.currentProductionEpisodes().filter((episode) => String(episode.id) !== String(state.selectedEpisodeId));
+      if (!candidates.length) {
+        options.windowRef.alert('No hay otros capítulos en esta producción.');
+        return;
+      }
+      const sourceEpisodeId = await options.showEpisodeStyleSourceModal(candidates);
+      if (!sourceEpisodeId) return;
+      const sourceEpisode = candidates.find((episode) => String(episode.id) === String(sourceEpisodeId));
+      const native = options.nativeBridge();
+      const message = `Asignar a este capítulo los estilos usados en "${sourceEpisode ? sourceEpisode.name : 'otro capítulo'}"? Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.`;
+      let confirmed = false;
+      if (native && native.confirm) {
+        const result = await native.confirm({ title: 'Asignar estilos', message, confirmLabel: 'Asignar estilos' });
+        confirmed = !!(result && result.confirmed);
+      } else {
+        confirmed = options.windowRef.confirm(message);
+      }
+      if (!confirmed) return;
+
+      try {
+        const result = await options.dbPost('/api/db/load-episode', {
+          production_id: state.selectedProductionId,
+          episode_id: sourceEpisodeId,
+        });
+        const sourceRawById = new Map(((result.structure && result.structure.cartelas) || []).map((cartela) => [cartela.id, cartela]));
+        const sourceStructure = options.migrateStructure(result.structure);
+        const sourceById = new Map((sourceStructure && sourceStructure.cartelas ? sourceStructure.cartelas : []).map((cartela) => [cartela.id, cartela]));
+        let assigned = 0;
+        (state.structure.cartelas || []).forEach((cartela) => {
+          const sourceCartela = sourceById.get(cartela.id);
+          if (!sourceCartela) return;
+          options.applyExplicitCartelaOverridesFromSource(cartela, sourceCartela, sourceRawById.get(cartela.id) || sourceCartela);
+          assigned += 1;
+        });
+        state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+        options.renderCartelaList();
+        options.renderEditor();
+        options.renderPreview();
+        options.refreshPdfIfActive();
+        options.scheduleAutosave();
+        options.windowRef.alert(`Estilos asignados en ${assigned} cartela${assigned === 1 ? '' : 's'}.`);
+      } catch (error) {
+        options.windowRef.alert('No se pudieron asignar los estilos: ' + error.message);
+      }
+    }
+
     return {
       addEmptyCartela,
+      copyStylesFromEpisodeFlow,
       createProductionFromUi,
       createStyleFromUi,
       deleteSelectedProduction,

@@ -6,7 +6,7 @@ import sys
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 APP_JS = REPO_ROOT / "apps" / "renderer" / "app.js"
-APP_JS_MAX_LINES = 3664
+APP_JS_MAX_LINES = 3621
 ALLOW_GROWTH_ENV = "CREDITOS_ALLOW_APP_JS_GROWTH"
 
 
