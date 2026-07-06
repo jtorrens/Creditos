@@ -70,6 +70,11 @@ MOVED_DOMAIN_FUNCTIONS = [
     "countTitleLine",
     "normalizeCartelaStyle",
     "serializeCartelaStyle",
+    "safeFilePart",
+    "normalizeEditableValue",
+    "normalizeText",
+    "normalizeColor",
+    "normalizeBoolean",
 ]
 
 
