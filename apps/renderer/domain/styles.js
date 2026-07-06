@@ -413,6 +413,18 @@
       );
     }
 
+    function uniqueStyleId(styles, baseId) {
+      const base = baseId || 'estilo';
+      let candidate = base;
+      let index = 2;
+      const existing = new Set((styles || []).map((style) => style.id));
+      while (existing.has(candidate)) {
+        candidate = `${base}_${index}`;
+        index += 1;
+      }
+      return candidate;
+    }
+
     function mergeStyleBlockOverrides(current = {}, fields = {}) {
       const currentOverrides = sanitizeStyleBlockOverrides(current);
       const fieldOverrides = sanitizeStyleBlockOverrides(fields);
@@ -471,6 +483,7 @@
       sanitizeStyleBlockOverrides,
       serializeCartelaStyle,
       sameStyleValue,
+      uniqueStyleId,
     };
   }
 

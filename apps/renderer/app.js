@@ -329,6 +329,7 @@
     sanitizeStyleBlockOverrides,
     serializeCartelaStyle,
     sameStyleValue,
+    uniqueStyleId,
   } = styleDomain;
   const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
     safeFilePart,
@@ -2960,7 +2961,7 @@
       window.alert('Selecciona primero una producción.');
       return;
     }
-    const id = uniqueStyleId('nuevo_estilo');
+    const id = uniqueStyleId(state.styles, 'nuevo_estilo');
     const style = {
       schema: 'credits_cartela_style_json',
       version: 2,
@@ -2980,7 +2981,7 @@
   async function duplicateSelectedStyle() {
     const source = getStyleById(state.selectedStyleId);
     if (!source || !state.selectedProductionId) return;
-    const id = uniqueStyleId(safeStyleId(`${source.id}_copia`));
+    const id = uniqueStyleId(state.styles, safeStyleId(`${source.id}_copia`));
     const style = {
       schema: 'credits_cartela_style_json',
       version: 2,
@@ -4202,17 +4203,6 @@
       if (style.block.typography && !Object.keys(style.block.typography).length) delete style.block.typography;
       if (!Object.keys(style.block).length) style.block = {};
     });
-  }
-
-  function uniqueStyleId(baseId) {
-    let candidate = baseId || 'estilo';
-    let index = 2;
-    const existing = new Set(state.styles.map((style) => style.id));
-    while (existing.has(candidate)) {
-      candidate = `${baseId}_${index}`;
-      index += 1;
-    }
-    return candidate;
   }
 
   async function writeStyleFile(style, options = {}) {
