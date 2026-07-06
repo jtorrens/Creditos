@@ -133,6 +133,15 @@ MOVED_DOMAIN_FUNCTIONS = [
     "directoryFromPath",
     "joinPath",
     "styleNameFromFileName",
+    "pageForAnimationFrame",
+    "pageIndexForAnimationFrame",
+    "pageIndexById",
+    "frameForPdfPageIndex",
+    "dominantScrollPageIndex",
+    "dominantScrollPage",
+    "frameForScrollPage",
+    "frameForScrollOffset",
+    "scrollPageLocalCenter",
 ]
 
 
