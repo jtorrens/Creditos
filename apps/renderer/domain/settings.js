@@ -130,6 +130,24 @@
       return output;
     }
 
+    function transformCartelaText(text, cartela, settings) {
+      const normalizedSettings = normalizeSettings(settings || {});
+      const capitalization = normalizeTextCapitalization(
+        cartela && cartela.text_capitalization !== undefined
+          ? cartela.text_capitalization
+          : normalizedSettings.text_capitalization
+      );
+      return applyTextCapitalization(
+        text,
+        capitalization,
+        normalizedSettings.language,
+        normalizedSettings.protected_capitalizations,
+        cartela && cartela.use_protected_capitalization !== undefined
+          ? cartela.use_protected_capitalization
+          : normalizedSettings.use_protected_capitalization
+      );
+    }
+
     function normalizeLanguage(value) {
       const key = String(value || 'es').toLowerCase();
       return languageOptions.some(([option]) => option === key) ? key : 'es';
@@ -213,6 +231,7 @@
       normalizeTextCapitalization,
       settingsWithProductionLayout,
       stripProductionLayoutFromSettings,
+      transformCartelaText,
     };
   }
 

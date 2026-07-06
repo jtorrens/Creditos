@@ -232,6 +232,7 @@
     normalizeTextCapitalization,
     settingsWithProductionLayout,
     stripProductionLayoutFromSettings,
+    transformCartelaText,
   } = settingsDomain;
   const previewSettingsDomain = globalThis.CreditosDomainPreviewSettings.createPreviewSettingsDomain({
     movEncodingProfiles: MOV_ENCODING_PROFILES,
@@ -1857,24 +1858,6 @@
 
   function createStructureFromSource(source, materials, previousStructure) {
     return createStructureFromSourceWithSettings(source, materials, previousStructure, getProductionSettings());
-  }
-
-  function transformCartelaText(text, cartela, settings) {
-    const normalizedSettings = normalizeSettings(settings || getProductionSettings());
-    const capitalization = normalizeTextCapitalization(
-      cartela && cartela.text_capitalization !== undefined
-        ? cartela.text_capitalization
-        : normalizedSettings.text_capitalization
-    );
-    return applyTextCapitalization(
-      text,
-      capitalization,
-      normalizedSettings.language,
-      normalizedSettings.protected_capitalizations,
-      cartela && cartela.use_protected_capitalization !== undefined
-        ? cartela.use_protected_capitalization
-        : normalizedSettings.use_protected_capitalization
-    );
   }
 
   function buildRenderJson(source, materials, structure) {
@@ -4707,7 +4690,7 @@
     if (!text) return null;
     const element = document.createElement('div');
     element.className = `visual-static ${className}`;
-    element.textContent = transformCartelaText(text, options.cartela, options.settings);
+    element.textContent = transformCartelaText(text, options.cartela, options.settings || getProductionSettings());
     applyTypography(element, styleKey, options);
     applyTextWrapStyle(element, options.cartela);
     if (options.textAlign) element.style.textAlign = options.textAlign;
@@ -6285,7 +6268,7 @@
     if (!text) return null;
     const titleEl = document.createElement('div');
     titleEl.className = 'pdf-page-title';
-    titleEl.textContent = transformCartelaText(text, page.cartela, options.settings);
+    titleEl.textContent = transformCartelaText(text, page.cartela, options.settings || getProductionSettings());
     applyTypography(titleEl, 'page_header', {
       multiplier: page.cartela.font_size_multiplier,
       lineMultiplier: page.cartela.line_spacing_multiplier,
@@ -7032,7 +7015,7 @@
     if (!text) return null;
     const title = document.createElement('div');
     title.className = className;
-    title.textContent = transformCartelaText(text, cartela, options.settings);
+    title.textContent = transformCartelaText(text, cartela, options.settings || getProductionSettings());
     applyTextWrapStyle(title, cartela);
     applyTypography(title, styleKey, {
       multiplier: cartela.font_size_multiplier,
@@ -7050,7 +7033,7 @@
     (theme.lines || []).forEach((line, index) => {
       const lineEl = document.createElement('div');
       lineEl.className = index === 0 ? 'pdf-theme-title' : 'pdf-line';
-      lineEl.textContent = transformCartelaText(line.value || '', cartela, options.settings);
+      lineEl.textContent = transformCartelaText(line.value || '', cartela, options.settings || getProductionSettings());
       applyTextWrapStyle(lineEl, cartela);
       lineEl.style.textAlign = block.alignment && block.alignment.text ? block.alignment.text : 'center';
       applyTypography(lineEl, index === 0 ? 'role' : 'name', {
@@ -7127,7 +7110,7 @@
   function makePdfText(text, styleKey, options) {
     const el = document.createElement('div');
     el.className = options.className;
-    el.textContent = options.textAlreadyTransformed ? String(text || '') : transformCartelaText(text, options.cartela, options.settings);
+    el.textContent = options.textAlreadyTransformed ? String(text || '') : transformCartelaText(text, options.cartela, options.settings || getProductionSettings());
     applyTextWrapStyle(el, options.cartela);
     if (options.textAlreadyTransformed) {
       el.style.whiteSpace = 'pre';
