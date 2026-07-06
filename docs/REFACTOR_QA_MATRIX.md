@@ -7,7 +7,10 @@ branch: codex/refactor-parallel
 app: Creditos Refactor
 db esperada: data/creditos-refactor.db
 sync esperado: origin/codex/refactor-parallel
+validacion P1: usuario reporta "aparentemente todo bien" el 2026-07-06
 ```
+
+La matriz sigue siendo el checklist de regresion manual para repetir despues de cortes grandes de P3.
 
 ## Checklist
 
