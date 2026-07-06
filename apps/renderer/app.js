@@ -767,6 +767,23 @@
     makeFontSizeControl,
     makeFontStyleControl,
   } = appFonts;
+  const appFormRows = globalThis.CreditosAppFormRows.createAppFormRows({
+    currentMovieFps,
+    documentRef: document,
+    fieldControlRegistry,
+    formatFrameDuration,
+    formatSecondsAsFrameDuration,
+    parseFrameDuration,
+    renderEditor,
+    windowRef: window,
+  });
+  const {
+    localCheckboxRow,
+    localDurationRow,
+    localInputRow,
+    localNumberRow,
+    localSelectRow,
+  } = appFormRows;
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -3089,103 +3106,6 @@
     labelEl.textContent = label;
     row.appendChild(labelEl);
     row.appendChild(makeInput(refId, field, fallback, options));
-    return row;
-  }
-
-  function localInputRow(label, value, onInput, options) {
-    const row = document.createElement('div');
-    row.className = 'field-grid' + (options && options.override ? ' override-field' : '');
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const input = fieldControlRegistry.create('text', {
-      value,
-      multiline: options && options.multiline,
-      commitOnChange: options && options.commitOnChange,
-      onInput,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(wrapOverrideControl(input, options));
-    return row;
-  }
-
-  function localSelectRow(label, value, options, onInput, meta = {}) {
-    const row = document.createElement('div');
-    row.className = 'field-grid' + (meta.override ? ' override-field' : '');
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const select = fieldControlRegistry.create('select', {
-      value,
-      options,
-      onInput,
-      onAfterCommit: renderEditor,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(wrapOverrideControl(select, meta));
-    return row;
-  }
-
-  function localDurationRow(label, secondsValue, onInput, meta = {}) {
-    const row = document.createElement('div');
-    row.className = 'field-grid' + (meta.override ? ' override-field' : '');
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const input = fieldControlRegistry.create('duration', {
-      secondsValue,
-      currentFps: currentMovieFps,
-      formatFrameDuration,
-      formatSecondsAsFrameDuration,
-      parseFrameDuration,
-      alertFn: (message) => window.alert(message),
-      onInput,
-      onAfterCommit: renderEditor,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(wrapOverrideControl(input, meta));
-    return row;
-  }
-
-  function localNumberRow(label, value, min, max, onInput, step = 1, meta = {}) {
-    const row = document.createElement('div');
-    row.className = 'field-grid' + (meta.override ? ' override-field' : '');
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const input = fieldControlRegistry.create('number', {
-      value,
-      min,
-      max,
-      step,
-      onInput,
-      onAfterCommit: renderEditor,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(wrapOverrideControl(input, meta));
-    return row;
-  }
-
-  function wrapOverrideControl(control, meta = {}) {
-    if (!meta.override) return control;
-    const wrap = document.createElement('div');
-    wrap.className = 'override-control';
-    wrap.appendChild(control);
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.textContent = 'Restablecer';
-    reset.addEventListener('click', meta.reset || (() => {}));
-    wrap.appendChild(reset);
-    return wrap;
-  }
-
-  function localCheckboxRow(label, value, onInput) {
-    const row = document.createElement('div');
-    row.className = 'field-grid';
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    const inputWrap = fieldControlRegistry.create('checkbox', {
-      value,
-      onInput,
-    });
-    row.appendChild(labelEl);
-    row.appendChild(inputWrap);
     return row;
   }
 
