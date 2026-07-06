@@ -91,6 +91,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "normalizeText",
     "normalizeColor",
     "normalizeBoolean",
+    "resolveOverride",
+    "setOverride",
     "normalizeTypographyOverrides",
     "normalizeTitleTypographyOverrides",
     "normalizeBlockAlignment",

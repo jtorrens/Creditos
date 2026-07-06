@@ -257,6 +257,13 @@
     normalizeRenderProfile,
     renderProfileSupportsAlpha,
   } = previewSettingsDomain;
+  const overridesDomain = globalThis.CreditosDomainOverrides.createOverridesDomain({
+    normalizeEditableValue,
+  });
+  const {
+    resolveOverride,
+    setOverride: setOverrideInDomain,
+  } = overridesDomain;
   const timecodeDomain = globalThis.CreditosDomainTimecode.createTimecodeDomain();
   const {
     exportPageSelection,
@@ -4290,7 +4297,7 @@
       const rawValue = input.value;
       const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
       const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
-      setOverride(refId, field, parsedValue, parsedFallback);
+      setEditableOverride(refId, field, parsedValue, parsedFallback);
       state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
       renderPreview();
     });
@@ -4360,26 +4367,8 @@
     return settingsWithProductionLayout(getProductionSettings(), getProductionLayout()).layout;
   }
 
-  function setOverride(refId, field, value, fallback) {
-    state.structure.overrides = state.structure.overrides || {};
-    const hasChanged = normalizeEditableValue(value) !== normalizeEditableValue(fallback);
-
-    if (!hasChanged) {
-      if (state.structure.overrides[refId]) {
-        delete state.structure.overrides[refId][field];
-        if (!Object.keys(state.structure.overrides[refId]).length) delete state.structure.overrides[refId];
-      }
-      return;
-    }
-
-    state.structure.overrides[refId] = state.structure.overrides[refId] || {};
-    state.structure.overrides[refId][field] = value;
-  }
-
-  function resolveOverride(overrides, refId, field, fallback) {
-    return overrides[refId] && Object.prototype.hasOwnProperty.call(overrides[refId], field)
-      ? overrides[refId][field]
-      : fallback;
+  function setEditableOverride(refId, field, value, fallback) {
+    setOverrideInDomain(state.structure, refId, field, value, fallback);
   }
 
   function sectionLabel(text) {
