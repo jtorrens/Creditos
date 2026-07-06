@@ -940,10 +940,11 @@
     if (status && status.remoteIsNewer) suffix = ' · GitHub tiene una DB mas reciente';
     else if (status && status.localChanged) suffix = ' · DB local pendiente de subir';
     else if (status && status.available) suffix = ' · sincronizada';
-    els.databaseStatus.textContent = `${pathText}${suffix}`;
+    const targetText = status && status.syncTarget ? ` · rama ${status.syncTarget}` : '';
+    els.databaseStatus.textContent = `${pathText}${targetText}${suffix}`;
     els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && status.remoteIsNewer));
     els.databaseStatus.classList.toggle('db-sync-ok', Boolean(status && !status.remoteIsNewer));
-    els.databaseStatus.title = status && status.message ? status.message : pathText;
+    els.databaseStatus.title = status && status.message ? `${status.message}${targetText}` : pathText;
   }
 
   async function refreshDatabaseSyncStatus() {

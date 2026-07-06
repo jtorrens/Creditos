@@ -52,6 +52,7 @@ const nativeDialogs = createNativeDialogs({
   normalizeMovEncodingProfile,
 });
 const databaseSync = createDatabaseSync({
+  getAppChannel: () => APP_CHANNEL,
   getPersistentDatabasePath: persistentDatabasePath,
   getRepositoryRootForDatabase: repositoryRootForDatabase,
   reloadMainWindowServer,

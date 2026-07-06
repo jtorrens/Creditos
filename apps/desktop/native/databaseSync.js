@@ -4,6 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 function createDatabaseSync({
+  getAppChannel = () => process.env.CREDITOS_APP_CHANNEL || 'production',
   getPersistentDatabasePath,
   getRepositoryRootForDatabase,
   reloadMainWindowServer,
@@ -60,14 +61,55 @@ function createDatabaseSync({
     return Number.isFinite(timestamp) && timestamp > 0 ? timestamp * 1000 : null;
   }
 
-  async function gitUpstream(cwd) {
+  function appChannel() {
+    return String(getAppChannel() || process.env.CREDITOS_APP_CHANNEL || 'production').toLowerCase();
+  }
+
+  async function currentBranch(cwd) {
+    const branch = await gitOutput(['rev-parse', '--abbrev-ref', 'HEAD'], cwd);
+    if (!branch || branch === 'HEAD') {
+      throw new Error('No se pudo detectar la rama Git actual para sincronizar la DB.');
+    }
+    return branch;
+  }
+
+  async function configuredUpstreamOrNull(cwd) {
     try {
       const upstream = await gitOutput(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{u}'], cwd);
       if (upstream) return upstream;
     } catch (_error) {
-      // Use the shared branch if the local branch has no upstream configured.
+      // A branch without upstream can still sync to origin/<current-branch>.
     }
-    return 'origin/main';
+    return null;
+  }
+
+  function splitRemoteRef(ref) {
+    const [remote, ...branchParts] = String(ref || '').split('/');
+    if (!remote || !branchParts.length) {
+      throw new Error(`Target Git invalido para DB: ${ref || '(vacio)'}`);
+    }
+    return {
+      branch: branchParts.join('/'),
+      ref,
+      remote,
+    };
+  }
+
+  async function databaseSyncTarget(cwd) {
+    const upstream = await configuredUpstreamOrNull(cwd);
+    if (upstream) return splitRemoteRef(upstream);
+    const branch = await currentBranch(cwd);
+    return splitRemoteRef(`origin/${branch}`);
+  }
+
+  function assertRefactorIsolation(dbPath, target) {
+    if (appChannel() !== 'refactor') return;
+    if (path.basename(dbPath) !== 'creditos-refactor.db') {
+      throw new Error('Creditos Refactor solo puede sincronizar la DB independiente data/creditos-refactor.db.');
+    }
+    if (target.branch === 'main') {
+      throw new Error('Creditos Refactor no puede sincronizar la DB contra main.');
+    }
   }
 
   async function databaseGitStatus(options = {}) {
@@ -90,7 +132,9 @@ function createDatabaseSync({
     try {
       if (options.fetch) await runGit(['fetch', '--quiet'], { cwd: repoPath });
 
-      const upstream = await gitUpstream(repoPath);
+      const target = await databaseSyncTarget(repoPath);
+      assertRefactorIsolation(dbPath, target);
+      const upstream = target.ref;
       const localStatus = await gitOutput(['status', '--porcelain', '--', relativeDbPath], repoPath);
       const localStat = await fs.stat(dbPath);
       const localTimestamp = localStat.mtimeMs;
@@ -124,9 +168,13 @@ function createDatabaseSync({
 
       return {
         available: true,
+        appChannel: appChannel(),
         dbPath,
         repoPath,
         relativeDbPath,
+        syncTarget: target.ref,
+        syncTargetBranch: target.branch,
+        syncTargetRemote: target.remote,
         upstream,
         localChanged,
         remoteChanged,
@@ -160,14 +208,14 @@ function createDatabaseSync({
     }
 
     if (status.remoteChanged || status.remoteAhead) {
-      await runGit(['pull', '--ff-only'], { cwd: status.repoPath });
+      await runGit(['pull', '--ff-only', status.syncTargetRemote, status.syncTargetBranch], { cwd: status.repoPath });
       status = await databaseGitStatus({ fetch: false });
     }
 
     if (status.localChanged) {
       await runGit(['add', status.relativeDbPath], { cwd: status.repoPath });
       await runGit(['commit', '-m', 'Update credits database'], { cwd: status.repoPath });
-      await runGit(['push'], { cwd: status.repoPath });
+      await runGit(['push', status.syncTargetRemote, `HEAD:${status.syncTargetBranch}`], { cwd: status.repoPath });
     }
 
     return databaseGitStatus({ fetch: true });
@@ -200,7 +248,7 @@ function createDatabaseSync({
     const localDbCopy = path.join(tempRoot, 'local.sqlite');
     await fs.copyFile(status.dbPath, localDbCopy);
     try {
-      await runGit(['worktree', 'add', '--detach', worktreePath, status.upstream], { cwd: status.repoPath });
+      await runGit(['worktree', 'add', '--detach', worktreePath, status.syncTarget], { cwd: status.repoPath });
       const worktreeDbPath = path.join(worktreePath, status.relativeDbPath);
       await fs.mkdir(path.dirname(worktreeDbPath), { recursive: true });
       await fs.copyFile(localDbCopy, worktreeDbPath);
@@ -208,7 +256,7 @@ function createDatabaseSync({
       if (hasChanges) {
         await runGit(['add', status.relativeDbPath], { cwd: worktreePath });
         await runGit(['commit', '-m', 'Update credits database'], { cwd: worktreePath });
-        await runGit(['push', 'origin', 'HEAD:main'], { cwd: worktreePath });
+        await runGit(['push', status.syncTargetRemote, `HEAD:${status.syncTargetBranch}`], { cwd: worktreePath });
       }
       return databaseGitStatus({ fetch: true });
     } finally {
