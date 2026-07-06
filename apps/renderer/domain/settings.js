@@ -130,6 +130,10 @@
       return output;
     }
 
+    function selectedProductionHasStoredSettings(production) {
+      return !!(production && production.settings && Object.keys(production.settings).length);
+    }
+
     function transformCartelaText(text, cartela, settings) {
       const normalizedSettings = normalizeSettings(settings || {});
       const capitalization = normalizeTextCapitalization(
@@ -228,6 +232,7 @@
       normalizeProtectedCapitalizationTerms,
       normalizeProtectedCapitalizationText,
       normalizeSettings,
+      selectedProductionHasStoredSettings,
       normalizeTextCapitalization,
       settingsWithProductionLayout,
       stripProductionLayoutFromSettings,

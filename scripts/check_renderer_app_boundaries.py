@@ -143,6 +143,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "scrollUnitHasVisibleText",
     "settingsWithProductionLayout",
     "stripProductionLayoutFromSettings",
+    "selectedProductionHasStoredSettings",
     "transformCartelaText",
     "pdfPageVerticalJustify",
     "verticalOffset",

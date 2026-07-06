@@ -244,6 +244,7 @@
     normalizeProtectedCapitalizationText,
     normalizeSettings,
     normalizeTextCapitalization,
+    selectedProductionHasStoredSettings,
     settingsWithProductionLayout,
     stripProductionLayoutFromSettings,
     transformCartelaText,
@@ -1144,11 +1145,6 @@
     return normalizeSettings(production && production.settings ? production.settings : {});
   }
 
-  function selectedProductionHasStoredSettings() {
-    const production = selectedProduction();
-    return !!(production && production.settings && Object.keys(production.settings).length);
-  }
-
   function setSelectedProductionLocalFields(fields) {
     const production = selectedProduction();
     if (!production) return;
@@ -1526,7 +1522,7 @@
         production_id: state.selectedProductionId,
         episode_id: state.selectedEpisodeId,
       });
-      if (result.structure && result.structure.settings && !selectedProductionHasStoredSettings()) {
+      if (result.structure && result.structure.settings && !selectedProductionHasStoredSettings(selectedProduction())) {
         setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(result.structure.settings) });
         persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
       }
