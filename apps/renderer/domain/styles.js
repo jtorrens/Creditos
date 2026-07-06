@@ -3,10 +3,8 @@
     const {
       blockTypographyFields,
       normalizeBoolean,
-      normalizeTitleTypographyOverrides,
+      normalizeColor,
       normalizeTextCapitalization,
-      normalizeTypographyOverrides,
-      normalizeVerticalAlign,
       safeStyleId,
     } = dependencies;
 
@@ -180,15 +178,77 @@
       };
     }
 
+    function normalizeTypographyOverrides(typography) {
+      const normalized = {};
+      blockTypographyFields.forEach(([key]) => {
+        if (!typography || !typography[key]) return;
+        const value = typography[key];
+        const item = {};
+        if (value.font_size !== undefined && value.font_size !== '') item.font_size = Math.max(1, Number(value.font_size) || 1);
+        if (value.font_family) item.font_family = value.font_family;
+        if (value.font_style) item.font_style = value.font_style;
+        if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
+        if (value.color) item.color = normalizeColor(value.color);
+        if (Object.keys(item).length) normalized[key] = item;
+      });
+      return normalized;
+    }
+
+    function normalizeTitleTypographyOverrides(typography) {
+      const normalized = {};
+      const value = typography && typography.page_header ? typography.page_header : null;
+      if (!value) return normalized;
+      const item = {};
+      if (value.font_size !== undefined && value.font_size !== '') item.font_size = Math.max(1, Number(value.font_size) || 1);
+      if (value.font_family) item.font_family = value.font_family;
+      if (value.font_style) item.font_style = value.font_style;
+      if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
+      if (value.color) item.color = normalizeColor(value.color);
+      if (Object.keys(item).length) normalized.page_header = item;
+      return normalized;
+    }
+
+    function normalizeBlockAlignment(alignment, material, cartela) {
+      const defaults = defaultBlockAlignment(material, cartela);
+      return {
+        ...defaults,
+        ...(alignment || {}),
+      };
+    }
+
+    function defaultBlockAlignment(material, cartela) {
+      const orientation = cartela && cartela.orientation ? cartela.orientation : 'horizontal';
+      const paired = materialHasPairedText(material);
+      if (!paired) {
+        return { text: orientation === 'vertical' ? 'center' : 'left' };
+      }
+      if (orientation === 'vertical') {
+        return { role: 'center', name: 'center' };
+      }
+      return { role: 'right', name: 'left' };
+    }
+
+    function materialHasPairedText(material) {
+      return !!(material && (material.items || []).some((item) => item.kind === 'credit' || item.kind === 'crew_credit' || item.kind === 'cast'));
+    }
+
+    function normalizeVerticalAlign(value) {
+      return ['top', 'center', 'bottom'].includes(value) ? value : 'top';
+    }
+
     return {
       baseStyleCartelaFromSettings,
       getEffectiveCartelaTitleTypography,
       getEffectiveStyleBlock,
       getEffectiveStyleCartela,
       getEffectiveStyleTitleTypography,
+      normalizeBlockAlignment,
       normalizeCartelaStyle,
       normalizeStyleCartela,
       normalizeStyleBlock,
+      normalizeTitleTypographyOverrides,
+      normalizeTypographyOverrides,
+      normalizeVerticalAlign,
       sanitizeStyleCartelaOverrides,
       sanitizeStyleBlockOverrides,
       serializeCartelaStyle,

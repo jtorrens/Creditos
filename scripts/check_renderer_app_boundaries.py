@@ -75,6 +75,12 @@ MOVED_DOMAIN_FUNCTIONS = [
     "normalizeText",
     "normalizeColor",
     "normalizeBoolean",
+    "normalizeTypographyOverrides",
+    "normalizeTitleTypographyOverrides",
+    "normalizeBlockAlignment",
+    "defaultBlockAlignment",
+    "materialHasPairedText",
+    "normalizeVerticalAlign",
 ]
 
 
