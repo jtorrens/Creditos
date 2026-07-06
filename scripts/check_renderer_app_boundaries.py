@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+import pathlib
+import re
+import sys
+
+
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
+APP_JS = REPO_ROOT / "apps" / "renderer" / "app.js"
+
+MOVED_DOMAIN_FUNCTIONS = [
+    "defaultSettings",
+    "normalizeSettings",
+    "normalizeLanguage",
+    "normalizeTextCapitalization",
+    "localeForLanguage",
+    "normalizeProtectedCapitalizationTerms",
+    "normalizeProtectedCapitalizationText",
+    "applyProtectedCapitalizations",
+    "applyTextCapitalization",
+    "capitalizeWord",
+    "isDottedInitialism",
+    "getMaterialContentItems",
+    "materialHasRenderableContent",
+    "removeDefaultEmptyCartelas",
+    "cartelaHasRenderableRefs",
+    "ensureCartelaOrders",
+    "normalizeVisualOrders",
+    "getVisualCartelas",
+    "migrateStructure",
+    "defaultCartelaForMaterial",
+    "normalizeCartela",
+    "normalizeCartelaPage",
+    "normalizeFrozenMaterial",
+    "applyLockedMaterials",
+    "getLockedSourceRefSettings",
+    "normalizeCartelaImage",
+    "normalizeCartelaImages",
+    "migrateCartelaImages",
+    "cartelaImages",
+    "cartelaHasImages",
+    "getCartelaRefs",
+    "enforceUniqueMaterialRefs",
+]
+
+
+def main():
+    text = APP_JS.read_text(encoding="utf-8")
+    errors = []
+    for name in MOVED_DOMAIN_FUNCTIONS:
+        pattern = re.compile(rf"function\s+{re.escape(name)}\s*\(")
+        if pattern.search(text):
+            errors.append(f"apps/renderer/app.js defines moved domain function {name}()")
+    for error in errors:
+        print(f"ERROR: {error}", file=sys.stderr)
+    return 1 if errors else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

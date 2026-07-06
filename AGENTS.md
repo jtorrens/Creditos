@@ -35,10 +35,11 @@ py apps\renderer\server.py
 Refactor safety checks:
 
 ```bash
-python3 -m py_compile apps/renderer/server.py apps/renderer/server_db/*.py apps/renderer/import_models/*.py apps/renderer/import_models/common/*.py scripts/check_import_models.py scripts/check_parser_golden.py scripts/check_domain_no_dom.py
+python3 -m py_compile apps/renderer/server.py apps/renderer/server_db/*.py apps/renderer/server_services/*.py apps/renderer/import_models/*.py apps/renderer/import_models/common/*.py scripts/check_import_models.py scripts/check_parser_golden.py scripts/check_domain_no_dom.py scripts/check_server_boundaries.py scripts/check_native_boundaries.py scripts/check_renderer_app_boundaries.py
 python3 scripts/check_import_models.py
 python3 scripts/check_parser_golden.py
 python3 scripts/check_domain_no_dom.py
+python3 scripts/check_renderer_app_boundaries.py
 python3 scripts/check_server_boundaries.py
 python3 scripts/check_native_boundaries.py
 ```
