@@ -215,6 +215,12 @@
     sanitizeStyleBlockOverrides,
     sameStyleValue,
   } = styleDomain;
+  const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
+    safeFilePart,
+  });
+  const {
+    normalizeSource,
+  } = sourceDomain;
 
   const FONT_OPTIONS = [
     'Arial',
@@ -1823,30 +1829,6 @@
         data: getStructureJsonForOutput(),
       });
     }
-  }
-
-  function normalizeSource(source, fileName) {
-    const normalized = JSON.parse(JSON.stringify(source));
-    normalized.meta = normalized.meta || {};
-    normalized.meta.loaded_file = fileName;
-    normalized.blocks = (normalized.blocks || []).map((block, blockIndex) => {
-      const blockId = block.id || makeBlockId(block, blockIndex);
-      return {
-        ...block,
-        id: blockId,
-        items: (block.items || []).map((item, itemIndex) => ({
-          ...item,
-          id: item.id || makeItemId(blockId, item, itemIndex),
-          names: Array.isArray(item.names)
-            ? item.names.map((name, nameIndex) => ({
-                ...name,
-                id: name.id || makeNameId(blockId, item, name, nameIndex),
-              }))
-            : item.names,
-        })),
-      };
-    });
-    return normalized;
   }
 
   function createMaterialsFromSource(source) {
@@ -8824,10 +8806,6 @@
     return 'horizontal';
   }
 
-  function makeBlockId(block, index) {
-    return `block_${safeFilePart(block.group || index + 1)}_${safeFilePart(block.title || 'block')}`;
-  }
-
   function makeCrewMaterialId(blockId, title) {
     return `${blockId}_section_${safeFilePart(title || 'section')}`;
   }
@@ -8836,16 +8814,6 @@
     const count = (seenIds.get(baseId) || 0) + 1;
     seenIds.set(baseId, count);
     return count === 1 ? baseId : `${baseId}_${String(count).padStart(2, '0')}`;
-  }
-
-  function makeItemId(blockId, item, index) {
-    const label = item.role || item.title || item.actor || item.value || item.kind || 'item';
-    return `${blockId}_item_${String(index + 1).padStart(3, '0')}_${safeFilePart(label)}`;
-  }
-
-  function makeNameId(blockId, item, name, index) {
-    const label = item.role || item.title || item.actor || item.value || item.kind || 'item';
-    return `${blockId}_name_${safeFilePart(label)}_${String(index + 1).padStart(3, '0')}_${safeFilePart(name.name || 'name')}`;
   }
 
   function safeFilePart(value) {
