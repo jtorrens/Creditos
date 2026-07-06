@@ -382,6 +382,29 @@
     scheduleAutosave,
     scheduleStyleAutosave,
   } = appAutosave;
+  const appReferenceVideo = globalThis.CreditosAppReferenceVideo.createAppReferenceVideo({
+    currentMovieFps,
+    dbPost,
+    els,
+    formatSecondsAsFrameDuration,
+    nativeBridge,
+    normalizeReferenceVideo,
+    readLocalPreference,
+    referenceVideoForCanvas,
+    refreshPdfIfActive,
+    rememberFileDirectory,
+    renderPreview,
+    state,
+    storageKeys: STORAGE_KEYS,
+    windowRef: window,
+  });
+  const {
+    associateReferenceVideo,
+    clearReferenceVideo,
+    loadReferenceVideoDuration,
+    updateReferenceVideoDurationField,
+    updateReferenceVideoStatus,
+  } = appReferenceVideo;
   const appPreviewSettings = globalThis.CreditosAppPreviewSettings.createAppPreviewSettings({
     documentRef: document,
     els,
@@ -936,47 +959,6 @@
     }
   }
 
-  function updateReferenceVideoStatus() {
-    const video = state.referenceVideo;
-    const hasEpisode = !!(state.selectedProductionId && state.selectedEpisodeId);
-    if (els.referenceVideoStatus) {
-      els.referenceVideoStatus.textContent = video && video.name
-        ? `Vídeo referencia: ${video.name}`
-        : 'Sin vídeo de referencia';
-    }
-    if (els.openReferenceVideoBtn) {
-      els.openReferenceVideoBtn.disabled = !hasEpisode;
-      els.openReferenceVideoBtn.textContent = video ? 'Cambiar vídeo' : 'Asociar vídeo';
-    }
-    if (els.clearReferenceVideoBtn) {
-      els.clearReferenceVideoBtn.disabled = !hasEpisode || !video;
-    }
-    if (els.showPreviewReferenceVideoInput) {
-      els.showPreviewReferenceVideoInput.disabled = !video;
-      els.showPreviewReferenceVideoInput.checked = !!(video && state.showPreviewReferenceVideo);
-    }
-    if (els.showCartelaReferenceVideoInput) {
-      els.showCartelaReferenceVideoInput.disabled = !video;
-      els.showCartelaReferenceVideoInput.checked = !!(video && state.showCartelaReferenceVideo);
-    }
-    if (els.exportIncludeVideoInput) {
-      els.exportIncludeVideoInput.disabled = !video;
-      els.exportIncludeVideoInput.checked = !!(video && state.exportIncludeVideo);
-    }
-    updateReferenceVideoDurationField();
-    if (video && state.referenceVideoDuration === null) loadReferenceVideoDuration().catch((error) => console.warn(error));
-  }
-
-  function updateReferenceVideoDurationField() {
-    if (!els.referenceVideoDurationInput) return;
-    const duration = Number(state.referenceVideoDuration);
-    if (!state.referenceVideo || !Number.isFinite(duration) || duration <= 0) {
-      els.referenceVideoDurationInput.value = '--:--:--';
-      return;
-    }
-    els.referenceVideoDurationInput.value = formatSecondsAsFrameDuration(duration, currentMovieFps());
-  }
-
   function renderSelect(select, items, selectedId, emptyLabel, labelForItem) {
     if (!select) return;
     select.innerHTML = '';
@@ -1411,77 +1393,6 @@
       return;
     }
     els.xlsxInput.click();
-  }
-
-  async function associateReferenceVideo() {
-    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-      window.alert('Selecciona producción y episodio antes de asociar un vídeo.');
-      return;
-    }
-    const native = nativeBridge();
-    if (!native || !native.openReferenceVideo) {
-      window.alert('El selector de vídeo solo está disponible desde la app de escritorio.');
-      return;
-    }
-    try {
-      const result = await native.openReferenceVideo({ defaultPath: readLocalPreference(STORAGE_KEYS.referenceVideoDir) });
-      if (!result || result.canceled) return;
-      rememberFileDirectory(STORAGE_KEYS.referenceVideoDir, result.filePath);
-      state.referenceVideo = normalizeReferenceVideo({
-        schema: 'credits_reference_video',
-        version: 1,
-        name: result.name || 'video',
-        file_path: result.filePath,
-      });
-      state.referenceVideoElement = null;
-      state.referenceVideoSrc = '';
-      state.referenceVideoCanvasElement = null;
-      state.referenceVideoCanvasSrc = '';
-      state.referenceVideoDuration = null;
-      await persistReferenceVideo();
-      updateReferenceVideoStatus();
-      renderPreview();
-      refreshPdfIfActive();
-    } catch (error) {
-      window.alert('No se pudo asociar el vídeo de referencia: ' + error.message);
-    }
-  }
-
-  async function clearReferenceVideo() {
-    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) return;
-    state.referenceVideo = null;
-    state.referenceVideoElement = null;
-    state.referenceVideoSrc = '';
-    state.referenceVideoCanvasElement = null;
-    state.referenceVideoCanvasSrc = '';
-    state.referenceVideoDuration = null;
-    await persistReferenceVideo();
-    updateReferenceVideoStatus();
-    renderPreview();
-    refreshPdfIfActive();
-  }
-
-  async function loadReferenceVideoDuration() {
-    const video = normalizeReferenceVideo(state.referenceVideo);
-    if (!video || !video.file_path) {
-      state.referenceVideoDuration = null;
-      updateReferenceVideoDurationField();
-      return null;
-    }
-    const videoEl = await referenceVideoForCanvas();
-    const duration = Number(videoEl.duration);
-    state.referenceVideoDuration = Number.isFinite(duration) && duration > 0 ? duration : null;
-    updateReferenceVideoDurationField();
-    return state.referenceVideoDuration;
-  }
-
-  async function persistReferenceVideo() {
-    await dbPost('/api/db/save-document', {
-      production_id: state.selectedProductionId,
-      episode_id: state.selectedEpisodeId,
-      kind: 'reference',
-      data: state.referenceVideo || {},
-    });
   }
 
   async function parseXlsxFile(file) {
