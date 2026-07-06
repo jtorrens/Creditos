@@ -196,6 +196,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "resetStyleTitleTypographyOverride",
     "updateStyleTypography",
     "resetStyleTypographyOverride",
+    "pruneRedundantStyleOverrides",
+    "pruneRedundantStyleDefaults",
     "clamp",
     "directoryFromPath",
     "joinPath",

@@ -785,6 +785,106 @@
       return true;
     }
 
+    function pruneRedundantStyleOverrides(structure) {
+      if (!structure || !Array.isArray(structure.cartelas)) return false;
+      structure.cartelas.forEach((cartela) => {
+        const style = getStyleById(cartela.style_id);
+        const titleTypography = explicitCartelaTitleTypography(
+          cartela.title_typography,
+          effectiveStyleTitleTypographyForStyle(style).page_header
+        );
+        if (Object.keys(titleTypography).length) {
+          cartela.title_typography = titleTypography;
+        } else {
+          delete cartela.title_typography;
+        }
+
+        if (!style) return;
+        const styleCartela = effectiveStyleCartelaForStyle(style);
+        styleCartelaFields.forEach((key) => {
+          if (!Object.prototype.hasOwnProperty.call(cartela, key)) return;
+          if (sameStyleValue(cartela[key], styleCartela[key])) delete cartela[key];
+        });
+
+        if (!cartela.block_style) return;
+        const styleBlock = effectiveStyleBlockForStyle(style);
+        if (sameStyleValue(cartela.block_style.columns, styleBlock.columns)) delete cartela.block_style.columns;
+        if (sameStyleValue(cartela.block_style.concatenate_rows, styleBlock.concatenate_rows)) delete cartela.block_style.concatenate_rows;
+        if (sameStyleValue(cartela.block_style.force_role_name_columns, styleBlock.force_role_name_columns)) delete cartela.block_style.force_role_name_columns;
+        if (sameStyleValue(cartela.block_style.vertical_align, styleBlock.vertical_align)) delete cartela.block_style.vertical_align;
+        Object.keys(cartela.block_style.alignment || {}).forEach((key) => {
+          if (sameStyleValue(cartela.block_style.alignment[key], styleBlock.alignment && styleBlock.alignment[key])) {
+            delete cartela.block_style.alignment[key];
+          }
+        });
+        if (cartela.block_style.alignment && !Object.keys(cartela.block_style.alignment).length) delete cartela.block_style.alignment;
+
+        Object.keys(cartela.block_style.typography || {}).forEach((key) => {
+          if (sameStyleValue(cartela.block_style.typography[key], styleBlock.typography && styleBlock.typography[key])) {
+            delete cartela.block_style.typography[key];
+          }
+        });
+        if (cartela.block_style.typography && !Object.keys(cartela.block_style.typography).length) delete cartela.block_style.typography;
+        if (!Object.keys(cartela.block_style).length) delete cartela.block_style;
+      });
+      return true;
+    }
+
+    function pruneRedundantStyleDefaults(styles, settings = {}) {
+      const defaultCartelaFields = [
+        'duration',
+        'line_spacing',
+        'column_gap',
+        'role_name_gap',
+        'source_group_gap',
+        'block_gap',
+        'block_title_gap',
+        'page_top_margin',
+        'page_bottom_margin',
+        'page_left_margin',
+        'page_right_margin',
+        'repeat_block_titles',
+        'auto_text_wrap',
+        'text_capitalization',
+        'use_protected_capitalization',
+      ];
+      (styles || []).forEach((style) => {
+        const defaultCartela = baseStyleCartela();
+        defaultCartelaFields.forEach((key) => {
+          if (style.cartela && Object.prototype.hasOwnProperty.call(style.cartela, key) && sameStyleValue(style.cartela[key], defaultCartela[key])) {
+            delete style.cartela[key];
+          }
+        });
+        if (style.cartela && !Object.keys(style.cartela).length) style.cartela = {};
+
+        const defaultTitle = settings.typography && settings.typography.page_header;
+        const titleTypography = normalizeTitleTypographyOverrides(style.title_typography || {});
+        Object.keys(titleTypography.page_header || {}).forEach((key) => {
+          if (sameStyleValue(titleTypography.page_header[key], defaultTitle && defaultTitle[key])) delete titleTypography.page_header[key];
+        });
+        style.title_typography = titleTypography.page_header && Object.keys(titleTypography.page_header).length ? titleTypography : {};
+
+        if (!style.block) return;
+        const defaultBlock = normalizeStyleBlock({
+          typography: Object.fromEntries(blockTypographyFields.map(([key]) => [key, settings.typography && settings.typography[key]])),
+        });
+        if (style.block.concatenate_rows !== undefined && sameStyleValue(style.block.concatenate_rows, defaultBlock.concatenate_rows)) {
+          delete style.block.concatenate_rows;
+        }
+        if (style.block.force_role_name_columns !== undefined && sameStyleValue(style.block.force_role_name_columns, defaultBlock.force_role_name_columns)) {
+          delete style.block.force_role_name_columns;
+        }
+        Object.keys(style.block.typography || {}).forEach((key) => {
+          if (sameStyleValue(style.block.typography[key], defaultBlock.typography && defaultBlock.typography[key])) {
+            delete style.block.typography[key];
+          }
+        });
+        if (style.block.typography && !Object.keys(style.block.typography).length) delete style.block.typography;
+        if (!Object.keys(style.block).length) style.block = {};
+      });
+      return true;
+    }
+
     return {
       applyBlockStyleToCartelaRefs,
       applyExplicitCartelaOverridesFromSource,
@@ -824,6 +924,8 @@
       normalizeTitleTypographyOverrides,
       normalizeTypographyOverrides,
       normalizeVerticalAlign,
+      pruneRedundantStyleDefaults,
+      pruneRedundantStyleOverrides,
       resetCartelaBlockAlignmentOverride,
       resetCartelaBlockOverride,
       resetCartelaBlockTypographyOverride,
