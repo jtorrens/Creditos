@@ -36,6 +36,19 @@ def module_imports_concrete_model(path, concrete_model_names):
     return sorted(set(imported))
 
 
+def calls_validate_source_json(path):
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        function = node.func
+        if isinstance(function, ast.Name) and function.id == "validate_source_json":
+            return True
+        if isinstance(function, ast.Attribute) and function.attr == "validate_source_json":
+            return True
+    return False
+
+
 def main():
     sys.path.insert(0, str(PACKAGE_ROOT))
     registry = importlib.import_module("import_models.registry")
@@ -78,6 +91,8 @@ def main():
             errors.append(
                 f"{path.relative_to(REPO_ROOT)} imports concrete model(s): {', '.join(imported)}"
             )
+        if not calls_validate_source_json(path):
+            errors.append(f"{path.relative_to(REPO_ROOT)} does not call validate_source_json")
 
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)

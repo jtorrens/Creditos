@@ -3,6 +3,7 @@ from io import BytesIO
 
 from .common.credit_blocks import append_card_item, classify_numbered_title, new_block, normalize_group
 from .common.crew_rules import normalize_trailing_closing_copy, parse_crew_row
+from .common.source_schema import validate_source_json
 from .common.spreadsheet_readers import choose_sheet, read_sheet_rows, workbook_sheets
 
 
@@ -78,6 +79,7 @@ def parse(file_bytes, source_name, options=None):
         parsed = parse_rows(rows, source_name, sheet["name"])
         parsed["workbook_sheets"] = [{"name": s["name"], "is_active": s["is_active"]} for s in sheets]
         parsed["import_model_id"] = IMPORT_MODEL["id"]
+        validate_source_json(parsed)
         return parsed
 
 
