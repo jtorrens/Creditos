@@ -883,6 +883,22 @@
     state,
     updateStyleName,
   });
+  const appCartelaImages = globalThis.CreditosAppCartelaImages.createAppCartelaImages({
+    cartelaImages,
+    getSelectedCartela,
+    nativeBridge,
+    readLocalPreference,
+    rememberFileDirectory,
+    storageKeys: STORAGE_KEYS,
+    uniqueCartelaImageId,
+    updateSelectedCartela,
+    windowRef: window,
+  });
+  const {
+    associateCartelaImage,
+    removeCartelaImage,
+    updateCartelaImage,
+  } = appCartelaImages;
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1498,71 +1514,6 @@
 
   function updateSettings(fields) {
     return appCommands.updateSettings(fields);
-  }
-
-  async function associateCartelaImage() {
-    const cartela = getSelectedCartela();
-    if (!cartela) return;
-    const native = nativeBridge();
-    try {
-      let result = null;
-      if (native && native.openImage) {
-        result = await native.openImage({ defaultPath: readLocalPreference(STORAGE_KEYS.imageDir) });
-      } else if (window.showOpenFilePicker) {
-        const [handle] = await window.showOpenFilePicker({
-          types: [{ description: 'Imagen', accept: { 'image/*': ['.png', '.jpg', '.jpeg'] } }],
-          multiple: false,
-        });
-        const file = await handle.getFile();
-        result = {
-          canceled: false,
-          name: file.name,
-          mime: file.type || (file.name.toLowerCase().endsWith('.jpg') || file.name.toLowerCase().endsWith('.jpeg') ? 'image/jpeg' : 'image/png'),
-          base64: await blobToBase64(file),
-        };
-      }
-      if (!result || result.canceled) return;
-      rememberFileDirectory(STORAGE_KEYS.imageDir, result.filePath);
-      const images = cartelaImages(cartela);
-      updateSelectedCartela({
-        images: images.concat({
-          id: uniqueCartelaImageId(images),
-          name: result.name || 'imagen',
-          file_path: result.filePath || result.name || '',
-          mime: result.mime || 'image/png',
-          data_url: `data:${result.mime || 'image/png'};base64,${result.base64}`,
-          scale: 1,
-          offset_x: 0,
-          offset_y: 0,
-        }),
-      });
-    } catch (error) {
-      if (error && error.name === 'AbortError') return;
-      window.alert('No se pudo asociar la imagen: ' + error.message);
-    }
-  }
-
-  function removeCartelaImage(imageId) {
-    const cartela = getSelectedCartela();
-    if (!cartela) return;
-    updateSelectedCartela({ images: cartelaImages(cartela).filter((image) => image.id !== imageId) });
-  }
-
-  function updateCartelaImage(imageId, fields) {
-    const cartela = getSelectedCartela();
-    if (!cartela) return;
-    updateSelectedCartela({
-      images: cartelaImages(cartela).map((image) => image.id === imageId ? { ...image, ...fields } : image),
-    });
-  }
-
-  function blobToBase64(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
-      reader.onerror = () => reject(reader.error || new Error('No se pudo leer la imagen.'));
-      reader.readAsDataURL(blob);
-    });
   }
 
   function renderCartelaList() {

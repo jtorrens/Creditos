@@ -16,7 +16,7 @@ def main():
     script_set = set(scripts)
     errors = []
 
-    expected_files = ["appApi.js", "appFileOutput.js", "appDatabaseSync.js", "appPreferences.js", "appBootstrap.js", "appProjectState.js", "appAutosave.js", "appReferenceVideo.js", "appSourceImport.js", "appPreviewSettings.js", "appComposition.js", "appFonts.js", "appFormRows.js", "appCommands.js", "ui/bindings.js"]
+    expected_files = ["appApi.js", "appFileOutput.js", "appDatabaseSync.js", "appPreferences.js", "appBootstrap.js", "appProjectState.js", "appAutosave.js", "appReferenceVideo.js", "appSourceImport.js", "appPreviewSettings.js", "appCartelaImages.js", "appComposition.js", "appFonts.js", "appFormRows.js", "appCommands.js", "ui/bindings.js"]
     for folder in ["domain", "preview", "export", "ui/field_controls", "ui/panels"]:
         expected_files.extend(
             path.relative_to(RENDERER_ROOT).as_posix()
@@ -30,7 +30,7 @@ def main():
     if not scripts or scripts[-1] != "app.js":
         errors.append("index.html must load app.js as the last script.")
 
-    for script in ["appApi.js", "appFileOutput.js", "appDatabaseSync.js", "appPreferences.js", "appBootstrap.js", "appProjectState.js", "appAutosave.js", "appReferenceVideo.js", "appSourceImport.js", "appPreviewSettings.js", "appComposition.js", "appFonts.js", "appFormRows.js", "appCommands.js", "ui/bindings.js"]:
+    for script in ["appApi.js", "appFileOutput.js", "appDatabaseSync.js", "appPreferences.js", "appBootstrap.js", "appProjectState.js", "appAutosave.js", "appReferenceVideo.js", "appSourceImport.js", "appPreviewSettings.js", "appCartelaImages.js", "appComposition.js", "appFonts.js", "appFormRows.js", "appCommands.js", "ui/bindings.js"]:
         if script in script_set and "app.js" in script_set:
             if scripts.index(script) > scripts.index("app.js"):
                 errors.append(f"{script} must load before app.js.")
