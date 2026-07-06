@@ -387,10 +387,12 @@
     deleteManualCartela,
     enforceUniqueMaterialRefs,
     ensureCartelaOrders,
+    findPageWithRef,
     getCartelaRefs,
     getVisualCartelas,
     insertManualCartela,
     migrateStructure,
+    moveMaterialToCartela,
     moveCartelaVisualOrder: moveCartelaVisualOrderInStructure,
     normalizeCartelaImages,
     normalizeFrozenMaterial,
@@ -3388,7 +3390,7 @@
     addButton.type = 'button';
     addButton.textContent = 'Añadir bloque';
     addButton.addEventListener('click', () => {
-      moveMaterialToCartela(select.value, cartela);
+      moveMaterialToCartela(state.structure, select.value, cartela);
       rebuild();
     });
 
@@ -4335,32 +4337,6 @@
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
-  }
-
-  function findPageWithRef(cartela, ref) {
-    if (!cartela) return null;
-    return (cartela.pages || []).find((page) => (page.source_refs || []).includes(ref)) || null;
-  }
-
-  function moveMaterialToCartela(materialId, targetCartela) {
-    if (!state.structure || !targetCartela) return;
-    state.structure.cartelas.forEach((cartela) => {
-      (cartela.pages || []).forEach((page) => {
-        page.source_refs = (page.source_refs || []).filter((ref) => ref !== materialId);
-      });
-    });
-    const page = ensureFirstPage(targetCartela);
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[materialId] = page.source_ref_settings[materialId] || { columns: 1 };
-    page.source_refs.push(materialId);
-  }
-
-  function ensureFirstPage(cartela) {
-    cartela.pages = cartela.pages || [];
-    if (!cartela.pages[0]) cartela.pages.push({ id: `${cartela.id}_page_001`, source_refs: [], source_ref_settings: {} });
-    cartela.pages[0].source_refs = cartela.pages[0].source_refs || [];
-    cartela.pages[0].source_ref_settings = cartela.pages[0].source_ref_settings || {};
-    return cartela.pages[0];
   }
 
   function inputRow(label, refId, field, fallback, options) {

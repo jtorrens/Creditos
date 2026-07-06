@@ -483,6 +483,33 @@
       return (cartela && cartela.pages || []).flatMap((page) => page.source_refs || []);
     }
 
+    function findPageWithRef(cartela, ref) {
+      if (!cartela) return null;
+      return (cartela.pages || []).find((page) => (page.source_refs || []).includes(ref)) || null;
+    }
+
+    function ensureFirstPage(cartela) {
+      cartela.pages = cartela.pages || [];
+      if (!cartela.pages[0]) cartela.pages.push({ id: `${cartela.id}_page_001`, source_refs: [], source_ref_settings: {} });
+      cartela.pages[0].source_refs = cartela.pages[0].source_refs || [];
+      cartela.pages[0].source_ref_settings = cartela.pages[0].source_ref_settings || {};
+      return cartela.pages[0];
+    }
+
+    function moveMaterialToCartela(structure, materialId, targetCartela) {
+      if (!structure || !targetCartela) return false;
+      (structure.cartelas || []).forEach((cartela) => {
+        (cartela.pages || []).forEach((page) => {
+          page.source_refs = (page.source_refs || []).filter((ref) => ref !== materialId);
+        });
+      });
+      const page = ensureFirstPage(targetCartela);
+      page.source_ref_settings = page.source_ref_settings || {};
+      page.source_ref_settings[materialId] = page.source_ref_settings[materialId] || { columns: 1 };
+      page.source_refs.push(materialId);
+      return true;
+    }
+
     function enforceUniqueMaterialRefs(structure) {
       const seen = new Set();
       (structure.cartelas || []).forEach((cartela) => {
@@ -510,10 +537,12 @@
       deleteManualCartela,
       enforceUniqueMaterialRefs,
       ensureCartelaOrders,
+      findPageWithRef,
       getCartelaRefs,
       getVisualCartelas,
       insertManualCartela,
       migrateStructure,
+      moveMaterialToCartela,
       moveCartelaVisualOrder,
       normalizeCartelaImages,
       normalizeFrozenMaterial,
