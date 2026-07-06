@@ -272,6 +272,7 @@
   } = paginationUnitsDomain;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
+    getEffectiveCartelaBlockStyle,
     normalizeBoolean,
     normalizeColor,
     normalizeTextCapitalization,
@@ -287,6 +288,10 @@
     getEffectiveStyleBlock: getEffectiveStyleBlockWithSettings,
     getEffectiveStyleCartela: getEffectiveStyleCartelaWithSettings,
     getEffectiveStyleTitleTypography: getEffectiveStyleTitleTypographyWithSettings,
+    getSourceRefAlignment,
+    getSourceRefColumns,
+    getSourceRefTypography,
+    getSourceRefVerticalAlign,
     normalizeBlockAlignment,
     normalizeCartelaStyle,
     normalizeStyleCartela,
@@ -4350,42 +4355,6 @@
       .filter(Boolean)
       .map((material) => material.title || material.id);
     return titles.length ? titles.join(' + ') : `Cartela ${index + 1}`;
-  }
-
-  function getSourceRefColumns(page, ref, cartela) {
-    const styleBlock = getEffectiveCartelaBlockStyle(cartela);
-    if (styleBlock) return Math.max(1, Number(styleBlock.columns) || 1);
-    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
-      ? page.source_ref_settings[ref]
-      : {};
-    return Math.max(1, Number(settings.columns) || 1);
-  }
-
-  function getSourceRefAlignment(page, ref, material, effectiveCartela, sourceCartela) {
-    const styleBlock = getEffectiveCartelaBlockStyle(sourceCartela);
-    if (styleBlock) return normalizeBlockAlignment(styleBlock.alignment, material, effectiveCartela);
-    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
-      ? page.source_ref_settings[ref]
-      : {};
-    return normalizeBlockAlignment(settings.alignment, material, effectiveCartela);
-  }
-
-  function getSourceRefVerticalAlign(page, ref, cartela) {
-    const styleBlock = getEffectiveCartelaBlockStyle(cartela);
-    if (styleBlock) return normalizeVerticalAlign(styleBlock.vertical_align);
-    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
-      ? page.source_ref_settings[ref]
-      : {};
-    return normalizeVerticalAlign(settings.vertical_align);
-  }
-
-  function getSourceRefTypography(page, ref, cartela) {
-    const styleBlock = getEffectiveCartelaBlockStyle(cartela);
-    if (styleBlock) return normalizeTypographyOverrides(styleBlock.typography);
-    const settings = page && page.source_ref_settings && page.source_ref_settings[ref]
-      ? page.source_ref_settings[ref]
-      : {};
-    return normalizeTypographyOverrides(settings.typography);
   }
 
   function getSelectedBlockAlignment(ref, material) {

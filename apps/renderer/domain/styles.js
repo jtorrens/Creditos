@@ -2,6 +2,7 @@
   function createStyleDomain(dependencies = {}) {
     const {
       blockTypographyFields,
+      getEffectiveCartelaBlockStyle,
       normalizeBoolean,
       normalizeColor,
       normalizeTextCapitalization,
@@ -295,6 +296,40 @@
       return ['top', 'center', 'bottom'].includes(value) ? value : 'top';
     }
 
+    function getSourceRefColumns(page, ref, cartela) {
+      const styleBlock = getEffectiveCartelaBlockStyle(cartela);
+      if (styleBlock) return Math.max(1, Number(styleBlock.columns) || 1);
+      const settings = sourceRefSettings(page, ref);
+      return Math.max(1, Number(settings.columns) || 1);
+    }
+
+    function getSourceRefAlignment(page, ref, material, effectiveCartela, sourceCartela) {
+      const styleBlock = getEffectiveCartelaBlockStyle(sourceCartela);
+      if (styleBlock) return normalizeBlockAlignment(styleBlock.alignment, material, effectiveCartela);
+      const settings = sourceRefSettings(page, ref);
+      return normalizeBlockAlignment(settings.alignment, material, effectiveCartela);
+    }
+
+    function getSourceRefVerticalAlign(page, ref, cartela) {
+      const styleBlock = getEffectiveCartelaBlockStyle(cartela);
+      if (styleBlock) return normalizeVerticalAlign(styleBlock.vertical_align);
+      const settings = sourceRefSettings(page, ref);
+      return normalizeVerticalAlign(settings.vertical_align);
+    }
+
+    function getSourceRefTypography(page, ref, cartela) {
+      const styleBlock = getEffectiveCartelaBlockStyle(cartela);
+      if (styleBlock) return normalizeTypographyOverrides(styleBlock.typography);
+      const settings = sourceRefSettings(page, ref);
+      return normalizeTypographyOverrides(settings.typography);
+    }
+
+    function sourceRefSettings(page, ref) {
+      return page && page.source_ref_settings && page.source_ref_settings[ref]
+        ? page.source_ref_settings[ref]
+        : {};
+    }
+
     return {
       baseStyleCartelaFromSettings,
       clonePlainValue,
@@ -305,6 +340,10 @@
       getEffectiveStyleBlock,
       getEffectiveStyleCartela,
       getEffectiveStyleTitleTypography,
+      getSourceRefAlignment,
+      getSourceRefColumns,
+      getSourceRefTypography,
+      getSourceRefVerticalAlign,
       normalizeBlockAlignment,
       normalizeCartelaStyle,
       normalizeStyleCartela,

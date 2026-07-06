@@ -125,6 +125,10 @@ MOVED_DOMAIN_FUNCTIONS = [
     "countRenderedUnitLines",
     "unitGapBefore",
     "repeatBlockTitlesForCartela",
+    "getSourceRefColumns",
+    "getSourceRefAlignment",
+    "getSourceRefVerticalAlign",
+    "getSourceRefTypography",
 ]
 
 
