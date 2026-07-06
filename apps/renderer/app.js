@@ -550,12 +550,16 @@
   } = timelineDomain;
   const domPreview = globalThis.CreditosPreviewDom.createDomPreview({
     applyTypography,
+    cartelaBlockGap,
     cartelaBlockTitleGap,
     cartelaImages,
     contentAreaRect,
     creditSourceId,
     documentRef: document,
+    layoutForCartela,
     normalizeBoolean,
+    normalizeSettings,
+    pdfPageVerticalJustify,
     roleNameGapForOrientation,
     transformCartelaText,
     unitGapBefore,
@@ -564,9 +568,7 @@
   const {
     applyTextWrapStyle: applyTextWrapStyleInPreview,
     makeMarginOverlay: makeMarginOverlayInPreview,
-    makePdfCartelaImages,
-    makePdfPageTitle: makePdfPageTitleInPreview,
-    renderPdfBlock: renderPdfBlockInPreview,
+    makePdfSheetElement: makePdfSheetElementInPreview,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -4569,43 +4571,10 @@
   }
 
   function makePdfSheetElement(page, layout, options = {}) {
-    const effectiveLayout = layoutForCartela(layout, page && page.cartela);
-    const effectiveSettings = {
-      ...normalizeSettings(options.settings || getProductionSettings()),
-      layout: effectiveLayout,
-    };
-    const renderOptions = {
+    return makePdfSheetElementInPreview(page, layout, {
       ...options,
-      settings: effectiveSettings,
-    };
-    const sheetEl = document.createElement('section');
-    sheetEl.className = 'pdf-sheet';
-    sheetEl.style.width = `${effectiveLayout.page_width}px`;
-    sheetEl.style.height = `${effectiveLayout.page_height}px`;
-    sheetEl.style.background = options.transparent ? 'transparent' : effectiveLayout.page_background;
-    if (options.transparent) sheetEl.classList.add('transparent-export');
-
-    const pageInner = document.createElement('div');
-    pageInner.className = 'pdf-page-inner';
-    pageInner.style.padding = `${effectiveLayout.page_top_margin}px ${effectiveLayout.page_right_margin}px ${effectiveLayout.page_bottom_margin}px ${effectiveLayout.page_left_margin}px`;
-    makePdfCartelaImages(page.cartela, effectiveLayout).forEach((imageEl) => pageInner.appendChild(imageEl));
-
-    const pageBody = document.createElement('div');
-    pageBody.className = 'pdf-page-body';
-    pageBody.style.gap = `${cartelaBlockGap(page.cartela, effectiveLayout)}px`;
-    pageBody.style.justifyContent = pdfPageVerticalJustify(page);
-    pageBody.style.transform = `translateY(${Number(page.cartela.vertical_offset) || 0}px)`;
-
-    const pageTitle = makePdfPageTitle(page, renderOptions);
-    if (pageTitle) pageBody.appendChild(pageTitle);
-
-    page.blocks.forEach((block) => {
-      pageBody.appendChild(renderPdfBlock(block, page.cartela, effectiveLayout, renderOptions));
+      settings: options.settings || getProductionSettings(),
     });
-
-    pageInner.appendChild(pageBody);
-    sheetEl.appendChild(pageInner);
-    return sheetEl;
   }
 
   function getCurrentPhysicalPages() {
@@ -5182,13 +5151,6 @@
     renderEditor();
     renderPreview();
     renderPdfPreview();
-  }
-
-  function makePdfPageTitle(page, options = {}) {
-    return makePdfPageTitleInPreview(page, {
-      ...options,
-      settings: options.settings || getProductionSettings(),
-    });
   }
 
   async function exportPngPages(mode) {
@@ -5849,13 +5811,6 @@
 
   function wait(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
-  }
-
-  function renderPdfBlock(block, cartela, layout, options = {}) {
-    return renderPdfBlockInPreview(block, cartela, layout, {
-      ...options,
-      settings: options.settings || getProductionSettings(),
-    });
   }
 
   function applyTextWrapStyle(element, cartela) {
