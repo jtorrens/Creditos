@@ -297,6 +297,7 @@
     getSourceRefTypography,
     getSourceRefVerticalAlign,
     mergeBlockTypography,
+    mergeStyleBlockOverrides,
     normalizeBlockAlignment,
     normalizeCartelaStyle,
     normalizeStyleCartela,
@@ -4026,12 +4027,12 @@
     const cartela = getSelectedCartela();
     if (!cartela) return;
     if (cartela.style_id) {
-      cartela.block_style = normalizeStyleBlock({
-        ...(cartela.block_style || {}),
-        ...fields,
-        alignment: fields.alignment || (cartela.block_style && cartela.block_style.alignment) || {},
-        typography: fields.typography || (cartela.block_style && cartela.block_style.typography) || {},
-      });
+      const nextBlockStyle = mergeStyleBlockOverrides(cartela.block_style || {}, fields);
+      if (Object.keys(nextBlockStyle).length) {
+        cartela.block_style = nextBlockStyle;
+      } else {
+        delete cartela.block_style;
+      }
     } else {
       applyBlockStyleToCartelaRefs(cartela, fields);
     }

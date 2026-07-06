@@ -346,6 +346,27 @@
       return output;
     }
 
+    function mergeStyleBlockOverrides(current = {}, fields = {}) {
+      const currentOverrides = sanitizeStyleBlockOverrides(current);
+      const fieldOverrides = sanitizeStyleBlockOverrides(fields);
+      const output = {
+        ...currentOverrides,
+        ...fieldOverrides,
+      };
+      if (fields.alignment !== undefined) {
+        output.alignment = {
+          ...((currentOverrides && currentOverrides.alignment) || {}),
+          ...((fieldOverrides && fieldOverrides.alignment) || {}),
+        };
+      }
+      if (fields.typography !== undefined) {
+        output.typography = mergeBlockTypography(currentOverrides.typography, fieldOverrides.typography);
+      }
+      if (output.alignment && !Object.keys(output.alignment).length) delete output.alignment;
+      if (output.typography && !Object.keys(output.typography).length) delete output.typography;
+      return output;
+    }
+
     return {
       baseStyleCartelaFromSettings,
       clonePlainValue,
@@ -361,6 +382,7 @@
       getSourceRefTypography,
       getSourceRefVerticalAlign,
       mergeBlockTypography,
+      mergeStyleBlockOverrides,
       normalizeBlockAlignment,
       normalizeCartelaStyle,
       normalizeStyleCartela,
