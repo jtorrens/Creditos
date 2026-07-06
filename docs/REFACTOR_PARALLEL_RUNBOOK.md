@@ -4,17 +4,17 @@
 
 `main` es producción. La rama `codex/refactor-parallel` vive en un checkout separado y no debe compartir DB runtime con producción.
 
-Checkout usado:
+Checkout recomendado:
 
-```text
-/Volumes/SD_02/PROYECTOS/CREDITOS_REFACTOR
+```bash
+git clone <repo-url> CREDITOS_REFACTOR
+cd CREDITOS_REFACTOR
+git checkout codex/refactor-parallel
 ```
 
-Rama:
+Usar siempre rutas relativas al repo. No documentar ni fijar rutas absolutas de una máquina concreta.
 
-```text
-codex/refactor-parallel
-```
+Rama: `codex/refactor-parallel`
 
 ## Identidad de la app
 
@@ -47,7 +47,7 @@ data/creditos.db
 Desde:
 
 ```bash
-cd /Volumes/SD_02/PROYECTOS/CREDITOS_REFACTOR/apps/desktop
+cd apps/desktop
 npm start
 ```
 
@@ -58,15 +58,14 @@ El proceso Electron detecta `Creditos Refactor`, fija `CREDITOS_APP_CHANNEL=refa
 Desde el repo:
 
 ```bash
-cd /Volumes/SD_02/PROYECTOS/CREDITOS_REFACTOR
-apps/renderer/start.command
+./apps/renderer/start.command
 ```
 
 Ese script exporta:
 
 ```text
 CREDITOS_APP_CHANNEL=refactor
-CREDITOS_DB_PATH=/Volumes/SD_02/PROYECTOS/CREDITOS_REFACTOR/data/creditos-refactor.db
+CREDITOS_DB_PATH=<repo>/data/creditos-refactor.db
 ```
 
 ## Checks
@@ -86,6 +85,24 @@ cd apps/desktop && npm run pack
 ```
 
 El aviso de firma macOS en `npm run pack` es esperado si no hay certificado válido.
+
+## Importar y exportar
+
+Importar créditos:
+
+```text
+Usar el botón Asociar archivo dentro de Creditos Refactor.
+La subida XLSX/ODS usa /api/parse-xlsx y no depende de cgi.FieldStorage.
+```
+
+Exportar PNG/MOV:
+
+```text
+1. Confirmar que la DB visible contiene creditos-refactor.db.
+2. Confirmar que el capítulo seleccionado es el de pruebas.
+3. Usar un directorio de salida fuera de producción.
+4. Para MOV, hacer primero una exportación corta.
+```
 
 ## Sync DB
 
@@ -110,6 +127,8 @@ data/creditos-refactor.db
 rama origin/codex/refactor-parallel
 ```
 
+Si la rama mostrada es `origin/main`, no usar botones de sincronización y parar la prueba.
+
 ## QA manual mínima
 
 1. Abrir `Creditos Refactor`.
@@ -123,6 +142,22 @@ rama origin/codex/refactor-parallel
 9. Revisar preview páginas y scroll.
 10. Exportar PNG.
 11. Exportar MOV corto.
+12. Probar controles tipográficos: tamaño, familia, estilo, color y Restablecer si hay override.
+
+## Reportar diferencias contra main
+
+Anotar:
+
+```text
+producción/capítulo
+archivo importado
+estilo/cartela afectada
+captura o export PNG de main
+captura o export PNG de refactor
+pasos exactos para reproducir
+```
+
+No copiar la DB de producción a Refactor sin decisión explícita.
 
 ## Reglas
 
