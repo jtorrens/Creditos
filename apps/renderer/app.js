@@ -1179,6 +1179,47 @@
     state,
     toggleSourceRefLock,
   });
+  const appCartelaEditor = globalThis.CreditosAppCartelaEditor.createAppCartelaEditor({
+    boolSelectValue,
+    buildCurrentRenderJson,
+    clearCartelaStyleOverrides,
+    deleteSelectedManualCartela,
+    documentRef: document,
+    fieldControlRegistry,
+    getEffectiveCartela,
+    getEffectiveCartelaBlockStyle,
+    getStyleById,
+    hasCartelaBlockAlignmentOverride,
+    hasCartelaOverride,
+    hasCartelaStyleOverrides,
+    localCheckboxRow,
+    localDurationRow,
+    localInputRow,
+    localNumberRow,
+    localSelectRow,
+    moveMaterialToCartela,
+    nativeBridge,
+    normalizeBoolean,
+    rebuild,
+    refreshPdfIfActive,
+    renderCartelaBlockTypographyControls,
+    renderCartelaImageControls,
+    renderCartelaList,
+    renderCartelaTitleTypographyControls,
+    renderEditor,
+    renderPreview,
+    resetSelectedCartelaBlockAlignmentOverride,
+    resetSelectedCartelaBlockOverride,
+    resetSelectedCartelaOverride,
+    sectionLabel,
+    state,
+    textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
+    updateSelectedCartela,
+    updateSelectedCartelaBlockAlignment,
+    updateSelectedCartelaBlockStyle,
+    windowRef: window,
+    yesNoOptions: YES_NO_OPTIONS,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -1719,158 +1760,15 @@
   }
 
   function renderCartelaFields(cartela) {
-    const wrap = document.createElement('div');
-    const effectiveCartela = getEffectiveCartela(cartela);
-    wrap.appendChild(sectionLabel('Cartela'));
-    wrap.appendChild(localCheckboxRow('Incluir en salida', cartela.enabled !== false, (value) => updateSelectedCartela({ enabled: value })));
-    wrap.appendChild(renderCartelaStyleControls(cartela));
-    if (cartela.manual) wrap.appendChild(manualCartelaActionsRow());
-    if (cartela.manual) wrap.appendChild(localInputRow('Nombre de cartela', cartela.manual_name || '', (value) => updateSelectedCartela({ manual_name: value }), { commitOnChange: true }));
-    wrap.appendChild(localInputRow('Título de cartela', cartela.title || '', (value) => updateSelectedCartela({ title: value }), { commitOnChange: true }));
-    wrap.appendChild(localSelectRow('Orientación', effectiveCartela.orientation || 'horizontal', [
-      ['horizontal', 'Horizontal'],
-      ['vertical', 'Vertical'],
-    ], (value) => updateSelectedCartela({ orientation: value }), { override: hasCartelaOverride(cartela, 'orientation'), reset: () => resetSelectedCartelaOverride('orientation') }));
-    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateSelectedCartela({ columns: value }), 1, { override: hasCartelaOverride(cartela, 'columns'), reset: () => resetSelectedCartelaOverride('columns') }));
-    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateSelectedCartela({ vertical_offset: value }), 1, { override: hasCartelaOverride(cartela, 'vertical_offset'), reset: () => resetSelectedCartelaOverride('vertical_offset') }));
-    wrap.appendChild(localDurationRow('Duración por página', Number(effectiveCartela.duration) || 0, (value) => updateSelectedCartela({ duration: value }), { override: hasCartelaOverride(cartela, 'duration'), reset: () => resetSelectedCartelaOverride('duration') }));
-    wrap.appendChild(localNumberRow('Interlineado', Number(effectiveCartela.line_spacing) || 1.12, 0.1, null, (value) => updateSelectedCartela({ line_spacing: value }), 0.01, { override: hasCartelaOverride(cartela, 'line_spacing'), reset: () => resetSelectedCartelaOverride('line_spacing') }));
-    wrap.appendChild(localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => updateSelectedCartela({ column_gap: value }), 1, { override: hasCartelaOverride(cartela, 'column_gap'), reset: () => resetSelectedCartelaOverride('column_gap') }));
-    wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateSelectedCartela({ role_name_gap: value }), 1, { override: hasCartelaOverride(cartela, 'role_name_gap'), reset: () => resetSelectedCartelaOverride('role_name_gap') }));
-    wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateSelectedCartela({ source_group_gap: value }), 1, { override: hasCartelaOverride(cartela, 'source_group_gap'), reset: () => resetSelectedCartelaOverride('source_group_gap') }));
-    wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateSelectedCartela({ block_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_gap'), reset: () => resetSelectedCartelaOverride('block_gap') }));
-    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateSelectedCartela({ block_title_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_title_gap'), reset: () => resetSelectedCartelaOverride('block_title_gap') }));
-    wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_top_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_top_margin'), reset: () => resetSelectedCartelaOverride('page_top_margin') }));
-    wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_bottom_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetSelectedCartelaOverride('page_bottom_margin') }));
-    wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_left_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_left_margin'), reset: () => resetSelectedCartelaOverride('page_left_margin') }));
-    wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_right_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_right_margin'), reset: () => resetSelectedCartelaOverride('page_right_margin') }));
-    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateSelectedCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetSelectedCartelaOverride('repeat_block_titles') }));
-    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(effectiveCartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateSelectedCartela({ auto_text_wrap: normalizeBoolean(value, false) }), { override: hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => resetSelectedCartelaOverride('auto_text_wrap') }));
-    wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateSelectedCartela({ text_capitalization: value }), { override: hasCartelaOverride(cartela, 'text_capitalization'), reset: () => resetSelectedCartelaOverride('text_capitalization') }));
-    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(effectiveCartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateSelectedCartela({ use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => resetSelectedCartelaOverride('use_protected_capitalization') }));
-    wrap.appendChild(renderCartelaImageControls(cartela));
-    wrap.appendChild(renderCartelaTitleTypographyControls(cartela));
-    wrap.appendChild(renderCartelaBlockStyleControls(cartela));
-    wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateSelectedCartela({ notes: value }), { multiline: true }));
-    return wrap;
-  }
-
-  function manualCartelaActionsRow() {
-    const row = document.createElement('div');
-    row.className = 'field-grid';
-    const label = document.createElement('label');
-    label.textContent = 'Cartela manual';
-    const actions = document.createElement('div');
-    actions.className = 'source-controls';
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.textContent = 'Eliminar cartela';
-    deleteButton.addEventListener('click', deleteSelectedManualCartela);
-    actions.appendChild(deleteButton);
-    row.appendChild(label);
-    row.appendChild(actions);
-    return row;
+    return appCartelaEditor.renderCartelaFields(cartela);
   }
 
   function renderCartelaImageControls(cartela) {
     return renderCartelaImageControlsFromImages(cartela);
   }
 
-  function renderCartelaStyleControls(cartela) {
-    const wrap = document.createElement('div');
-    wrap.className = 'source-controls';
-    const select = fieldControlRegistry.create('select', {
-      value: cartela.style_id || '',
-      options: [
-        ['', 'Sin estilo'],
-        ...state.styles.map((style) => [style.id, style.name]),
-      ],
-      onInput: async (nextStyleId) => {
-        const previousStyleId = cartela.style_id || '';
-        if (nextStyleId === previousStyleId) return;
-        const action = await chooseCartelaStyleChangeAction(cartela, previousStyleId, nextStyleId);
-        if (action === 'cancel') {
-          select.value = previousStyleId;
-          return;
-        }
-        cartela.style_id = nextStyleId;
-        if (action === 'discard') clearCartelaStyleOverrides(cartela);
-        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-        renderCartelaList();
-        renderEditor();
-        renderPreview();
-        refreshPdfIfActive();
-      },
-    });
-
-    wrap.appendChild(select);
-    return wrap;
-  }
-
-  async function chooseCartelaStyleChangeAction(cartela, previousStyleId, nextStyleId) {
-    if (!previousStyleId || !hasCartelaStyleOverrides(cartela)) return 'discard';
-    const previousStyle = getStyleById(previousStyleId);
-    const nextStyle = getStyleById(nextStyleId);
-    const message = `La cartela tiene overrides sobre "${previousStyle ? previousStyle.name : 'el estilo actual'}". ¿Qué quieres hacer al cambiar a "${nextStyle ? nextStyle.name : 'Sin estilo'}"?`;
-    const native = nativeBridge();
-    if (native && native.chooseStyleOverrideAction) {
-      const result = await native.chooseStyleOverrideAction({ message });
-      return result && result.action ? result.action : 'cancel';
-    }
-    const response = window.prompt(`${message}\n\nEscribe C para conservar, D para descartar o X para cancelar.`, 'D');
-    if (/^c/i.test(response || '')) return 'keep';
-    if (/^d/i.test(response || '')) return 'discard';
-    return 'cancel';
-  }
-
-  function renderCartelaBlockStyleControls(cartela) {
-    const wrap = document.createElement('div');
-    wrap.appendChild(sectionLabel('Formato del bloque'));
-    const value = getEffectiveCartelaBlockStyle(cartela);
-    const alignment = value.alignment || {};
-    const options = [
-      ['left', 'Izquierda'],
-      ['center', 'Centro'],
-      ['right', 'Derecha'],
-    ];
-    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateSelectedCartelaBlockStyle({ columns: next }), 1, { override: !!(cartela.block_style && cartela.block_style.columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('columns') }));
-    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(value.concatenate_rows), YES_NO_OPTIONS, (next) => updateSelectedCartelaBlockStyle({ concatenate_rows: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.concatenate_rows !== undefined), reset: () => resetSelectedCartelaBlockOverride('concatenate_rows') }));
-    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(value.force_role_name_columns), YES_NO_OPTIONS, (next) => updateSelectedCartelaBlockStyle({ force_role_name_columns: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.force_role_name_columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('force_role_name_columns') }));
-    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateSelectedCartelaBlockAlignment('role', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'role'), reset: () => resetSelectedCartelaBlockAlignmentOverride('role') }));
-    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateSelectedCartelaBlockAlignment('name', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'name'), reset: () => resetSelectedCartelaBlockAlignmentOverride('name') }));
-    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateSelectedCartelaBlockAlignment('text', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'text'), reset: () => resetSelectedCartelaBlockAlignmentOverride('text') }));
-    wrap.appendChild(localSelectRow('Alineación vertical del bloque', value.vertical_align || 'top', [
-      ['top', 'Arriba'],
-      ['center', 'Centrado'],
-      ['bottom', 'Abajo'],
-    ], (next) => updateSelectedCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => resetSelectedCartelaBlockOverride('vertical_align') }));
-    wrap.appendChild(renderCartelaBlockTypographyControls(cartela, value.typography || {}));
-    return wrap;
-  }
-
   function renderSourceRefControls(cartela) {
-    const wrap = document.createElement('div');
-    wrap.className = 'source-controls';
-
-    const select = fieldControlRegistry.create('select', {
-      value: state.materials[0] ? state.materials[0].id : '',
-      options: state.materials.map((material) => [
-        material.id,
-        `${material.group || '-'} · ${material.title || material.id}`,
-      ]),
-    });
-
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.textContent = 'Añadir bloque';
-    addButton.addEventListener('click', () => {
-      moveMaterialToCartela(state.structure, select.value, cartela);
-      rebuild();
-    });
-
-    wrap.appendChild(select);
-    wrap.appendChild(addButton);
-    return wrap;
+    return appCartelaEditor.renderSourceRefControls(cartela);
   }
 
   function renderMaterialEditor(material, ref) {
