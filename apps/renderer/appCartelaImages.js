@@ -59,6 +59,82 @@
       });
     }
 
+    function renderCartelaImageControls(cartela) {
+      const documentRef = options.documentRef || root.document;
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'cartela-image-controls';
+      wrap.appendChild(options.sectionLabel('Imágenes asociadas'));
+
+      const actions = documentRef.createElement('div');
+      actions.className = 'cartela-image-actions';
+      const attachButton = documentRef.createElement('button');
+      attachButton.type = 'button';
+      attachButton.textContent = 'Añadir imagen';
+      attachButton.addEventListener('click', associateCartelaImage);
+      actions.appendChild(attachButton);
+      wrap.appendChild(actions);
+
+      const images = options.cartelaImages(cartela);
+      if (!images.length) {
+        const empty = documentRef.createElement('div');
+        empty.className = 'cartela-images-empty';
+        empty.textContent = 'Sin imágenes asociadas';
+        wrap.appendChild(empty);
+        return wrap;
+      }
+
+      const tableWrap = documentRef.createElement('div');
+      tableWrap.className = 'cartela-images-table-wrap';
+      const table = documentRef.createElement('table');
+      table.className = 'cartela-images-table';
+      const head = documentRef.createElement('thead');
+      head.innerHTML = '<tr><th>Archivo</th><th>Escala</th><th>Offset X</th><th>Offset Y</th><th></th></tr>';
+      table.appendChild(head);
+      const body = documentRef.createElement('tbody');
+      images.forEach((image) => {
+        const row = documentRef.createElement('tr');
+        const fileCell = documentRef.createElement('td');
+        const fileName = documentRef.createElement('span');
+        fileName.className = 'image-file-name';
+        fileName.textContent = image.file_path || image.name || 'Imagen asociada';
+        fileName.title = image.file_path || image.name || '';
+        fileCell.appendChild(fileName);
+        row.appendChild(fileCell);
+        row.appendChild(cartelaImageNumberCell(image, 'scale', 0.01, 0.01));
+        row.appendChild(cartelaImageNumberCell(image, 'offset_x', null, 1));
+        row.appendChild(cartelaImageNumberCell(image, 'offset_y', null, 1));
+        const actionsCell = documentRef.createElement('td');
+        const removeButton = documentRef.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'compact-action';
+        removeButton.textContent = 'Eliminar';
+        removeButton.addEventListener('click', () => removeCartelaImage(image.id));
+        actionsCell.appendChild(removeButton);
+        row.appendChild(actionsCell);
+        body.appendChild(row);
+      });
+      table.appendChild(body);
+      tableWrap.appendChild(table);
+      wrap.appendChild(tableWrap);
+
+      return wrap;
+    }
+
+    function cartelaImageNumberCell(image, field, min, step) {
+      const documentRef = options.documentRef || root.document;
+      const cell = documentRef.createElement('td');
+      const fallbackValue = field === 'scale' ? 1 : 0;
+      const input = options.fieldControlRegistry.create('number', {
+        value: Number(image[field]) || fallbackValue,
+        min,
+        step,
+        fallbackValue,
+        onInput: (value) => updateCartelaImage(image.id, { [field]: value }),
+      });
+      cell.appendChild(input);
+      return cell;
+    }
+
     function blobToBase64(blob) {
       return new Promise((resolve, reject) => {
         const reader = new windowRef.FileReader();
@@ -71,6 +147,7 @@
     return {
       associateCartelaImage,
       removeCartelaImage,
+      renderCartelaImageControls,
       updateCartelaImage,
     };
   }

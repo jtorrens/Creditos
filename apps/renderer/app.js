@@ -1139,19 +1139,20 @@
   });
   const appCartelaImages = globalThis.CreditosAppCartelaImages.createAppCartelaImages({
     cartelaImages,
+    documentRef: document,
+    fieldControlRegistry,
     getSelectedCartela,
     nativeBridge,
     readLocalPreference,
     rememberFileDirectory,
+    sectionLabel,
     storageKeys: STORAGE_KEYS,
     uniqueCartelaImageId,
     updateSelectedCartela,
     windowRef: window,
   });
   const {
-    associateCartelaImage,
-    removeCartelaImage,
-    updateCartelaImage,
+    renderCartelaImageControls: renderCartelaImageControlsFromImages,
   } = appCartelaImages;
 
   globalThis.CreditosUiBindings.bindAppUi({
@@ -1849,77 +1850,7 @@
   }
 
   function renderCartelaImageControls(cartela) {
-    const wrap = document.createElement('div');
-    wrap.className = 'cartela-image-controls';
-    wrap.appendChild(sectionLabel('Imágenes asociadas'));
-
-    const actions = document.createElement('div');
-    actions.className = 'cartela-image-actions';
-    const attachButton = document.createElement('button');
-    attachButton.type = 'button';
-    attachButton.textContent = 'Añadir imagen';
-    attachButton.addEventListener('click', associateCartelaImage);
-    actions.appendChild(attachButton);
-    wrap.appendChild(actions);
-
-    const images = cartelaImages(cartela);
-    if (!images.length) {
-      const empty = document.createElement('div');
-      empty.className = 'cartela-images-empty';
-      empty.textContent = 'Sin imágenes asociadas';
-      wrap.appendChild(empty);
-      return wrap;
-    }
-
-    const tableWrap = document.createElement('div');
-    tableWrap.className = 'cartela-images-table-wrap';
-    const table = document.createElement('table');
-    table.className = 'cartela-images-table';
-    const head = document.createElement('thead');
-    head.innerHTML = '<tr><th>Archivo</th><th>Escala</th><th>Offset X</th><th>Offset Y</th><th></th></tr>';
-    table.appendChild(head);
-    const body = document.createElement('tbody');
-    images.forEach((image) => {
-      const row = document.createElement('tr');
-      const fileCell = document.createElement('td');
-      const fileName = document.createElement('span');
-      fileName.className = 'image-file-name';
-      fileName.textContent = image.file_path || image.name || 'Imagen asociada';
-      fileName.title = image.file_path || image.name || '';
-      fileCell.appendChild(fileName);
-      row.appendChild(fileCell);
-      row.appendChild(cartelaImageNumberCell(image, 'scale', 0.01, 0.01));
-      row.appendChild(cartelaImageNumberCell(image, 'offset_x', null, 1));
-      row.appendChild(cartelaImageNumberCell(image, 'offset_y', null, 1));
-      const actionsCell = document.createElement('td');
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'compact-action';
-      removeButton.textContent = 'Eliminar';
-      removeButton.addEventListener('click', () => removeCartelaImage(image.id));
-      actionsCell.appendChild(removeButton);
-      row.appendChild(actionsCell);
-      body.appendChild(row);
-    });
-    table.appendChild(body);
-    tableWrap.appendChild(table);
-    wrap.appendChild(tableWrap);
-
-    return wrap;
-  }
-
-  function cartelaImageNumberCell(image, field, min, step) {
-    const cell = document.createElement('td');
-    const fallbackValue = field === 'scale' ? 1 : 0;
-    const input = fieldControlRegistry.create('number', {
-      value: Number(image[field]) || fallbackValue,
-      min,
-      step,
-      fallbackValue,
-      onInput: (value) => updateCartelaImage(image.id, { [field]: value }),
-    });
-    cell.appendChild(input);
-    return cell;
+    return renderCartelaImageControlsFromImages(cartela);
   }
 
   function renderCartelaStyleControls(cartela) {
