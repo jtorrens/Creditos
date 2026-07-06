@@ -220,6 +220,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "moviePageFrameCounts",
     "movieGroupFrameCounts",
     "scrollSourceFrameCounts",
+    "getPdfLineStatus",
 ]
 
 

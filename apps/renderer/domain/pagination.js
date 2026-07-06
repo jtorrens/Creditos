@@ -233,10 +233,21 @@
       return getEffectiveCartela(cartela).repeat_block_titles !== false;
     }
 
+    function getPdfLineStatus(page, defaultLineCount, pageLineAdjustments = {}) {
+      const defaultLines = Number(defaultLineCount) || 1;
+      const adjustment = Number(
+        pageLineAdjustments &&
+        pageLineAdjustments.__physical &&
+        pageLineAdjustments.__physical[page && page.id]
+      ) || 0;
+      return `${defaultLines}/${Math.max(1, defaultLines + adjustment)}`;
+    }
+
     return {
       buildPhysicalPages,
       countBlockVisualLines,
       countRenderedUnitLines,
+      getPdfLineStatus,
       repeatBlockTitlesForCartela,
       unitGapBefore,
     };

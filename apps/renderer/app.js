@@ -476,6 +476,7 @@
   });
   const {
     buildPhysicalPages,
+    getPdfLineStatus,
     repeatBlockTitlesForCartela,
     unitGapBefore,
   } = paginationDomain;
@@ -4821,7 +4822,13 @@
     if (els.movieModeSelect) els.movieModeSelect.disabled = total === 0;
     if (els.movieCodecSelect) els.movieCodecSelect.disabled = total === 0;
     if (els.movieEncodingProfileSelect) els.movieEncodingProfileSelect.disabled = total === 0;
-    els.pdfLineStatus.textContent = page ? getPdfLineStatus(page) : '0/0';
+    els.pdfLineStatus.textContent = page
+      ? getPdfLineStatus(
+        page,
+        getProductionSettings().default_auto_page_lines,
+        state.structure && state.structure.page_line_adjustments
+      )
+      : '0/0';
     updateMovieDurationFields();
   }
 
@@ -5247,17 +5254,6 @@
     state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     renderPdfPreview();
-  }
-
-  function getPdfLineStatus(page) {
-    const defaultLines = Number(getProductionSettings().default_auto_page_lines) || 1;
-    const adjustment = Number(
-      state.structure &&
-      state.structure.page_line_adjustments &&
-      state.structure.page_line_adjustments.__physical &&
-      state.structure.page_line_adjustments.__physical[page.id]
-    ) || 0;
-    return `${defaultLines}/${Math.max(1, defaultLines + adjustment)}`;
   }
 
   function updatePdfBaseName() {
