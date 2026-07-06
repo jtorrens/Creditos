@@ -549,13 +549,16 @@
     videoTimeForPage,
   } = timelineDomain;
   const domPreview = globalThis.CreditosPreviewDom.createDomPreview({
+    applyTypography,
     cartelaImages,
     contentAreaRect,
     documentRef: document,
+    transformCartelaText,
   });
   const {
     makeMarginOverlay: makeMarginOverlayInPreview,
     makePdfCartelaImages,
+    makePdfPageTitle: makePdfPageTitleInPreview,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -5174,19 +5177,10 @@
   }
 
   function makePdfPageTitle(page, options = {}) {
-    const title = page && page.cartela_physical_index === 0 ? page.title : '';
-    const text = String(title || '').trim();
-    if (!text) return null;
-    const titleEl = document.createElement('div');
-    titleEl.className = 'pdf-page-title';
-    titleEl.textContent = transformCartelaText(text, page.cartela, options.settings || getProductionSettings());
-    applyTypography(titleEl, 'page_header', {
-      multiplier: page.cartela.font_size_multiplier,
-      lineMultiplier: page.cartela.line_spacing_multiplier,
-      typography: page.cartela.title_typography,
-      settings: options.settings,
+    return makePdfPageTitleInPreview(page, {
+      ...options,
+      settings: options.settings || getProductionSettings(),
     });
-    return titleEl;
   }
 
   async function exportPngPages(mode) {

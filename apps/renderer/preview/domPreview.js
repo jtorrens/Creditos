@@ -1,9 +1,11 @@
 (function (root) {
   function createDomPreview(dependencies = {}) {
     const {
+      applyTypography = () => {},
       cartelaImages = () => [],
       contentAreaRect = () => ({ x: 0, y: 0, width: 0, height: 0 }),
       documentRef = root.document,
+      transformCartelaText = (text) => text,
     } = dependencies;
 
     function makeMarginOverlay(layout, zoom = 1) {
@@ -51,9 +53,26 @@
       });
     }
 
+    function makePdfPageTitle(page, options = {}) {
+      const title = page && page.cartela_physical_index === 0 ? page.title : '';
+      const text = String(title || '').trim();
+      if (!text) return null;
+      const titleEl = documentRef.createElement('div');
+      titleEl.className = 'pdf-page-title';
+      titleEl.textContent = transformCartelaText(text, page.cartela, options.settings);
+      applyTypography(titleEl, 'page_header', {
+        multiplier: page.cartela.font_size_multiplier,
+        lineMultiplier: page.cartela.line_spacing_multiplier,
+        typography: page.cartela.title_typography,
+        settings: options.settings,
+      });
+      return titleEl;
+    }
+
     return {
       makeMarginOverlay,
       makePdfCartelaImages,
+      makePdfPageTitle,
     };
   }
 
