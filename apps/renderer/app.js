@@ -307,6 +307,10 @@
     getSourceRefColumns,
     getSourceRefTypography,
     getSourceRefVerticalAlign,
+    hasCartelaBlockAlignmentOverride,
+    hasCartelaBlockTypographyOverride,
+    hasCartelaOverride,
+    hasCartelaTitleTypographyOverride,
     hasStyleCartelaOverride,
     hasStyleTitleTypographyOverride,
     hasStyleTypographyOverride,
@@ -3149,24 +3153,24 @@
     wrap.appendChild(localSelectRow('Orientación', effectiveCartela.orientation || 'horizontal', [
       ['horizontal', 'Horizontal'],
       ['vertical', 'Vertical'],
-    ], (value) => updateCartela({ orientation: value }), { override: isCartelaOverride(cartela, 'orientation'), reset: () => resetCartelaOverride('orientation') }));
-    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value }), 1, { override: isCartelaOverride(cartela, 'columns'), reset: () => resetCartelaOverride('columns') }));
-    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value }), 1, { override: isCartelaOverride(cartela, 'vertical_offset'), reset: () => resetCartelaOverride('vertical_offset') }));
-    wrap.appendChild(localDurationRow('Duración por página', Number(effectiveCartela.duration) || 0, (value) => updateCartela({ duration: value }), { override: isCartelaOverride(cartela, 'duration'), reset: () => resetCartelaOverride('duration') }));
-    wrap.appendChild(localNumberRow('Interlineado', Number(effectiveCartela.line_spacing) || 1.12, 0.1, null, (value) => updateCartela({ line_spacing: value }), 0.01, { override: isCartelaOverride(cartela, 'line_spacing'), reset: () => resetCartelaOverride('line_spacing') }));
-    wrap.appendChild(localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => updateCartela({ column_gap: value }), 1, { override: isCartelaOverride(cartela, 'column_gap'), reset: () => resetCartelaOverride('column_gap') }));
-    wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateCartela({ role_name_gap: value }), 1, { override: isCartelaOverride(cartela, 'role_name_gap'), reset: () => resetCartelaOverride('role_name_gap') }));
-    wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateCartela({ source_group_gap: value }), 1, { override: isCartelaOverride(cartela, 'source_group_gap'), reset: () => resetCartelaOverride('source_group_gap') }));
-    wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateCartela({ block_gap: value }), 1, { override: isCartelaOverride(cartela, 'block_gap'), reset: () => resetCartelaOverride('block_gap') }));
-    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateCartela({ block_title_gap: value }), 1, { override: isCartelaOverride(cartela, 'block_title_gap'), reset: () => resetCartelaOverride('block_title_gap') }));
-    wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateCartela({ page_top_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_top_margin'), reset: () => resetCartelaOverride('page_top_margin') }));
-    wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateCartela({ page_bottom_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetCartelaOverride('page_bottom_margin') }));
-    wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateCartela({ page_left_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_left_margin'), reset: () => resetCartelaOverride('page_left_margin') }));
-    wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateCartela({ page_right_margin: value }), 1, { override: isCartelaOverride(cartela, 'page_right_margin'), reset: () => resetCartelaOverride('page_right_margin') }));
-    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: isCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetCartelaOverride('repeat_block_titles') }));
-    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(effectiveCartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateCartela({ auto_text_wrap: normalizeBoolean(value, false) }), { override: isCartelaOverride(cartela, 'auto_text_wrap'), reset: () => resetCartelaOverride('auto_text_wrap') }));
-    wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateCartela({ text_capitalization: value }), { override: isCartelaOverride(cartela, 'text_capitalization'), reset: () => resetCartelaOverride('text_capitalization') }));
-    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(effectiveCartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateCartela({ use_protected_capitalization: normalizeBoolean(value, true) }), { override: isCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => resetCartelaOverride('use_protected_capitalization') }));
+    ], (value) => updateCartela({ orientation: value }), { override: hasCartelaOverride(cartela, 'orientation'), reset: () => resetCartelaOverride('orientation') }));
+    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value }), 1, { override: hasCartelaOverride(cartela, 'columns'), reset: () => resetCartelaOverride('columns') }));
+    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value }), 1, { override: hasCartelaOverride(cartela, 'vertical_offset'), reset: () => resetCartelaOverride('vertical_offset') }));
+    wrap.appendChild(localDurationRow('Duración por página', Number(effectiveCartela.duration) || 0, (value) => updateCartela({ duration: value }), { override: hasCartelaOverride(cartela, 'duration'), reset: () => resetCartelaOverride('duration') }));
+    wrap.appendChild(localNumberRow('Interlineado', Number(effectiveCartela.line_spacing) || 1.12, 0.1, null, (value) => updateCartela({ line_spacing: value }), 0.01, { override: hasCartelaOverride(cartela, 'line_spacing'), reset: () => resetCartelaOverride('line_spacing') }));
+    wrap.appendChild(localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => updateCartela({ column_gap: value }), 1, { override: hasCartelaOverride(cartela, 'column_gap'), reset: () => resetCartelaOverride('column_gap') }));
+    wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateCartela({ role_name_gap: value }), 1, { override: hasCartelaOverride(cartela, 'role_name_gap'), reset: () => resetCartelaOverride('role_name_gap') }));
+    wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateCartela({ source_group_gap: value }), 1, { override: hasCartelaOverride(cartela, 'source_group_gap'), reset: () => resetCartelaOverride('source_group_gap') }));
+    wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateCartela({ block_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_gap'), reset: () => resetCartelaOverride('block_gap') }));
+    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateCartela({ block_title_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_title_gap'), reset: () => resetCartelaOverride('block_title_gap') }));
+    wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateCartela({ page_top_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_top_margin'), reset: () => resetCartelaOverride('page_top_margin') }));
+    wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateCartela({ page_bottom_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetCartelaOverride('page_bottom_margin') }));
+    wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateCartela({ page_left_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_left_margin'), reset: () => resetCartelaOverride('page_left_margin') }));
+    wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateCartela({ page_right_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_right_margin'), reset: () => resetCartelaOverride('page_right_margin') }));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetCartelaOverride('repeat_block_titles') }));
+    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(effectiveCartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateCartela({ auto_text_wrap: normalizeBoolean(value, false) }), { override: hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => resetCartelaOverride('auto_text_wrap') }));
+    wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateCartela({ text_capitalization: value }), { override: hasCartelaOverride(cartela, 'text_capitalization'), reset: () => resetCartelaOverride('text_capitalization') }));
+    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(effectiveCartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateCartela({ use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => resetCartelaOverride('use_protected_capitalization') }));
     wrap.appendChild(renderCartelaImageControls(cartela));
     wrap.appendChild(renderCartelaTitleTypographyControls(cartela));
     wrap.appendChild(renderCartelaBlockStyleControls(cartela));
@@ -3990,10 +3994,6 @@
     refreshPdfIfActive();
   }
 
-  function isCartelaOverride(cartela, key) {
-    return !!(cartela && cartela.style_id && Object.prototype.hasOwnProperty.call(cartela, key));
-  }
-
   function resetCartelaOverride(key) {
     const cartela = getSelectedCartela();
     if (!cartela) return;
@@ -4069,15 +4069,6 @@
     });
   }
 
-  function hasCartelaBlockAlignmentOverride(cartela, key) {
-    return !!(
-      cartela
-      && cartela.block_style
-      && cartela.block_style.alignment
-      && cartela.block_style.alignment[key] !== undefined
-    );
-  }
-
   function resetCartelaBlockAlignmentOverride(key) {
     const cartela = getSelectedCartela();
     if (!cartela || !cartela.block_style || !cartela.block_style.alignment) return;
@@ -4088,16 +4079,6 @@
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
-  }
-
-  function hasCartelaBlockTypographyOverride(cartela, key) {
-    return !!(
-      cartela
-      && cartela.block_style
-      && cartela.block_style.typography
-      && cartela.block_style.typography[key]
-      && Object.keys(cartela.block_style.typography[key]).length
-    );
   }
 
   function resetCartelaBlockTypographyOverride(key) {
@@ -4125,15 +4106,6 @@
     });
     updateCartelaBlockStyle({ typography });
     if (options.rerenderEditor) renderEditor();
-  }
-
-  function hasCartelaTitleTypographyOverride(cartela) {
-    return !!(
-      cartela
-      && cartela.title_typography
-      && cartela.title_typography.page_header
-      && Object.keys(cartela.title_typography.page_header).length
-    );
   }
 
   function resetCartelaTitleTypographyOverride() {

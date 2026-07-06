@@ -366,6 +366,38 @@
       return !!(style && style.title_typography && style.title_typography.page_header && Object.keys(style.title_typography.page_header).length);
     }
 
+    function hasCartelaOverride(cartela, key) {
+      return !!(cartela && cartela.style_id && Object.prototype.hasOwnProperty.call(cartela, key));
+    }
+
+    function hasCartelaBlockAlignmentOverride(cartela, key) {
+      return !!(
+        cartela
+        && cartela.block_style
+        && cartela.block_style.alignment
+        && cartela.block_style.alignment[key] !== undefined
+      );
+    }
+
+    function hasCartelaBlockTypographyOverride(cartela, key) {
+      return !!(
+        cartela
+        && cartela.block_style
+        && cartela.block_style.typography
+        && cartela.block_style.typography[key]
+        && Object.keys(cartela.block_style.typography[key]).length
+      );
+    }
+
+    function hasCartelaTitleTypographyOverride(cartela) {
+      return !!(
+        cartela
+        && cartela.title_typography
+        && cartela.title_typography.page_header
+        && Object.keys(cartela.title_typography.page_header).length
+      );
+    }
+
     function mergeStyleBlockOverrides(current = {}, fields = {}) {
       const currentOverrides = sanitizeStyleBlockOverrides(current);
       const fieldOverrides = sanitizeStyleBlockOverrides(fields);
@@ -401,6 +433,10 @@
       getSourceRefColumns,
       getSourceRefTypography,
       getSourceRefVerticalAlign,
+      hasCartelaBlockAlignmentOverride,
+      hasCartelaBlockTypographyOverride,
+      hasCartelaOverride,
+      hasCartelaTitleTypographyOverride,
       hasStyleBlockAlignmentOverride,
       hasStyleBlockOverride,
       hasStyleCartelaOverride,
