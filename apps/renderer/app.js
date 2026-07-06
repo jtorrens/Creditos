@@ -374,6 +374,7 @@
     safeFilePart,
   });
   const {
+    currentXlsxName,
     defaultImportModelId: defaultImportModelIdInDomain,
     importModelOptions,
     labelForImportModel,
@@ -950,15 +951,9 @@
     els.productionImportModelSelect.disabled = !production || !models.length;
   }
 
-  function currentXlsxName() {
-    if (state.source && state.source.meta && state.source.meta.loaded_file) return state.source.meta.loaded_file;
-    if (state.structure && state.structure.source_file) return state.structure.source_file;
-    return '';
-  }
-
   function updateXlsxStatus() {
     if (!els.xlsxFileStatus) return;
-    const name = currentXlsxName();
+    const name = currentXlsxName(state.source, state.structure);
     els.xlsxFileStatus.textContent = name ? `Archivo asociado: ${name}` : 'Sin archivo asociado';
     if (els.openXlsxBtn) els.openXlsxBtn.textContent = name ? 'Cambiar archivo' : 'Asociar archivo';
     updateReferenceVideoStatus();

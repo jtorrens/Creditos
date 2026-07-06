@@ -88,6 +88,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "labelForImportModel",
     "defaultImportModelId",
     "selectedImportModelId",
+    "currentXlsxName",
     "blockForTitleRepeat",
     "countTitleLine",
     "normalizeCartelaStyle",

@@ -23,6 +23,12 @@
       return (production && production.import_model_id) || defaultImportModelId(importModels);
     }
 
+    function currentXlsxName(source, structure) {
+      if (source && source.meta && source.meta.loaded_file) return source.meta.loaded_file;
+      if (structure && structure.source_file) return structure.source_file;
+      return '';
+    }
+
     function normalizeSource(source, fileName) {
       const normalized = JSON.parse(JSON.stringify(source));
       normalized.meta = normalized.meta || {};
@@ -62,6 +68,7 @@
     }
 
     return {
+      currentXlsxName,
       defaultImportModelId,
       importModelOptions,
       labelForImportModel,
