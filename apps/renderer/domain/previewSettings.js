@@ -83,9 +83,19 @@
       };
     }
 
+    function getExportRenderOptions(options = {}, referenceVideo = null) {
+      const includeVideo = !!(options.includeVideo && referenceVideo && referenceVideo.file_path);
+      return {
+        includeBackground: !!(options.includeBackground || includeVideo),
+        includeVideo,
+        includeMargins: !!options.includeMargins,
+      };
+    }
+
     return {
       defaultPreviewSettings,
       encodingProfilesForCodec,
+      getExportRenderOptions,
       normalizePreviewSettings,
       normalizeReferenceVideo,
       normalizeRenderCodec,

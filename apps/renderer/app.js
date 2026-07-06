@@ -251,6 +251,7 @@
   const {
     defaultPreviewSettings,
     encodingProfilesForCodec,
+    getExportRenderOptions: getExportRenderOptionsInDomain,
     normalizePreviewSettings,
     normalizeReferenceVideo,
     normalizeRenderCodec,
@@ -5364,7 +5365,7 @@
       }));
     const settings = getProductionSettings();
     const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
-    const renderOptions = getExportRenderOptions();
+    const renderOptions = currentExportRenderOptions();
     const native = nativeBridge();
     try {
       if (native && mode === 'all' && native.exportPngSequence) {
@@ -5450,7 +5451,7 @@
           fps,
           layout,
           encodingProfile,
-          renderOptions: getExportRenderOptions(),
+          renderOptions: currentExportRenderOptions(),
         });
         return;
       }
@@ -5465,7 +5466,7 @@
         fps
       );
       const totalExportFrames = exportFrameCounts.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
-      const renderOptions = getExportRenderOptions();
+      const renderOptions = currentExportRenderOptions();
       const segments = readMovieSegmentSettings(fps);
       updateMovExportProgress(0, totalExportFrames);
       await exportMovFramesIncrementally(native, saveResult.filePath, fps, encodingProfile, async (writeFrame) => {
@@ -5534,13 +5535,12 @@
     return selection;
   }
 
-  function getExportRenderOptions() {
-    const includeVideo = !!(state.exportIncludeVideo && state.referenceVideo && state.referenceVideo.file_path);
-    return {
-      includeBackground: !!(state.exportIncludeBackground || includeVideo),
-      includeVideo,
-      includeMargins: !!state.exportIncludeMargins,
-    };
+  function currentExportRenderOptions() {
+    return getExportRenderOptionsInDomain({
+      includeBackground: state.exportIncludeBackground,
+      includeVideo: state.exportIncludeVideo,
+      includeMargins: state.exportIncludeMargins,
+    }, state.referenceVideo);
   }
 
   function currentVideoTimeForPage(page) {

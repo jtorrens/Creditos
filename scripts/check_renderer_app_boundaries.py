@@ -64,6 +64,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "renderItem",
     "defaultPreviewSettings",
     "normalizePreviewSettings",
+    "getExportRenderOptions",
     "normalizeRenderCodec",
     "normalizeRenderProfile",
     "encodingProfilesForCodec",
