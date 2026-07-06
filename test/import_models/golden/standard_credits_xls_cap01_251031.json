@@ -1,0 +1,3762 @@
+{
+  "blocks": [
+    {
+      "group": "1",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Ruth Martínez",
+              "row": 5
+            },
+            {
+              "name": "Darío Madrona",
+              "row": 6
+            }
+          ],
+          "role": "Basada en los personajes de",
+          "row": 4
+        }
+      ],
+      "start_row": 4,
+      "title": "Basada en los personajes de",
+      "titles": [
+        "Basada en los personajes de"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "2",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Lucía Alonso-Allende",
+              "row": 9
+            }
+          ],
+          "role": "Coproducción Ejecutiva Buendía",
+          "row": 8
+        },
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Jorge Blas",
+              "row": 12
+            }
+          ],
+          "role": "Analista de Guion",
+          "row": 11
+        }
+      ],
+      "start_row": 8,
+      "title": "Coproducción Ejecutiva Buendía",
+      "titles": [
+        "Coproducción Ejecutiva Buendía"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "3",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Diego del Pozo",
+              "row": 15
+            }
+          ],
+          "role": "Responsable de Contenidos Atresmedia",
+          "row": 14
+        },
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Pedro García Caja",
+              "row": 18
+            }
+          ],
+          "role": "Productor Delegado Atresmedia",
+          "row": 17
+        }
+      ],
+      "start_row": 14,
+      "title": "Responsable de Contenidos Atresmedia",
+      "titles": [
+        "Responsable de Contenidos Atresmedia"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "4",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Jaime Pérez AEC",
+              "row": 21
+            }
+          ],
+          "role": "Director de Fotografía",
+          "row": 20
+        }
+      ],
+      "start_row": 20,
+      "title": "Director de Fotografía",
+      "titles": [
+        "Director de Fotografía"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "5",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Victor Antolí",
+              "row": 24
+            }
+          ],
+          "role": "Dirección de Casting",
+          "row": 23
+        }
+      ],
+      "start_row": 23,
+      "title": "Dirección de Casting",
+      "titles": [
+        "Dirección de Casting"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "6",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Roberto Montalbo",
+              "row": 27
+            }
+          ],
+          "role": "Coordinador de Dirección",
+          "row": 26
+        }
+      ],
+      "start_row": 26,
+      "title": "Coordinador de Dirección",
+      "titles": [
+        "Coordinador de Dirección"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "7",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Daniel Alonso",
+              "row": 30
+            }
+          ],
+          "role": "Director de Producción",
+          "row": 29
+        }
+      ],
+      "start_row": 29,
+      "title": "Director de Producción",
+      "titles": [
+        "Director de Producción"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "8",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Ana Medina",
+              "row": 33
+            }
+          ],
+          "role": "Directora de Arte",
+          "row": 32
+        },
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Alba Cuesta Obregón",
+              "row": 36
+            }
+          ],
+          "role": "Diseñadora de Vestuario",
+          "row": 35
+        }
+      ],
+      "start_row": 32,
+      "title": "Directora de Arte",
+      "titles": [
+        "Directora de Arte",
+        "Diseñadora de Vestuario"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "9",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Clara Rollán",
+              "row": 39
+            },
+            {
+              "name": "Natalia Barrios",
+              "row": 40
+            }
+          ],
+          "role": "Peluquería y Maquillaje",
+          "row": 38
+        }
+      ],
+      "start_row": 38,
+      "title": "Peluquería y Maquillaje",
+      "titles": [
+        "Peluquería y Maquillaje"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "10",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Lucía Palicio (AMAE)",
+              "row": 43
+            }
+          ],
+          "role": "Montaje",
+          "row": 42
+        }
+      ],
+      "start_row": 42,
+      "title": "Montaje",
+      "titles": [
+        "Montaje"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "11",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Víctor Cendra",
+              "row": 46
+            },
+            {
+              "name": "Carlos Fernández",
+              "row": 47
+            }
+          ],
+          "role": "Supervisión Musical",
+          "row": 45
+        },
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Carlos Díez",
+              "row": 50
+            }
+          ],
+          "role": "Ambientación Musical",
+          "row": 49
+        }
+      ],
+      "start_row": 45,
+      "title": "Supervisión Musical",
+      "titles": [
+        "Supervisión Musical"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "12",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Coque Lahera",
+              "row": 53
+            }
+          ],
+          "role": "Sonido Directo",
+          "row": 52
+        }
+      ],
+      "start_row": 52,
+      "title": "Sonido Directo",
+      "titles": [
+        "Sonido Directo"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "13",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "David Heras - ALIVE",
+              "row": 56
+            }
+          ],
+          "role": "Supervisión VFX",
+          "row": 55
+        }
+      ],
+      "start_row": 55,
+      "title": "Supervisión VFX",
+      "titles": [
+        "Supervisión VFX"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "14",
+      "items": [
+        {
+          "actor": "Luis Fenández",
+          "character": "Culebra",
+          "kind": "cast",
+          "row": 60
+        },
+        {
+          "actor": "Ana Fernández",
+          "character": "Sandra",
+          "kind": "cast",
+          "row": 61
+        },
+        {
+          "actor": "Antonio Garrido",
+          "character": "Mario",
+          "kind": "cast",
+          "row": 62
+        },
+        {
+          "actor": "Maggie García",
+          "character": "Lucía",
+          "kind": "cast",
+          "row": 63
+        },
+        {
+          "actor": "Daniel Avilés",
+          "character": "Carlitos",
+          "kind": "cast",
+          "row": 64
+        },
+        {
+          "actor": "Mario Marzo",
+          "character": "Lucas",
+          "kind": "cast",
+          "row": 65
+        },
+        {
+          "actor": "Cosette Silguero",
+          "character": "Dora",
+          "kind": "cast",
+          "row": 66
+        },
+        {
+          "actor": "Gracia Olayo",
+          "character": "Rosa Ruano",
+          "kind": "cast",
+          "row": 67
+        },
+        {
+          "actor": "Carlota Cosials",
+          "character": "Paqui",
+          "kind": "cast",
+          "row": 68
+        },
+        {
+          "actor": "Marta Torné",
+          "character": "Julia",
+          "kind": "cast",
+          "row": 69
+        },
+        {
+          "actor": "Elena Furiase",
+          "character": "Otero",
+          "kind": "cast",
+          "row": 70
+        },
+        {
+          "actor": "Joan Solé",
+          "character": "Nacho",
+          "kind": "cast",
+          "row": 71
+        },
+        {
+          "actor": "Pablo Grifé",
+          "character": "Max",
+          "kind": "cast",
+          "row": 72
+        },
+        {
+          "actor": "Javier Mendo",
+          "character": "Borja Ruano",
+          "kind": "cast",
+          "row": 73
+        },
+        {
+          "actor": "Marta del Toro",
+          "character": "Regina",
+          "kind": "cast",
+          "row": 74
+        },
+        {
+          "actor": "Natalia Díaz",
+          "character": "Editora Raquel",
+          "kind": "cast",
+          "row": 75
+        },
+        {
+          "actor": "Víctor Renedo",
+          "character": "Niño mercadillo",
+          "kind": "cast",
+          "row": 76
+        },
+        {
+          "actor": "Lara Loher",
+          "character": "Madre mercadillo",
+          "kind": "cast",
+          "row": 77
+        },
+        {
+          "actor": "Mara Jiménez",
+          "character": "Profesora de Dora",
+          "kind": "cast",
+          "row": 78
+        },
+        {
+          "actor": "Santiago Garzozi",
+          "character": "Jeremy FoQ",
+          "kind": "cast",
+          "row": 79
+        },
+        {
+          "actor": "Julia Camus",
+          "character": "Barbara FoQ",
+          "kind": "cast",
+          "row": 80
+        },
+        {
+          "actor": "Esther Mejorada",
+          "character": "Iria FoQ",
+          "kind": "cast",
+          "row": 81
+        },
+        {
+          "actor": "Biel Castaño",
+          "character": "Dani FoQ",
+          "kind": "cast",
+          "row": 82
+        }
+      ],
+      "start_row": 58,
+      "title": "Han intervenido",
+      "titles": [
+        "Han intervenido"
+      ],
+      "type": "cast"
+    },
+    {
+      "group": "15",
+      "items": [
+        {
+          "actor": "Claudia Piñero Puertas",
+          "character": "Amiga Regina 1",
+          "kind": "cast",
+          "row": 86
+        },
+        {
+          "actor": "Belén Segarra Hoyo",
+          "character": "Amiga Regina 2",
+          "kind": "cast",
+          "row": 87
+        },
+        {
+          "actor": "Fernando Lucas García Siles",
+          "character": "Hombre robo cartera",
+          "kind": "cast",
+          "row": 88
+        },
+        {
+          "actor": "Alexandre Cristian Ricart Huerta",
+          "character": "Guardia de seguridad",
+          "kind": "cast",
+          "row": 89
+        },
+        {
+          "actor": "Carlos Martín Parra izquierdo",
+          "character": "Reparto policía uniforme",
+          "kind": "cast",
+          "row": 90
+        }
+      ],
+      "start_row": 84,
+      "title": "Pequeñas Partes",
+      "titles": [
+        "Pequeñas Partes"
+      ],
+      "type": "cast"
+    },
+    {
+      "group": "17",
+      "items": [
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "David Sola",
+              "row": 95
+            }
+          ],
+          "role": "1º Ayudante de Dirección",
+          "row": 95,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Paula P. Rojo",
+              "row": 96
+            }
+          ],
+          "role": "2ª Ayudante de Dirección Papeles",
+          "row": 96,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cristina Moreno Santos",
+              "row": 97
+            }
+          ],
+          "role": "2º Ayudante de Dirección Set",
+          "row": 97,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Virginia Llera",
+              "row": 98
+            }
+          ],
+          "role": "Script",
+          "row": 98,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "María Clara Bas Berdiel",
+              "row": 100
+            },
+            {
+              "name": "Manuel Varela",
+              "row": 101
+            },
+            {
+              "name": "Lucía Écija Rueda",
+              "row": 102
+            }
+          ],
+          "role": "Auxiliares de Dirección",
+          "row": 100,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Javier Sanjuán",
+              "row": 104
+            }
+          ],
+          "role": "Jefe de Producción",
+          "row": 104,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Gabriel Nieto Gallardo",
+              "row": 105
+            }
+          ],
+          "role": "Jefe de producción Boomerang",
+          "row": 105,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Laura Varas Echegoyen",
+              "row": 106
+            },
+            {
+              "name": "Laura \"Pek\" García",
+              "row": 107
+            }
+          ],
+          "role": "Ayudantes de Producción",
+          "row": 106,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jennifer Esquerre Valiente",
+              "row": 108
+            }
+          ],
+          "role": "Key Set",
+          "row": 108,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Joaquín Gómez Ruíz",
+              "row": 109
+            },
+            {
+              "name": "Víctor Villasante",
+              "row": 110
+            },
+            {
+              "name": "Francisco Escuder González",
+              "row": 111
+            },
+            {
+              "name": "Marino González",
+              "row": 112
+            },
+            {
+              "name": "Tierra Gutiérrez Rubio",
+              "row": 113
+            }
+          ],
+          "role": "Auxiliares de Producción",
+          "row": 109,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Fernando Pahissa",
+              "row": 115
+            },
+            {
+              "name": "Luis Alonso Bello",
+              "row": 116
+            },
+            {
+              "name": "Gonzalo Ayarra",
+              "row": 117
+            }
+          ],
+          "role": "Jefe de Localizaciones",
+          "row": 115,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Lola Herraiz",
+              "row": 118
+            },
+            {
+              "name": "Aurora Belando",
+              "row": 119
+            }
+          ],
+          "role": "Ayudante de localizaciones",
+          "row": 118,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Santi Corral",
+              "row": 120
+            },
+            {
+              "name": "Diego Ferrández Arroyo",
+              "row": 121
+            },
+            {
+              "name": "Andrea Fernández Abril",
+              "row": 122
+            },
+            {
+              "name": "Valentina Cosette Sagasti Vivanco",
+              "row": 123
+            }
+          ],
+          "role": "Auxiliares de localizaciones",
+          "row": 120,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Karim Ferrero",
+              "row": 124
+            }
+          ],
+          "role": "Scout",
+          "row": 124,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Raquel Sauras Gutiérrez",
+              "row": 127
+            }
+          ],
+          "role": "Coordinadora de Producción",
+          "row": 127,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ananda de Sousa",
+              "row": 128
+            }
+          ],
+          "role": "Secretaria de  Producción",
+          "row": 128,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Gabriel Nieto Gallardo",
+              "row": 130
+            }
+          ],
+          "role": "Controller",
+          "row": 130,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ananda de Sousa",
+              "row": 131
+            }
+          ],
+          "role": "Ayudante de Controller",
+          "row": 131,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Raquel Sauras Gutiérrez",
+              "row": 132
+            }
+          ],
+          "role": "Cajero Pagador",
+          "row": 132,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juanma G. Usma",
+              "row": 134
+            }
+          ],
+          "role": "Operador de Cámara",
+          "row": 134,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Guillermo Álvarez GBCT",
+              "row": 135
+            },
+            {
+              "name": "Fabio Giolitti",
+              "row": 136
+            }
+          ],
+          "role": "Ayudantes de Cámara",
+          "row": 135,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Marc Suriá García",
+              "row": 137
+            },
+            {
+              "name": "Miriam Gómez García",
+              "row": 138
+            }
+          ],
+          "role": "Auxiliares de Cámara",
+          "row": 137,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Óscar Gómez",
+              "row": 139
+            }
+          ],
+          "role": "Técnicos DIT",
+          "row": 139,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Claudia Bielsa GTS",
+              "row": 141
+            }
+          ],
+          "role": "Video Assistant",
+          "row": 141,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Mario Martín",
+              "row": 142
+            }
+          ],
+          "role": "Foto Fija",
+          "row": 142,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juanma G. Usma",
+              "row": 143
+            }
+          ],
+          "role": "Steadycam",
+          "row": 143,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cristina García (Lola)",
+              "row": 145
+            }
+          ],
+          "role": "Decoradora",
+          "row": 145,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Mamen Horcajo",
+              "row": 146
+            },
+            {
+              "name": "Valle Comba",
+              "row": 147
+            },
+            {
+              "name": "Jon Frenkel",
+              "row": 148
+            },
+            {
+              "name": "Felipe Lagunilla",
+              "row": 149
+            }
+          ],
+          "role": "Ayudantes de Arte",
+          "row": 146,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Julia Resnikow Macías",
+              "row": 150
+            },
+            {
+              "name": "Vera Bauluz",
+              "row": 151
+            }
+          ],
+          "role": "Regidoras",
+          "row": 150,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Rocío Peña Macarro",
+              "row": 152
+            }
+          ],
+          "role": "Coordinadora de Arte",
+          "row": 152,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Julia Losada",
+              "row": 153
+            },
+            {
+              "name": "Guiomar del Río Lanchas",
+              "row": 154
+            }
+          ],
+          "role": "Grafista",
+          "row": 153,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Claudia Peis",
+              "row": 155
+            },
+            {
+              "name": "Aida Cordobés",
+              "row": 156
+            }
+          ],
+          "role": "Atrecistas de Rodaje",
+          "row": 155,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jaime Sainz Remacha",
+              "row": 157
+            },
+            {
+              "name": "Jesús \"Chini\" Rodríguez",
+              "row": 158
+            }
+          ],
+          "role": "Atrecistas de Avance",
+          "row": 157,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Nacho Vegas Crespo",
+              "row": 159
+            }
+          ],
+          "role": "Carpinteros",
+          "row": 159,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Miguel Garijo",
+              "row": 160
+            },
+            {
+              "name": "Erika García",
+              "row": 161
+            }
+          ],
+          "role": "Auxiliar de carpintería",
+          "row": 160,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Génesis Lence",
+              "row": 162
+            }
+          ],
+          "role": "Ayudante de Regiduría",
+          "row": 162,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Haizea Escudero",
+              "row": 163
+            }
+          ],
+          "role": "Auxiliar rodaje",
+          "row": 163,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juanjo Azuar \"Jota\"",
+              "row": 164
+            },
+            {
+              "name": "Sandra Bautista Torres",
+              "row": 165
+            },
+            {
+              "name": "Marina Yunta",
+              "row": 166
+            }
+          ],
+          "role": "Auxiliares de Arte",
+          "row": 164,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Alba Martínez Villamor",
+              "row": 168
+            }
+          ],
+          "role": "Ayudante de Figurinista",
+          "row": 168,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Irene Zornoza",
+              "row": 169
+            }
+          ],
+          "role": "Ayudante de Vestuario",
+          "row": 169,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Laura Barú",
+              "row": 170
+            }
+          ],
+          "role": "Sastrería Set",
+          "row": 170,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Nazaret Soriano",
+              "row": 171
+            },
+            {
+              "name": "Macarena Corrales",
+              "row": 172
+            },
+            {
+              "name": "Belén Amado",
+              "row": 173
+            }
+          ],
+          "role": "Auxiliares de Vestuario",
+          "row": 171,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Marta García Manzano",
+              "row": 175
+            }
+          ],
+          "role": "Peluquera",
+          "row": 175,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Yolanda Sánchez",
+              "row": 176
+            }
+          ],
+          "role": "Ayudante de Peluquería",
+          "row": 176,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ainhoa Boado",
+              "row": 177
+            }
+          ],
+          "role": "Ayudante de Maquillaje",
+          "row": 177,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Judith A. Costa",
+              "row": 178
+            }
+          ],
+          "role": "Auxiliar de Peluquería",
+          "row": 178,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Elisa Borrás",
+              "row": 179
+            },
+            {
+              "name": "María Jover",
+              "row": 180
+            }
+          ],
+          "role": "Auxiliar de Maquillaje",
+          "row": 179,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "CITYLIGHT",
+              "row": 182
+            }
+          ],
+          "role": "Equipo de iluminación",
+          "row": 182,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "David Melero",
+              "row": 183
+            },
+            {
+              "name": "Miguel Andres Arias Recarey",
+              "row": 184
+            }
+          ],
+          "role": "Jefe de eléctricos",
+          "row": 183,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juan Antonio Castaño (Toño)",
+              "row": 185
+            }
+          ],
+          "role": "Best-Boy",
+          "row": 185,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Raúl Martín",
+              "row": 186
+            },
+            {
+              "name": "David Escribano",
+              "row": 187
+            },
+            {
+              "name": "David López (Tochi)",
+              "row": 188
+            },
+            {
+              "name": "Eder Arias García",
+              "row": 189
+            },
+            {
+              "name": "Iñaki Barriuso",
+              "row": 190
+            },
+            {
+              "name": "Juan J. Bayona",
+              "row": 191
+            },
+            {
+              "name": "Fouad Benmoussa",
+              "row": 192
+            },
+            {
+              "name": "Félix Capuchino Rey",
+              "row": 193
+            },
+            {
+              "name": "Rafael A. Carrasco Pérez",
+              "row": 194
+            },
+            {
+              "name": "Alberto Carretero Gallarín",
+              "row": 195
+            },
+            {
+              "name": "José Luis Cubero Álvarez",
+              "row": 196
+            },
+            {
+              "name": "José Manuel Fidalgo Roldán",
+              "row": 197
+            },
+            {
+              "name": "Ángel de la Fuente de Miguel",
+              "row": 198
+            },
+            {
+              "name": "Alejandro Morcuende",
+              "row": 199
+            },
+            {
+              "name": "David Moreda Gallardo",
+              "row": 200
+            },
+            {
+              "name": "Pedro Ramírez Cascales",
+              "row": 201
+            },
+            {
+              "name": "Ainhoa Romero Fuentes",
+              "row": 202
+            },
+            {
+              "name": "Miguel R. Uvience Hernández",
+              "row": 203
+            }
+          ],
+          "role": "Eléctricos",
+          "row": 186,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "David Vigil (Chavi)",
+              "row": 205
+            }
+          ],
+          "role": "Maquinista",
+          "row": 205,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Javier Borrajo",
+              "row": 206
+            }
+          ],
+          "role": "Ayudantes de Maquinista",
+          "row": 206,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pedro F. Lahera",
+              "row": 208
+            },
+            {
+              "name": "Daniel Blasco",
+              "row": 209
+            },
+            {
+              "name": "Manuel Laguna",
+              "row": 210
+            }
+          ],
+          "role": "Microfonistas",
+          "row": 208,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Félix Cordón",
+              "row": 212
+            }
+          ],
+          "role": "Supervisor SFX",
+          "row": 212,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Andrea Paralta",
+              "row": 214
+            }
+          ],
+          "role": "Coordinadora de Postproducción",
+          "row": 214,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ángel Andrade",
+              "row": 215
+            },
+            {
+              "name": "Ángel Zapatero",
+              "row": 216
+            }
+          ],
+          "role": "Ayudantes de Montaje",
+          "row": 215,
+          "section": null
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Raquel Romero",
+              "row": 218
+            },
+            {
+              "name": "Alicia Álvarez (Primera Toma Coach)",
+              "row": 219
+            },
+            {
+              "name": "Alejandra Lifante",
+              "row": 220
+            }
+          ],
+          "role": "Coach menores",
+          "row": 218,
+          "section": null
+        },
+        {
+          "kind": "section",
+          "row": 223,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Antonio Gonzalo Quiroga",
+              "row": 225
+            }
+          ],
+          "role": "2º Ayudante de Dirección",
+          "row": 225,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Marta García Fernández-Pacheco",
+              "row": 226
+            }
+          ],
+          "role": "3ª Ayudante de Dirección",
+          "row": 226,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Elena Moreno-Martet",
+              "row": 227
+            }
+          ],
+          "role": "Script",
+          "row": 227,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Nacho Silva",
+              "row": 228
+            },
+            {
+              "name": "Lucía Criado Rosas",
+              "row": 229
+            },
+            {
+              "name": "Alicia García García",
+              "row": 230
+            }
+          ],
+          "role": "Auxiliar de Dirección",
+          "row": 228,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cris P. Sobrín",
+              "row": 233
+            },
+            {
+              "name": "Marta G. Linares \"Raichu\"",
+              "row": 234
+            }
+          ],
+          "role": "Ayudantes de Producción",
+          "row": 233,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Tierra Gutiérrez Rubio",
+              "row": 235
+            }
+          ],
+          "role": "Key Set",
+          "row": 235,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Isaak Calvano",
+              "row": 236
+            },
+            {
+              "name": "FJR Moreno",
+              "row": 237
+            },
+            {
+              "name": "Mario Jiménez Fernández",
+              "row": 238
+            },
+            {
+              "name": "Marta G. Barrios",
+              "row": 239
+            }
+          ],
+          "role": "Auxiliares de Producción",
+          "row": 236,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ismael Issa AEC",
+              "row": 242
+            }
+          ],
+          "role": "Director de Fotografía",
+          "row": 242,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Miguel García",
+              "row": 243
+            }
+          ],
+          "role": "Operadores de Cámara",
+          "row": 243,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Saioa Nadal Lezana",
+              "row": 244
+            },
+            {
+              "name": "Irene Tomé Magán",
+              "row": 245
+            },
+            {
+              "name": "Félix Ruíz Medrano",
+              "row": 246
+            }
+          ],
+          "role": "Ayudantes de Cámara",
+          "row": 244,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Iciar Santana Sáez de Ibarra",
+              "row": 247
+            },
+            {
+              "name": "Pau Pomar Rendón",
+              "row": 248
+            }
+          ],
+          "role": "Auxiliares de Cámara",
+          "row": 247,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jorge Beltrán Coya-DIT",
+              "row": 249
+            }
+          ],
+          "role": "DIT",
+          "row": 249,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pablo Sánchez",
+              "row": 250
+            }
+          ],
+          "role": "Video Assist",
+          "row": 250,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Manuel Martínez Casado",
+              "row": 252
+            },
+            {
+              "name": "Haizea Escudero",
+              "row": 253
+            },
+            {
+              "name": "Ari Martín",
+              "row": 254
+            }
+          ],
+          "role": "Atrecistas de Rodaje",
+          "row": 252,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Belén Amado",
+              "row": 256
+            }
+          ],
+          "role": "Sastra de Set",
+          "row": 256,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Virginia Canal Cruz",
+              "row": 257
+            }
+          ],
+          "role": "Auxiliar de Vestuario",
+          "row": 257,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Arancha Bravo",
+              "row": 259
+            },
+            {
+              "name": "Laura Sierra",
+              "row": 260
+            }
+          ],
+          "role": "Ayudantes de Maquillaje",
+          "row": 259,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Diana Blas",
+              "row": 261
+            }
+          ],
+          "role": "Ayudantes de Peluquería",
+          "row": 261,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cristina Gómez Nuevo",
+              "row": 262
+            }
+          ],
+          "role": "Auxliar de peluquería",
+          "row": 262,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "CITYLIGHT",
+              "row": 264
+            }
+          ],
+          "role": "Equipo de iluminación",
+          "row": 264,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Mario García",
+              "row": 265
+            }
+          ],
+          "role": "Jefe de eléctricos",
+          "row": 265,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Aitor Parra",
+              "row": 266
+            }
+          ],
+          "role": "Best-Boy",
+          "row": 266,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Alfonso Arias \"Sete\"",
+              "row": 267
+            },
+            {
+              "name": "Javi Céspedes",
+              "row": 268
+            },
+            {
+              "name": "Pedro Daniel López",
+              "row": 269
+            }
+          ],
+          "role": "Eléctricos",
+          "row": 267,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Álex Mérida",
+              "row": 271
+            }
+          ],
+          "role": "Jefe de Maquinistas",
+          "row": 271,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Luis Cancho",
+              "row": 272
+            },
+            {
+              "name": "Andrés Cavero",
+              "row": 273
+            }
+          ],
+          "role": "Ayudante de Maquinista",
+          "row": 272,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jesús Espada, Chule",
+              "row": 275
+            }
+          ],
+          "role": "Jefe de Sonido",
+          "row": 275,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Aure Bonilla",
+              "row": 276
+            },
+            {
+              "name": "Javier Cepeda",
+              "row": 277
+            }
+          ],
+          "role": "Microfonistas",
+          "row": 276,
+          "section": "Equipo 2ª Unidad"
+        },
+        {
+          "kind": "section",
+          "row": 280,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Gema Lominchar",
+              "row": 282
+            }
+          ],
+          "role": "Refuerzos de Dirección",
+          "row": 282,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pedro Torres Guilló",
+              "row": 284
+            }
+          ],
+          "role": "Refuerzo de Producción",
+          "row": 284,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jorge Cantós Rodríguez",
+              "row": 286
+            },
+            {
+              "name": "Segio Neira",
+              "row": 287
+            },
+            {
+              "name": "Alejandro Ruiz Calvo",
+              "row": 288
+            },
+            {
+              "name": "Bárbara Rodríguez Palomar",
+              "row": 289
+            },
+            {
+              "name": "Olmo Aroca Sanz",
+              "row": 290
+            }
+          ],
+          "role": "Refuerzos de cámara",
+          "row": 286,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ignacio Barrera Pujol",
+              "row": 292
+            },
+            {
+              "name": "Califato Bibang",
+              "row": 293
+            },
+            {
+              "name": "Juan Alexander Vargas Peña",
+              "row": 294
+            },
+            {
+              "name": "Paloma Caballero Soler",
+              "row": 295
+            },
+            {
+              "name": "Valeria Luján",
+              "row": 296
+            },
+            {
+              "name": "Virginia Mota Ruiz",
+              "row": 297
+            },
+            {
+              "name": "Óscar Sánchez Mazzaro",
+              "row": 298
+            },
+            {
+              "name": "Felipe Upegui",
+              "row": 299
+            }
+          ],
+          "role": "Refuerzos de decoración",
+          "row": 292,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Virginia Canal Cruz",
+              "row": 301
+            },
+            {
+              "name": "Ana Castillo Martínez",
+              "row": 302
+            },
+            {
+              "name": "Anna Coma Martínez",
+              "row": 303
+            }
+          ],
+          "role": "Refuerzos de vestuario",
+          "row": 301,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Macarena Corrales de la Hoz",
+              "row": 304
+            }
+          ],
+          "role": "Auxiliares de Vestuario",
+          "row": 304,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Lissette Fernández",
+              "row": 305
+            },
+            {
+              "name": "Bárbara González López",
+              "row": 306
+            }
+          ],
+          "role": "Refuerzos de Vestuario",
+          "row": 305,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Alida Seijo Fraile",
+              "row": 308
+            }
+          ],
+          "role": "Refuerzos Peluquería y Maquillaje",
+          "row": 308,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Julio César Castro Rodríguez",
+              "row": 310
+            },
+            {
+              "name": "Andrés Cavero Pleite",
+              "row": 311
+            },
+            {
+              "name": "Mateo Ibañez Brocca",
+              "row": 312
+            }
+          ],
+          "role": "Refuerzos de maquinismo",
+          "row": 310,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Martín Poveda Morieta",
+              "row": 314
+            }
+          ],
+          "role": "Refuerzos de sonido",
+          "row": 314,
+          "section": "Equipo Técnico Adicional"
+        },
+        {
+          "kind": "section",
+          "row": 317,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Eugenio Pérez",
+              "row": 319
+            }
+          ],
+          "role": "Director de Producción",
+          "row": 319,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Javier Ruiz",
+              "row": 320
+            }
+          ],
+          "role": "Desarrollo & Presupuesto",
+          "row": 320,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Olvido Latorre",
+              "row": 321
+            }
+          ],
+          "role": "Responsable de Gestión de la Producción",
+          "row": 321,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "M. Ángel Dorado",
+              "row": 322
+            }
+          ],
+          "role": "Coordinador de Producción",
+          "row": 322,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Paula García Andrés",
+              "row": 323
+            }
+          ],
+          "role": "Ayudante de Coordinación",
+          "row": 323,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Luismi Fernández",
+              "row": 325
+            }
+          ],
+          "role": "Coordinador de Postproducción",
+          "row": 325,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Tomás Silberman",
+              "row": 327
+            }
+          ],
+          "role": "Director de Desarrollo de Ficción",
+          "row": 327,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Laura Miñarro",
+              "row": 328
+            }
+          ],
+          "role": "VP of International Coproduction",
+          "row": 328,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Almudena Santaeufemia",
+              "row": 330
+            },
+            {
+              "name": "Beatriz López-Cancio",
+              "row": 331
+            }
+          ],
+          "role": "Asesoría Jurídica",
+          "row": 330,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Paula Acedo",
+              "row": 332
+            },
+            {
+              "name": "Imanol Pagazaurtundua",
+              "row": 333
+            }
+          ],
+          "role": "Becarios Asesoría Jurídica",
+          "row": 332,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Paulo Lotti",
+              "row": 335
+            }
+          ],
+          "role": "Director Financiero",
+          "row": 335,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jaime Pérez Páramo",
+              "row": 336
+            }
+          ],
+          "role": "Director de Operaciones",
+          "row": 336,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Beatriz Álvarez Nonay",
+              "row": 337
+            }
+          ],
+          "role": "Control de Gestión",
+          "row": 337,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Miguel Ángel González",
+              "row": 339
+            }
+          ],
+          "role": "Resonsable Controller Operaciones y Control Interno",
+          "row": 339,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cristina Bermúdez",
+              "row": 340
+            }
+          ],
+          "role": "Controller Interno",
+          "row": 340,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Esperanza Fresneda",
+              "row": 342
+            },
+            {
+              "name": "Marisa Bernal",
+              "row": 343
+            }
+          ],
+          "role": "Contabilidad y Tesorería",
+          "row": 342,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Eduardo López Luna",
+              "row": 345
+            }
+          ],
+          "role": "Director Recursos Humanos",
+          "row": 345,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Montse Rodríguez",
+              "row": 346
+            }
+          ],
+          "role": "Responsable Recursos Humanos",
+          "row": 346,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Silvia Suárez",
+              "row": 347
+            }
+          ],
+          "role": "Técnica Recursos Humanos",
+          "row": 347,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Eva Soto",
+              "row": 349
+            }
+          ],
+          "role": "Directora de Comunicación",
+          "row": 349,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jaime López-Amor",
+              "row": 350
+            }
+          ],
+          "role": "Marketing de Contenidos",
+          "row": 350,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Matxu Lambea",
+              "row": 351
+            }
+          ],
+          "role": "Responsable de Marketing",
+          "row": 351,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Violeta Mateos",
+              "row": 352
+            }
+          ],
+          "role": "Marketing Digital",
+          "row": 352,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pedro Rodríguez Pérez",
+              "row": 353
+            }
+          ],
+          "role": "Creativo de Contenidos",
+          "row": 353,
+          "section": "Equipo Buendía Estudios"
+        },
+        {
+          "kind": "section",
+          "row": 354,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pedro Tendero",
+              "row": 356
+            },
+            {
+              "name": "Antonio García-Durrif",
+              "row": 357
+            },
+            {
+              "name": "Andrea Quintanilla Galindo",
+              "row": 358
+            }
+          ],
+          "role": "Asesoría Jurídica",
+          "row": 356,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juan Luis Garriga",
+              "row": 360
+            },
+            {
+              "name": "Juanma Olivares",
+              "row": 361
+            },
+            {
+              "name": "Daniel Carrizosa",
+              "row": 362
+            }
+          ],
+          "role": "Dpto. Servicios Generales",
+          "row": 360,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Rubén Pez",
+              "row": 364
+            },
+            {
+              "name": "David Dávila",
+              "row": 365
+            },
+            {
+              "name": "Fernando Viyacé",
+              "row": 366
+            },
+            {
+              "name": "Pablo Mota",
+              "row": 367
+            },
+            {
+              "name": "Miguel Ángel Crespo",
+              "row": 368
+            }
+          ],
+          "role": "Dpto. Informática",
+          "row": 364,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Rosaura Díez",
+              "row": 370
+            },
+            {
+              "name": "Rosana Alonso",
+              "row": 371
+            }
+          ],
+          "role": "Dpto. Comunicación",
+          "row": 370,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Francisco Fernández",
+              "row": 373
+            },
+            {
+              "name": "Silvia González Heras",
+              "row": 374
+            },
+            {
+              "name": "Aisha K. Arias",
+              "row": 375
+            },
+            {
+              "name": "Raquel Zubiri",
+              "row": 376
+            }
+          ],
+          "role": "Dpto. RRHH",
+          "row": 373,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Roberto Martín",
+              "row": 378
+            },
+            {
+              "name": "Mario Pérez",
+              "row": 379
+            },
+            {
+              "name": "Cristina Martín",
+              "row": 380
+            },
+            {
+              "name": "Beatriz González",
+              "row": 381
+            },
+            {
+              "name": "Laura Linares",
+              "row": 382
+            },
+            {
+              "name": "Eva Torres Bouzas",
+              "row": 383
+            }
+          ],
+          "role": "Dpto. Financiero",
+          "row": 378,
+          "section": "Equipo Boomerang TV"
+        },
+        {
+          "kind": "section",
+          "row": 385,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Peris",
+              "row": 387
+            }
+          ],
+          "role": "Vestuario",
+          "row": 387,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "EFD",
+              "row": 389
+            }
+          ],
+          "role": "Material de Cámara",
+          "row": 389,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Citylight Iluminación",
+              "row": 390
+            }
+          ],
+          "role": "Material de Iluminación",
+          "row": 390,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Grip Crew",
+              "row": 391
+            }
+          ],
+          "role": "Material de Maquinistas",
+          "row": 391,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Mateco",
+              "row": 392
+            },
+            {
+              "name": "Special Crane",
+              "row": 393
+            }
+          ],
+          "role": "Maquinaria",
+          "row": 392,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Temps",
+              "row": 395
+            }
+          ],
+          "role": "Agencia de Figuración",
+          "row": 395,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "The White Rabbit Connection S.L. (Nyumad)",
+              "row": 396
+            }
+          ],
+          "role": "Efectos especiales y especialistas",
+          "row": 396,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Araceli Carrilero",
+              "row": 397
+            },
+            {
+              "name": "Miriam Manzano",
+              "row": 398
+            },
+            {
+              "name": "Kike Inchausti",
+              "row": 399
+            },
+            {
+              "name": "Felipe Ayala",
+              "row": 400
+            },
+            {
+              "name": "Eric Micó",
+              "row": 401
+            },
+            {
+              "name": "Héctor Rodriguez Alba",
+              "row": 402
+            },
+            {
+              "name": "David Caparrini Marín",
+              "row": 403
+            },
+            {
+              "name": "Juan Alberto Mirayo Valberde",
+              "row": 404
+            },
+            {
+              "name": "Sergio Mora López",
+              "row": 405
+            }
+          ],
+          "role": "Especialistas",
+          "row": 397,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Reni Catering",
+              "row": 407
+            }
+          ],
+          "role": "Catering",
+          "row": 407,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pincalo",
+              "row": 409
+            }
+          ],
+          "role": "Alquiler Material Producción",
+          "row": 409,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "La Reserva",
+              "row": 410
+            }
+          ],
+          "role": "Reservas de Espacio",
+          "row": 410,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "La Reserva",
+              "row": 411
+            },
+            {
+              "name": "Tuttio Producciones",
+              "row": 412
+            }
+          ],
+          "role": "Peones / Seguridad",
+          "row": 411,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Transcinema",
+              "row": 414
+            }
+          ],
+          "role": "Transporte camiones, caravanas y camerinos",
+          "row": 414,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Monterrey",
+              "row": 415
+            }
+          ],
+          "role": "Vehículos con conductor",
+          "row": 415,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Hearent",
+              "row": 416
+            },
+            {
+              "name": "Lambeacar",
+              "row": 417
+            }
+          ],
+          "role": "Alquiler de Furgonetas",
+          "row": 416,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Citylight Iluminación",
+              "row": 419
+            },
+            {
+              "name": "Paulino Alonso",
+              "row": 420
+            }
+          ],
+          "role": "Grupo Electrógeno",
+          "row": 419,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Muebles Hierros Talego",
+              "row": 422
+            }
+          ],
+          "role": "Alquiler de Atrezzo",
+          "row": 422,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pictures Vehicles Spain",
+              "row": 423
+            },
+            {
+              "name": "Motos Eduardo",
+              "row": 424
+            },
+            {
+              "name": "Retropiezas y recambios",
+              "row": 425
+            }
+          ],
+          "role": "Coches de escena",
+          "row": 423,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Nhoagest",
+              "row": 427
+            },
+            {
+              "name": "Yolanda Jaramillo",
+              "row": 428
+            },
+            {
+              "name": "Cristina Tapiador",
+              "row": 429
+            },
+            {
+              "name": "José Manuel Losada",
+              "row": 430
+            },
+            {
+              "name": "Eduardo Masakoy",
+              "row": 431
+            },
+            {
+              "name": "Yolanda Buenaño",
+              "row": 432
+            }
+          ],
+          "role": "Gestoría laboral Buendía Estudios",
+          "row": 427,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Risk XXI",
+              "row": 434
+            }
+          ],
+          "role": "PRL y vigilancia de la salud",
+          "row": 434,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Sekai Corporate Travel",
+              "row": 436
+            },
+            {
+              "name": "VB Group",
+              "row": 437
+            }
+          ],
+          "role": "Agencias de Viajes",
+          "row": 436,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Cinevent",
+              "row": 438
+            }
+          ],
+          "role": "Seguro",
+          "row": 438,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Mutua MAD",
+              "row": 439
+            },
+            {
+              "name": "MC Mutual",
+              "row": 440
+            }
+          ],
+          "role": "Mutuas",
+          "row": 439,
+          "section": "Empresas de Servicios"
+        },
+        {
+          "kind": "section",
+          "row": 442,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Laboratorio Elamedia Estudios"
+        },
+        {
+          "kind": "section",
+          "row": 444,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Pedro Lozano",
+              "row": 446
+            }
+          ],
+          "role": "Supervisión de Postproducción",
+          "row": 446,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Blanca Lozano",
+              "row": 447
+            },
+            {
+              "name": "Carlos Rivero",
+              "row": 448
+            },
+            {
+              "name": "Sandra Suárez Tena",
+              "row": 449
+            },
+            {
+              "name": "Isabel Martín Del Ágila",
+              "row": 450
+            }
+          ],
+          "role": "Coordinación de Postproducción",
+          "row": 447,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Sandra Otero",
+              "row": 452
+            },
+            {
+              "name": "Jara Blanco",
+              "row": 453
+            },
+            {
+              "name": "Juan Hernando",
+              "row": 454
+            }
+          ],
+          "role": "Etalonaje",
+          "row": 452,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jon Larrinaga Garagorri",
+              "row": 455
+            }
+          ],
+          "role": "Etalonaje adicional",
+          "row": 455,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Delia Julián Martín",
+              "row": 457
+            }
+          ],
+          "role": "Masterización y conformado",
+          "row": 457,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Paco Ruiz",
+              "row": 459
+            },
+            {
+              "name": "Emilio Rodríguez",
+              "row": 460
+            }
+          ],
+          "role": "Grafismo",
+          "row": 459,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Alberto Blanco Pacheco",
+              "row": 462
+            }
+          ],
+          "role": "Operador de Postproducción",
+          "row": 462,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Inma Hernández",
+              "row": 464
+            }
+          ],
+          "role": "Administración",
+          "row": 464,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Enrique Calatayud García-Saavedra",
+              "row": 466
+            }
+          ],
+          "role": "IT lead",
+          "row": 466,
+          "section": "Imagen"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ángela Carrera Rodríguez",
+              "row": 467
+            },
+            {
+              "name": "César Aguilar Noguera",
+              "row": 468
+            }
+          ],
+          "role": "IT",
+          "row": 467,
+          "section": "Imagen"
+        },
+        {
+          "kind": "section",
+          "row": 470,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Roberto Fernández (APSA)",
+              "row": 472
+            }
+          ],
+          "role": "Diseño de sonido y mezclas",
+          "row": 472,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Roberto HG (APSA)",
+              "row": 473
+            }
+          ],
+          "role": "Edición de efectos",
+          "row": 473,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Marta Pavía Botella",
+              "row": 474
+            }
+          ],
+          "role": "Edición de diálogos",
+          "row": 474,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ivo Moraga",
+              "row": 475
+            }
+          ],
+          "role": "Artista Foley",
+          "row": 475,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Soledad Vargas",
+              "row": 476
+            }
+          ],
+          "role": "Grabación Foley",
+          "row": 476,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ivo Moraga",
+              "row": 477
+            }
+          ],
+          "role": "Mezclador foley",
+          "row": 477,
+          "section": "Sonido"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Marta Pavía Botella",
+              "row": 478
+            }
+          ],
+          "role": "Grabación ADR",
+          "row": 478,
+          "section": "Sonido"
+        },
+        {
+          "kind": "section",
+          "row": 481,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "David Heras",
+              "row": 483
+            },
+            {
+              "name": "Iñaki Gil \"Ketxu\"",
+              "row": 484
+            },
+            {
+              "name": "Miguel Costa Templado",
+              "row": 485
+            }
+          ],
+          "role": "Supervisión VFX",
+          "row": 483,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Carlos Puchol",
+              "row": 487
+            }
+          ],
+          "role": "Coordinación VFX",
+          "row": 487,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Gontzal Aurrekoetxea Urrutia",
+              "row": 489
+            },
+            {
+              "name": "Elena Serrano Anchía",
+              "row": 490
+            },
+            {
+              "name": "Andrea Constancio",
+              "row": 491
+            },
+            {
+              "name": "Jaime de los Santos",
+              "row": 492
+            }
+          ],
+          "role": "Producción VFX",
+          "row": 489,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Raúl Bernabé",
+              "row": 494
+            }
+          ],
+          "role": "Director financiero",
+          "row": 494,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Juan Arribas Torrego",
+              "row": 496
+            },
+            {
+              "name": "Marco Hernández González",
+              "row": 497
+            }
+          ],
+          "role": "Artista flame",
+          "row": 496,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Álvaro Díez",
+              "row": 499
+            }
+          ],
+          "role": "Compositor Lead VFX",
+          "row": 499,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ainhoa Milicua",
+              "row": 500
+            },
+            {
+              "name": "Alfonso Rosique",
+              "row": 501
+            },
+            {
+              "name": "Antonio G. Pareja",
+              "row": 502
+            },
+            {
+              "name": "Aurora Paradinas López",
+              "row": 503
+            },
+            {
+              "name": "Carlos Rivera Urbina",
+              "row": 504
+            },
+            {
+              "name": "Diego Guillén Álvarez",
+              "row": 505
+            },
+            {
+              "name": "Fernando Fugardo",
+              "row": 506
+            },
+            {
+              "name": "Javier Urrutia",
+              "row": 507
+            },
+            {
+              "name": "Jorge Plaza Gámez",
+              "row": 508
+            },
+            {
+              "name": "Jose Daniel Miranda Rivero",
+              "row": 509
+            },
+            {
+              "name": "Lara Alarcón Blázquez",
+              "row": 510
+            },
+            {
+              "name": "Maddi López Valarés",
+              "row": 511
+            },
+            {
+              "name": "María López Alemany",
+              "row": 512
+            },
+            {
+              "name": "Miriam Costero Navarro",
+              "row": 513
+            },
+            {
+              "name": "Pablo Abad Pacheco",
+              "row": 514
+            },
+            {
+              "name": "Ricardo Villajos",
+              "row": 515
+            },
+            {
+              "name": "Victoriano Marín",
+              "row": 516
+            }
+          ],
+          "role": "Compositor VFX",
+          "row": 500,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Álvaro Carbajosa",
+              "row": 518
+            }
+          ],
+          "role": "CG Lead",
+          "row": 518,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Alberto Lozano Rivaya",
+              "row": 519
+            },
+            {
+              "name": "David Vírseda Barriga",
+              "row": 520
+            },
+            {
+              "name": "Diego Ruíz de Sotto",
+              "row": 521
+            },
+            {
+              "name": "Eduardo Angulo González",
+              "row": 522
+            },
+            {
+              "name": "Laura Benito Frey",
+              "row": 523
+            },
+            {
+              "name": "Luis Gancedo Romero",
+              "row": 524
+            }
+          ],
+          "role": "Operadores CG",
+          "row": 519,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Daniel Mateo",
+              "row": 526
+            }
+          ],
+          "role": "Supervisor de diseño",
+          "row": 526,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jimena Plasencia Sanz",
+              "row": 527
+            },
+            {
+              "name": "Marwin Sánchez",
+              "row": 528
+            }
+          ],
+          "role": "Diseñadores",
+          "row": 527,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Enrique Calatayud García-Saavedra",
+              "row": 530
+            }
+          ],
+          "role": "IT Lead",
+          "row": 530,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Ángela Carrera Rodríguez",
+              "row": 531
+            }
+          ],
+          "role": "IT",
+          "row": 531,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Entre Laprida y Agüero",
+              "row": 534
+            }
+          ],
+          "role": "Grafismo",
+          "row": 534,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Jorge Torrens",
+              "row": 535
+            }
+          ],
+          "role": "Grafista",
+          "row": 535,
+          "section": "Alive VFX&DESING"
+        },
+        {
+          "kind": "section",
+          "row": 538,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Música"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "César Benito",
+              "row": 539
+            }
+          ],
+          "role": "Mezclas y Producción Musical",
+          "row": 539,
+          "section": "Música"
+        },
+        {
+          "kind": "section",
+          "row": 542,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Licencias Musicales"
+        },
+        {
+          "kind": "list_item",
+          "row": 544,
+          "section": "Licencias Musicales",
+          "value": "JINGLE BELLS"
+        },
+        {
+          "kind": "list_item",
+          "row": 545,
+          "section": "Licencias Musicales",
+          "value": "(Adam Saunders, Mark Stephen Cousins, James Lord Pierpont)"
+        },
+        {
+          "kind": "list_item",
+          "row": 546,
+          "section": "Licencias Musicales",
+          "value": "© & ℗ Extreme Music Library LTD / KPM Music Ltd"
+        },
+        {
+          "kind": "list_item",
+          "row": 547,
+          "section": "Licencias Musicales",
+          "value": "Autorizado para España por Extreme Music Spain"
+        },
+        {
+          "kind": "list_item",
+          "row": 549,
+          "section": "Licencias Musicales",
+          "value": "WE WISH YOU A MERRY CHRISTMAS"
+        },
+        {
+          "kind": "list_item",
+          "row": 550,
+          "section": "Licencias Musicales",
+          "value": "(Stuart Andrew Roslyn, Matthew James Foundling)"
+        },
+        {
+          "kind": "list_item",
+          "row": 551,
+          "section": "Licencias Musicales",
+          "value": "© & ℗ Extreme Music Library LTD / Juice Music UK LTD"
+        },
+        {
+          "kind": "list_item",
+          "row": 552,
+          "section": "Licencias Musicales",
+          "value": "Autorizado para España por Extreme Music Spain"
+        },
+        {
+          "kind": "list_item",
+          "row": 554,
+          "section": "Licencias Musicales",
+          "value": "JOY TO THE WORLD"
+        },
+        {
+          "kind": "list_item",
+          "row": 555,
+          "section": "Licencias Musicales",
+          "value": "(Matt Foundling, Stuart Roslyn)"
+        },
+        {
+          "kind": "list_item",
+          "row": 556,
+          "section": "Licencias Musicales",
+          "value": "© & ℗ Extreme Music Library LTD / Juice Music UK LTD"
+        },
+        {
+          "kind": "list_item",
+          "row": 557,
+          "section": "Licencias Musicales",
+          "value": "Autorizado para España por Extreme Music Spain"
+        },
+        {
+          "kind": "list_item",
+          "row": 559,
+          "section": "Licencias Musicales",
+          "value": "CHRISTMAS CITY"
+        },
+        {
+          "kind": "list_item",
+          "row": 560,
+          "section": "Licencias Musicales",
+          "value": "(Stuart Andrew Roslyn, Matthew James Foundling)"
+        },
+        {
+          "kind": "list_item",
+          "row": 561,
+          "section": "Licencias Musicales",
+          "value": "© & ℗ Extreme Music Library LTD / Juice Music UK LTD"
+        },
+        {
+          "kind": "list_item",
+          "row": 562,
+          "section": "Licencias Musicales",
+          "value": "Autorizado para España por Extreme Music Spain"
+        },
+        {
+          "kind": "list_item",
+          "row": 564,
+          "section": "Licencias Musicales",
+          "value": "CHRISTMAS CROONER"
+        },
+        {
+          "kind": "list_item",
+          "row": 565,
+          "section": "Licencias Musicales",
+          "value": "(Brice Davoli, Valerie Deniz)"
+        },
+        {
+          "kind": "list_item",
+          "row": 566,
+          "section": "Licencias Musicales",
+          "value": "© Koka Media, Universal Production Music France/Universal Music Publishing, S.L.U"
+        },
+        {
+          "kind": "list_item",
+          "row": 568,
+          "section": "Licencias Musicales",
+          "value": "SWEETHEART SERENADE"
+        },
+        {
+          "kind": "list_item",
+          "row": 569,
+          "section": "Licencias Musicales",
+          "value": "(Werner Tautz)"
+        },
+        {
+          "kind": "list_item",
+          "row": 570,
+          "section": "Licencias Musicales",
+          "value": "© & ℗ Extreme Music Library LTD / Sony ATV Spain / Brillant Musik Switzerland Joachim Tautz"
+        },
+        {
+          "kind": "list_item",
+          "row": 571,
+          "section": "Licencias Musicales",
+          "value": "Autorizado para España por Extreme Music Spain"
+        },
+        {
+          "kind": "section",
+          "row": 573,
+          "source_bold": true,
+          "source_column": "C",
+          "title": "Doblaje de Figuración"
+        },
+        {
+          "kind": "list_item",
+          "row": 575,
+          "section": "Doblaje de Figuración",
+          "value": "Olaya Caldera"
+        },
+        {
+          "kind": "list_item",
+          "row": 576,
+          "section": "Doblaje de Figuración",
+          "value": "Inés Aldea"
+        },
+        {
+          "kind": "list_item",
+          "row": 577,
+          "section": "Doblaje de Figuración",
+          "value": "Pedro Rubio"
+        },
+        {
+          "kind": "list_item",
+          "row": 578,
+          "section": "Doblaje de Figuración",
+          "value": "Manuel Chacón"
+        },
+        {
+          "kind": "list_item",
+          "row": 579,
+          "section": "Doblaje de Figuración",
+          "value": "Karlos Aurreo"
+        },
+        {
+          "kind": "section",
+          "row": 582,
+          "source_bold": false,
+          "source_column": "B:D",
+          "title": "Logos"
+        },
+        {
+          "kind": "list_item",
+          "row": 582,
+          "section": "Logos",
+          "value": "#VALUE!"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "MAHOU",
+              "row": 583
+            }
+          ],
+          "role": "VOLSKWAGEN",
+          "row": 583,
+          "section": "Logos"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "#VALUE!",
+              "row": 584
+            }
+          ],
+          "role": "#VALUE!",
+          "row": 584,
+          "section": "Logos"
+        },
+        {
+          "kind": "section",
+          "row": 588,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "AGRADECIMIENTOS"
+        },
+        {
+          "kind": "section",
+          "row": 590,
+          "source_bold": true,
+          "source_column": "B:D",
+          "title": "Vestuario"
+        },
+        {
+          "kind": "list_item",
+          "row": 591,
+          "section": "Vestuario",
+          "value": "Bobo Choses SL"
+        },
+        {
+          "kind": "list_item",
+          "row": 592,
+          "section": "Vestuario",
+          "value": "Dang Dang SAU"
+        },
+        {
+          "kind": "list_item",
+          "row": 593,
+          "section": "Vestuario",
+          "value": "Lorena Carbonell Guilló"
+        },
+        {
+          "kind": "list_item",
+          "row": 594,
+          "section": "Vestuario",
+          "value": "Ecoalf recycled Fabrics SL"
+        },
+        {
+          "kind": "list_item",
+          "row": 595,
+          "section": "Vestuario",
+          "value": "Musula"
+        },
+        {
+          "kind": "list_item",
+          "row": 596,
+          "section": "Vestuario",
+          "value": "Panama Jack SLU"
+        },
+        {
+          "kind": "list_item",
+          "row": 597,
+          "section": "Vestuario",
+          "value": "Polo Club Europe SLU"
+        },
+        {
+          "kind": "list_item",
+          "row": 598,
+          "section": "Vestuario",
+          "value": "Deichmann"
+        },
+        {
+          "kind": "closing_line",
+          "row": 599,
+          "section": "closing_copy",
+          "value": "Los protegidos es una producción de Atresmedia"
+        },
+        {
+          "kind": "closing_line",
+          "row": 600,
+          "section": "closing_copy",
+          "value": "en colaboración con"
+        },
+        {
+          "kind": "closing_line",
+          "row": 601,
+          "section": "closing_copy",
+          "value": "Buendía Estudios"
+        },
+        {
+          "kind": "closing_line",
+          "row": 602,
+          "section": "closing_copy",
+          "value": "Boomerang TV"
+        },
+        {
+          "kind": "closing_line",
+          "row": 604,
+          "section": "closing_copy",
+          "value": "COPY ATRESMEDIA 2025"
+        },
+        {
+          "kind": "closing_line",
+          "row": 606,
+          "section": "closing_copy",
+          "value": "NÚMERO DE DEPÓSITO LEGAL: M-23935-2025"
+        }
+      ],
+      "start_row": 93,
+      "title": "RODILLO FINAL",
+      "titles": [
+        "RODILLO FINAL"
+      ],
+      "type": "crew"
+    }
+  ],
+  "columns": {
+    "A": "group",
+    "B": "role_or_name",
+    "C": "center_title_or_role",
+    "D": "name_or_character"
+  },
+  "import_model_id": "standard_credits_xls",
+  "sheet": "Rodillo Final",
+  "source": "standard_cap01_251031.xlsx",
+  "workbook_sheets": [
+    {
+      "is_active": false,
+      "name": "Cabecera"
+    },
+    {
+      "is_active": true,
+      "name": "Rodillo Final"
+    }
+  ]
+}

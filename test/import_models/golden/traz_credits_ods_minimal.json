@@ -1,0 +1,94 @@
+{
+  "blocks": [
+    {
+      "group": "card_dirección",
+      "items": [
+        {
+          "kind": "credit",
+          "names": [
+            {
+              "name": "Ana Alvarez",
+              "row": 2
+            }
+          ],
+          "role": "Dirección",
+          "row": 1
+        }
+      ],
+      "start_row": 1,
+      "title": "Dirección",
+      "titles": [
+        "Dirección"
+      ],
+      "type": "cards"
+    },
+    {
+      "group": "cast_han intervenido",
+      "items": [
+        {
+          "actor": "Actor Uno",
+          "character": "Personaje Uno",
+          "kind": "cast",
+          "row": 4
+        }
+      ],
+      "start_row": 3,
+      "title": "Han intervenido",
+      "titles": [
+        "Han intervenido"
+      ],
+      "type": "cast"
+    },
+    {
+      "group": "crew",
+      "items": [
+        {
+          "kind": "section",
+          "row": 5,
+          "source_bold": false,
+          "source_column": "C",
+          "title": "Equipo técnico"
+        },
+        {
+          "kind": "crew_credit",
+          "names": [
+            {
+              "name": "Editora Uno",
+              "row": 6
+            }
+          ],
+          "role": "Montaje",
+          "row": 6,
+          "section": "Equipo técnico"
+        },
+        {
+          "kind": "closing_line",
+          "row": 7,
+          "section": "closing_copy",
+          "value": "Una producción de Ejemplo Studios"
+        }
+      ],
+      "start_row": 5,
+      "title": "RODILLO FINAL",
+      "titles": [
+        "RODILLO FINAL"
+      ],
+      "type": "crew"
+    }
+  ],
+  "columns": {
+    "A": "marker",
+    "B": "role_or_character",
+    "C": "center_title",
+    "D": "name_or_actor"
+  },
+  "import_model_id": "traz_credits_ods",
+  "sheet": "Rodillo final",
+  "source": "traz_minimal.ods",
+  "workbook_sheets": [
+    {
+      "is_active": true,
+      "name": "Rodillo final"
+    }
+  ]
+}
