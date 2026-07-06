@@ -147,6 +147,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "quoteFontFamily",
     "dedupeFontStyles",
     "styleFromFullName",
+    "buildFontCatalog",
     "getMovieExportFrameCounts",
     "getMovieBodyTargetFramesOrSource",
     "getMovieTargetFramesOrSource",

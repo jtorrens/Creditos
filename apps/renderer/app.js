@@ -217,11 +217,10 @@
   } = commonDomain;
   const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
   const {
-    dedupeFontStyles,
+    buildFontCatalog,
     fontStyleFromStyle,
     fontWeightFromStyle,
     quoteFontFamily,
-    styleFromFullName,
   } = typographyDomain;
   const settingsDomain = globalThis.CreditosDomainSettings.createSettingsDomain({
     languageLocales: LANGUAGE_LOCALES,
@@ -2078,29 +2077,7 @@
 
     try {
       const fonts = await window.queryLocalFonts();
-      const byFamily = new Map();
-      fonts.forEach((font) => {
-        const family = font.family || font.fullName || font.postscriptName;
-        if (!family) return;
-        const style = font.style || styleFromFullName(font.fullName, family);
-        const entry = {
-          family,
-          style: style || 'Regular',
-          full_name: font.fullName || '',
-          postscript_name: font.postscriptName || '',
-        };
-        if (!byFamily.has(family)) byFamily.set(family, []);
-        byFamily.get(family).push(entry);
-      });
-      state.fontCatalog = {
-        families: Array.from(byFamily.keys()).sort((a, b) => a.localeCompare(b)),
-        stylesByFamily: Object.fromEntries(
-          Array.from(byFamily.entries()).map(([family, styles]) => [
-            family,
-            dedupeFontStyles(styles),
-          ])
-        ),
-      };
+      state.fontCatalog = buildFontCatalog(fonts);
       renderProjectSelectors();
       renderSettings();
       renderEditor();
