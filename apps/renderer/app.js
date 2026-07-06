@@ -1241,56 +1241,11 @@
   }
 
   async function duplicateSelectedProduction() {
-    const production = selectedProduction();
-    if (!production) return;
-    try {
-      const overview = await dbPost('/api/db/duplicate-production', {
-        production_id: production.id,
-      });
-      state.selectedProductionId = overview.production_id;
-      state.selectedEpisodeId = null;
-      applyDatabaseOverview(overview);
-    } catch (error) {
-      window.alert('No se pudo duplicar la producción: ' + error.message);
-    }
+    return appCommands.duplicateSelectedProduction();
   }
 
   async function deleteSelectedProduction() {
-    const production = selectedProduction();
-    if (!production) return;
-    const native = nativeBridge();
-    let confirmed = false;
-    if (native && native.confirm) {
-      const result = await native.confirm({
-        title: 'Borrar producción',
-        message: `Borrar "${production.name}" y todos sus episodios, estilos y documentos?`,
-        confirmLabel: 'Borrar',
-      });
-      confirmed = !!(result && result.confirmed);
-    } else {
-      confirmed = window.confirm(`Borrar "${production.name}" y todos sus episodios, estilos y documentos?`);
-    }
-    if (!confirmed) return;
-    try {
-      const overview = await dbPost('/api/db/delete-production', {
-        production_id: production.id,
-      });
-      state.selectedProductionId = null;
-      state.selectedEpisodeId = null;
-      state.source = null;
-      state.referenceVideo = null;
-      state.materials = [];
-      state.structure = null;
-      state.render = null;
-      applyDatabaseOverview(overview);
-      renderCartelaList();
-      renderEditor();
-      renderStylesPane();
-      renderPreview();
-      refreshPdfIfActive();
-    } catch (error) {
-      window.alert('No se pudo borrar la producción: ' + error.message);
-    }
+    return appCommands.deleteSelectedProduction();
   }
 
   async function updateProductionLayoutFromUi() {
