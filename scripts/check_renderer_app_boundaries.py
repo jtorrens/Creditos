@@ -151,6 +151,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "buildPhysicalPages",
     "countBlockVisualLines",
     "countRenderedUnitLines",
+    "concatenateRenderedBlockRows",
     "unitGapBefore",
     "repeatBlockTitlesForCartela",
     "getSourceRefColumns",
