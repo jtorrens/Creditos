@@ -97,12 +97,46 @@
       return el;
     }
 
+    function makePdfOptionalTitle(value, className, styleKey, cartela, typography, options = {}) {
+      const text = String(value || '').trim();
+      if (!text) return null;
+      const title = documentRef.createElement('div');
+      title.className = className;
+      title.textContent = transformCartelaText(text, cartela, options.settings);
+      applyTextWrapStyle(title, cartela);
+      applyTypography(title, styleKey, {
+        multiplier: cartela.font_size_multiplier,
+        lineMultiplier: cartela.line_spacing_multiplier,
+        typography,
+        settings: options.settings,
+      });
+      return title;
+    }
+
+    function renderPdfTheme(theme, block, cartela, layout, options = {}) {
+      const themeEl = documentRef.createElement('div');
+      themeEl.className = 'pdf-theme';
+      if (options.gapBefore) themeEl.style.marginTop = `${options.gapBefore}px`;
+      (theme.lines || []).forEach((line, index) => {
+        themeEl.appendChild(makePdfText(line.value || '', index === 0 ? 'role' : 'name', {
+          className: index === 0 ? 'pdf-theme-title' : 'pdf-line',
+          cartela,
+          typography: block.typography,
+          textAlign: block.alignment && block.alignment.text ? block.alignment.text : 'center',
+          settings: options.settings,
+        }));
+      });
+      return themeEl;
+    }
+
     return {
       applyTextWrapStyle,
       makeMarginOverlay,
       makePdfCartelaImages,
+      makePdfOptionalTitle,
       makePdfPageTitle,
       makePdfText,
+      renderPdfTheme,
     };
   }
 

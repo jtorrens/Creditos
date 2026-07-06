@@ -560,8 +560,10 @@
     applyTextWrapStyle: applyTextWrapStyleInPreview,
     makeMarginOverlay: makeMarginOverlayInPreview,
     makePdfCartelaImages,
+    makePdfOptionalTitle: makePdfOptionalTitleInPreview,
     makePdfPageTitle: makePdfPageTitleInPreview,
     makePdfText: makePdfTextInPreview,
+    renderPdfTheme: renderPdfThemeInPreview,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -5889,40 +5891,17 @@
   }
 
   function makePdfOptionalTitle(value, className, styleKey, cartela, typography, options = {}) {
-    const text = String(value || '').trim();
-    if (!text) return null;
-    const title = document.createElement('div');
-    title.className = className;
-    title.textContent = transformCartelaText(text, cartela, options.settings || getProductionSettings());
-    applyTextWrapStyle(title, cartela);
-    applyTypography(title, styleKey, {
-      multiplier: cartela.font_size_multiplier,
-      lineMultiplier: cartela.line_spacing_multiplier,
-      typography,
-      settings: options.settings,
+    return makePdfOptionalTitleInPreview(value, className, styleKey, cartela, typography, {
+      ...options,
+      settings: options.settings || getProductionSettings(),
     });
-    return title;
   }
 
   function renderPdfTheme(theme, block, cartela, layout, options = {}) {
-    const themeEl = document.createElement('div');
-    themeEl.className = 'pdf-theme';
-    if (options.gapBefore) themeEl.style.marginTop = `${options.gapBefore}px`;
-    (theme.lines || []).forEach((line, index) => {
-      const lineEl = document.createElement('div');
-      lineEl.className = index === 0 ? 'pdf-theme-title' : 'pdf-line';
-      lineEl.textContent = transformCartelaText(line.value || '', cartela, options.settings || getProductionSettings());
-      applyTextWrapStyle(lineEl, cartela);
-      lineEl.style.textAlign = block.alignment && block.alignment.text ? block.alignment.text : 'center';
-      applyTypography(lineEl, index === 0 ? 'role' : 'name', {
-        multiplier: cartela.font_size_multiplier,
-        lineMultiplier: cartela.line_spacing_multiplier,
-        typography: block.typography,
-        settings: options.settings,
-      });
-      themeEl.appendChild(lineEl);
+    return renderPdfThemeInPreview(theme, block, cartela, layout, {
+      ...options,
+      settings: options.settings || getProductionSettings(),
     });
-    return themeEl;
   }
 
   function renderPdfUnit(unit, block, cartela, layout, options = {}) {
