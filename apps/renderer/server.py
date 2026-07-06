@@ -12,7 +12,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID, parse_source
 from server_db.connection import db_connect
-from server_services.common import now_iso
+from server_services.document_service import load_document, save_document
 from server_services.project_service import (
     create_production,
     db_overview,
@@ -20,99 +20,10 @@ from server_services.project_service import (
     duplicate_production,
     update_production,
 )
+from server_services.style_service import delete_style, load_styles, save_style
 
 
 ROOT = Path(__file__).resolve().parent
-DOCUMENT_KINDS = {"source", "structure", "render", "reference"}
-
-
-def save_document(connection, production_id, episode_id, kind, data):
-    if kind not in DOCUMENT_KINDS:
-        raise ValueError("Tipo de documento no valido.")
-    if not isinstance(data, dict):
-        raise ValueError("El documento debe ser un objeto.")
-    timestamp = now_iso()
-    schema = data.get("schema")
-    version = data.get("version")
-    connection.execute(
-        """
-        INSERT INTO documents (production_id, episode_id, kind, schema, version, data_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(production_id, episode_id, kind) DO UPDATE SET
-            schema = excluded.schema,
-            version = excluded.version,
-            data_json = excluded.data_json,
-            updated_at = excluded.updated_at
-        """,
-        (
-            int(production_id),
-            int(episode_id),
-            kind,
-            schema,
-            version if isinstance(version, int) else None,
-            json.dumps(data, ensure_ascii=False),
-            timestamp,
-            timestamp,
-        ),
-    )
-    connection.commit()
-
-
-def load_document(connection, production_id, episode_id, kind):
-    if kind not in DOCUMENT_KINDS:
-        raise ValueError("Tipo de documento no valido.")
-    row = connection.execute(
-        """
-        SELECT data_json
-        FROM documents
-        WHERE production_id = ? AND episode_id = ? AND kind = ?
-        """,
-        (int(production_id), int(episode_id), kind),
-    ).fetchone()
-    return json.loads(row["data_json"]) if row else None
-
-
-def save_style(connection, production_id, data):
-    if not isinstance(data, dict):
-        raise ValueError("El estilo debe ser un objeto.")
-    style_id = str(data.get("id") or "").strip()
-    if not style_id:
-        raise ValueError("El estilo necesita id.")
-    name = str(data.get("name") or style_id).strip()
-    timestamp = now_iso()
-    connection.execute(
-        """
-        INSERT INTO styles (production_id, style_id, name, data_json, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(production_id, style_id) DO UPDATE SET
-            name = excluded.name,
-            data_json = excluded.data_json,
-            updated_at = excluded.updated_at
-        """,
-        (int(production_id), style_id, name, json.dumps(data, ensure_ascii=False), timestamp, timestamp),
-    )
-    connection.commit()
-
-
-def load_styles(connection, production_id):
-    rows = connection.execute(
-        """
-        SELECT data_json
-        FROM styles
-        WHERE production_id = ?
-        ORDER BY name COLLATE NOCASE
-        """,
-        (int(production_id),),
-    )
-    return [json.loads(row["data_json"]) for row in rows]
-
-
-def delete_style(connection, production_id, style_id):
-    connection.execute(
-        "DELETE FROM styles WHERE production_id = ? AND style_id = ?",
-        (int(production_id), str(style_id or "")),
-    )
-    connection.commit()
 
 
 def import_credit_source(file_bytes, source_name, import_model_id=None, options=None):
