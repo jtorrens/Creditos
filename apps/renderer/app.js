@@ -421,10 +421,11 @@
     migrateStructure,
     moveMaterialToCartela,
     moveCartelaVisualOrder: moveCartelaVisualOrderInStructure,
-    normalizeCartelaImages,
     normalizeFrozenMaterial,
     normalizeVisualOrders,
+    resetCartelaOverride: resetCartelaOverrideInStructure,
     structureJsonForOutput,
+    updateCartela: updateCartelaInStructure,
   } = structureDomain;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
@@ -2465,7 +2466,7 @@
       if (!result || result.canceled) return;
       rememberFileDirectory(STORAGE_KEYS.imageDir, result.filePath);
       const images = cartelaImages(cartela);
-      updateCartela({
+      updateSelectedCartela({
         images: images.concat({
           id: uniqueCartelaImageId(images),
           name: result.name || 'imagen',
@@ -2497,13 +2498,13 @@
   function removeCartelaImage(imageId) {
     const cartela = getSelectedCartela();
     if (!cartela) return;
-    updateCartela({ images: cartelaImages(cartela).filter((image) => image.id !== imageId) });
+    updateSelectedCartela({ images: cartelaImages(cartela).filter((image) => image.id !== imageId) });
   }
 
   function updateCartelaImage(imageId, fields) {
     const cartela = getSelectedCartela();
     if (!cartela) return;
-    updateCartela({
+    updateSelectedCartela({
       images: cartelaImages(cartela).map((image) => image.id === imageId ? { ...image, ...fields } : image),
     });
   }
@@ -3162,36 +3163,36 @@
     const wrap = document.createElement('div');
     const effectiveCartela = getEffectiveCartela(cartela);
     wrap.appendChild(sectionLabel('Cartela'));
-    wrap.appendChild(localCheckboxRow('Incluir en salida', cartela.enabled !== false, (value) => updateCartela({ enabled: value })));
+    wrap.appendChild(localCheckboxRow('Incluir en salida', cartela.enabled !== false, (value) => updateSelectedCartela({ enabled: value })));
     wrap.appendChild(renderCartelaStyleControls(cartela));
     if (cartela.manual) wrap.appendChild(manualCartelaActionsRow());
-    if (cartela.manual) wrap.appendChild(localInputRow('Nombre de cartela', cartela.manual_name || '', (value) => updateCartela({ manual_name: value }), { commitOnChange: true }));
-    wrap.appendChild(localInputRow('Título de cartela', cartela.title || '', (value) => updateCartela({ title: value }), { commitOnChange: true }));
+    if (cartela.manual) wrap.appendChild(localInputRow('Nombre de cartela', cartela.manual_name || '', (value) => updateSelectedCartela({ manual_name: value }), { commitOnChange: true }));
+    wrap.appendChild(localInputRow('Título de cartela', cartela.title || '', (value) => updateSelectedCartela({ title: value }), { commitOnChange: true }));
     wrap.appendChild(localSelectRow('Orientación', effectiveCartela.orientation || 'horizontal', [
       ['horizontal', 'Horizontal'],
       ['vertical', 'Vertical'],
-    ], (value) => updateCartela({ orientation: value }), { override: hasCartelaOverride(cartela, 'orientation'), reset: () => resetCartelaOverride('orientation') }));
-    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateCartela({ columns: value }), 1, { override: hasCartelaOverride(cartela, 'columns'), reset: () => resetCartelaOverride('columns') }));
-    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateCartela({ vertical_offset: value }), 1, { override: hasCartelaOverride(cartela, 'vertical_offset'), reset: () => resetCartelaOverride('vertical_offset') }));
-    wrap.appendChild(localDurationRow('Duración por página', Number(effectiveCartela.duration) || 0, (value) => updateCartela({ duration: value }), { override: hasCartelaOverride(cartela, 'duration'), reset: () => resetCartelaOverride('duration') }));
-    wrap.appendChild(localNumberRow('Interlineado', Number(effectiveCartela.line_spacing) || 1.12, 0.1, null, (value) => updateCartela({ line_spacing: value }), 0.01, { override: hasCartelaOverride(cartela, 'line_spacing'), reset: () => resetCartelaOverride('line_spacing') }));
-    wrap.appendChild(localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => updateCartela({ column_gap: value }), 1, { override: hasCartelaOverride(cartela, 'column_gap'), reset: () => resetCartelaOverride('column_gap') }));
-    wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateCartela({ role_name_gap: value }), 1, { override: hasCartelaOverride(cartela, 'role_name_gap'), reset: () => resetCartelaOverride('role_name_gap') }));
-    wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateCartela({ source_group_gap: value }), 1, { override: hasCartelaOverride(cartela, 'source_group_gap'), reset: () => resetCartelaOverride('source_group_gap') }));
-    wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateCartela({ block_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_gap'), reset: () => resetCartelaOverride('block_gap') }));
-    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateCartela({ block_title_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_title_gap'), reset: () => resetCartelaOverride('block_title_gap') }));
-    wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateCartela({ page_top_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_top_margin'), reset: () => resetCartelaOverride('page_top_margin') }));
-    wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateCartela({ page_bottom_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetCartelaOverride('page_bottom_margin') }));
-    wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateCartela({ page_left_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_left_margin'), reset: () => resetCartelaOverride('page_left_margin') }));
-    wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateCartela({ page_right_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_right_margin'), reset: () => resetCartelaOverride('page_right_margin') }));
-    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetCartelaOverride('repeat_block_titles') }));
-    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(effectiveCartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateCartela({ auto_text_wrap: normalizeBoolean(value, false) }), { override: hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => resetCartelaOverride('auto_text_wrap') }));
-    wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateCartela({ text_capitalization: value }), { override: hasCartelaOverride(cartela, 'text_capitalization'), reset: () => resetCartelaOverride('text_capitalization') }));
-    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(effectiveCartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateCartela({ use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => resetCartelaOverride('use_protected_capitalization') }));
+    ], (value) => updateSelectedCartela({ orientation: value }), { override: hasCartelaOverride(cartela, 'orientation'), reset: () => resetSelectedCartelaOverride('orientation') }));
+    wrap.appendChild(localNumberRow('Columnas', Number(effectiveCartela.columns) || 1, 1, 6, (value) => updateSelectedCartela({ columns: value }), 1, { override: hasCartelaOverride(cartela, 'columns'), reset: () => resetSelectedCartelaOverride('columns') }));
+    wrap.appendChild(localNumberRow('Desplazamiento vertical', Number(effectiveCartela.vertical_offset) || 0, null, null, (value) => updateSelectedCartela({ vertical_offset: value }), 1, { override: hasCartelaOverride(cartela, 'vertical_offset'), reset: () => resetSelectedCartelaOverride('vertical_offset') }));
+    wrap.appendChild(localDurationRow('Duración por página', Number(effectiveCartela.duration) || 0, (value) => updateSelectedCartela({ duration: value }), { override: hasCartelaOverride(cartela, 'duration'), reset: () => resetSelectedCartelaOverride('duration') }));
+    wrap.appendChild(localNumberRow('Interlineado', Number(effectiveCartela.line_spacing) || 1.12, 0.1, null, (value) => updateSelectedCartela({ line_spacing: value }), 0.01, { override: hasCartelaOverride(cartela, 'line_spacing'), reset: () => resetSelectedCartelaOverride('line_spacing') }));
+    wrap.appendChild(localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => updateSelectedCartela({ column_gap: value }), 1, { override: hasCartelaOverride(cartela, 'column_gap'), reset: () => resetSelectedCartelaOverride('column_gap') }));
+    wrap.appendChild(localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => updateSelectedCartela({ role_name_gap: value }), 1, { override: hasCartelaOverride(cartela, 'role_name_gap'), reset: () => resetSelectedCartelaOverride('role_name_gap') }));
+    wrap.appendChild(localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => updateSelectedCartela({ source_group_gap: value }), 1, { override: hasCartelaOverride(cartela, 'source_group_gap'), reset: () => resetSelectedCartelaOverride('source_group_gap') }));
+    wrap.appendChild(localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => updateSelectedCartela({ block_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_gap'), reset: () => resetSelectedCartelaOverride('block_gap') }));
+    wrap.appendChild(localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => updateSelectedCartela({ block_title_gap: value }), 1, { override: hasCartelaOverride(cartela, 'block_title_gap'), reset: () => resetSelectedCartelaOverride('block_title_gap') }));
+    wrap.appendChild(localNumberRow('Margen superior', Number(effectiveCartela.page_top_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_top_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_top_margin'), reset: () => resetSelectedCartelaOverride('page_top_margin') }));
+    wrap.appendChild(localNumberRow('Margen inferior', Number(effectiveCartela.page_bottom_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_bottom_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_bottom_margin'), reset: () => resetSelectedCartelaOverride('page_bottom_margin') }));
+    wrap.appendChild(localNumberRow('Margen izquierdo', Number(effectiveCartela.page_left_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_left_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_left_margin'), reset: () => resetSelectedCartelaOverride('page_left_margin') }));
+    wrap.appendChild(localNumberRow('Margen derecho', Number(effectiveCartela.page_right_margin) || 0, 0, null, (value) => updateSelectedCartela({ page_right_margin: value }), 1, { override: hasCartelaOverride(cartela, 'page_right_margin'), reset: () => resetSelectedCartelaOverride('page_right_margin') }));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(effectiveCartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateSelectedCartela({ repeat_block_titles: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'repeat_block_titles'), reset: () => resetSelectedCartelaOverride('repeat_block_titles') }));
+    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(effectiveCartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateSelectedCartela({ auto_text_wrap: normalizeBoolean(value, false) }), { override: hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => resetSelectedCartelaOverride('auto_text_wrap') }));
+    wrap.appendChild(localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', TEXT_CAPITALIZATION_OPTIONS, (value) => updateSelectedCartela({ text_capitalization: value }), { override: hasCartelaOverride(cartela, 'text_capitalization'), reset: () => resetSelectedCartelaOverride('text_capitalization') }));
+    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(effectiveCartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateSelectedCartela({ use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => resetSelectedCartelaOverride('use_protected_capitalization') }));
     wrap.appendChild(renderCartelaImageControls(cartela));
     wrap.appendChild(renderCartelaTitleTypographyControls(cartela));
     wrap.appendChild(renderCartelaBlockStyleControls(cartela));
-    wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateCartela({ notes: value }), { multiline: true }));
+    wrap.appendChild(localInputRow('Notas', cartela.notes || '', (value) => updateSelectedCartela({ notes: value }), { multiline: true }));
     return wrap;
   }
 
@@ -3952,12 +3953,9 @@
     refreshPdfIfActive();
   }
 
-  function updateCartela(fields) {
+  function updateSelectedCartela(fields) {
     const cartela = getSelectedCartela();
-    if (!cartela) return;
-    Object.assign(cartela, fields);
-    if (fields && fields.image === null) delete cartela.image;
-    if (fields && fields.images) cartela.images = normalizeCartelaImages(fields.images);
+    if (!updateCartelaInStructure(cartela, fields)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
@@ -3965,10 +3963,9 @@
     refreshPdfIfActive();
   }
 
-  function resetCartelaOverride(key) {
+  function resetSelectedCartelaOverride(key) {
     const cartela = getSelectedCartela();
-    if (!cartela) return;
-    delete cartela[key];
+    if (!resetCartelaOverrideInStructure(cartela, key)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderEditor();
@@ -5598,7 +5595,7 @@
     if (!cartela) return;
     const previousSelected = state.selectedCartelaId;
     state.selectedCartelaId = cartela.id;
-    updateCartela(fields);
+    updateSelectedCartela(fields);
     state.selectedCartelaId = previousSelected;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();

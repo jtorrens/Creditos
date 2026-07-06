@@ -479,6 +479,20 @@
       return cartelaImages(cartela).length > 0;
     }
 
+    function updateCartela(cartela, fields) {
+      if (!cartela) return false;
+      Object.assign(cartela, fields || {});
+      if (fields && fields.image === null) delete cartela.image;
+      if (fields && fields.images) cartela.images = normalizeCartelaImages(fields.images);
+      return true;
+    }
+
+    function resetCartelaOverride(cartela, key) {
+      if (!cartela) return false;
+      delete cartela[key];
+      return true;
+    }
+
     function getCartelaRefs(cartela) {
       return (cartela && cartela.pages || []).flatMap((page) => page.source_refs || []);
     }
@@ -559,7 +573,9 @@
       normalizeFrozenMaterial,
       normalizeVisualOrders,
       removeDefaultEmptyCartelas,
+      resetCartelaOverride,
       structureJsonForOutput,
+      updateCartela,
       uniqueCartelaId,
     };
   }
