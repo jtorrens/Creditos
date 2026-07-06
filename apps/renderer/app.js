@@ -855,6 +855,23 @@
     updateProductionName,
     updateReferenceVideoStatus,
   });
+  const cartelaListPanel = globalThis.CreditosCartelaListPanel.createCartelaListPanel({
+    documentRef: document,
+    els,
+    escapeHtml,
+    getCartelaDisplayName,
+    getCartelaRefs,
+    getEffectiveCartela,
+    getStyleById,
+    getVisualCartelas,
+    moveSelectedCartelaVisualOrder,
+    selectCartela: (cartelaId) => {
+      state.selectedCartelaId = cartelaId;
+      rebuild();
+    },
+    selectedEpisode,
+    state,
+  });
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1538,52 +1555,7 @@
   }
 
   function renderCartelaList() {
-    els.blockList.innerHTML = '';
-    const cartelas = state.structure && state.structure.cartelas ? getVisualCartelas(state.structure.cartelas) : [];
-    const episode = selectedEpisode();
-    els.blockCount.textContent = episode ? `${episode.name} · ${cartelas.length}` : String(cartelas.length);
-
-    cartelas.forEach((cartela, index) => {
-      const refs = getCartelaRefs(cartela);
-      const effectiveCartela = getEffectiveCartela(cartela);
-      const style = getStyleById(cartela.style_id);
-      const button = document.createElement('div');
-      button.className = 'block-button' + (cartela.id === state.selectedCartelaId ? ' active' : '');
-      button.addEventListener('click', () => {
-        state.selectedCartelaId = cartela.id;
-        rebuild();
-      });
-
-      button.innerHTML = `
-        <div class="block-group">${String(index + 1).padStart(2, '0')}</div>
-        <div class="block-name">${escapeHtml(getCartelaDisplayName(cartela, state.materials, index))}</div>
-        <div class="block-meta">${cartela.enabled === false ? 'excluida · ' : ''}${style ? escapeHtml(style.name) + ' · ' : ''}${escapeHtml(effectiveCartela.orientation || 'horizontal')} · ${Number(effectiveCartela.columns) || 1} col · ${refs.length} bloque${refs.length === 1 ? '' : 's'}</div>
-      `;
-      const orderControls = document.createElement('div');
-      orderControls.className = 'cartela-order-controls';
-      const upButton = document.createElement('button');
-      upButton.type = 'button';
-      upButton.textContent = '↑';
-      upButton.title = 'Mover cartela arriba';
-      upButton.disabled = index === 0;
-      upButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        moveSelectedCartelaVisualOrder(cartela.id, -1);
-      });
-      const downButton = document.createElement('button');
-      downButton.type = 'button';
-      downButton.textContent = '↓';
-      downButton.title = 'Mover cartela abajo';
-      downButton.disabled = index >= cartelas.length - 1;
-      downButton.addEventListener('click', (event) => {
-        event.stopPropagation();
-        moveSelectedCartelaVisualOrder(cartela.id, 1);
-      });
-      orderControls.appendChild(upButton);
-      orderControls.appendChild(downButton);
-      button.appendChild(orderControls);
-      els.blockList.appendChild(button);
-    });
+    return cartelaListPanel.renderCartelaList();
   }
 
   function renderStylesPane() {
