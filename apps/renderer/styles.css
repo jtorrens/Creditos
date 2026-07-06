@@ -1107,10 +1107,21 @@ button.primary:hover {
 }
 
 select.text-input {
+  appearance: none;
+  background-color: var(--input);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
   color-scheme: dark;
   max-width: 30ch;
   min-width: 0;
   overflow: hidden;
+  padding-right: 30px;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: min(100%, 30ch);
