@@ -854,6 +854,10 @@
     resetStyleCartelaOverrideInDomain,
     resetStyleTitleTypographyOverrideInDomain,
     resetStyleTypographyOverrideInDomain,
+    normalizeTitleTypographyOverrides,
+    safeStyleId,
+    sanitizeStyleBlockOverrides,
+    sanitizeStyleCartelaOverrides,
     scheduleStyleAutosave,
     selectedProduction,
     setSelectedProductionLocalFields,
@@ -873,7 +877,9 @@
     updateStyleCartelaInDomain,
     updateStyleTitleTypographyInDomain,
     updateStyleTypographyInDomain,
+    uniqueStyleId,
     windowRef: window,
+    writeStyleFile,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
     currentProductionEpisodes,
@@ -1764,46 +1770,11 @@
   }
 
   async function createStyleFromUi() {
-    if (!state.selectedProductionId) {
-      window.alert('Selecciona primero una producción.');
-      return;
-    }
-    const id = uniqueStyleId(state.styles, 'nuevo_estilo');
-    const style = {
-      schema: 'credits_cartela_style_json',
-      version: 2,
-      id,
-      name: 'Nuevo estilo',
-      file_name: `${id}.json`,
-      cartela: {},
-      title_typography: {},
-      block: {},
-    };
-    state.styles.push(style);
-    state.selectedStyleId = id;
-    await writeStyleFile(style);
-    renderStylesPane();
+    return appCommands.createStyleFromUi();
   }
 
   async function duplicateSelectedStyle() {
-    const source = getStyleById(state.selectedStyleId);
-    if (!source || !state.selectedProductionId) return;
-    const id = uniqueStyleId(state.styles, safeStyleId(`${source.id}_copia`));
-    const style = {
-      schema: 'credits_cartela_style_json',
-      version: 2,
-      id,
-      name: `${source.name} copia`,
-      file_name: `${id}.json`,
-      cartela: sanitizeStyleCartelaOverrides(source.cartela || {}),
-      title_typography: normalizeTitleTypographyOverrides(source.title_typography || {}),
-      block: sanitizeStyleBlockOverrides(source.block || {}),
-    };
-    state.styles.push(style);
-    state.styles.sort((a, b) => a.name.localeCompare(b.name));
-    state.selectedStyleId = id;
-    await writeStyleFile(style);
-    renderStylesPane();
+    return appCommands.duplicateSelectedStyle();
   }
 
   async function deleteSelectedStyle() {

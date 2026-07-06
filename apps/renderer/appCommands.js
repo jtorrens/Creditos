@@ -322,9 +322,54 @@
       options.renderStylesPane();
     }
 
+    async function createStyleFromUi() {
+      if (!state.selectedProductionId) {
+        options.windowRef.alert('Selecciona primero una producción.');
+        return;
+      }
+      const id = options.uniqueStyleId(state.styles, 'nuevo_estilo');
+      const style = {
+        schema: 'credits_cartela_style_json',
+        version: 2,
+        id,
+        name: 'Nuevo estilo',
+        file_name: `${id}.json`,
+        cartela: {},
+        title_typography: {},
+        block: {},
+      };
+      state.styles.push(style);
+      state.selectedStyleId = id;
+      await options.writeStyleFile(style);
+      options.renderStylesPane();
+    }
+
+    async function duplicateSelectedStyle() {
+      const source = options.getStyleById(state.selectedStyleId);
+      if (!source || !state.selectedProductionId) return;
+      const id = options.uniqueStyleId(state.styles, options.safeStyleId(`${source.id}_copia`));
+      const style = {
+        schema: 'credits_cartela_style_json',
+        version: 2,
+        id,
+        name: `${source.name} copia`,
+        file_name: `${id}.json`,
+        cartela: options.sanitizeStyleCartelaOverrides(source.cartela || {}),
+        title_typography: options.normalizeTitleTypographyOverrides(source.title_typography || {}),
+        block: options.sanitizeStyleBlockOverrides(source.block || {}),
+      };
+      state.styles.push(style);
+      state.styles.sort((a, b) => a.name.localeCompare(b.name));
+      state.selectedStyleId = id;
+      await options.writeStyleFile(style);
+      options.renderStylesPane();
+    }
+
     return {
       addEmptyCartela,
+      createStyleFromUi,
       deleteSelectedManualCartela,
+      duplicateSelectedStyle,
       moveSelectedCartelaVisualOrder,
       resetEditableStyleBlockAlignmentOverride,
       resetEditableStyleBlockOverride,
