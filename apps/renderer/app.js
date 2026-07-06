@@ -1563,16 +1563,7 @@
   }
 
   function updateStyleName(style, name) {
-    if (!style) return;
-    const cleanName = String(name || '').trim();
-    if (!cleanName) {
-      renderStylesPane();
-      return;
-    }
-    style.name = cleanName;
-    scheduleStyleAutosave(style.id);
-    renderCartelaList();
-    renderStylesPane();
+    return appCommands.updateStyleName(style, name);
   }
 
   function renderStyleEditor(style) {

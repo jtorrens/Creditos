@@ -309,6 +309,19 @@
       updateStyleAfterOverrideChange(style);
     }
 
+    function updateStyleName(style, name) {
+      if (!style) return;
+      const cleanName = String(name || '').trim();
+      if (!cleanName) {
+        options.renderStylesPane();
+        return;
+      }
+      style.name = cleanName;
+      options.scheduleStyleAutosave(style.id);
+      options.renderCartelaList();
+      options.renderStylesPane();
+    }
+
     return {
       addEmptyCartela,
       deleteSelectedManualCartela,
@@ -334,6 +347,7 @@
       updateSelectedBlockTypography,
       updateSelectedBlockVerticalAlign,
       updateStyleAfterOverrideChange,
+      updateStyleName,
       updateSelectedCartelaBlockAlignment,
       updateSelectedCartelaBlockStyle,
       updateSelectedCartelaBlockTypography,
