@@ -609,136 +609,60 @@
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
-  els.openXlsxBtn.addEventListener('click', openXlsxFile);
-  if (els.openReferenceVideoBtn) els.openReferenceVideoBtn.addEventListener('click', associateReferenceVideo);
-  if (els.clearReferenceVideoBtn) els.clearReferenceVideoBtn.addEventListener('click', clearReferenceVideo);
-  if (els.newCartelaBtn) els.newCartelaBtn.addEventListener('click', addEmptyCartela);
-  if (els.copyEpisodeStylesBtn) els.copyEpisodeStylesBtn.addEventListener('click', copyStylesFromEpisodeFlow);
-  els.xlsxInput.addEventListener('change', loadXlsxFile);
-  els.productionSelect.addEventListener('change', selectProductionFromUi);
-  els.productionPageWidthInput.addEventListener('change', updateProductionLayoutFromUi);
-  els.productionPageHeightInput.addEventListener('change', updateProductionLayoutFromUi);
-  els.productionPreviewBackgroundInput.addEventListener('input', updateProductionLayoutFromUi);
-  if (els.productionImportModelSelect) els.productionImportModelSelect.addEventListener('change', updateProductionImportModelFromUi);
-  els.episodeSelect.addEventListener('change', selectEpisodeFromUi);
-  els.showCreateProductionBtn.addEventListener('click', toggleCreateProductionBox);
-  els.duplicateProductionBtn.addEventListener('click', duplicateSelectedProduction);
-  els.deleteProductionBtn.addEventListener('click', deleteSelectedProduction);
-  els.createProductionBtn.addEventListener('click', createProductionFromUi);
-  els.createStyleBtn.addEventListener('click', createStyleFromUi);
-  els.duplicateStyleBtn.addEventListener('click', duplicateSelectedStyle);
-  els.deleteStyleBtn.addEventListener('click', deleteSelectedStyle);
-  els.tabButtons.forEach((button) => {
-    button.addEventListener('click', () => setActiveTab(button.dataset.tab));
-  });
-  els.defaultDurationInput.addEventListener('change', () => {
-    const fps = currentMovieFps();
-    const frames = normalizeDurationInputElement(els.defaultDurationInput, fps);
-    if (frames === null) {
-      window.alert(`Introduce la duración como mm:ss:ff. También puedes escribir solo números, por ejemplo 35 = ${formatFrameDuration(35, fps)}.`);
-      els.defaultDurationInput.value = formatSecondsAsFrameDuration(getProductionSettings().default_cartela_duration, fps);
-      return;
-    }
-    updateSettings({ default_cartela_duration: frames / fps });
-  });
-  els.defaultAutoLinesInput.addEventListener('change', () => updateSettings({
-    default_auto_page_lines: Math.max(1, Number(els.defaultAutoLinesInput.value) || 1),
-  }));
-  els.movieFpsInput.addEventListener('change', () => {
-    updateSettings({
-      movie_fps: Math.max(1, Math.round(Number(els.movieFpsInput.value) || 25)),
-    });
-    updateMovieDurationFields({ resetTarget: true });
-  });
-  if (els.structureTab) els.structureTab.addEventListener('click', () => setPreview('structure'));
-  if (els.renderTab) els.renderTab.addEventListener('click', () => setPreview('render'));
-  els.pdfFirstPageBtn.addEventListener('click', () => goToPdfPage(0));
-  els.pdfPrevPageBtn.addEventListener('click', () => changePdfPage(-1));
-  els.pdfNextPageBtn.addEventListener('click', () => changePdfPage(1));
-  els.pdfLastPageBtn.addEventListener('click', () => goToPdfPage(Number.POSITIVE_INFINITY));
-  els.pdfPageNumberInput.addEventListener('change', () => goToPdfPage((Number(els.pdfPageNumberInput.value) || 1) - 1));
-  els.pdfMinusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(-1));
-  els.pdfPlusLinesBtn.addEventListener('click', () => adjustCurrentPdfPageLines(1));
-  els.pdfBaseNameInput.addEventListener('input', updatePdfBaseName);
-  els.exportFromPageInput.addEventListener('change', () => {
-    els.exportFromPageInput.dataset.manual = '1';
-    els.exportToPageInput.dataset.manual = '1';
-    updateMovieDurationFields({ resetTarget: true });
-    savePreviewSettingsFromUi();
-  });
-  els.exportToPageInput.addEventListener('change', () => {
-    els.exportFromPageInput.dataset.manual = '1';
-    els.exportToPageInput.dataset.manual = '1';
-    updateMovieDurationFields({ resetTarget: true });
-    savePreviewSettingsFromUi();
-  });
-  if (els.movieModeSelect) els.movieModeSelect.addEventListener('change', () => {
-    if (getMovieMode() === 'scroll') {
-      els.exportFromPageInput.dataset.manual = '0';
-      els.exportToPageInput.dataset.manual = '0';
-    }
-    updateMovieDurationFields();
-    renderPdfPreview();
-    savePreviewSettingsFromUi();
-  });
-  if (els.movieCodecSelect) els.movieCodecSelect.addEventListener('change', () => {
-    renderMovieEncodingProfiles(els.movieCodecSelect.value);
-    ensureBackgroundForEncodingProfile();
-    savePreviewSettingsFromUi();
-  });
-  if (els.movieEncodingProfileSelect) els.movieEncodingProfileSelect.addEventListener('change', () => {
-    ensureBackgroundForEncodingProfile();
-    savePreviewSettingsFromUi();
-  });
-  els.movieTargetDurationInput.addEventListener('focus', () => {
-    els.movieTargetDurationInput.dataset.auto = '0';
-  });
-  els.movieTargetDurationInput.addEventListener('change', validateMovieTargetDuration);
-  [els.moviePrerollCountInput, els.moviePrerollDurationInput, els.moviePostrollCountInput, els.moviePostrollDurationInput]
-    .filter(Boolean)
-    .forEach((input) => input.addEventListener('change', updateMovieSegmentInputs));
-  els.pdfVerticalOffsetInput.addEventListener('change', () => updateCurrentPdfCartela({ vertical_offset: Number(els.pdfVerticalOffsetInput.value) || 0 }));
-  els.pngZoomOutBtn.addEventListener('click', () => updatePngPreviewZoom(-0.1));
-  els.pngZoomInBtn.addEventListener('click', () => updatePngPreviewZoom(0.1));
-  if (els.previewStartBtn) els.previewStartBtn.addEventListener('click', () => seekPreviewAnimation(0));
-  if (els.previewPlayBtn) els.previewPlayBtn.addEventListener('click', togglePreviewAnimation);
-  if (els.previewFrameInput) els.previewFrameInput.addEventListener('input', () => seekPreviewAnimation(Number(els.previewFrameInput.value) || 0));
-  if (els.showPreviewReferenceVideoInput) els.showPreviewReferenceVideoInput.addEventListener('change', () => {
-    state.showPreviewReferenceVideo = !!els.showPreviewReferenceVideoInput.checked;
-    renderPdfPreview();
-    savePreviewSettingsFromUi();
-  });
-  if (els.showCartelaReferenceVideoInput) els.showCartelaReferenceVideoInput.addEventListener('change', () => {
-    state.showCartelaReferenceVideo = !!els.showCartelaReferenceVideoInput.checked;
-    renderCartelaPreview();
-  });
-  if (els.exportIncludeBackgroundInput) els.exportIncludeBackgroundInput.addEventListener('change', () => {
-    state.exportIncludeBackground = !!els.exportIncludeBackgroundInput.checked;
-    savePreviewSettingsFromUi();
-  });
-  if (els.exportIncludeVideoInput) els.exportIncludeVideoInput.addEventListener('change', () => {
-    state.exportIncludeVideo = !!els.exportIncludeVideoInput.checked;
-    if (state.exportIncludeVideo && els.exportIncludeBackgroundInput) {
-      els.exportIncludeBackgroundInput.checked = true;
-      state.exportIncludeBackground = true;
-    }
-    savePreviewSettingsFromUi();
-  });
-  if (els.exportIncludeMarginsInput) els.exportIncludeMarginsInput.addEventListener('change', () => {
-    state.exportIncludeMargins = !!els.exportIncludeMarginsInput.checked;
-    savePreviewSettingsFromUi();
-  });
-  els.toggleMarginsBtn.addEventListener('click', toggleMarginOverlay);
-  if (els.toggleStyleMarginsBtn) els.toggleStyleMarginsBtn.addEventListener('click', togglePanelMarginOverlay);
-  if (els.toggleCartelaMarginsBtn) els.toggleCartelaMarginsBtn.addEventListener('click', togglePanelMarginOverlay);
-  els.exportCurrentPdfBtn.addEventListener('click', () => exportPngPages('current'));
-  els.exportAllPdfBtn.addEventListener('click', () => exportPngPages('all'));
-  els.exportMovBtn.addEventListener('click', exportMov);
-  if (els.downloadDatabaseBtn) els.downloadDatabaseBtn.addEventListener('click', () => syncDatabaseManually('download'));
-  if (els.uploadDatabaseBtn) els.uploadDatabaseBtn.addEventListener('click', () => syncDatabaseManually('upload'));
-  window.addEventListener('resize', () => {
-    renderVisiblePanelPreviews();
-    if (state.activeTab === 'pdf' && state.pngPreviewZoomMode === 'auto') renderPdfPreview();
+  globalThis.CreditosUiBindings.bindAppUi({
+    els,
+    state,
+    windowRef: window,
+    actions: {
+      addEmptyCartela,
+      adjustCurrentPdfPageLines,
+      associateReferenceVideo,
+      changePdfPage,
+      clearReferenceVideo,
+      copyStylesFromEpisodeFlow,
+      createProductionFromUi,
+      createStyleFromUi,
+      currentMovieFps,
+      deleteSelectedProduction,
+      deleteSelectedStyle,
+      duplicateSelectedProduction,
+      duplicateSelectedStyle,
+      ensureBackgroundForEncodingProfile,
+      exportMov,
+      exportPngPages,
+      formatFrameDuration,
+      formatSecondsAsFrameDuration,
+      getMovieMode,
+      getProductionSettings,
+      goToPdfPage,
+      loadXlsxFile,
+      normalizeDurationInputElement,
+      openXlsxFile,
+      renderCartelaPreview,
+      renderMovieEncodingProfiles,
+      renderPdfPreview,
+      renderVisiblePanelPreviews,
+      savePreviewSettingsFromUi,
+      seekPreviewAnimation,
+      selectEpisodeFromUi,
+      selectProductionFromUi,
+      setActiveTab,
+      setPreview,
+      syncDatabaseManually,
+      toggleCreateProductionBox,
+      toggleMarginOverlay,
+      togglePanelMarginOverlay,
+      togglePreviewAnimation,
+      updateCurrentPdfCartela,
+      updateMovieDurationFields,
+      updateMovieSegmentInputs,
+      updatePdfBaseName,
+      updatePngPreviewZoom,
+      updateProductionImportModelFromUi,
+      updateProductionLayoutFromUi,
+      updateSettings,
+      validateMovieTargetDuration,
+    },
   });
   initializeAppInfo();
   initializeAppPreferences();
