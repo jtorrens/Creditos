@@ -1154,7 +1154,7 @@
       window.alert('No hay otros capítulos en esta producción.');
       return;
     }
-    const sourceEpisodeId = await showEpisodeStyleSourceModal(candidates);
+    const sourceEpisodeId = await projectPanel.showEpisodeStyleSourceModal(candidates);
     if (!sourceEpisodeId) return;
     const sourceEpisode = candidates.find((episode) => String(episode.id) === String(sourceEpisodeId));
     const native = nativeBridge();
@@ -1193,53 +1193,6 @@
     } catch (error) {
       window.alert('No se pudieron asignar los estilos: ' + error.message);
     }
-  }
-
-  function showEpisodeStyleSourceModal(episodes) {
-    return new Promise((resolve) => {
-      const overlay = document.createElement('div');
-      overlay.className = 'modal-overlay';
-      const modal = document.createElement('div');
-      modal.className = 'app-modal';
-      const title = document.createElement('h2');
-      title.textContent = 'Asignar estilos de otro capítulo';
-      const text = document.createElement('p');
-      text.textContent = 'Elige el capítulo origen. Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.';
-      const select = fieldControlRegistry.create('select', {
-        className: 'text-input',
-        options: episodes.map((episode) => ({
-          value: episode.id,
-          label: episode.name || `Capítulo ${episode.episode_number || episode.id}`,
-        })),
-      });
-      const actions = document.createElement('div');
-      actions.className = 'modal-actions';
-      const cancelButton = document.createElement('button');
-      cancelButton.type = 'button';
-      cancelButton.textContent = 'Cancelar';
-      const applyButton = document.createElement('button');
-      applyButton.type = 'button';
-      applyButton.className = 'primary';
-      applyButton.textContent = 'Continuar';
-      const close = (value) => {
-        overlay.remove();
-        resolve(value);
-      };
-      cancelButton.addEventListener('click', () => close(null));
-      applyButton.addEventListener('click', () => close(select.value));
-      overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) close(null);
-      });
-      actions.appendChild(cancelButton);
-      actions.appendChild(applyButton);
-      modal.appendChild(title);
-      modal.appendChild(text);
-      modal.appendChild(select);
-      modal.appendChild(actions);
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-      select.focus();
-    });
   }
 
   async function createProductionFromUi() {

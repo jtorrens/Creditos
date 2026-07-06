@@ -126,6 +126,53 @@
       }
     }
 
+    function showEpisodeStyleSourceModal(episodes) {
+      return new Promise((resolve) => {
+        const overlay = documentRef.createElement('div');
+        overlay.className = 'modal-overlay';
+        const modal = documentRef.createElement('div');
+        modal.className = 'app-modal';
+        const title = documentRef.createElement('h2');
+        title.textContent = 'Asignar estilos de otro capítulo';
+        const text = documentRef.createElement('p');
+        text.textContent = 'Elige el capítulo origen. Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.';
+        const select = fieldControlRegistry.create('select', {
+          className: 'text-input',
+          options: episodes.map((episode) => ({
+            value: episode.id,
+            label: episode.name || `Capítulo ${episode.episode_number || episode.id}`,
+          })),
+        });
+        const actions = documentRef.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelButton = documentRef.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.textContent = 'Cancelar';
+        const applyButton = documentRef.createElement('button');
+        applyButton.type = 'button';
+        applyButton.className = 'primary';
+        applyButton.textContent = 'Continuar';
+        const close = (value) => {
+          overlay.remove();
+          resolve(value);
+        };
+        cancelButton.addEventListener('click', () => close(null));
+        applyButton.addEventListener('click', () => close(select.value));
+        overlay.addEventListener('click', (event) => {
+          if (event.target === overlay) close(null);
+        });
+        actions.appendChild(cancelButton);
+        actions.appendChild(applyButton);
+        modal.appendChild(title);
+        modal.appendChild(text);
+        modal.appendChild(select);
+        modal.appendChild(actions);
+        overlay.appendChild(modal);
+        documentRef.body.appendChild(overlay);
+        select.focus();
+      });
+    }
+
     function renderSelect(select, items, selectedId, emptyLabel, labelForItem) {
       if (!select) return;
       select.innerHTML = '';
@@ -150,6 +197,7 @@
     return {
       renderProductionList,
       renderProjectSelectors,
+      showEpisodeStyleSourceModal,
       updateXlsxStatus,
     };
   }
