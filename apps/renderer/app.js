@@ -797,16 +797,29 @@
     localSelectRow,
   } = appFormRows;
   const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
+    els,
     fitPreviewZoom,
     getPngPreviewZoom: () => state.pngPreviewZoom,
     getProductionSettings,
+    getRenderLayout,
     makeMarginOverlayInPreview,
     makePdfSheetElementInPreview,
+    renderPdfPreview,
+    renderVisiblePanelPreviews,
+    savePreviewSettingsFromUi,
+    state,
   });
   const {
+    calculateFitPreviewZoom: calculateFitPreviewZoomFromPreviewRender,
+    getCurrentPngPreviewZoom: getCurrentPngPreviewZoomFromPreviewRender,
     makeMarginOverlay: makeMarginOverlayFromPreviewRender,
     makePdfSheetElement: makePdfSheetElementFromPreviewRender,
     previewZoomForContainer: previewZoomForContainerFromPreviewRender,
+    toggleMarginOverlay: toggleMarginOverlayFromPreviewRender,
+    togglePanelMarginOverlay: togglePanelMarginOverlayFromPreviewRender,
+    updatePanelMarginButtons: updatePanelMarginButtonsFromPreviewRender,
+    updatePngPreviewZoom: updatePngPreviewZoomFromPreviewRender,
+    updatePngZoomStatus: updatePngZoomStatusFromPreviewRender,
   } = appPreviewRender;
   const settingsPanel = globalThis.CreditosSettingsPanel.createSettingsPanel({
     boolSelectValue,
@@ -3152,58 +3165,31 @@
   }
 
   function updatePngPreviewZoom(delta) {
-    const layout = getRenderLayout();
-    const baseZoom = state.pngPreviewZoomMode === 'auto' || !Number(state.pngPreviewZoom)
-      ? calculateFitPreviewZoom(layout)
-      : Number(state.pngPreviewZoom);
-    state.pngPreviewZoomMode = 'manual';
-    state.pngPreviewZoom = Math.max(0.05, Math.min(2, Math.round((baseZoom + delta) * 20) / 20));
-    renderPdfPreview();
+    return updatePngPreviewZoomFromPreviewRender(delta);
   }
 
   function updatePngZoomStatus() {
-    if (!els.pngZoomStatus) return;
-    const suffix = state.pngPreviewZoomMode === 'auto' ? ' auto' : '';
-    els.pngZoomStatus.textContent = `${Math.round((Number(state.pngPreviewZoom) || 0) * 100)}%${suffix}`;
+    return updatePngZoomStatusFromPreviewRender();
   }
 
   function getCurrentPngPreviewZoom(layout) {
-    if (state.pngPreviewZoomMode === 'auto' || !Number(state.pngPreviewZoom)) {
-      return calculateFitPreviewZoom(layout);
-    }
-    return Math.max(0.03, Number(state.pngPreviewZoom) || 0.25);
+    return getCurrentPngPreviewZoomFromPreviewRender(layout);
   }
 
   function calculateFitPreviewZoom(layout) {
-    if (!els.pdfPreview || !layout) return 0.25;
-    const rect = els.pdfPreview.getBoundingClientRect();
-    const availableWidth = Math.max(1, rect.width - 28);
-    const availableHeight = Math.max(1, rect.height - 28);
-    return fitPreviewZoom(availableWidth, availableHeight, layout.page_width, layout.page_height, { maxZoom: 2 });
+    return calculateFitPreviewZoomFromPreviewRender(layout);
   }
 
   function toggleMarginOverlay() {
-    state.showMarginOverlay = !state.showMarginOverlay;
-    if (els.toggleMarginsBtn) {
-      els.toggleMarginsBtn.classList.toggle('active-toggle', state.showMarginOverlay);
-      els.toggleMarginsBtn.textContent = state.showMarginOverlay ? 'Ocultar márgenes' : 'Mostrar márgenes';
-    }
-    renderPdfPreview();
-    savePreviewSettingsFromUi();
+    return toggleMarginOverlayFromPreviewRender();
   }
 
   function togglePanelMarginOverlay() {
-    state.showPanelMarginOverlay = !state.showPanelMarginOverlay;
-    updatePanelMarginButtons();
-    renderVisiblePanelPreviews();
+    return togglePanelMarginOverlayFromPreviewRender();
   }
 
   function updatePanelMarginButtons() {
-    [els.toggleStyleMarginsBtn, els.toggleCartelaMarginsBtn].forEach((button) => {
-      if (!button) return;
-      button.classList.toggle('active-toggle', state.showPanelMarginOverlay);
-      button.textContent = state.showPanelMarginOverlay ? 'Ocultar márgenes' : 'Márgenes';
-    });
+    return updatePanelMarginButtonsFromPreviewRender();
   }
 
   function updateCurrentPdfCartela(fields) {
