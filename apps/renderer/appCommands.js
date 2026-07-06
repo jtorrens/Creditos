@@ -524,8 +524,77 @@
       }
     }
 
+    async function createProductionFromUi() {
+      if (!state.databasePath) {
+        options.windowRef.alert('La base de datos todavía se está inicializando.');
+        return;
+      }
+      const name = options.els.newProductionNameInput.value.trim();
+      const episodeCount = Math.max(1, Math.round(Number(options.els.newProductionEpisodeCountInput.value) || 1));
+      if (!name) {
+        options.windowRef.alert('Escribe el nombre de la producción.');
+        return;
+      }
+      try {
+        const overview = await options.dbPost('/api/db/create-production', {
+          name,
+          episode_count: episodeCount,
+          page_width: 1920,
+          page_height: 1080,
+          preview_background: '#ffffff',
+          import_model_id: options.defaultImportModelIdInDomain(state.importModels),
+        });
+        state.selectedProductionId = overview.production_id;
+        state.selectedEpisodeId = null;
+        options.els.newProductionNameInput.value = '';
+        if (options.els.productionCreateBox) options.els.productionCreateBox.classList.remove('open');
+        options.applyDatabaseOverview(overview);
+      } catch (error) {
+        options.windowRef.alert('No se pudo crear la producción: ' + error.message);
+      }
+    }
+
+    async function updateProductionLayoutFromUi() {
+      if (!state.selectedProductionId) return;
+      const fields = {
+        page_width: Math.max(1, Number(options.els.productionPageWidthInput.value) || 1920),
+        page_height: Math.max(1, Number(options.els.productionPageHeightInput.value) || 1080),
+        preview_background: options.normalizeColor(options.els.productionPreviewBackgroundInput.value || '#ffffff'),
+      };
+      options.setSelectedProductionLocalFields(fields);
+      try {
+        await options.persistSelectedProductionFields(fields);
+        if (state.source && state.structure) {
+          state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+          options.renderSettings();
+          options.renderEditor();
+          options.renderStylesPane();
+          options.renderPreview();
+          options.refreshPdfIfActive();
+        }
+      } catch (error) {
+        options.windowRef.alert('No se pudo actualizar el formato de producción: ' + error.message);
+      }
+    }
+
+    async function updateProductionImportModelFromUi() {
+      if (!state.selectedProductionId || !options.els.productionImportModelSelect) return;
+      const fields = {
+        import_model_id: options.els.productionImportModelSelect.value || options.defaultImportModelIdInDomain(state.importModels),
+      };
+      options.setSelectedProductionLocalFields(fields);
+      options.renderProductionList();
+      try {
+        await options.persistSelectedProductionFields(fields);
+      } catch (error) {
+        options.windowRef.alert('No se pudo actualizar el modelo de importación: ' + error.message);
+        await options.initializeDatabase({ silent: true });
+      }
+    }
+
     return {
       addEmptyCartela,
+      createProductionFromUi,
       createStyleFromUi,
       deleteSelectedProduction,
       deleteSelectedStyle,
@@ -550,6 +619,8 @@
       updateEditableStyleTitleTypography,
       updateEditableStyleTypography,
       updateProductionEpisodeCount,
+      updateProductionImportModelFromUi,
+      updateProductionLayoutFromUi,
       updateProductionName,
       updateSelectedBlockAlignment,
       updateSelectedBlockColumns,

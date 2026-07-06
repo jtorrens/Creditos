@@ -841,12 +841,15 @@
     clearCartelaStyleOverrides,
     currentProductionEpisodes,
     dbPost,
+    defaultImportModelIdInDomain,
     deleteManualCartela,
+    els,
     findPageWithRef,
     getEffectiveStyleTitleTypography,
     getSelectedCartela,
     getStyleById,
     getProductionSettings,
+    initializeDatabase,
     insertManualCartela,
     moveCartelaVisualOrderInStructure,
     nativeBridge,
@@ -858,6 +861,7 @@
     renderCartelaPreview,
     renderEditor,
     renderPreview,
+    renderProductionList,
     renderProjectSelectors,
     renderSettings,
     renderStylesPane,
@@ -872,6 +876,7 @@
     resetStyleCartelaOverrideInDomain,
     resetStyleTitleTypographyOverrideInDomain,
     resetStyleTypographyOverrideInDomain,
+    normalizeColor,
     normalizeTitleTypographyOverrides,
     safeStyleId,
     sanitizeStyleBlockOverrides,
@@ -1238,33 +1243,7 @@
   }
 
   async function createProductionFromUi() {
-    if (!state.databasePath) {
-      window.alert('La base de datos todavía se está inicializando.');
-      return;
-    }
-    const name = els.newProductionNameInput.value.trim();
-    const episodeCount = Math.max(1, Math.round(Number(els.newProductionEpisodeCountInput.value) || 1));
-    if (!name) {
-      window.alert('Escribe el nombre de la producción.');
-      return;
-    }
-    try {
-      const overview = await dbPost('/api/db/create-production', {
-        name,
-        episode_count: episodeCount,
-        page_width: 1920,
-        page_height: 1080,
-        preview_background: '#ffffff',
-        import_model_id: defaultImportModelIdInDomain(state.importModels),
-      });
-      state.selectedProductionId = overview.production_id;
-      state.selectedEpisodeId = null;
-      els.newProductionNameInput.value = '';
-      if (els.productionCreateBox) els.productionCreateBox.classList.remove('open');
-      applyDatabaseOverview(overview);
-    } catch (error) {
-      window.alert('No se pudo crear la producción: ' + error.message);
-    }
+    return appCommands.createProductionFromUi();
   }
 
   async function duplicateSelectedProduction() {
@@ -1276,41 +1255,11 @@
   }
 
   async function updateProductionLayoutFromUi() {
-    if (!state.selectedProductionId) return;
-    const fields = {
-      page_width: Math.max(1, Number(els.productionPageWidthInput.value) || 1920),
-      page_height: Math.max(1, Number(els.productionPageHeightInput.value) || 1080),
-      preview_background: normalizeColor(els.productionPreviewBackgroundInput.value || '#ffffff'),
-    };
-    setSelectedProductionLocalFields(fields);
-    try {
-      await persistSelectedProductionFields(fields);
-      if (state.source && state.structure) {
-        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-        renderSettings();
-        renderEditor();
-        renderStylesPane();
-        renderPreview();
-        refreshPdfIfActive();
-      }
-    } catch (error) {
-      window.alert('No se pudo actualizar el formato de producción: ' + error.message);
-    }
+    return appCommands.updateProductionLayoutFromUi();
   }
 
   async function updateProductionImportModelFromUi() {
-    if (!state.selectedProductionId || !els.productionImportModelSelect) return;
-    const fields = {
-      import_model_id: els.productionImportModelSelect.value || defaultImportModelIdInDomain(state.importModels),
-    };
-    setSelectedProductionLocalFields(fields);
-    renderProductionList();
-    try {
-      await persistSelectedProductionFields(fields);
-    } catch (error) {
-      window.alert('No se pudo actualizar el modelo de importación: ' + error.message);
-      await initializeDatabase({ silent: true });
-    }
+    return appCommands.updateProductionImportModelFromUi();
   }
 
   async function updateProductionName(productionId, name) {
