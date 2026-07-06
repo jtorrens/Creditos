@@ -39,6 +39,7 @@ python3 -m py_compile apps/renderer/server.py apps/renderer/server_db/*.py apps/
 python3 scripts/check_import_models.py
 python3 scripts/check_parser_golden.py
 python3 scripts/check_domain_no_dom.py
+python3 scripts/check_server_boundaries.py
 ```
 
 ## Cross-Platform Rules
