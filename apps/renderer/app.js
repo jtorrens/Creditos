@@ -249,6 +249,17 @@
     stripProductionLayoutFromSettings,
     transformCartelaText,
   } = settingsDomain;
+  const projectsDomain = globalThis.CreditosDomainProjects.createProjectsDomain({
+    normalizeColor,
+    normalizeSettings,
+  });
+  const {
+    applyProductionFields,
+    findSelectedProduction,
+    productionEpisodes,
+    productionLayout,
+    productionSettings,
+  } = projectsDomain;
   const previewSettingsDomain = globalThis.CreditosDomainPreviewSettings.createPreviewSettingsDomain({
     movEncodingProfiles: MOV_ENCODING_PROFILES,
   });
@@ -1126,31 +1137,23 @@
   }
 
   function currentProductionEpisodes(productionId = state.selectedProductionId) {
-    return state.episodes.filter((episode) => String(episode.production_id) === String(productionId));
+    return productionEpisodes(state.episodes, productionId);
   }
 
   function selectedProduction() {
-    return state.productions.find((production) => String(production.id) === String(state.selectedProductionId)) || null;
+    return findSelectedProduction(state.productions, state.selectedProductionId);
   }
 
   function getProductionLayout() {
-    const production = selectedProduction();
-    return {
-      page_width: Math.max(1, Number(production && production.page_width) || 1920),
-      page_height: Math.max(1, Number(production && production.page_height) || 1080),
-      preview_background: normalizeColor((production && production.preview_background) || '#ffffff'),
-    };
+    return productionLayout(selectedProduction());
   }
 
   function getProductionSettings() {
-    const production = selectedProduction();
-    return normalizeSettings(production && production.settings ? production.settings : {});
+    return productionSettings(selectedProduction());
   }
 
   function setSelectedProductionLocalFields(fields) {
-    const production = selectedProduction();
-    if (!production) return;
-    Object.assign(production, fields);
+    applyProductionFields(selectedProduction(), fields);
   }
 
   async function persistSelectedProductionFields(fields) {
