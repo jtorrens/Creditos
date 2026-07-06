@@ -369,6 +369,19 @@
     selectedProduction,
     setSelectedProductionLocalFields,
   } = appProjectState;
+  const appAutosave = globalThis.CreditosAppAutosave.createAppAutosave({
+    dbPost,
+    getStructureJsonForOutput,
+    getStyleById,
+    state,
+    windowRef: window,
+    writeStyleFile,
+  });
+  const {
+    persistCurrentEpisode,
+    scheduleAutosave,
+    scheduleStyleAutosave,
+  } = appAutosave;
   const appPreviewSettings = globalThis.CreditosAppPreviewSettings.createAppPreviewSettings({
     documentRef: document,
     els,
@@ -1351,55 +1364,6 @@
     } finally {
       state.isLoadingEpisode = false;
     }
-  }
-
-  function setAutosaveStatus(message) {
-    void message;
-  }
-
-  function scheduleAutosave() {
-    if (state.isLoadingEpisode || !state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
-      return;
-    }
-    setAutosaveStatus('Guardando...');
-    window.clearTimeout(state.autosaveTimer);
-    state.autosaveTimer = window.setTimeout(() => {
-      persistCurrentEpisode().catch((error) => {
-        console.error(error);
-        setAutosaveStatus('Error al guardar');
-      });
-    }, 500);
-  }
-
-  async function persistCurrentEpisode() {
-    if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) return;
-    const base = {
-      production_id: state.selectedProductionId,
-      episode_id: state.selectedEpisodeId,
-    };
-    if (state.source) {
-      await dbPost('/api/db/save-document', { ...base, kind: 'source', data: state.source });
-    }
-    await dbPost('/api/db/save-document', { ...base, kind: 'structure', data: getStructureJsonForOutput() });
-    if (state.render) {
-      await dbPost('/api/db/save-document', { ...base, kind: 'render', data: state.render });
-    }
-    setAutosaveStatus(`Autoguardado ${new Date().toLocaleTimeString()}`);
-  }
-
-  function scheduleStyleAutosave(styleId) {
-    if (!state.databasePath || !state.selectedProductionId || !styleId) return;
-    const style = getStyleById(styleId);
-    if (!style) return;
-    window.clearTimeout(state.autosaveStyleTimers.get(styleId));
-    state.autosaveStyleTimers.set(styleId, window.setTimeout(() => {
-      writeStyleFile(style)
-        .then(() => setAutosaveStatus(`Estilo autoguardado ${new Date().toLocaleTimeString()}`))
-        .catch((error) => {
-          console.error(error);
-          setAutosaveStatus('Error al guardar estilo');
-        });
-    }, 500));
   }
 
   function renderVisiblePanelPreviews() {
