@@ -10,8 +10,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
-from import_models.registry import DEFAULT_IMPORT_MODEL_ID, parse_source
+from import_models.registry import DEFAULT_IMPORT_MODEL_ID
 from server_db.connection import db_connect
+from server_services.import_service import import_credit_source
 from server_services.document_service import load_document, save_document
 from server_services.project_service import (
     create_production,
@@ -24,10 +25,6 @@ from server_services.style_service import delete_style, load_styles, save_style
 
 
 ROOT = Path(__file__).resolve().parent
-
-
-def import_credit_source(file_bytes, source_name, import_model_id=None, options=None):
-    return parse_source(file_bytes, source_name, import_model_id or DEFAULT_IMPORT_MODEL_ID, options)
 
 
 class Handler(BaseHTTPRequestHandler):
