@@ -14,7 +14,10 @@
       input.value = String(options.value);
       input.addEventListener('change', () => {
         const raw = Number(input.value);
-        let next = Number.isFinite(raw) ? raw : (options.min !== null && options.min !== undefined ? options.min : 0);
+        const fallbackValue = options.fallbackValue !== undefined
+          ? options.fallbackValue
+          : (options.min !== null && options.min !== undefined ? options.min : 0);
+        let next = Number.isFinite(raw) ? raw : fallbackValue;
         if (options.min !== null && options.min !== undefined) next = Math.max(options.min, next);
         if (options.max !== null && options.max !== undefined) next = Math.min(options.max, next);
         input.value = String(next);

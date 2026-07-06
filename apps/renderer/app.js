@@ -3128,18 +3128,13 @@
 
   function cartelaImageNumberCell(image, field, min, step) {
     const cell = document.createElement('td');
-    const input = document.createElement('input');
-    input.type = 'number';
-    input.className = 'text-input compact-number-input';
-    input.value = String(Number(image[field]) || (field === 'scale' ? 1 : 0));
-    input.step = String(step);
-    if (min !== null && min !== undefined) input.min = String(min);
-    input.addEventListener('change', () => {
-      const raw = Number(input.value);
-      let value = Number.isFinite(raw) ? raw : (field === 'scale' ? 1 : 0);
-      if (min !== null && min !== undefined) value = Math.max(min, value);
-      input.value = String(value);
-      updateCartelaImage(image.id, { [field]: value });
+    const fallbackValue = field === 'scale' ? 1 : 0;
+    const input = fieldControlRegistry.create('number', {
+      value: Number(image[field]) || fallbackValue,
+      min,
+      step,
+      fallbackValue,
+      onInput: (value) => updateCartelaImage(image.id, { [field]: value }),
     });
     cell.appendChild(input);
     return cell;
@@ -3148,36 +3143,28 @@
   function renderCartelaStyleControls(cartela) {
     const wrap = document.createElement('div');
     wrap.className = 'source-controls';
-
-    const select = document.createElement('select');
-    select.className = 'text-input compact-select';
-    const noneOption = document.createElement('option');
-    noneOption.value = '';
-    noneOption.textContent = 'Sin estilo';
-    select.appendChild(noneOption);
-    state.styles.forEach((style) => {
-      const option = document.createElement('option');
-      option.value = style.id;
-      option.textContent = style.name;
-      select.appendChild(option);
-    });
-    select.value = cartela.style_id || '';
-    select.addEventListener('change', async () => {
-      const previousStyleId = cartela.style_id || '';
-      const nextStyleId = select.value;
-      if (nextStyleId === previousStyleId) return;
-      const action = await chooseCartelaStyleChangeAction(cartela, previousStyleId, nextStyleId);
-      if (action === 'cancel') {
-        select.value = previousStyleId;
-        return;
-      }
-      cartela.style_id = nextStyleId;
-      if (action === 'discard') clearCartelaStyleOverrides(cartela);
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-      renderCartelaList();
-      renderEditor();
-      renderPreview();
-      refreshPdfIfActive();
+    const select = fieldControlRegistry.create('select', {
+      value: cartela.style_id || '',
+      options: [
+        ['', 'Sin estilo'],
+        ...state.styles.map((style) => [style.id, style.name]),
+      ],
+      onInput: async (nextStyleId) => {
+        const previousStyleId = cartela.style_id || '';
+        if (nextStyleId === previousStyleId) return;
+        const action = await chooseCartelaStyleChangeAction(cartela, previousStyleId, nextStyleId);
+        if (action === 'cancel') {
+          select.value = previousStyleId;
+          return;
+        }
+        cartela.style_id = nextStyleId;
+        if (action === 'discard') clearCartelaStyleOverrides(cartela);
+        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
+        renderCartelaList();
+        renderEditor();
+        renderPreview();
+        refreshPdfIfActive();
+      },
     });
 
     wrap.appendChild(select);
@@ -3229,13 +3216,12 @@
     const wrap = document.createElement('div');
     wrap.className = 'source-controls';
 
-    const select = document.createElement('select');
-    select.className = 'text-input compact-select';
-    state.materials.forEach((material) => {
-      const option = document.createElement('option');
-      option.value = material.id;
-      option.textContent = `${material.group || '-'} · ${material.title || material.id}`;
-      select.appendChild(option);
+    const select = fieldControlRegistry.create('select', {
+      value: state.materials[0] ? state.materials[0].id : '',
+      options: state.materials.map((material) => [
+        material.id,
+        `${material.group || '-'} · ${material.title || material.id}`,
+      ]),
     });
 
     const addButton = document.createElement('button');
