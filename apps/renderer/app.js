@@ -1142,6 +1142,30 @@
     updateEditableStyleTypography,
     yesNoOptions: YES_NO_OPTIONS,
   });
+  const appCartelaTypography = globalThis.CreditosAppCartelaTypography.createAppCartelaTypography({
+    blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
+    documentRef: document,
+    fieldControlRegistry,
+    getEffectiveStyleTitleTypography,
+    getFontCatalog,
+    getFontStyles,
+    getProductionSettings,
+    getSelectedBlockTypography,
+    getStyleById,
+    hasCartelaBlockTypographyOverride,
+    hasCartelaTitleTypographyOverride,
+    makeFontFamilyControl,
+    makeFontSizeControl,
+    makeFontStyleControl,
+    normalizeColor,
+    resetSelectedBlockTypography,
+    resetSelectedCartelaBlockTypographyOverride,
+    resetSelectedCartelaTitleTypographyOverride,
+    sectionLabel,
+    updateSelectedBlockTypography,
+    updateSelectedCartelaBlockTypography,
+    updateSelectedCartelaTitleTypography,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -1935,184 +1959,15 @@
   }
 
   function renderCartelaBlockTypographyControls(cartela, overrides) {
-    const wrap = document.createElement('div');
-    wrap.className = 'block-typography-settings';
-    wrap.appendChild(sectionLabel('Tipografía del bloque'));
-
-    const settings = getProductionSettings();
-    const fontCatalog = getFontCatalog();
-
-    BLOCK_TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
-      const base = settings.typography[key];
-      const override = overrides[key] || {};
-      const value = { ...base, ...override };
-      const isOverride = hasCartelaBlockTypographyOverride(cartela, key);
-      const row = document.createElement('div');
-      row.className = 'typography-row block-typography-row' + (isOverride ? ' override-field' : '');
-
-      const labelEl = document.createElement('label');
-      labelEl.textContent = label;
-      row.appendChild(labelEl);
-
-      const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedCartelaBlockTypography(key, { font_size: fontSize }));
-      sizeInput.placeholder = String(base.font_size);
-      row.appendChild(sizeInput);
-
-      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-        updateSelectedCartelaBlockTypography(key, {
-          font_family: fontFamily,
-          font_style: nextStyle.style,
-          font_postscript_name: nextStyle.postscript_name,
-        }, { rerenderEditor: true });
-      });
-      row.appendChild(fontSelect);
-
-      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-        updateSelectedCartelaBlockTypography(key, {
-          font_style: fontStyle,
-          font_postscript_name: postscriptName,
-        });
-      });
-      row.appendChild(styleSelect);
-
-      const colorInput = fieldControlRegistry.create('color', {
-        value: normalizeColor(value.color),
-        onInput: (color) => updateSelectedCartelaBlockTypography(key, { color }),
-      });
-      row.appendChild(colorInput);
-
-      if (isOverride) {
-        const resetButton = document.createElement('button');
-        resetButton.type = 'button';
-        resetButton.textContent = 'Restablecer';
-        resetButton.addEventListener('click', () => resetSelectedCartelaBlockTypographyOverride(key));
-        row.appendChild(resetButton);
-      }
-
-      wrap.appendChild(row);
-    });
-
-    return wrap;
+    return appCartelaTypography.renderCartelaBlockTypographyControls(cartela, overrides);
   }
 
   function renderCartelaTitleTypographyControls(cartela) {
-    const wrap = document.createElement('div');
-    wrap.className = 'block-typography-settings';
-    wrap.appendChild(sectionLabel('Tipografía del título de cartela'));
-
-    const settings = getProductionSettings();
-    const fontCatalog = getFontCatalog();
-    const key = 'page_header';
-    const label = 'Cabecera';
-    const base = getEffectiveStyleTitleTypography(getStyleById(cartela && cartela.style_id)).page_header;
-    const override = cartela && cartela.title_typography && cartela.title_typography[key] ? cartela.title_typography[key] : {};
-    const value = { ...base, ...override };
-    const isOverride = hasCartelaTitleTypographyOverride(cartela);
-    const row = document.createElement('div');
-    row.className = 'typography-row block-typography-row' + (isOverride ? ' override-field' : '');
-
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-
-    const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedCartelaTitleTypography({ font_size: fontSize }));
-    sizeInput.placeholder = String(base.font_size);
-    row.appendChild(sizeInput);
-
-    const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-      const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-      updateSelectedCartelaTitleTypography({
-        font_family: fontFamily,
-        font_style: nextStyle.style,
-        font_postscript_name: nextStyle.postscript_name,
-      }, { rerenderEditor: true });
-    });
-    row.appendChild(fontSelect);
-
-    const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-      updateSelectedCartelaTitleTypography({
-        font_style: fontStyle,
-        font_postscript_name: postscriptName,
-      });
-    });
-    row.appendChild(styleSelect);
-
-    const colorInput = fieldControlRegistry.create('color', {
-      value: normalizeColor(value.color),
-      onInput: (color) => updateSelectedCartelaTitleTypography({ color }),
-    });
-    row.appendChild(colorInput);
-
-    if (isOverride) {
-      const resetButton = document.createElement('button');
-      resetButton.type = 'button';
-      resetButton.textContent = 'Restablecer';
-      resetButton.addEventListener('click', resetSelectedCartelaTitleTypographyOverride);
-      row.appendChild(resetButton);
-    }
-
-    wrap.appendChild(row);
-    return wrap;
+    return appCartelaTypography.renderCartelaTitleTypographyControls(cartela);
   }
 
   function renderBlockTypographyControls(ref) {
-    const wrap = document.createElement('div');
-    wrap.className = 'block-typography-settings';
-    wrap.appendChild(sectionLabel('Tipografía del bloque'));
-
-    const settings = getProductionSettings();
-    const overrides = getSelectedBlockTypography(ref);
-    const fontCatalog = getFontCatalog();
-
-    BLOCK_TYPOGRAPHY_FIELDS.forEach(([key, label]) => {
-      const base = settings.typography[key];
-      const override = overrides[key] || {};
-      const value = { ...base, ...override };
-      const row = document.createElement('div');
-      row.className = 'typography-row block-typography-row';
-
-      const labelEl = document.createElement('label');
-      labelEl.textContent = label;
-      row.appendChild(labelEl);
-
-      const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedBlockTypography(ref, key, { font_size: fontSize }));
-      sizeInput.placeholder = String(base.font_size);
-      row.appendChild(sizeInput);
-
-      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-        updateSelectedBlockTypography(ref, key, {
-          font_family: fontFamily,
-          font_style: nextStyle.style,
-          font_postscript_name: nextStyle.postscript_name,
-        }, { rerenderEditor: true });
-      });
-      row.appendChild(fontSelect);
-
-      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-        updateSelectedBlockTypography(ref, key, {
-          font_style: fontStyle,
-          font_postscript_name: postscriptName,
-        });
-      });
-      row.appendChild(styleSelect);
-
-      const colorInput = fieldControlRegistry.create('color', {
-        value: normalizeColor(value.color),
-        onInput: (color) => updateSelectedBlockTypography(ref, key, { color }),
-      });
-      row.appendChild(colorInput);
-
-      wrap.appendChild(row);
-    });
-
-    const resetButton = document.createElement('button');
-    resetButton.type = 'button';
-    resetButton.textContent = 'Restablecer tipografía del bloque';
-    resetButton.addEventListener('click', () => resetSelectedBlockTypography(ref));
-    wrap.appendChild(resetButton);
-    return wrap;
+    return appCartelaTypography.renderBlockTypographyControls(ref);
   }
 
   function renderMusicThemesEditor(material) {
