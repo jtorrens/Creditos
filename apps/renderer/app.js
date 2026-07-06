@@ -2092,52 +2092,25 @@
       labelEl.textContent = label;
       row.appendChild(labelEl);
 
-      const sizeInput = fieldControlRegistry.create('number', {
-        value: value.font_size,
-        min: 1,
-        step: 1,
-        fallbackValue: 1,
-        onInput: (fontSize) => updateTypographySetting(key, { font_size: fontSize }),
-      });
+      const sizeInput = makeFontSizeControl(value.font_size, 1, (fontSize) => updateTypographySetting(key, { font_size: fontSize }));
       row.appendChild(sizeInput);
 
-      const fontOptions = fontCatalog.families.map((font) => [font, font]);
-      if (!fontCatalog.families.includes(value.font_family)) fontOptions.push([value.font_family, value.font_family]);
-      const fontSelect = fieldControlRegistry.create('select', {
-        value: value.font_family,
-        className: 'text-input font-family-select',
-        options: fontOptions,
-        onInput: (fontFamily) => {
-          const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-          updateTypographySetting(key, {
-            font_family: fontFamily,
-            font_style: nextStyle.style,
-            font_postscript_name: nextStyle.postscript_name,
-          });
-          renderSettings();
-        },
+      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
+        updateTypographySetting(key, {
+          font_family: fontFamily,
+          font_style: nextStyle.style,
+          font_postscript_name: nextStyle.postscript_name,
+        });
+        renderSettings();
       });
       row.appendChild(fontSelect);
 
-      const styles = getFontStyles(value.font_family);
-      const styleOptions = styles.map((fontStyle) => [
-        fontStyle.style,
-        fontStyle.style,
-        { postscriptName: fontStyle.postscript_name || '' },
-      ]);
-      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-        styleOptions.push([value.font_style, value.font_style, { postscriptName: value.font_postscript_name || '' }]);
-      }
-      const styleSelect = fieldControlRegistry.create('select', {
-        value: value.font_style,
-        options: styleOptions,
-        onInput: (_fontStyle, select) => {
-          const selected = select.selectedOptions[0];
-          updateTypographySetting(key, {
-            font_style: select.value,
-            font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
-          });
-        },
+      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
+        updateTypographySetting(key, {
+          font_style: fontStyle,
+          font_postscript_name: postscriptName,
+        });
       });
       row.appendChild(styleSelect);
 
@@ -2148,6 +2121,47 @@
       row.appendChild(colorInput);
 
       els.typographySettings.appendChild(row);
+    });
+  }
+
+  function makeFontSizeControl(value, fallbackValue, onInput) {
+    return fieldControlRegistry.create('number', {
+      value,
+      min: 1,
+      step: 1,
+      fallbackValue,
+      onInput,
+    });
+  }
+
+  function makeFontFamilyControl(value, fontCatalog, onInput) {
+    const options = fontCatalog.families.map((font) => [font, font]);
+    if (!fontCatalog.families.includes(value)) options.push([value, value]);
+    return fieldControlRegistry.create('select', {
+      value,
+      className: 'text-input font-family-select',
+      options,
+      onInput,
+    });
+  }
+
+  function makeFontStyleControl(fontFamily, value, postscriptName, onInput) {
+    const styles = getFontStyles(fontFamily);
+    const options = styles.map((fontStyle) => [
+      fontStyle.style,
+      fontStyle.style,
+      { postscriptName: fontStyle.postscript_name || '' },
+    ]);
+    if (!styles.some((fontStyle) => fontStyle.style === value)) {
+      options.push([value, value, { postscriptName: postscriptName || '' }]);
+    }
+    return fieldControlRegistry.create('select', {
+      value,
+      options,
+      onInput: (_fontStyle, select) => {
+        const selected = select.selectedOptions[0];
+        onInput(select.value, selected ? selected.dataset.postscriptName || '' : '');
+      },
     });
   }
 
@@ -2652,62 +2666,23 @@
       const labelEl = document.createElement('label');
       labelEl.textContent = label;
       row.appendChild(labelEl);
-      const sizeInput = document.createElement('input');
-      sizeInput.className = 'text-input compact-number-input';
-      sizeInput.type = 'number';
-      sizeInput.min = '1';
-      sizeInput.value = String(value.font_size);
-      sizeInput.addEventListener('change', () => updateEditableStyleTypography(style, key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+      const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateEditableStyleTypography(style, key, { font_size: fontSize }));
       row.appendChild(sizeInput);
 
-      const fontSelect = document.createElement('select');
-      fontSelect.className = 'text-input font-family-select';
-      fontCatalog.families.forEach((font) => {
-        const option = document.createElement('option');
-        option.value = font;
-        option.textContent = font;
-        fontSelect.appendChild(option);
-      });
-      if (!fontCatalog.families.includes(value.font_family)) {
-        const option = document.createElement('option');
-        option.value = value.font_family;
-        option.textContent = value.font_family;
-        fontSelect.appendChild(option);
-      }
-      fontSelect.value = value.font_family;
-      fontSelect.addEventListener('change', () => {
-        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
         updateEditableStyleTypography(style, key, {
-          font_family: fontSelect.value,
+          font_family: fontFamily,
           font_style: nextStyle.style,
           font_postscript_name: nextStyle.postscript_name,
         });
       });
       row.appendChild(fontSelect);
 
-      const styleSelect = document.createElement('select');
-      styleSelect.className = 'text-input compact-select';
-      const styles = getFontStyles(value.font_family);
-      styles.forEach((fontStyle) => {
-        const option = document.createElement('option');
-        option.value = fontStyle.style;
-        option.textContent = fontStyle.style;
-        option.dataset.postscriptName = fontStyle.postscript_name || '';
-        styleSelect.appendChild(option);
-      });
-      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-        const option = document.createElement('option');
-        option.value = value.font_style;
-        option.textContent = value.font_style;
-        option.dataset.postscriptName = value.font_postscript_name || '';
-        styleSelect.appendChild(option);
-      }
-      styleSelect.value = value.font_style;
-      styleSelect.addEventListener('change', () => {
-        const selected = styleSelect.selectedOptions[0];
+      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
         updateEditableStyleTypography(style, key, {
-          font_style: styleSelect.value,
-          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+          font_style: fontStyle,
+          font_postscript_name: postscriptName,
         });
       });
       row.appendChild(styleSelect);
@@ -2742,62 +2717,23 @@
     label.textContent = 'Cabecera';
     row.appendChild(label);
 
-    const sizeInput = document.createElement('input');
-    sizeInput.className = 'text-input compact-number-input';
-    sizeInput.type = 'number';
-    sizeInput.min = '1';
-    sizeInput.value = String(value.font_size);
-    sizeInput.addEventListener('change', () => updateEditableStyleTitleTypography(style, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+    const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateEditableStyleTitleTypography(style, { font_size: fontSize }));
     row.appendChild(sizeInput);
 
-    const fontSelect = document.createElement('select');
-    fontSelect.className = 'text-input font-family-select';
-    fontCatalog.families.forEach((font) => {
-      const option = document.createElement('option');
-      option.value = font;
-      option.textContent = font;
-      fontSelect.appendChild(option);
-    });
-    if (!fontCatalog.families.includes(value.font_family)) {
-      const option = document.createElement('option');
-      option.value = value.font_family;
-      option.textContent = value.font_family;
-      fontSelect.appendChild(option);
-    }
-    fontSelect.value = value.font_family;
-    fontSelect.addEventListener('change', () => {
-      const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+    const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+      const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
       updateEditableStyleTitleTypography(style, {
-        font_family: fontSelect.value,
+        font_family: fontFamily,
         font_style: nextStyle.style,
         font_postscript_name: nextStyle.postscript_name,
       });
     });
     row.appendChild(fontSelect);
 
-    const styleSelect = document.createElement('select');
-    styleSelect.className = 'text-input compact-select';
-    const styles = getFontStyles(value.font_family);
-    styles.forEach((fontStyle) => {
-      const option = document.createElement('option');
-      option.value = fontStyle.style;
-      option.textContent = fontStyle.style;
-      option.dataset.postscriptName = fontStyle.postscript_name || '';
-      styleSelect.appendChild(option);
-    });
-    if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-      const option = document.createElement('option');
-      option.value = value.font_style;
-      option.textContent = value.font_style;
-      option.dataset.postscriptName = value.font_postscript_name || '';
-      styleSelect.appendChild(option);
-    }
-    styleSelect.value = value.font_style;
-    styleSelect.addEventListener('change', () => {
-      const selected = styleSelect.selectedOptions[0];
+    const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
       updateEditableStyleTitleTypography(style, {
-        font_style: styleSelect.value,
-        font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+        font_style: fontStyle,
+        font_postscript_name: postscriptName,
       });
     });
     row.appendChild(styleSelect);
@@ -3342,64 +3278,24 @@
       labelEl.textContent = label;
       row.appendChild(labelEl);
 
-      const sizeInput = document.createElement('input');
-      sizeInput.className = 'text-input compact-number-input';
-      sizeInput.type = 'number';
-      sizeInput.min = '1';
-      sizeInput.step = '1';
-      sizeInput.value = String(value.font_size);
+      const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedCartelaBlockTypography(key, { font_size: fontSize }));
       sizeInput.placeholder = String(base.font_size);
-      sizeInput.addEventListener('change', () => updateSelectedCartelaBlockTypography(key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
       row.appendChild(sizeInput);
 
-      const fontSelect = document.createElement('select');
-      fontSelect.className = 'text-input font-family-select';
-      fontCatalog.families.forEach((font) => {
-        const option = document.createElement('option');
-        option.value = font;
-        option.textContent = font;
-        fontSelect.appendChild(option);
-      });
-      if (!fontCatalog.families.includes(value.font_family)) {
-        const option = document.createElement('option');
-        option.value = value.font_family;
-        option.textContent = value.font_family;
-        fontSelect.appendChild(option);
-      }
-      fontSelect.value = value.font_family;
-      fontSelect.addEventListener('change', () => {
-        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
         updateSelectedCartelaBlockTypography(key, {
-          font_family: fontSelect.value,
+          font_family: fontFamily,
           font_style: nextStyle.style,
           font_postscript_name: nextStyle.postscript_name,
         }, { rerenderEditor: true });
       });
       row.appendChild(fontSelect);
 
-      const styleSelect = document.createElement('select');
-      styleSelect.className = 'text-input compact-select';
-      const styles = getFontStyles(value.font_family);
-      styles.forEach((fontStyle) => {
-        const option = document.createElement('option');
-        option.value = fontStyle.style;
-        option.textContent = fontStyle.style;
-        option.dataset.postscriptName = fontStyle.postscript_name || '';
-        styleSelect.appendChild(option);
-      });
-      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-        const option = document.createElement('option');
-        option.value = value.font_style;
-        option.textContent = value.font_style;
-        option.dataset.postscriptName = value.font_postscript_name || '';
-        styleSelect.appendChild(option);
-      }
-      styleSelect.value = value.font_style;
-      styleSelect.addEventListener('change', () => {
-        const selected = styleSelect.selectedOptions[0];
+      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
         updateSelectedCartelaBlockTypography(key, {
-          font_style: styleSelect.value,
-          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+          font_style: fontStyle,
+          font_postscript_name: postscriptName,
         });
       });
       row.appendChild(styleSelect);
@@ -3444,64 +3340,24 @@
     labelEl.textContent = label;
     row.appendChild(labelEl);
 
-    const sizeInput = document.createElement('input');
-    sizeInput.className = 'text-input compact-number-input';
-    sizeInput.type = 'number';
-    sizeInput.min = '1';
-    sizeInput.step = '1';
-    sizeInput.value = String(value.font_size);
+    const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedCartelaTitleTypography({ font_size: fontSize }));
     sizeInput.placeholder = String(base.font_size);
-    sizeInput.addEventListener('change', () => updateSelectedCartelaTitleTypography({ font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
     row.appendChild(sizeInput);
 
-    const fontSelect = document.createElement('select');
-    fontSelect.className = 'text-input font-family-select';
-    fontCatalog.families.forEach((font) => {
-      const option = document.createElement('option');
-      option.value = font;
-      option.textContent = font;
-      fontSelect.appendChild(option);
-    });
-    if (!fontCatalog.families.includes(value.font_family)) {
-      const option = document.createElement('option');
-      option.value = value.font_family;
-      option.textContent = value.font_family;
-      fontSelect.appendChild(option);
-    }
-    fontSelect.value = value.font_family;
-    fontSelect.addEventListener('change', () => {
-      const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+    const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+      const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
       updateSelectedCartelaTitleTypography({
-        font_family: fontSelect.value,
+        font_family: fontFamily,
         font_style: nextStyle.style,
         font_postscript_name: nextStyle.postscript_name,
       }, { rerenderEditor: true });
     });
     row.appendChild(fontSelect);
 
-    const styleSelect = document.createElement('select');
-    styleSelect.className = 'text-input compact-select';
-    const styles = getFontStyles(value.font_family);
-    styles.forEach((fontStyle) => {
-      const option = document.createElement('option');
-      option.value = fontStyle.style;
-      option.textContent = fontStyle.style;
-      option.dataset.postscriptName = fontStyle.postscript_name || '';
-      styleSelect.appendChild(option);
-    });
-    if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-      const option = document.createElement('option');
-      option.value = value.font_style;
-      option.textContent = value.font_style;
-      option.dataset.postscriptName = value.font_postscript_name || '';
-      styleSelect.appendChild(option);
-    }
-    styleSelect.value = value.font_style;
-    styleSelect.addEventListener('change', () => {
-      const selected = styleSelect.selectedOptions[0];
+    const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
       updateSelectedCartelaTitleTypography({
-        font_style: styleSelect.value,
-        font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+        font_style: fontStyle,
+        font_postscript_name: postscriptName,
       });
     });
     row.appendChild(styleSelect);
@@ -3544,64 +3400,24 @@
       labelEl.textContent = label;
       row.appendChild(labelEl);
 
-      const sizeInput = document.createElement('input');
-      sizeInput.className = 'text-input compact-number-input';
-      sizeInput.type = 'number';
-      sizeInput.min = '1';
-      sizeInput.step = '1';
-      sizeInput.value = String(value.font_size);
+      const sizeInput = makeFontSizeControl(value.font_size, base.font_size, (fontSize) => updateSelectedBlockTypography(ref, key, { font_size: fontSize }));
       sizeInput.placeholder = String(base.font_size);
-      sizeInput.addEventListener('change', () => updateSelectedBlockTypography(ref, key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
       row.appendChild(sizeInput);
 
-      const fontSelect = document.createElement('select');
-      fontSelect.className = 'text-input font-family-select';
-      fontCatalog.families.forEach((font) => {
-        const option = document.createElement('option');
-        option.value = font;
-        option.textContent = font;
-        fontSelect.appendChild(option);
-      });
-      if (!fontCatalog.families.includes(value.font_family)) {
-        const option = document.createElement('option');
-        option.value = value.font_family;
-        option.textContent = value.font_family;
-        fontSelect.appendChild(option);
-      }
-      fontSelect.value = value.font_family;
-      fontSelect.addEventListener('change', () => {
-        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
+      const fontSelect = makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
+        const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
         updateSelectedBlockTypography(ref, key, {
-          font_family: fontSelect.value,
+          font_family: fontFamily,
           font_style: nextStyle.style,
           font_postscript_name: nextStyle.postscript_name,
         }, { rerenderEditor: true });
       });
       row.appendChild(fontSelect);
 
-      const styleSelect = document.createElement('select');
-      styleSelect.className = 'text-input compact-select';
-      const styles = getFontStyles(value.font_family);
-      styles.forEach((fontStyle) => {
-        const option = document.createElement('option');
-        option.value = fontStyle.style;
-        option.textContent = fontStyle.style;
-        option.dataset.postscriptName = fontStyle.postscript_name || '';
-        styleSelect.appendChild(option);
-      });
-      if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-        const option = document.createElement('option');
-        option.value = value.font_style;
-        option.textContent = value.font_style;
-        option.dataset.postscriptName = value.font_postscript_name || '';
-        styleSelect.appendChild(option);
-      }
-      styleSelect.value = value.font_style;
-      styleSelect.addEventListener('change', () => {
-        const selected = styleSelect.selectedOptions[0];
+      const styleSelect = makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
         updateSelectedBlockTypography(ref, key, {
-          font_style: styleSelect.value,
-          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+          font_style: fontStyle,
+          font_postscript_name: postscriptName,
         });
       });
       row.appendChild(styleSelect);
