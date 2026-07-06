@@ -643,9 +643,12 @@
       if (state.movExportProgress) state.movExportProgress.setPhase('Codificando MOV...');
     },
     throwIfCancelled: throwIfMovExportCancelled,
+    wait,
   });
   const {
     exportMovFramesIncrementally,
+    writeAnimatedFrames,
+    writeRepeatedFrames,
   } = frameSequenceExport;
   const fieldControlRegistry = globalThis.CreditosFieldControlRegistry.createFieldControlRegistry();
   fieldControlRegistry.register('text', globalThis.CreditosTextFieldControl.createTextFieldControl({
@@ -4654,21 +4657,18 @@
     const videoStartFrame = bodyPhase ? bodyPhase.startFrame : segments.preFrames;
     updateMovExportProgress(0, plan.totalFrames);
     await exportMovFramesIncrementally(native, filePath, fps, encodingProfile, async (writeFrame) => {
-      for (let frame = 0; frame < plan.totalFrames; frame += 1) {
-        throwIfMovExportCancelled();
-        const blob = await renderScrollFrameToPngBlob(plan, frame, layout, {
-          ...renderOptions,
-          videoTime: frame >= videoStartFrame ? (frame - videoStartFrame) / fps : null,
-        });
-        await writeFrame({
-          frameCount: 1,
-          bytes: await blobToBytes(blob),
-        });
-        updateMovExportProgress(frame + 1, plan.totalFrames);
-        if (frame % 25 === 0) {
-          await wait(0);
-        }
-      }
+      await writeAnimatedFrames({
+        frameCount: plan.totalFrames,
+        onFramesWritten: (_count, frame) => updateMovExportProgress(frame + 1, plan.totalFrames),
+        renderFrameBytes: async (frame) => {
+          const blob = await renderScrollFrameToPngBlob(plan, frame, layout, {
+            ...renderOptions,
+            videoTime: frame >= videoStartFrame ? (frame - videoStartFrame) / fps : null,
+          });
+          return blobToBytes(blob);
+        },
+        writeFrame,
+      });
       updateMovExportProgress(plan.totalFrames, plan.totalFrames);
     });
   }
@@ -5012,35 +5012,33 @@
           const frameCount = exportFrameCounts[index] || Math.max(1, Math.round(duration * fps));
           if (renderOptions.includeVideo) {
             const startFrame = renderedFrames;
-            for (let frame = 0; frame < frameCount; frame += 1) {
-              throwIfMovExportCancelled();
-              const blob = await renderPageToPngBlob(item.page, layout, {
-                ...renderOptions,
-                videoTime: startFrame + frame >= segments.preFrames ? (startFrame + frame - segments.preFrames) / fps : null,
-              });
-              await writeFrame({
-                frameCount: 1,
-                bytes: await blobToBytes(blob),
-              });
-              renderedFrames += 1;
-              updateMovExportProgress(renderedFrames, totalExportFrames);
-              if (frame % 25 === 0) {
-                await wait(0);
-              }
-            }
+            await writeAnimatedFrames({
+              frameCount,
+              onFramesWritten: () => {
+                renderedFrames += 1;
+                updateMovExportProgress(renderedFrames, totalExportFrames);
+              },
+              renderFrameBytes: async (frame) => {
+                const blob = await renderPageToPngBlob(item.page, layout, {
+                  ...renderOptions,
+                  videoTime: startFrame + frame >= segments.preFrames ? (startFrame + frame - segments.preFrames) / fps : null,
+                });
+                return blobToBytes(blob);
+              },
+              writeFrame,
+            });
           } else {
             const blob = await renderPageToPngBlob(item.page, layout, renderOptions);
             const bytes = await blobToBytes(blob);
-            let remaining = frameCount;
-            while (remaining > 0) {
-              throwIfMovExportCancelled();
-              const chunk = Math.min(25, remaining);
-              await writeFrame({ frameCount: chunk, bytes });
-              remaining -= chunk;
-              renderedFrames += chunk;
-              updateMovExportProgress(renderedFrames, totalExportFrames);
-              await wait(0);
-            }
+            await writeRepeatedFrames({
+              bytes,
+              frameCount,
+              onFramesWritten: (chunk) => {
+                renderedFrames += chunk;
+                updateMovExportProgress(renderedFrames, totalExportFrames);
+              },
+              writeFrame,
+            });
           }
         }
         updateMovExportProgress(totalExportFrames, totalExportFrames);
