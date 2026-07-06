@@ -23,6 +23,7 @@ PY_COMPILE_FILES = [
     *sorted((REPO_ROOT / "apps" / "renderer" / "server_db").glob("*.py")),
     *sorted((REPO_ROOT / "apps" / "renderer" / "server_services").glob("*.py")),
     *sorted((REPO_ROOT / "scripts").glob("check_*.py")),
+    REPO_ROOT / "scripts" / "compare_png_outputs.py",
 ]
 
 

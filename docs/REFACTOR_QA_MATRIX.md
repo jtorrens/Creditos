@@ -26,7 +26,7 @@ sync esperado: origin/codex/refactor-parallel
 | Preview scroll | Cambiar MOV a scroll. | La animación se ve y sincroniza página actual. | Pendiente | Probar play/seek. |
 | Video referencia | Asociar video de referencia. | Se ve en preview/export si está activado. | Pendiente | Probar limpiar video. |
 | PNG actual | Exportar PNG de página actual. | Archivo generado correctamente. | Pendiente | Comparar tamaño y contenido. |
-| PNG rango | Exportar rango de páginas. | Carpeta contiene la secuencia esperada. | Pendiente | Revisar nombres. |
+| PNG rango | Exportar rango de páginas. | Carpeta contiene la secuencia esperada. | Pendiente | Revisar nombres. Comparar contra main con `python3 scripts/compare_png_outputs.py <main> <refactor>`. |
 | MOV corto | Exportar MOV corto en páginas. | MOV se genera y se puede abrir. | Pendiente | Probar H.264 o ProRes según disponibilidad. |
 | MOV scroll | Exportar MOV corto en scroll. | MOV se genera con movimiento continuo. | Pendiente | Revisar frames inicial/final. |
 | Sync bajar | Usar solo si DB muestra rama refactor. | Baja desde `origin/codex/refactor-parallel`. | Pendiente | No probar si aparece main. |
