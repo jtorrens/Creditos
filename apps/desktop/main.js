@@ -5,6 +5,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const appPackage = require('./package.json');
 const { createAppPaths } = require('./native/appPaths');
+const { createNativeDialogs } = require('./native/dialogs');
 const { createPreferenceStore } = require('./native/preferences');
 const { createServerProcessManager } = require('./native/serverProcess');
 
@@ -61,6 +62,12 @@ const {
   stopPythonServer,
   stopPythonServerAndWait,
 } = serverProcessManager;
+const nativeDialogs = createNativeDialogs({
+  dialog,
+  ensureMovExtension,
+  getMainWindow: () => mainWindow,
+  normalizeMovEncodingProfile,
+});
 
 async function createMainWindow() {
   const serverUrl = await startPythonServer();
@@ -91,26 +98,6 @@ async function reloadMainWindowServer() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const serverUrl = await startPythonServer();
   await mainWindow.loadURL(serverUrl);
-}
-
-function pngFilters() {
-  return [{ name: 'PNG', extensions: ['png'] }];
-}
-
-function imageFilters() {
-  return [{ name: 'Imagen', extensions: ['png', 'jpg', 'jpeg'] }];
-}
-
-function referenceVideoFilters() {
-  return [{ name: 'Video', extensions: ['mov', 'mp4', 'm4v', 'webm'] }];
-}
-
-function jsonFilters() {
-  return [{ name: 'JSON', extensions: ['json'] }];
-}
-
-function movFilters() {
-  return [{ name: 'QuickTime Movie', extensions: ['mov'] }];
 }
 
 function ensureMovExtension(filePath) {
@@ -435,58 +422,13 @@ ipcMain.handle('creditos:force-database-to-github', async () => {
   return forceDatabaseToGitHub();
 });
 
-ipcMain.handle('creditos:open-xlsx', async (_event, payload) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Asociar archivo de créditos',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
-    properties: ['openFile'],
-    filters: [{ name: 'Hojas de cálculo', extensions: ['xlsx', 'ods'] }],
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  const filePath = result.filePaths[0];
-  const bytes = await fs.readFile(filePath);
-  return { canceled: false, filePath, name: path.basename(filePath), base64: bytes.toString('base64') };
-});
+ipcMain.handle('creditos:open-xlsx', async (_event, payload) => nativeDialogs.openXlsx(payload));
 
-ipcMain.handle('creditos:open-image', async (_event, payload) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Asociar imagen',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
-    properties: ['openFile'],
-    filters: imageFilters(),
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  const filePath = result.filePaths[0];
-  const bytes = await fs.readFile(filePath);
-  const extension = path.extname(filePath).toLowerCase();
-  const mime = extension === '.jpg' || extension === '.jpeg' ? 'image/jpeg' : 'image/png';
-  return { canceled: false, filePath, name: path.basename(filePath), mime, base64: bytes.toString('base64') };
-});
+ipcMain.handle('creditos:open-image', async (_event, payload) => nativeDialogs.openImage(payload));
 
-ipcMain.handle('creditos:open-reference-video', async (_event, payload) => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Asociar video de referencia',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : undefined,
-    properties: ['openFile'],
-    filters: referenceVideoFilters(),
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  const filePath = result.filePaths[0];
-  return { canceled: false, filePath, name: path.basename(filePath) };
-});
+ipcMain.handle('creditos:open-reference-video', async (_event, payload) => nativeDialogs.openReferenceVideo(payload));
 
-ipcMain.handle('creditos:save-png', async (_event, payload) => {
-  const bytes = payload && payload.bytes;
-  if (!bytes) throw new Error('No hay PNG para guardar.');
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: 'Guardar PNG',
-    defaultPath: payload.fileName || 'creditos.png',
-    filters: pngFilters(),
-  });
-  if (result.canceled || !result.filePath) return { canceled: true };
-  await fs.writeFile(result.filePath, Buffer.from(bytes));
-  return { canceled: false, filePath: result.filePath, name: path.basename(result.filePath) };
-});
+ipcMain.handle('creditos:save-png', async (_event, payload) => nativeDialogs.savePng(payload));
 
 ipcMain.handle('creditos:export-png-sequence', async (_event, payload) => {
   const pages = (payload && payload.pages) || [];
@@ -504,17 +446,7 @@ ipcMain.handle('creditos:export-png-sequence', async (_event, payload) => {
   return { canceled: false, directory, count: pages.length };
 });
 
-ipcMain.handle('creditos:choose-mov-path', async (_event, payload) => {
-  const profile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
-  const result = await dialog.showSaveDialog(mainWindow, {
-    title: profile.startsWith('h264_') ? 'Exportar MOV H.264' : 'Exportar MOV ProRes',
-    defaultPath: payload && payload.defaultPath ? payload.defaultPath : 'creditos.mov',
-    filters: movFilters(),
-  });
-  if (result.canceled || !result.filePath) return { canceled: true };
-  const filePath = ensureMovExtension(result.filePath);
-  return { canceled: false, filePath, name: path.basename(filePath) };
-});
+ipcMain.handle('creditos:choose-mov-path', async (_event, payload) => nativeDialogs.chooseMovPath(payload));
 
 ipcMain.handle('creditos:export-mov-sequence', async (_event, payload) => {
   const pages = (payload && payload.pages) || [];
@@ -598,52 +530,11 @@ ipcMain.handle('creditos:cancel-mov-export', async (_event, payload) => {
   return { canceled: true };
 });
 
-ipcMain.handle('creditos:import-style-json-files', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Importar estilos JSON',
-    properties: ['openFile', 'multiSelections'],
-    filters: jsonFilters(),
-  });
-  if (result.canceled || !result.filePaths.length) return { canceled: true };
-  const styles = [];
-  for (const filePath of result.filePaths) {
-    styles.push({
-      filePath,
-      name: path.basename(filePath),
-      text: await fs.readFile(filePath, 'utf8'),
-    });
-  }
-  return { canceled: false, styles };
-});
+ipcMain.handle('creditos:import-style-json-files', async () => nativeDialogs.importStyleJsonFiles());
 
-ipcMain.handle('creditos:choose-style-override-action', async (_event, payload) => {
-  const result = await dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    buttons: ['Cancelar', 'Descartar overrides', 'Conservar overrides'],
-    defaultId: 1,
-    cancelId: 0,
-    title: 'Cambiar estilo',
-    message: payload && payload.message
-      ? payload.message
-      : 'Esta cartela tiene overrides. ¿Quieres conservarlos o usar exactamente los valores del nuevo estilo?',
-    detail: 'Si descartas overrides, la cartela quedará limpia y se verá con los valores del estilo seleccionado.',
-  });
-  if (result.response === 2) return { action: 'keep' };
-  if (result.response === 1) return { action: 'discard' };
-  return { action: 'cancel' };
-});
+ipcMain.handle('creditos:choose-style-override-action', async (_event, payload) => nativeDialogs.chooseStyleOverrideAction(payload));
 
-ipcMain.handle('creditos:confirm', async (_event, payload) => {
-  const result = await dialog.showMessageBox(mainWindow, {
-    type: 'question',
-    buttons: ['Cancelar', payload && payload.confirmLabel ? payload.confirmLabel : 'Aceptar'],
-    defaultId: 1,
-    cancelId: 0,
-    title: payload && payload.title ? payload.title : 'Confirmar',
-    message: payload && payload.message ? payload.message : 'Confirmar accion',
-  });
-  return { confirmed: result.response === 1 };
-});
+ipcMain.handle('creditos:confirm', async (_event, payload) => nativeDialogs.confirm(payload));
 
 ipcMain.handle('creditos:read-preferences', async () => readPreferences());
 
