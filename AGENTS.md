@@ -40,6 +40,7 @@ python3 scripts/check_import_models.py
 python3 scripts/check_parser_golden.py
 python3 scripts/check_domain_no_dom.py
 python3 scripts/check_server_boundaries.py
+python3 scripts/check_native_boundaries.py
 ```
 
 ## Cross-Platform Rules

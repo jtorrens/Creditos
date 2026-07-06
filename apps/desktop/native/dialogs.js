@@ -80,6 +80,22 @@ function createNativeDialogs({
     return { canceled: false, filePath: result.filePath, name: path.basename(result.filePath) };
   }
 
+  async function exportPngSequence(payload) {
+    const pages = (payload && payload.pages) || [];
+    if (!pages.length) throw new Error('No hay PNGs para exportar.');
+    const result = await dialog.showOpenDialog(getMainWindow(), {
+      title: 'Elegir carpeta de salida PNG',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (result.canceled || !result.filePaths[0]) return { canceled: true };
+
+    const directory = result.filePaths[0];
+    for (const page of pages) {
+      await fs.writeFile(path.join(directory, page.fileName), Buffer.from(page.bytes));
+    }
+    return { canceled: false, directory, count: pages.length };
+  }
+
   async function chooseMovPath(payload) {
     const profile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
     const result = await dialog.showSaveDialog(getMainWindow(), {
@@ -143,6 +159,7 @@ function createNativeDialogs({
     chooseMovPath,
     chooseStyleOverrideAction,
     confirm,
+    exportPngSequence,
     importStyleJsonFiles,
     openImage,
     openReferenceVideo,

@@ -1,5 +1,4 @@
 const { app, BrowserWindow, dialog, ipcMain } = require('electron');
-const fs = require('fs/promises');
 const path = require('path');
 const appPackage = require('./package.json');
 const { createAppPaths } = require('./native/appPaths');
@@ -119,21 +118,7 @@ ipcMain.handle('creditos:open-reference-video', async (_event, payload) => nativ
 
 ipcMain.handle('creditos:save-png', async (_event, payload) => nativeDialogs.savePng(payload));
 
-ipcMain.handle('creditos:export-png-sequence', async (_event, payload) => {
-  const pages = (payload && payload.pages) || [];
-  if (!pages.length) throw new Error('No hay PNGs para exportar.');
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: 'Elegir carpeta de salida PNG',
-    properties: ['openDirectory', 'createDirectory'],
-  });
-  if (result.canceled || !result.filePaths[0]) return { canceled: true };
-
-  const directory = result.filePaths[0];
-  for (const page of pages) {
-    await fs.writeFile(path.join(directory, page.fileName), Buffer.from(page.bytes));
-  }
-  return { canceled: false, directory, count: pages.length };
-});
+ipcMain.handle('creditos:export-png-sequence', async (_event, payload) => nativeDialogs.exportPngSequence(payload));
 
 ipcMain.handle('creditos:choose-mov-path', async (_event, payload) => nativeDialogs.chooseMovPath(payload));
 
