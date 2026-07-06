@@ -249,10 +249,12 @@
   });
   const {
     defaultPreviewSettings,
+    encodingProfilesForCodec,
     normalizePreviewSettings,
     normalizeReferenceVideo,
     normalizeRenderCodec,
     normalizeRenderProfile,
+    renderProfileSupportsAlpha,
   } = previewSettingsDomain;
   const timecodeDomain = globalThis.CreditosDomainTimecode.createTimecodeDomain();
   const {
@@ -1005,7 +1007,7 @@
     const codec = normalizeRenderCodec(codecValue);
     const selected = normalizeRenderProfile(selectedValue, codec);
     els.movieEncodingProfileSelect.innerHTML = '';
-    (MOV_ENCODING_PROFILES[codec] || []).forEach(([value, label]) => {
+    encodingProfilesForCodec(codec).forEach(([value, label]) => {
       const option = document.createElement('option');
       option.value = value;
       option.textContent = label;
@@ -1014,12 +1016,8 @@
     els.movieEncodingProfileSelect.value = selected;
   }
 
-  function renderProfileSupportsAlpha(profile = selectedRenderProfile()) {
-    return profile === 'prores_4444' || profile === 'prores_4444_xq';
-  }
-
   function ensureBackgroundForEncodingProfile() {
-    if (renderProfileSupportsAlpha()) return;
+    if (renderProfileSupportsAlpha(selectedRenderProfile())) return;
     state.exportIncludeBackground = true;
     if (els.exportIncludeBackgroundInput) els.exportIncludeBackgroundInput.checked = true;
   }

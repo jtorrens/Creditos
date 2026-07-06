@@ -63,6 +63,16 @@
         : (codec === 'h264' ? 'h264_standard' : 'prores_4444');
     }
 
+    function encodingProfilesForCodec(codecValue) {
+      const codec = normalizeRenderCodec(codecValue);
+      return movEncodingProfiles[codec] || [];
+    }
+
+    function renderProfileSupportsAlpha(profile) {
+      const value = normalizeRenderProfile(profile);
+      return value === 'prores_4444' || value === 'prores_4444_xq';
+    }
+
     function normalizeReferenceVideo(value) {
       if (!value || !value.file_path) return null;
       return {
@@ -75,10 +85,12 @@
 
     return {
       defaultPreviewSettings,
+      encodingProfilesForCodec,
       normalizePreviewSettings,
       normalizeReferenceVideo,
       normalizeRenderCodec,
       normalizeRenderProfile,
+      renderProfileSupportsAlpha,
     };
   }
 
