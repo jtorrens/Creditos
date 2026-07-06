@@ -68,6 +68,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "creditSourceId",
     "blockForTitleRepeat",
     "countTitleLine",
+    "normalizeCartelaStyle",
+    "serializeCartelaStyle",
 ]
 
 
