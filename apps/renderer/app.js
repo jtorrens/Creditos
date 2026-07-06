@@ -650,6 +650,15 @@
     writeAnimatedFrames,
     writeRepeatedFrames,
   } = frameSequenceExport;
+  const movPlanExport = globalThis.CreditosExportMovPlan.createMovPlanExport({
+    buildScrollPlan,
+    getMovieBodyTargetFramesOrSource,
+    getMovieExportFrameCounts,
+  });
+  const {
+    buildPageMoviePlan,
+    buildScrollMoviePlan,
+  } = movPlanExport;
   const fieldControlRegistry = globalThis.CreditosFieldControlRegistry.createFieldControlRegistry();
   fieldControlRegistry.register('text', globalThis.CreditosTextFieldControl.createTextFieldControl({
     documentRef: document,
@@ -4106,43 +4115,28 @@
       const groups = getSelectedScrollCartelaGroups();
       if (!groups.length) return cachePreviewAnimationPlan(cacheKey, null);
       const sourceFrames = getSelectedScrollSourceFrames(fps);
-      const bodyFrames = getMovieBodyTargetFramesOrSource(
-        sourceFrames,
-        segments,
-        movieTargetDurationFrames(fps),
-        movieUsesCustomTargetDuration()
-      );
-      const scrollPlan = buildScrollPlan(groups, layout, bodyFrames, segments);
-      const bodyPhase = scrollPlan.phases.find((phase) => phase.name === 'body');
-      return cachePreviewAnimationPlan(cacheKey, {
-        mode: 'scroll',
-        layout,
+      return cachePreviewAnimationPlan(cacheKey, buildScrollMoviePlan({
         fps,
-        videoStartFrame: bodyPhase ? bodyPhase.startFrame : segments.preFrames,
-        totalFrames: Math.max(1, scrollPlan.totalFrames),
-        scrollPlan,
-      });
+        groups,
+        layout,
+        segments,
+        sourceFrames,
+        targetFrames: movieTargetDurationFrames(fps),
+        useTargetFrames: movieUsesCustomTargetDuration(),
+      }));
     }
     const selectedPages = getSelectedMoviePages();
     if (!selectedPages.length) return cachePreviewAnimationPlan(cacheKey, null);
-    const frameCounts = getMovieExportFrameCounts(
-      selectedPages,
-      getSelectedMoviePageGroups(),
-      getSelectedMovieGroupFrameCounts(fps),
-      segments,
-      movieTargetDurationFrames(fps),
-      movieUsesCustomTargetDuration(),
-      fps
-    );
-    return cachePreviewAnimationPlan(cacheKey, {
-      mode: 'pages',
-      layout,
+    return cachePreviewAnimationPlan(cacheKey, buildPageMoviePlan({
       fps,
-      videoStartFrame: segments.preFrames,
+      groups: getSelectedMoviePageGroups(),
+      layout,
+      segments,
       selectedPages,
-      frameCounts,
-      totalFrames: frameCounts.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0),
-    });
+      sourceFrames: getSelectedMovieGroupFrameCounts(fps),
+      targetFrames: movieTargetDurationFrames(fps),
+      useTargetFrames: movieUsesCustomTargetDuration(),
+    }));
   }
 
   function previewAnimationPlanKey() {
@@ -4646,30 +4640,31 @@
     if (!groups.length) return;
     const sourceFrames = getSelectedScrollSourceFrames(fps);
     const segments = readMovieSegmentSettings(fps);
-    const bodyFrames = getMovieBodyTargetFramesOrSource(
-      sourceFrames,
+    const moviePlan = buildScrollMoviePlan({
+      fps,
+      groups,
+      layout,
       segments,
-      movieTargetDurationFrames(fps),
-      movieUsesCustomTargetDuration()
-    );
-    const plan = buildScrollPlan(groups, layout, bodyFrames, segments);
-    const bodyPhase = plan.phases.find((phase) => phase.name === 'body');
-    const videoStartFrame = bodyPhase ? bodyPhase.startFrame : segments.preFrames;
-    updateMovExportProgress(0, plan.totalFrames);
+      sourceFrames,
+      targetFrames: movieTargetDurationFrames(fps),
+      useTargetFrames: movieUsesCustomTargetDuration(),
+    });
+    const plan = moviePlan.scrollPlan;
+    updateMovExportProgress(0, moviePlan.totalFrames);
     await exportMovFramesIncrementally(native, filePath, fps, encodingProfile, async (writeFrame) => {
       await writeAnimatedFrames({
-        frameCount: plan.totalFrames,
-        onFramesWritten: (_count, frame) => updateMovExportProgress(frame + 1, plan.totalFrames),
+        frameCount: moviePlan.totalFrames,
+        onFramesWritten: (_count, frame) => updateMovExportProgress(frame + 1, moviePlan.totalFrames),
         renderFrameBytes: async (frame) => {
           const blob = await renderScrollFrameToPngBlob(plan, frame, layout, {
             ...renderOptions,
-            videoTime: frame >= videoStartFrame ? (frame - videoStartFrame) / fps : null,
+            videoTime: frame >= moviePlan.videoStartFrame ? (frame - moviePlan.videoStartFrame) / fps : null,
           });
           return blobToBytes(blob);
         },
         writeFrame,
       });
-      updateMovExportProgress(plan.totalFrames, plan.totalFrames);
+      updateMovExportProgress(moviePlan.totalFrames, moviePlan.totalFrames);
     });
   }
 
@@ -4989,18 +4984,19 @@
         return;
       }
 
-      const exportFrameCounts = getMovieExportFrameCounts(
+      const moviePlan = buildPageMoviePlan({
+        fps,
+        groups: getSelectedMoviePageGroups(),
+        layout,
+        segments: readMovieSegmentSettings(fps),
         selectedPages,
-        getSelectedMoviePageGroups(),
-        getSelectedMovieGroupFrameCounts(fps),
-        readMovieSegmentSettings(fps),
-        movieTargetDurationFrames(fps),
-        movieUsesCustomTargetDuration(),
-        fps
-      );
-      const totalExportFrames = exportFrameCounts.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
+        sourceFrames: getSelectedMovieGroupFrameCounts(fps),
+        targetFrames: movieTargetDurationFrames(fps),
+        useTargetFrames: movieUsesCustomTargetDuration(),
+      });
+      const exportFrameCounts = moviePlan.frameCounts;
+      const totalExportFrames = moviePlan.totalFrames;
       const renderOptions = currentExportRenderOptions();
-      const segments = readMovieSegmentSettings(fps);
       updateMovExportProgress(0, totalExportFrames);
       await exportMovFramesIncrementally(native, saveResult.filePath, fps, encodingProfile, async (writeFrame) => {
         let renderedFrames = 0;
@@ -5021,7 +5017,7 @@
               renderFrameBytes: async (frame) => {
                 const blob = await renderPageToPngBlob(item.page, layout, {
                   ...renderOptions,
-                  videoTime: startFrame + frame >= segments.preFrames ? (startFrame + frame - segments.preFrames) / fps : null,
+                  videoTime: startFrame + frame >= moviePlan.videoStartFrame ? (startFrame + frame - moviePlan.videoStartFrame) / fps : null,
                 });
                 return blobToBytes(blob);
               },
