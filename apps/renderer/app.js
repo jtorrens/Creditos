@@ -343,8 +343,32 @@
     rememberFileDirectory,
     setupResizablePanels,
     writeLocalJsonPreference,
-    writeLocalPreference,
   } = appPreferences;
+  const appProjectState = globalThis.CreditosAppProjectState.createAppProjectState({
+    applyProductionFields,
+    dbPost,
+    findSelectedProduction,
+    productionEpisodes,
+    productionLayout,
+    productionSettings,
+    readLocalJsonPreference,
+    readLocalPreference,
+    renderProjectSelectors,
+    state,
+    storageKeys: STORAGE_KEYS,
+    writeLocalJsonPreference,
+  });
+  const {
+    currentProductionEpisodes,
+    getProductionLayout,
+    getProductionSettings,
+    persistSelectedProductionFields,
+    readSavedSelection,
+    rememberCurrentSelection,
+    selectedEpisode,
+    selectedProduction,
+    setSelectedProductionLocalFields,
+  } = appProjectState;
   const appBootstrap = globalThis.CreditosAppBootstrap.createAppBootstrap({
     appApi,
     els,
@@ -1038,41 +1062,6 @@
     select.value = selectedId ? String(selectedId) : String(items[0].id);
   }
 
-  function currentProductionEpisodes(productionId = state.selectedProductionId) {
-    return productionEpisodes(state.episodes, productionId);
-  }
-
-  function selectedProduction() {
-    return findSelectedProduction(state.productions, state.selectedProductionId);
-  }
-
-  function getProductionLayout() {
-    return productionLayout(selectedProduction());
-  }
-
-  function getProductionSettings() {
-    return productionSettings(selectedProduction());
-  }
-
-  function setSelectedProductionLocalFields(fields) {
-    applyProductionFields(selectedProduction(), fields);
-  }
-
-  async function persistSelectedProductionFields(fields) {
-    if (!state.selectedProductionId) return;
-    const overview = await dbPost('/api/db/update-production', {
-      production_id: state.selectedProductionId,
-      fields,
-    });
-    state.productions = overview.productions || state.productions;
-    state.episodes = overview.episodes || state.episodes;
-    renderProjectSelectors();
-  }
-
-  function selectedEpisode() {
-    return state.episodes.find((episode) => String(episode.id) === String(state.selectedEpisodeId)) || null;
-  }
-
   async function selectProductionFromUi() {
     await selectProductionById(els.productionSelect.value || null);
   }
@@ -1104,29 +1093,6 @@
     state.selectedEpisodeId = els.episodeSelect.value || null;
     rememberCurrentSelection();
     await loadCurrentEpisode();
-  }
-
-  function rememberCurrentSelection() {
-    if (!state.selectedProductionId) return;
-    const selection = {
-      productionId: state.selectedProductionId ? String(state.selectedProductionId) : '',
-      episodeId: state.selectedEpisodeId ? String(state.selectedEpisodeId) : '',
-    };
-    writeLocalJsonPreference(STORAGE_KEYS.lastSelection, selection);
-  }
-
-  function readSavedSelection() {
-    const saved = readLocalJsonPreference(STORAGE_KEYS.lastSelection, null);
-    if (saved && (saved.productionId || saved.episodeId)) {
-      return {
-        productionId: saved.productionId ? String(saved.productionId) : '',
-        episodeId: saved.episodeId ? String(saved.episodeId) : '',
-      };
-    }
-    return {
-      productionId: readLocalPreference(STORAGE_KEYS.selectedProduction),
-      episodeId: readLocalPreference(STORAGE_KEYS.selectedEpisode),
-    };
   }
 
   async function copyStylesFromEpisodeFlow() {
