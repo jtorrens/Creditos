@@ -1,6 +1,27 @@
 (function (root) {
   function createSourceDomain(dependencies = {}) {
     const { safeFilePart } = dependencies;
+    const defaultImportModel = { id: 'standard_credits_xls', label: 'XLS Créditos Buendía' };
+
+    function importModelOptions(importModels) {
+      return importModels && importModels.length ? importModels : [{ ...defaultImportModel }];
+    }
+
+    function defaultImportModelId(importModels) {
+      const models = importModelOptions(importModels);
+      return models[0] ? models[0].id : defaultImportModel.id;
+    }
+
+    function labelForImportModel(importModels, importModelId) {
+      const model = (importModels || []).find((candidate) => candidate.id === importModelId);
+      if (model) return model.label;
+      if (importModelId === defaultImportModel.id) return defaultImportModel.label;
+      return importModelId || 'Por defecto';
+    }
+
+    function selectedImportModelId(production, importModels) {
+      return (production && production.import_model_id) || defaultImportModelId(importModels);
+    }
 
     function normalizeSource(source, fileName) {
       const normalized = JSON.parse(JSON.stringify(source));
@@ -41,10 +62,14 @@
     }
 
     return {
+      defaultImportModelId,
+      importModelOptions,
+      labelForImportModel,
       normalizeSource,
       makeBlockId,
       makeItemId,
       makeNameId,
+      selectedImportModelId,
     };
   }
 

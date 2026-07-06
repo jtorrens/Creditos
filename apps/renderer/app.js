@@ -374,7 +374,11 @@
     safeFilePart,
   });
   const {
+    defaultImportModelId: defaultImportModelIdInDomain,
+    importModelOptions,
+    labelForImportModel,
     normalizeSource,
+    selectedImportModelId: selectedImportModelIdInDomain,
   } = sourceDomain;
   const materialsDomain = globalThis.CreditosDomainMaterials.createMaterialsDomain({
     normalizeText,
@@ -900,7 +904,7 @@
         formatCell.textContent = `${Number(production.page_width) || 1920}x${Number(production.page_height) || 1080}`;
         row.appendChild(formatCell);
         const importCell = document.createElement('td');
-        importCell.textContent = labelForImportModel(production.import_model_id);
+        importCell.textContent = labelForImportModel(state.importModels, production.import_model_id);
         row.appendChild(importCell);
         tbody.appendChild(row);
       });
@@ -933,9 +937,7 @@
     if (!els.productionImportModelSelect) return;
     const production = selectedProduction();
     els.productionImportModelSelect.innerHTML = '';
-    const models = state.importModels.length
-      ? state.importModels
-      : [{ id: 'standard_credits_xls', label: 'XLS Créditos Buendía' }];
+    const models = importModelOptions(state.importModels);
     models.forEach((model) => {
       const option = document.createElement('option');
       option.value = model.id;
@@ -946,13 +948,6 @@
       ? production.import_model_id
       : models[0].id;
     els.productionImportModelSelect.disabled = !production || !models.length;
-  }
-
-  function labelForImportModel(importModelId) {
-    const model = state.importModels.find((candidate) => candidate.id === importModelId);
-    if (model) return model.label;
-    if (importModelId === 'standard_credits_xls') return 'XLS Créditos Buendía';
-    return importModelId || 'Por defecto';
   }
 
   function currentXlsxName() {
@@ -1353,7 +1348,7 @@
         page_width: 1920,
         page_height: 1080,
         preview_background: '#ffffff',
-        import_model_id: defaultImportModelId(),
+        import_model_id: defaultImportModelIdInDomain(state.importModels),
       });
       state.selectedProductionId = overview.production_id;
       state.selectedEpisodeId = null;
@@ -1444,7 +1439,7 @@
   async function updateProductionImportModelFromUi() {
     if (!state.selectedProductionId || !els.productionImportModelSelect) return;
     const fields = {
-      import_model_id: els.productionImportModelSelect.value || defaultImportModelId(),
+      import_model_id: els.productionImportModelSelect.value || defaultImportModelIdInDomain(state.importModels),
     };
     setSelectedProductionLocalFields(fields);
     renderProductionList();
@@ -1454,10 +1449,6 @@
       window.alert('No se pudo actualizar el modelo de importación: ' + error.message);
       await initializeDatabase({ silent: true });
     }
-  }
-
-  function defaultImportModelId() {
-    return state.importModels[0] ? state.importModels[0].id : 'standard_credits_xls';
   }
 
   async function updateProductionName(productionId, name) {
@@ -1873,7 +1864,7 @@
       els.sourceMeta.textContent = `Parseando ${file.name}...`;
       const form = new FormData();
       form.append('file', file);
-      form.append('import_model_id', selectedImportModelId());
+      form.append('import_model_id', currentSelectedImportModelId());
 
       const response = await fetch('/api/parse-xlsx', { method: 'POST', body: form });
       const payload = await response.json();
@@ -1891,9 +1882,8 @@
     }
   }
 
-  function selectedImportModelId() {
-    const production = selectedProduction();
-    return (production && production.import_model_id) || defaultImportModelId();
+  function currentSelectedImportModelId() {
+    return selectedImportModelIdInDomain(selectedProduction(), state.importModels);
   }
 
   async function loadSourceJson(json, fileName) {
