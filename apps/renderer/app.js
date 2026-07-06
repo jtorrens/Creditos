@@ -2290,19 +2290,12 @@
     row.className = 'field-grid';
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const input = document.createElement('input');
-    input.className = 'text-input compact-number-input';
-    input.type = 'number';
-    input.min = String(min);
-    if (max !== null && max !== undefined) input.max = String(max);
-    input.step = String(step);
-    input.value = String(value);
-    input.addEventListener('change', () => {
-      const raw = Number(input.value);
-      let next = Math.max(min, Number.isFinite(raw) ? raw : min);
-      if (max !== null && max !== undefined) next = Math.min(max, next);
-      input.value = String(next);
-      onInput(next);
+    const input = fieldControlRegistry.create('number', {
+      value,
+      min,
+      max,
+      step,
+      onInput,
     });
     row.appendChild(labelEl);
     row.appendChild(input);
@@ -2314,11 +2307,10 @@
     row.className = 'field-grid';
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const input = document.createElement('input');
-    input.className = 'color-input';
-    input.type = 'color';
-    input.value = normalizeColor(value);
-    input.addEventListener('input', () => onInput(input.value));
+    const input = fieldControlRegistry.create('color', {
+      value: normalizeColor(value),
+      onInput,
+    });
     row.appendChild(labelEl);
     row.appendChild(input);
     return row;
