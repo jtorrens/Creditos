@@ -120,6 +120,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "applyExplicitCartelaOverridesFromSource",
     "applyExplicitSourceRefSettings",
     "collectExplicitSourceRefSettings",
+    "ensureCartelaSourceRefSettings",
+    "sourceRefIsLocked",
     "applyBlockStyleToCartelaRefs",
     "updateSourceRefAlignment",
     "updateSourceRefVerticalAlign",

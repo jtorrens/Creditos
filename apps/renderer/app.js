@@ -334,6 +334,7 @@
     applyExplicitCartelaOverridesFromSource,
     baseStyleCartelaFromSettings: baseStyleCartelaFromSettingsWithSettings,
     clearCartelaStyleOverrides,
+    ensureCartelaSourceRefSettings,
     getEffectiveCartelaBlockStyle,
     getEffectiveCartelaTitleTypography: getEffectiveCartelaTitleTypographyWithSettings,
     getEffectiveStyleBlock: getEffectiveStyleBlockWithSettings,
@@ -370,6 +371,7 @@
     sanitizeStyleCartelaOverrides,
     sanitizeStyleBlockOverrides,
     serializeCartelaStyle,
+    sourceRefIsLocked,
     uniqueStyleId,
     updateCartelaBlockAlignment: updateCartelaBlockAlignmentInDomain,
     updateCartelaBlockStyle: updateCartelaBlockStyleInDomain,
@@ -3201,7 +3203,7 @@
 
     const header = document.createElement('div');
     header.className = 'material-header';
-    const isLocked = isSourceRefLocked(ref);
+    const isLocked = sourceRefIsLocked(getSelectedCartela(), ref);
     header.innerHTML = `
       <div>
         <strong>${escapeHtml(material.title || 'Sin titulo')}</strong>
@@ -3254,22 +3256,8 @@
     return wrap;
   }
 
-  function getSourceRefSettingsObject(ref) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!page) return null;
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[ref] = page.source_ref_settings[ref] || { columns: 1 };
-    return page.source_ref_settings[ref];
-  }
-
-  function isSourceRefLocked(ref) {
-    const settings = getSourceRefSettingsObject(ref);
-    return !!(settings && settings.locked);
-  }
-
   function toggleSourceRefLock(ref) {
-    const settings = getSourceRefSettingsObject(ref);
+    const settings = ensureCartelaSourceRefSettings(getSelectedCartela(), ref);
     if (!settings) return;
     if (settings.locked) {
       delete settings.locked;

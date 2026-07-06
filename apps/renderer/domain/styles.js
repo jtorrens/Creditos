@@ -429,6 +429,19 @@
       return page.source_ref_settings[ref];
     }
 
+    function ensureCartelaSourceRefSettings(cartela, ref) {
+      const page = findPageWithRef(cartela, ref);
+      if (!page) return null;
+      page.source_ref_settings = page.source_ref_settings || {};
+      page.source_ref_settings[ref] = page.source_ref_settings[ref] || { columns: 1 };
+      return page.source_ref_settings[ref];
+    }
+
+    function sourceRefIsLocked(cartela, ref) {
+      const settings = ensureCartelaSourceRefSettings(cartela, ref);
+      return !!(settings && settings.locked);
+    }
+
     function updateSourceRefAlignment(page, ref, fields) {
       if (!page) return false;
       const settings = ensureSourceRefSettings(page, ref);
@@ -896,6 +909,7 @@
       explicitCartelaBlockStyle,
       explicitCartelaTitleTypography,
       explicitSourceRefSettings,
+      ensureCartelaSourceRefSettings,
       getEffectiveCartelaTitleTypography,
       getEffectiveCartelaBlockStyle,
       getEffectiveStyleBlock,
@@ -940,6 +954,7 @@
       sanitizeStyleBlockOverrides,
       serializeCartelaStyle,
       sameStyleValue,
+      sourceRefIsLocked,
       uniqueStyleId,
       updateCartelaBlockAlignment,
       updateCartelaBlockStyle,
