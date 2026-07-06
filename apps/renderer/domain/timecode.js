@@ -132,6 +132,51 @@
       return (selectedPages || []).map((item) => byId.get(item.page.id) || getPageFrameCount(item.page, fps));
     }
 
+    function exportPageSelection(pages, fromValue, toValue) {
+      const selectedPages = pages || [];
+      const total = selectedPages.length;
+      const start = Math.max(1, Math.min(total, Number(fromValue) || 1));
+      const end = Math.max(start, Math.min(total, Number(toValue) || total));
+      return {
+        start,
+        end,
+        pages: selectedPages.slice(start - 1, end),
+      };
+    }
+
+    function normalizeMovieSegmentSettings(groupCount, segmentInputs = {}) {
+      const count = Math.max(0, Math.round(Number(groupCount) || 0));
+      const preCount = Math.max(0, Math.min(count, Math.round(Number(segmentInputs.preCount) || 0)));
+      const maxPost = Math.max(0, count - preCount);
+      const postCount = Math.max(0, Math.min(maxPost, Math.round(Number(segmentInputs.postCount) || 0)));
+      const preFrames = Math.max(0, Math.round(Number(segmentInputs.preFrames) || 0));
+      const postFrames = Math.max(0, Math.round(Number(segmentInputs.postFrames) || 0));
+      return {
+        preCount,
+        postCount,
+        preFrames: preCount ? Math.max(preCount, preFrames) : 0,
+        postFrames: postCount ? Math.max(postCount, postFrames) : 0,
+      };
+    }
+
+    function movieDurationFrameSummary(sourceFrames, segments = {}) {
+      const safeSegments = normalizeMovieSegments(segments);
+      const bodyFrames = movieBodySourceTotal(sourceFrames, safeSegments);
+      return {
+        bodyFrames,
+        totalFrames: bodyFrames + safeSegments.preFrames + safeSegments.postFrames,
+      };
+    }
+
+    function fitMovieTargetFrames(targetFrames, groupCount, segments = {}) {
+      const safeSegments = normalizeMovieSegments(segments);
+      const itemCount = Math.max(
+        1,
+        Math.max(0, Math.round(Number(groupCount) || 0)) - safeSegments.preCount - safeSegments.postCount
+      );
+      return Math.max(itemCount, Math.round(Number(targetFrames) || 0));
+    }
+
     function normalizeMovieSegments(segments = {}) {
       return {
         preCount: Math.max(0, Math.round(Number(segments.preCount) || 0)),
@@ -198,7 +243,9 @@
 
     return {
       distributeFrames,
+      exportPageSelection,
       fitPageFrameCountsToTarget,
+      fitMovieTargetFrames,
       formatFrameDuration,
       formatSecondsAsFrameDuration,
       getMovieBodyTargetFramesOrSource,
@@ -212,6 +259,8 @@
       moviePageItems,
       movieBodySourceFrames,
       movieBodySourceTotal,
+      movieDurationFrameSummary,
+      normalizeMovieSegmentSettings,
       normalizeMovieSegments,
       parseFrameDuration,
       scrollSourceFrameCounts,
