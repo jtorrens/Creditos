@@ -190,6 +190,31 @@
       });
     }
 
+    function uniqueCartelaId(cartelas, seedIndex = 1) {
+      const existing = new Set((cartelas || []).map((cartela) => cartela.id));
+      let index = Math.max(1, Number(seedIndex) || 1);
+      let candidate = `cartela_${String(index).padStart(3, '0')}`;
+      while (existing.has(candidate)) {
+        index += 1;
+        candidate = `cartela_${String(index).padStart(3, '0')}`;
+      }
+      return candidate;
+    }
+
+    function moveCartelaVisualOrder(cartelas, cartelaId, delta) {
+      if (!Array.isArray(cartelas)) return false;
+      ensureCartelaOrders(cartelas);
+      const ordered = getVisualCartelas(cartelas);
+      const index = ordered.findIndex((cartela) => cartela.id === cartelaId);
+      const nextIndex = index + delta;
+      if (index < 0 || nextIndex < 0 || nextIndex >= ordered.length) return false;
+      const currentOrder = ordered[index].visual_order;
+      ordered[index].visual_order = ordered[nextIndex].visual_order;
+      ordered[nextIndex].visual_order = currentOrder;
+      normalizeVisualOrders(cartelas);
+      return true;
+    }
+
     function migrateStructure(structure) {
       if (!structure) return null;
       if (Array.isArray(structure.cartelas)) {
@@ -439,11 +464,13 @@
       getCartelaRefs,
       getVisualCartelas,
       migrateStructure,
+      moveCartelaVisualOrder,
       normalizeCartelaImages,
       normalizeFrozenMaterial,
       normalizeVisualOrders,
       removeDefaultEmptyCartelas,
       structureJsonForOutput,
+      uniqueCartelaId,
     };
   }
 

@@ -386,10 +386,12 @@
     getCartelaRefs,
     getVisualCartelas,
     migrateStructure,
+    moveCartelaVisualOrder: moveCartelaVisualOrderInStructure,
     normalizeCartelaImages,
     normalizeFrozenMaterial,
     normalizeVisualOrders,
     structureJsonForOutput,
+    uniqueCartelaId: uniqueCartelaIdFromStructure,
   } = structureDomain;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
@@ -2517,7 +2519,7 @@
       upButton.disabled = index === 0;
       upButton.addEventListener('click', (event) => {
         event.stopPropagation();
-        moveCartelaVisualOrder(cartela.id, -1);
+        moveSelectedCartelaVisualOrder(cartela.id, -1);
       });
       const downButton = document.createElement('button');
       downButton.type = 'button';
@@ -2526,7 +2528,7 @@
       downButton.disabled = index >= cartelas.length - 1;
       downButton.addEventListener('click', (event) => {
         event.stopPropagation();
-        moveCartelaVisualOrder(cartela.id, 1);
+        moveSelectedCartelaVisualOrder(cartela.id, 1);
       });
       orderControls.appendChild(upButton);
       orderControls.appendChild(downButton);
@@ -3909,7 +3911,7 @@
   function addEmptyCartela() {
     if (!state.structure) return;
     const index = state.structure.cartelas.length + 1;
-    const cartelaId = uniqueCartelaId(index);
+    const cartelaId = uniqueCartelaIdFromStructure(state.structure.cartelas, index);
     ensureCartelaOrders(state.structure.cartelas);
     const visualCartelas = getVisualCartelas(state.structure.cartelas);
     const selectedVisualIndex = visualCartelas.findIndex((cartela) => cartela.id === state.selectedCartelaId);
@@ -3953,28 +3955,9 @@
     rebuild();
   }
 
-  function uniqueCartelaId(seedIndex = 1) {
-    const existing = new Set((state.structure && state.structure.cartelas ? state.structure.cartelas : []).map((cartela) => cartela.id));
-    let index = Math.max(1, Number(seedIndex) || 1);
-    let candidate = `cartela_${String(index).padStart(3, '0')}`;
-    while (existing.has(candidate)) {
-      index += 1;
-      candidate = `cartela_${String(index).padStart(3, '0')}`;
-    }
-    return candidate;
-  }
-
-  function moveCartelaVisualOrder(cartelaId, delta) {
+  function moveSelectedCartelaVisualOrder(cartelaId, delta) {
     if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
-    ensureCartelaOrders(state.structure.cartelas);
-    const ordered = getVisualCartelas(state.structure.cartelas);
-    const index = ordered.findIndex((cartela) => cartela.id === cartelaId);
-    const nextIndex = index + delta;
-    if (index < 0 || nextIndex < 0 || nextIndex >= ordered.length) return;
-    const currentOrder = ordered[index].visual_order;
-    ordered[index].visual_order = ordered[nextIndex].visual_order;
-    ordered[nextIndex].visual_order = currentOrder;
-    normalizeVisualOrders(state.structure.cartelas);
+    if (!moveCartelaVisualOrderInStructure(state.structure.cartelas, cartelaId, delta)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderCartelaList();
     renderPreview();
