@@ -1,5 +1,9 @@
 (function (root) {
   function createTimecodeDomain() {
+    function getMovieFps(settings = {}) {
+      return Math.max(1, Math.round(Number(settings.movie_fps) || 25));
+    }
+
     function getPageFrameCount(page, fps) {
       const duration = Math.max(0, Number(page && page.cartela && page.cartela.duration) || 0);
       return Math.max(1, Math.round(duration * fps));
@@ -260,6 +264,7 @@
       getMovieBodyTargetFramesOrSource,
       getMovieExportFrameCounts,
       getMovieTargetFramesOrSource,
+      getMovieFps,
       getPageFrameCount,
       groupMoviePageItemsByCartela,
       groupPhysicalPagesByCartela,

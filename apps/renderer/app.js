@@ -277,6 +277,7 @@
     formatSecondsAsFrameDuration,
     getMovieBodyTargetFramesOrSource,
     getMovieExportFrameCounts,
+    getMovieFps,
     getPageFrameCount,
     groupMoviePageItemsByCartela,
     groupPhysicalPagesByCartela,
@@ -569,7 +570,7 @@
     button.addEventListener('click', () => setActiveTab(button.dataset.tab));
   });
   els.defaultDurationInput.addEventListener('change', () => {
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     const frames = normalizeDurationInputElement(els.defaultDurationInput, fps);
     if (frames === null) {
       window.alert(`Introduce la duración como mm:ss:ff. También puedes escribir solo números, por ejemplo 35 = ${formatFrameDuration(35, fps)}.`);
@@ -1001,7 +1002,7 @@
       els.referenceVideoDurationInput.value = '--:--:--';
       return;
     }
-    els.referenceVideoDurationInput.value = formatSecondsAsFrameDuration(duration, getMovieFps());
+    els.referenceVideoDurationInput.value = formatSecondsAsFrameDuration(duration, currentMovieFps());
   }
 
   function currentPreviewSettingsFromUi() {
@@ -1958,7 +1959,7 @@
 
   function renderSettings() {
     const settings = getProductionSettings();
-    els.defaultDurationInput.value = formatSecondsAsFrameDuration(settings.default_cartela_duration, getMovieFps());
+    els.defaultDurationInput.value = formatSecondsAsFrameDuration(settings.default_cartela_duration, currentMovieFps());
     els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
     els.movieFpsInput.value = String(settings.movie_fps);
     renderTypographySettings(settings);
@@ -4014,13 +4015,13 @@
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
     const input = document.createElement('input');
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     input.className = 'text-input';
     input.type = 'text';
     input.inputMode = 'numeric';
     input.value = formatSecondsAsFrameDuration(secondsValue, fps);
     input.addEventListener('change', () => {
-      const currentFps = getMovieFps();
+      const currentFps = currentMovieFps();
       const frames = parseFrameDuration(input.value, currentFps);
       if (frames === null) {
         window.alert(`Introduce la duración como mm:ss:ff. También puedes escribir solo números, por ejemplo 35 = ${formatFrameDuration(35, currentFps)}.`);
@@ -4304,7 +4305,7 @@
       return previewPlanCache.plan;
     }
     const layout = getRenderLayout();
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     const segments = readMovieSegmentSettings(fps);
     if (getMovieMode() === 'scroll') {
       const groups = getSelectedScrollCartelaGroups();
@@ -4359,7 +4360,7 @@
       els.moviePrerollDurationInput && els.moviePrerollDurationInput.value,
       els.moviePostrollCountInput && els.moviePostrollCountInput.value,
       els.moviePostrollDurationInput && els.moviePostrollDurationInput.value,
-      getMovieFps(),
+      currentMovieFps(),
     ].join('|');
   }
 
@@ -4784,9 +4785,8 @@
     updateMovieDurationFields();
   }
 
-  function getMovieFps() {
-    const settings = getProductionSettings();
-    return Math.max(1, Math.round(Number(settings.movie_fps) || 25));
+  function currentMovieFps() {
+    return getMovieFps(getProductionSettings());
   }
 
   function normalizeDurationInputElement(input, fps) {
@@ -4806,7 +4806,7 @@
   }
 
   function updateMovieSegmentInputs() {
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     const groupCount = Math.max(0, selectedMovieGroupCount());
     const settings = readMovieSegmentSettings(fps);
     if (els.moviePrerollCountInput) els.moviePrerollCountInput.value = String(settings.preCount);
@@ -4860,7 +4860,7 @@
 
   function updateMovieDurationFields(options = {}) {
     if (!els.movieRangeDurationInput || !els.movieTargetDurationInput) return;
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     const frames = getMovieMode() === 'scroll' ? getSelectedScrollSourceFrames(fps) : getSelectedMovieGroupFrameCounts(fps);
     const segments = readMovieSegmentSettings(fps);
     const summary = movieDurationFrameSummary(frames, segments);
@@ -4879,7 +4879,7 @@
 
   function validateMovieTargetDuration() {
     if (!els.movieTargetDurationInput || !state.render || !state.structure) return;
-    const fps = getMovieFps();
+    const fps = currentMovieFps();
     const targetFrames = parseFrameDuration(els.movieTargetDurationInput.value, fps);
     if (targetFrames === null) {
       window.alert(`Introduce la duración como mm:ss:ff. Para ${fps} fps, ff debe estar entre 00 y ${String(fps - 1).padStart(2, '0')}.`);
