@@ -251,11 +251,12 @@
   } = previewSettingsDomain;
   const timecodeDomain = globalThis.CreditosDomainTimecode.createTimecodeDomain();
   const {
-    distributeFrames,
-    fitPageFrameCountsToTarget,
     formatFrameDuration,
     formatSecondsAsFrameDuration,
+    getMovieBodyTargetFramesOrSource,
+    getMovieExportFrameCounts,
     getPageFrameCount,
+    movieBodySourceTotal,
     parseFrameDuration,
   } = timecodeDomain;
   const paginationUnitsDomain = globalThis.CreditosDomainPaginationUnits.createPaginationUnitsDomain();
@@ -4880,7 +4881,12 @@
       const groups = getSelectedScrollCartelaGroups();
       if (!groups.length) return cachePreviewAnimationPlan(cacheKey, null);
       const sourceFrames = getSelectedScrollSourceFrames(fps);
-      const bodyFrames = getMovieBodyTargetFramesOrSource(sourceFrames, fps);
+      const bodyFrames = getMovieBodyTargetFramesOrSource(
+        sourceFrames,
+        segments,
+        movieTargetDurationFrames(fps),
+        movieUsesCustomTargetDuration()
+      );
       const scrollPlan = buildScrollPlan(groups, layout, bodyFrames, segments);
       const bodyPhase = scrollPlan.phases.find((phase) => phase.name === 'body');
       return cachePreviewAnimationPlan(cacheKey, {
@@ -4894,7 +4900,15 @@
     }
     const selectedPages = getSelectedMoviePages();
     if (!selectedPages.length) return cachePreviewAnimationPlan(cacheKey, null);
-    const frameCounts = getMovieExportFrameCounts(selectedPages, fps);
+    const frameCounts = getMovieExportFrameCounts(
+      selectedPages,
+      getSelectedMoviePageGroups(),
+      getSelectedMovieGroupFrameCounts(fps),
+      segments,
+      movieTargetDurationFrames(fps),
+      movieUsesCustomTargetDuration(),
+      fps
+    );
     return cachePreviewAnimationPlan(cacheKey, {
       mode: 'pages',
       layout,
@@ -5781,8 +5795,7 @@
     const fps = getMovieFps();
     const frames = getMovieMode() === 'scroll' ? getSelectedScrollSourceFrames(fps) : getSelectedMovieGroupFrameCounts(fps);
     const segments = readMovieSegmentSettings(fps);
-    const bodySourceFrames = frames.slice(segments.preCount, Math.max(segments.preCount, frames.length - segments.postCount));
-    const bodyTotalFrames = bodySourceFrames.reduce((sum, value) => sum + value, 0);
+    const bodyTotalFrames = movieBodySourceTotal(frames, segments);
     const formatted = formatFrameDuration(bodyTotalFrames + segments.preFrames + segments.postFrames, fps);
     const bodyFormatted = formatFrameDuration(bodyTotalFrames, fps);
     const disabled = frames.length === 0;
@@ -5810,51 +5823,16 @@
     const fittedTargetFrames = Math.max(itemCount, targetFrames);
     els.movieTargetDurationInput.value = formatFrameDuration(fittedTargetFrames, fps);
     const sourceFrames = getMovieMode() === 'scroll' ? getSelectedScrollSourceFrames(fps) : getSelectedMovieGroupFrameCounts(fps);
-    const bodySourceFrames = sourceFrames.slice(segments.preCount, Math.max(segments.preCount, sourceFrames.length - segments.postCount));
-    els.movieTargetDurationInput.dataset.auto = fittedTargetFrames === bodySourceFrames.reduce((sum, value) => sum + value, 0) ? '1' : '0';
+    els.movieTargetDurationInput.dataset.auto = fittedTargetFrames === movieBodySourceTotal(sourceFrames, segments) ? '1' : '0';
     savePreviewSettingsFromUi();
   }
 
-  function getMovieExportFrameCounts(selectedPages, fps) {
-    const groups = getSelectedMoviePageGroups();
-    const sourceFrames = getSelectedMovieGroupFrameCounts(fps);
-    const segments = readMovieSegmentSettings(fps);
-    const preFrames = distributeFrames(segments.preFrames, segments.preCount);
-    const postFrames = distributeFrames(segments.postFrames, segments.postCount);
-    const bodySourceFrames = sourceFrames.slice(segments.preCount, Math.max(segments.preCount, sourceFrames.length - segments.postCount));
-    const bodyFrames = (!els.movieTargetDurationInput || els.movieTargetDurationInput.dataset.auto !== '0')
-      ? bodySourceFrames
-      : fitPageFrameCountsToTarget(bodySourceFrames, parseFrameDuration(els.movieTargetDurationInput.value, fps));
-    const groupFrames = [
-      ...preFrames,
-      ...bodyFrames,
-      ...postFrames,
-    ];
-    const pageFrames = [];
-    groups.forEach((group, index) => {
-      const total = groupFrames[index] || 1;
-      const sourcePageFrames = group.pages.map((item) => getPageFrameCount(item.page, fps));
-      const fitted = fitPageFrameCountsToTarget(sourcePageFrames, total);
-      group.pages.forEach((item, pageIndex) => {
-        pageFrames.push({ id: item.page.id, frames: fitted[pageIndex] || 1 });
-      });
-    });
-    const byId = new Map(pageFrames.map((item) => [item.id, item.frames]));
-    return selectedPages.map((item) => byId.get(item.page.id) || getPageFrameCount(item.page, fps));
+  function movieTargetDurationFrames(fps) {
+    return els.movieTargetDurationInput ? parseFrameDuration(els.movieTargetDurationInput.value, fps) : null;
   }
 
-  function getMovieBodyTargetFramesOrSource(sourceFrames, fps) {
-    const segments = readMovieSegmentSettings(fps);
-    const bodyFrames = sourceFrames.slice(segments.preCount, Math.max(segments.preCount, sourceFrames.length - segments.postCount));
-    const bodySourceTotal = bodyFrames.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
-    if (!els.movieTargetDurationInput || els.movieTargetDurationInput.dataset.auto !== '0') return bodySourceTotal;
-    const targetFrames = parseFrameDuration(els.movieTargetDurationInput.value, fps);
-    return targetFrames === null ? bodySourceTotal : Math.max(bodyFrames.length || 1, targetFrames);
-  }
-
-  function getMovieTargetFramesOrSource(sourceFrames, fps) {
-    const segments = readMovieSegmentSettings(fps);
-    return segments.preFrames + getMovieBodyTargetFramesOrSource(sourceFrames, fps) + segments.postFrames;
+  function movieUsesCustomTargetDuration() {
+    return !!(els.movieTargetDurationInput && els.movieTargetDurationInput.dataset.auto === '0');
   }
 
   function updateMovExportProgress(currentFrame, totalFrames) {
@@ -5995,7 +5973,12 @@
     if (!groups.length) return;
     const sourceFrames = getSelectedScrollSourceFrames(fps);
     const segments = readMovieSegmentSettings(fps);
-    const bodyFrames = getMovieBodyTargetFramesOrSource(sourceFrames, fps);
+    const bodyFrames = getMovieBodyTargetFramesOrSource(
+      sourceFrames,
+      segments,
+      movieTargetDurationFrames(fps),
+      movieUsesCustomTargetDuration()
+    );
     const plan = buildScrollPlan(groups, layout, bodyFrames, segments);
     const bodyPhase = plan.phases.find((phase) => phase.name === 'body');
     const videoStartFrame = bodyPhase ? bodyPhase.startFrame : segments.preFrames;
@@ -6375,7 +6358,15 @@
         return;
       }
 
-      const exportFrameCounts = getMovieExportFrameCounts(selectedPages, fps);
+      const exportFrameCounts = getMovieExportFrameCounts(
+        selectedPages,
+        getSelectedMoviePageGroups(),
+        getSelectedMovieGroupFrameCounts(fps),
+        readMovieSegmentSettings(fps),
+        movieTargetDurationFrames(fps),
+        movieUsesCustomTargetDuration(),
+        fps
+      );
       const totalExportFrames = exportFrameCounts.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
       const renderOptions = getExportRenderOptions();
       const segments = readMovieSegmentSettings(fps);

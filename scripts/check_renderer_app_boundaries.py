@@ -113,6 +113,12 @@ MOVED_DOMAIN_FUNCTIONS = [
     "fontWeightFromStyle",
     "fontStyleFromStyle",
     "quoteFontFamily",
+    "getMovieExportFrameCounts",
+    "getMovieBodyTargetFramesOrSource",
+    "getMovieTargetFramesOrSource",
+    "movieBodySourceFrames",
+    "movieBodySourceTotal",
+    "normalizeMovieSegments",
 ]
 
 

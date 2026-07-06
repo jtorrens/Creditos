@@ -79,12 +79,80 @@
       return frames.map((value) => Math.max(1, Math.round(value)));
     }
 
+    function movieBodySourceFrames(sourceFrames, segments = {}) {
+      const safeSegments = normalizeMovieSegments(segments);
+      return (sourceFrames || []).slice(
+        safeSegments.preCount,
+        Math.max(safeSegments.preCount, (sourceFrames || []).length - safeSegments.postCount)
+      );
+    }
+
+    function movieBodySourceTotal(sourceFrames, segments = {}) {
+      return movieBodySourceFrames(sourceFrames, segments)
+        .reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
+    }
+
+    function getMovieBodyTargetFramesOrSource(sourceFrames, segments = {}, targetFrames = null, useTargetFrames = false) {
+      const bodyFrames = movieBodySourceFrames(sourceFrames, segments);
+      const bodySourceTotal = bodyFrames.reduce((sum, value) => sum + Math.max(1, Number(value) || 1), 0);
+      if (!useTargetFrames) return bodySourceTotal;
+      return targetFrames === null ? bodySourceTotal : Math.max(bodyFrames.length || 1, targetFrames);
+    }
+
+    function getMovieTargetFramesOrSource(sourceFrames, segments = {}, targetFrames = null, useTargetFrames = false) {
+      const safeSegments = normalizeMovieSegments(segments);
+      return safeSegments.preFrames
+        + getMovieBodyTargetFramesOrSource(sourceFrames, safeSegments, targetFrames, useTargetFrames)
+        + safeSegments.postFrames;
+    }
+
+    function getMovieExportFrameCounts(selectedPages, groups, sourceFrames, segments = {}, targetFrames = null, useTargetFrames = false, fps = 25) {
+      const safeSegments = normalizeMovieSegments(segments);
+      const preFrames = distributeFrames(safeSegments.preFrames, safeSegments.preCount);
+      const postFrames = distributeFrames(safeSegments.postFrames, safeSegments.postCount);
+      const bodySourceFrames = movieBodySourceFrames(sourceFrames, safeSegments);
+      const bodyFrames = useTargetFrames
+        ? fitPageFrameCountsToTarget(bodySourceFrames, targetFrames)
+        : bodySourceFrames;
+      const groupFrames = [
+        ...preFrames,
+        ...bodyFrames,
+        ...postFrames,
+      ];
+      const pageFrames = [];
+      (groups || []).forEach((group, index) => {
+        const total = groupFrames[index] || 1;
+        const sourcePageFrames = (group.pages || []).map((item) => getPageFrameCount(item.page, fps));
+        const fitted = fitPageFrameCountsToTarget(sourcePageFrames, total);
+        (group.pages || []).forEach((item, pageIndex) => {
+          if (item && item.page) pageFrames.push({ id: item.page.id, frames: fitted[pageIndex] || 1 });
+        });
+      });
+      const byId = new Map(pageFrames.map((item) => [item.id, item.frames]));
+      return (selectedPages || []).map((item) => byId.get(item.page.id) || getPageFrameCount(item.page, fps));
+    }
+
+    function normalizeMovieSegments(segments = {}) {
+      return {
+        preCount: Math.max(0, Math.round(Number(segments.preCount) || 0)),
+        postCount: Math.max(0, Math.round(Number(segments.postCount) || 0)),
+        preFrames: Math.max(0, Math.round(Number(segments.preFrames) || 0)),
+        postFrames: Math.max(0, Math.round(Number(segments.postFrames) || 0)),
+      };
+    }
+
     return {
       distributeFrames,
       fitPageFrameCountsToTarget,
       formatFrameDuration,
       formatSecondsAsFrameDuration,
+      getMovieBodyTargetFramesOrSource,
+      getMovieExportFrameCounts,
+      getMovieTargetFramesOrSource,
       getPageFrameCount,
+      movieBodySourceFrames,
+      movieBodySourceTotal,
+      normalizeMovieSegments,
       parseFrameDuration,
     };
   }
