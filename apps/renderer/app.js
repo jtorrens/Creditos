@@ -220,7 +220,9 @@
   const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
   const {
     buildFontCatalog,
+    fallbackFontCatalog,
     fontStyleFromStyle,
+    fontStylesForFamily,
     fontWeightFromStyle,
     quoteFontFamily,
   } = typographyDomain;
@@ -2080,15 +2082,11 @@
 
   function getFontCatalog() {
     if (state.fontCatalog) return state.fontCatalog;
-    return {
-      families: FONT_OPTIONS,
-      stylesByFamily: Object.fromEntries(FONT_OPTIONS.map((font) => [font, [{ style: 'Regular', postscript_name: '' }]])),
-    };
+    return fallbackFontCatalog(FONT_OPTIONS);
   }
 
   function getFontStyles(family) {
-    const catalog = getFontCatalog();
-    return catalog.stylesByFamily[family] || [{ style: 'Regular', postscript_name: '' }];
+    return fontStylesForFamily(getFontCatalog(), family);
   }
 
   function loadStyleObjects(styleObjects) {

@@ -59,10 +59,24 @@
       };
     }
 
+    function fallbackFontCatalog(fontOptions) {
+      const families = fontOptions || [];
+      return {
+        families,
+        stylesByFamily: Object.fromEntries(families.map((font) => [font, [{ style: 'Regular', postscript_name: '' }]])),
+      };
+    }
+
+    function fontStylesForFamily(catalog, family) {
+      return (catalog && catalog.stylesByFamily && catalog.stylesByFamily[family]) || [{ style: 'Regular', postscript_name: '' }];
+    }
+
     return {
       buildFontCatalog,
       dedupeFontStyles,
+      fallbackFontCatalog,
       fontStyleFromStyle,
+      fontStylesForFamily,
       fontWeightFromStyle,
       quoteFontFamily,
       styleFromFullName,

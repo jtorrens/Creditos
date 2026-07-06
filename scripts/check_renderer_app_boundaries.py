@@ -163,6 +163,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "dedupeFontStyles",
     "styleFromFullName",
     "buildFontCatalog",
+    "fallbackFontCatalog",
+    "fontStylesForFamily",
     "getMovieExportFrameCounts",
     "getMovieBodyTargetFramesOrSource",
     "getMovieTargetFramesOrSource",
