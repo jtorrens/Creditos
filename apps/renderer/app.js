@@ -381,6 +381,7 @@
     cartelaHasRenderableRefs,
     cartelaImages,
     createStructureFromSource: createStructureFromSourceWithSettings,
+    deleteManualCartela,
     enforceUniqueMaterialRefs,
     ensureCartelaOrders,
     getCartelaRefs,
@@ -3922,12 +3923,9 @@
     if (!cartela || !cartela.manual) return;
     const confirmed = window.confirm('Eliminar esta cartela manual?');
     if (!confirmed) return;
-    const ordered = getVisualCartelas(state.structure.cartelas);
-    const index = ordered.findIndex((candidate) => candidate.id === cartela.id);
-    state.structure.cartelas = state.structure.cartelas.filter((candidate) => candidate.id !== cartela.id);
-    normalizeVisualOrders(state.structure.cartelas);
-    const nextCartela = getVisualCartelas(state.structure.cartelas)[Math.max(0, Math.min(index, state.structure.cartelas.length - 1))] || null;
-    state.selectedCartelaId = nextCartela ? nextCartela.id : null;
+    const result = deleteManualCartela(state.structure.cartelas, cartela.id);
+    if (!result.deleted) return;
+    state.selectedCartelaId = result.nextCartelaId;
     rebuild();
   }
 

@@ -246,6 +246,23 @@
       return cartela;
     }
 
+    function deleteManualCartela(cartelas, cartelaId) {
+      if (!Array.isArray(cartelas)) return { deleted: false, nextCartelaId: null };
+      const ordered = getVisualCartelas(cartelas);
+      const index = ordered.findIndex((cartela) => cartela.id === cartelaId);
+      const cartela = index >= 0 ? ordered[index] : null;
+      if (!cartela || !cartela.manual) return { deleted: false, nextCartelaId: null };
+      const sourceIndex = cartelas.findIndex((candidate) => candidate.id === cartela.id);
+      if (sourceIndex < 0) return { deleted: false, nextCartelaId: null };
+      cartelas.splice(sourceIndex, 1);
+      normalizeVisualOrders(cartelas);
+      const nextCartela = getVisualCartelas(cartelas)[Math.max(0, Math.min(index, cartelas.length - 1))] || null;
+      return {
+        deleted: true,
+        nextCartelaId: nextCartela ? nextCartela.id : null,
+      };
+    }
+
     function migrateStructure(structure) {
       if (!structure) return null;
       if (Array.isArray(structure.cartelas)) {
@@ -490,6 +507,7 @@
       cartelaHasRenderableRefs,
       cartelaImages,
       createStructureFromSource,
+      deleteManualCartela,
       enforceUniqueMaterialRefs,
       ensureCartelaOrders,
       getCartelaRefs,
