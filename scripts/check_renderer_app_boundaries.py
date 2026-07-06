@@ -129,6 +129,10 @@ MOVED_DOMAIN_FUNCTIONS = [
     "getSourceRefAlignment",
     "getSourceRefVerticalAlign",
     "getSourceRefTypography",
+    "clamp",
+    "directoryFromPath",
+    "joinPath",
+    "styleNameFromFileName",
 ]
 
 

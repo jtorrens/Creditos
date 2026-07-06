@@ -34,12 +34,39 @@
       return Boolean(value);
     }
 
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function directoryFromPath(filePath) {
+      const text = String(filePath || '');
+      const index = Math.max(text.lastIndexOf('/'), text.lastIndexOf('\\'));
+      return index > 0 ? text.slice(0, index) : '';
+    }
+
+    function joinPath(directory, fileName) {
+      if (!directory) return fileName;
+      const separator = directory.includes('\\') ? '\\' : '/';
+      return `${directory.replace(/[\\/]+$/, '')}${separator}${fileName}`;
+    }
+
+    function styleNameFromFileName(fileName, fallback) {
+      return String(fileName || '')
+        .replace(/\.json$/i, '')
+        .replace(/[_-]+/g, ' ')
+        .trim() || fallback;
+    }
+
     return {
+      clamp,
+      directoryFromPath,
+      joinPath,
       normalizeBoolean,
       normalizeColor,
       normalizeEditableValue,
       normalizeText,
       safeFilePart,
+      styleNameFromFileName,
     };
   }
 

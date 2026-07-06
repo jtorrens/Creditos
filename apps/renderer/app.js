@@ -204,11 +204,15 @@
   };
   const commonDomain = globalThis.CreditosDomainCommon.createCommonDomain();
   const {
+    clamp,
+    directoryFromPath,
+    joinPath,
     normalizeBoolean,
     normalizeColor,
     normalizeEditableValue,
     normalizeText,
     safeFilePart,
+    styleNameFromFileName,
   } = commonDomain;
   const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
   const {
@@ -1699,25 +1703,9 @@
     });
   }
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
-
   function rememberFileDirectory(key, filePath) {
     const directory = directoryFromPath(filePath);
     if (directory) writeLocalPreference(key, directory);
-  }
-
-  function directoryFromPath(filePath) {
-    const text = String(filePath || '');
-    const index = Math.max(text.lastIndexOf('/'), text.lastIndexOf('\\'));
-    return index > 0 ? text.slice(0, index) : '';
-  }
-
-  function joinPath(directory, fileName) {
-    if (!directory) return fileName;
-    const separator = directory.includes('\\') ? '\\' : '/';
-    return `${directory.replace(/[\\/]+$/, '')}${separator}${fileName}`;
   }
 
   async function loadXlsxFile(event) {
@@ -4319,13 +4307,6 @@
       data,
     });
     return { canceled: false, name: style.name };
-  }
-
-  function styleNameFromFileName(fileName, fallback) {
-    return String(fileName || '')
-      .replace(/\.json$/i, '')
-      .replace(/[_-]+/g, ' ')
-      .trim() || fallback;
   }
 
   function getSelectedCartela() {
