@@ -325,6 +325,11 @@
     normalizeTitleTypographyOverrides,
     normalizeTypographyOverrides,
     normalizeVerticalAlign,
+    resetCartelaBlockAlignmentOverride: resetCartelaBlockAlignmentOverrideInDomain,
+    resetCartelaBlockOverride: resetCartelaBlockOverrideInDomain,
+    resetCartelaBlockTypographyOverride: resetCartelaBlockTypographyOverrideInDomain,
+    resetCartelaTitleTypographyOverride: resetCartelaTitleTypographyOverrideInDomain,
+    resetSourceRefTypography,
     sanitizeStyleCartelaOverrides,
     sanitizeStyleBlockOverrides,
     serializeCartelaStyle,
@@ -334,7 +339,6 @@
     updateSourceRefColumns,
     updateSourceRefTypography,
     updateSourceRefVerticalAlign,
-    resetSourceRefTypography,
   } = styleDomain;
   const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
     safeFilePart,
@@ -3364,17 +3368,17 @@
       ['center', 'Centro'],
       ['right', 'Derecha'],
     ];
-    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateCartelaBlockStyle({ columns: next }), 1, { override: !!(cartela.block_style && cartela.block_style.columns !== undefined), reset: () => resetCartelaBlockOverride('columns') }));
-    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(value.concatenate_rows), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ concatenate_rows: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.concatenate_rows !== undefined), reset: () => resetCartelaBlockOverride('concatenate_rows') }));
-    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(value.force_role_name_columns), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ force_role_name_columns: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.force_role_name_columns !== undefined), reset: () => resetCartelaBlockOverride('force_role_name_columns') }));
-    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateCartelaBlockAlignment('role', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'role'), reset: () => resetCartelaBlockAlignmentOverride('role') }));
-    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateCartelaBlockAlignment('name', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'name'), reset: () => resetCartelaBlockAlignmentOverride('name') }));
-    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateCartelaBlockAlignment('text', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'text'), reset: () => resetCartelaBlockAlignmentOverride('text') }));
+    wrap.appendChild(localNumberRow('Columnas del bloque', Number(value.columns) || 1, 1, 6, (next) => updateCartelaBlockStyle({ columns: next }), 1, { override: !!(cartela.block_style && cartela.block_style.columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('columns') }));
+    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(value.concatenate_rows), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ concatenate_rows: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.concatenate_rows !== undefined), reset: () => resetSelectedCartelaBlockOverride('concatenate_rows') }));
+    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(value.force_role_name_columns), YES_NO_OPTIONS, (next) => updateCartelaBlockStyle({ force_role_name_columns: normalizeBoolean(next, false) }), { override: !!(cartela.block_style && cartela.block_style.force_role_name_columns !== undefined), reset: () => resetSelectedCartelaBlockOverride('force_role_name_columns') }));
+    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (next) => updateCartelaBlockAlignment('role', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'role'), reset: () => resetSelectedCartelaBlockAlignmentOverride('role') }));
+    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (next) => updateCartelaBlockAlignment('name', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'name'), reset: () => resetSelectedCartelaBlockAlignmentOverride('name') }));
+    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (next) => updateCartelaBlockAlignment('text', next), { override: hasCartelaBlockAlignmentOverride(cartela, 'text'), reset: () => resetSelectedCartelaBlockAlignmentOverride('text') }));
     wrap.appendChild(localSelectRow('Alineación vertical del bloque', value.vertical_align || 'top', [
       ['top', 'Arriba'],
       ['center', 'Centrado'],
       ['bottom', 'Abajo'],
-    ], (next) => updateCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => resetCartelaBlockOverride('vertical_align') }));
+    ], (next) => updateCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => resetSelectedCartelaBlockOverride('vertical_align') }));
     wrap.appendChild(renderCartelaBlockTypographyControls(cartela, value.typography || {}));
     return wrap;
   }
@@ -3610,7 +3614,7 @@
         const resetButton = document.createElement('button');
         resetButton.type = 'button';
         resetButton.textContent = 'Restablecer';
-        resetButton.addEventListener('click', () => resetCartelaBlockTypographyOverride(key));
+        resetButton.addEventListener('click', () => resetSelectedCartelaBlockTypographyOverride(key));
         row.appendChild(resetButton);
       }
 
@@ -3713,7 +3717,7 @@
       const resetButton = document.createElement('button');
       resetButton.type = 'button';
       resetButton.textContent = 'Restablecer';
-      resetButton.addEventListener('click', resetCartelaTitleTypographyOverride);
+      resetButton.addEventListener('click', resetSelectedCartelaTitleTypographyOverride);
       row.appendChild(resetButton);
     }
 
@@ -4010,12 +4014,10 @@
     refreshPdfIfActive();
   }
 
-  function resetCartelaBlockOverride(key) {
+  function resetSelectedCartelaBlockOverride(key) {
     const cartela = getSelectedCartela();
-    if (!cartela || !cartela.block_style) return;
-    delete cartela.block_style[key];
+    if (!resetCartelaBlockOverrideInDomain(cartela, key)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
-    if (!Object.keys(cartela.block_style).length) delete cartela.block_style;
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
@@ -4033,24 +4035,18 @@
     });
   }
 
-  function resetCartelaBlockAlignmentOverride(key) {
+  function resetSelectedCartelaBlockAlignmentOverride(key) {
     const cartela = getSelectedCartela();
-    if (!cartela || !cartela.block_style || !cartela.block_style.alignment) return;
-    delete cartela.block_style.alignment[key];
-    if (!Object.keys(cartela.block_style.alignment).length) delete cartela.block_style.alignment;
-    if (!Object.keys(cartela.block_style).length) delete cartela.block_style;
+    if (!resetCartelaBlockAlignmentOverrideInDomain(cartela, key)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
     refreshPdfIfActive();
   }
 
-  function resetCartelaBlockTypographyOverride(key) {
+  function resetSelectedCartelaBlockTypographyOverride(key) {
     const cartela = getSelectedCartela();
-    if (!cartela || !cartela.block_style || !cartela.block_style.typography) return;
-    delete cartela.block_style.typography[key];
-    if (!Object.keys(cartela.block_style.typography).length) delete cartela.block_style.typography;
-    if (!Object.keys(cartela.block_style).length) delete cartela.block_style;
+    if (!resetCartelaBlockTypographyOverrideInDomain(cartela, key)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
@@ -4072,11 +4068,9 @@
     if (options.rerenderEditor) renderEditor();
   }
 
-  function resetCartelaTitleTypographyOverride() {
+  function resetSelectedCartelaTitleTypographyOverride() {
     const cartela = getSelectedCartela();
-    if (!cartela || !cartela.title_typography) return;
-    delete cartela.title_typography.page_header;
-    if (!Object.keys(cartela.title_typography).length) delete cartela.title_typography;
+    if (!resetCartelaTitleTypographyOverrideInDomain(cartela)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();

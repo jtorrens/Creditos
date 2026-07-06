@@ -461,6 +461,40 @@
       );
     }
 
+    function pruneEmptyCartelaBlockStyle(cartela) {
+      if (cartela && cartela.block_style && !Object.keys(cartela.block_style).length) delete cartela.block_style;
+    }
+
+    function resetCartelaBlockOverride(cartela, key) {
+      if (!cartela || !cartela.block_style) return false;
+      delete cartela.block_style[key];
+      pruneEmptyCartelaBlockStyle(cartela);
+      return true;
+    }
+
+    function resetCartelaBlockAlignmentOverride(cartela, key) {
+      if (!cartela || !cartela.block_style || !cartela.block_style.alignment) return false;
+      delete cartela.block_style.alignment[key];
+      if (!Object.keys(cartela.block_style.alignment).length) delete cartela.block_style.alignment;
+      pruneEmptyCartelaBlockStyle(cartela);
+      return true;
+    }
+
+    function resetCartelaBlockTypographyOverride(cartela, key) {
+      if (!cartela || !cartela.block_style || !cartela.block_style.typography) return false;
+      delete cartela.block_style.typography[key];
+      if (!Object.keys(cartela.block_style.typography).length) delete cartela.block_style.typography;
+      pruneEmptyCartelaBlockStyle(cartela);
+      return true;
+    }
+
+    function resetCartelaTitleTypographyOverride(cartela) {
+      if (!cartela || !cartela.title_typography) return false;
+      delete cartela.title_typography.page_header;
+      if (!Object.keys(cartela.title_typography).length) delete cartela.title_typography;
+      return true;
+    }
+
     function uniqueStyleId(styles, baseId) {
       const base = baseId || 'estilo';
       let candidate = base;
@@ -527,6 +561,11 @@
       normalizeTitleTypographyOverrides,
       normalizeTypographyOverrides,
       normalizeVerticalAlign,
+      resetCartelaBlockAlignmentOverride,
+      resetCartelaBlockOverride,
+      resetCartelaBlockTypographyOverride,
+      resetCartelaTitleTypographyOverride,
+      resetSourceRefTypography,
       sanitizeStyleCartelaOverrides,
       sanitizeStyleBlockOverrides,
       serializeCartelaStyle,
@@ -536,7 +575,6 @@
       updateSourceRefColumns,
       updateSourceRefTypography,
       updateSourceRefVerticalAlign,
-      resetSourceRefTypography,
     };
   }
 
