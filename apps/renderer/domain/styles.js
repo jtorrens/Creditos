@@ -327,6 +327,21 @@
         : {};
     }
 
+    function applyBlockStyleToCartelaRefs(cartela, fields) {
+      (cartela && cartela.pages || []).forEach((page) => {
+        page.source_ref_settings = page.source_ref_settings || {};
+        (page.source_refs || []).forEach((ref) => {
+          const current = page.source_ref_settings[ref] || {};
+          page.source_ref_settings[ref] = normalizeStyleBlock({
+            ...current,
+            ...fields,
+            alignment: fields.alignment || current.alignment || {},
+            typography: fields.typography || current.typography || {},
+          });
+        });
+      });
+    }
+
     function mergeBlockTypography(baseTypography = {}, overrideTypography = {}) {
       const keys = new Set([
         ...blockTypographyFields.map(([key]) => key),
@@ -420,6 +435,7 @@
     }
 
     return {
+      applyBlockStyleToCartelaRefs,
       baseStyleCartelaFromSettings,
       clonePlainValue,
       explicitCartelaBlockStyle,

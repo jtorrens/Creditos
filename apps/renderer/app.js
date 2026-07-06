@@ -294,6 +294,7 @@
     safeStyleId,
   });
   const {
+    applyBlockStyleToCartelaRefs,
     baseStyleCartelaFromSettings: baseStyleCartelaFromSettingsWithSettings,
     clonePlainValue,
     explicitCartelaBlockStyle,
@@ -4105,21 +4106,6 @@
     renderCartelaPreview();
     refreshPdfIfActive();
     if (options.rerenderEditor) renderEditor();
-  }
-
-  function applyBlockStyleToCartelaRefs(cartela, fields) {
-    (cartela.pages || []).forEach((page) => {
-      page.source_ref_settings = page.source_ref_settings || {};
-      (page.source_refs || []).forEach((ref) => {
-        const current = page.source_ref_settings[ref] || {};
-        page.source_ref_settings[ref] = normalizeStyleBlock({
-          ...current,
-          ...fields,
-          alignment: fields.alignment || current.alignment || {},
-          typography: fields.typography || current.typography || {},
-        });
-      });
-    });
   }
 
   function syncLoadedStyleSnapshots() {

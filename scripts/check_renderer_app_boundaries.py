@@ -93,6 +93,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "explicitCartelaTitleTypography",
     "explicitCartelaBlockStyle",
     "explicitSourceRefSettings",
+    "applyBlockStyleToCartelaRefs",
     "clonePlainValue",
     "formatScrollSpeed",
     "scrollItemExitOffset",
