@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const appPackage = require('./package.json');
+const { createAppPaths } = require('./native/appPaths');
 const { createPreferenceStore } = require('./native/preferences');
 const { createServerProcessManager } = require('./native/serverProcess');
 
@@ -14,60 +15,16 @@ const {
   queuedWritePreference,
   writeWindowState,
 } = createPreferenceStore({ getUserDataPath: () => app.getPath('userData') });
+const {
+  persistentDatabasePath,
+  rendererPath,
+  repoRoot,
+  repositoryRootForDatabase,
+  serverScriptPath,
+} = createAppPaths({ app, appDir: __dirname });
 
 let mainWindow = null;
 const movExportSessions = new Map();
-
-function repoRoot() {
-  if (app.isPackaged) {
-    return process.resourcesPath;
-  }
-  return path.resolve(__dirname, '..', '..');
-}
-
-async function findRepositoryRoot(startPath) {
-  let current = path.resolve(startPath);
-  while (true) {
-    try {
-      await fs.access(path.join(current, 'AGENTS.md'));
-      await fs.access(path.join(current, 'apps', 'renderer', 'server.py'));
-      return current;
-    } catch (_error) {
-      const parent = path.dirname(current);
-      if (parent === current) return null;
-      current = parent;
-    }
-  }
-}
-
-async function persistentDatabasePath() {
-  if (process.env.CREDITOS_DB_PATH) return process.env.CREDITOS_DB_PATH;
-
-  const searchStarts = app.isPackaged
-    ? [process.resourcesPath, path.dirname(process.execPath)]
-    : [repoRoot()];
-  for (const start of searchStarts) {
-    const root = await findRepositoryRoot(start);
-    if (root) return path.join(root, 'data', 'creditos.db');
-  }
-
-  return path.join(app.getPath('userData'), 'data', 'creditos.db');
-}
-
-async function repositoryRootForDatabase() {
-  const dbPath = await persistentDatabasePath();
-  return findRepositoryRoot(path.dirname(dbPath));
-}
-
-function rendererPath() {
-  return app.isPackaged
-    ? path.join(process.resourcesPath, 'renderer')
-    : path.join(repoRoot(), 'apps', 'renderer');
-}
-
-function serverScriptPath() {
-  return path.join(rendererPath(), 'server.py');
-}
 
 async function resolveExecutable(envName, executable, extraCandidates = []) {
   if (process.env[envName]) return process.env[envName];
