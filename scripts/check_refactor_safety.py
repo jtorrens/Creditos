@@ -10,6 +10,7 @@ CHECKS = [
     "check_parser_golden.py",
     "check_domain_no_dom.py",
     "check_renderer_app_boundaries.py",
+    "check_app_composition_size.py",
     "check_renderer_script_tags.py",
     "check_field_controls.py",
     "check_server_boundaries.py",
