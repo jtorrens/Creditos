@@ -97,6 +97,9 @@ MOVED_DOMAIN_FUNCTIONS = [
     "scrollItemIntersectsClip",
     "scrollFullAreaItemClip",
     "scrollClipRect",
+    "layoutForCartela",
+    "numberWithFallback",
+    "contentAreaRect",
 ]
 
 
