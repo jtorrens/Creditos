@@ -826,6 +826,7 @@
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
     buildCurrentRenderJson,
     deleteManualCartela,
+    findPageWithRef,
     getEffectiveStyleTitleTypography,
     getSelectedCartela,
     getStyleById,
@@ -846,6 +847,7 @@
     resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaOverrideInStructure,
     resetCartelaTitleTypographyOverrideInDomain,
+    resetSourceRefTypography,
     selectedProduction,
     setSelectedProductionLocalFields,
     state,
@@ -855,6 +857,10 @@
     updateCartelaBlockTypographyInDomain,
     updateCartelaInStructure,
     updateCartelaTitleTypographyInDomain,
+    updateSourceRefAlignment,
+    updateSourceRefColumns,
+    updateSourceRefTypography,
+    updateSourceRefVerticalAlign,
     windowRef: window,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
@@ -2642,12 +2648,7 @@
   }
 
   function updateSelectedBlockAlignment(ref, fields) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!updateSourceRefAlignment(page, ref, fields)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedBlockAlignment(ref, fields);
   }
 
   function getSelectedBlockVerticalAlign(ref) {
@@ -2657,12 +2658,7 @@
   }
 
   function updateSelectedBlockVerticalAlign(ref, value) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!updateSourceRefVerticalAlign(page, ref, value)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedBlockVerticalAlign(ref, value);
   }
 
   function getSelectedBlockTypography(ref) {
@@ -2672,23 +2668,11 @@
   }
 
   function updateSelectedBlockTypography(ref, key, fields, options = {}) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!updateSourceRefTypography(page, ref, key, fields)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    if (options.rerenderEditor) renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedBlockTypography(ref, key, fields, options);
   }
 
   function resetSelectedBlockTypography(ref) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!resetSourceRefTypography(page, ref)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedBlockTypography(ref);
   }
 
   function getSelectedBlockColumns(ref) {
@@ -2698,12 +2682,7 @@
   }
 
   function updateSelectedBlockColumns(ref, columns) {
-    const cartela = getSelectedCartela();
-    const page = findPageWithRef(cartela, ref);
-    if (!updateSourceRefColumns(page, ref, columns)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedBlockColumns(ref, columns);
   }
 
   function inputRow(label, refId, field, fallback, options) {
