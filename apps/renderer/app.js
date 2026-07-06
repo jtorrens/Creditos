@@ -824,8 +824,10 @@
     yesNoOptions: YES_NO_OPTIONS,
   });
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
+    applyDatabaseOverview,
     buildCurrentRenderJson,
     clearCartelaStyleOverrides,
+    currentProductionEpisodes,
     dbPost,
     deleteManualCartela,
     findPageWithRef,
@@ -844,6 +846,7 @@
     renderCartelaPreview,
     renderEditor,
     renderPreview,
+    renderProjectSelectors,
     renderSettings,
     renderStylesPane,
     resetCartelaBlockAlignmentOverrideInDomain,
@@ -1329,67 +1332,11 @@
   }
 
   async function updateProductionName(productionId, name) {
-    const cleanName = String(name || '').trim();
-    if (!cleanName) {
-      renderProjectSelectors();
-      return;
-    }
-    try {
-      const overview = await dbPost('/api/db/update-production', {
-        production_id: productionId,
-        fields: { name: cleanName },
-      });
-      applyDatabaseOverview(overview);
-    } catch (error) {
-      window.alert('No se pudo renombrar la producción: ' + error.message);
-      renderProjectSelectors();
-    }
+    return appCommands.updateProductionName(productionId, name);
   }
 
   async function updateProductionEpisodeCount(productionId, value) {
-    const production = state.productions.find((candidate) => String(candidate.id) === String(productionId));
-    if (!production) return;
-    const nextCount = Math.max(1, Math.round(Number(value) || 1));
-    const currentCount = Math.max(
-      Number(production.episode_count) || 0,
-      ...currentProductionEpisodes(productionId).map((episode) => Number(episode.episode_number) || 0),
-      1
-    );
-    if (nextCount < currentCount) {
-      const deletedEpisodes = currentProductionEpisodes(productionId)
-        .filter((episode) => Number(episode.episode_number) > nextCount);
-      const withDocuments = deletedEpisodes.filter((episode) => !!episode.has_documents);
-      if (withDocuments.length) {
-        const names = withDocuments.map((episode) => episode.name || `Episodio ${episode.episode_number}`).join(', ');
-        const native = nativeBridge();
-        let confirmed = false;
-        if (native && native.confirm) {
-          const result = await native.confirm({
-            title: 'Reducir capítulos',
-            message: `Vas a borrar capítulos con archivos/datos asociados: ${names}.`,
-            confirmLabel: 'Borrar capítulos',
-          });
-          confirmed = !!(result && result.confirmed);
-        } else {
-          confirmed = window.confirm(`Vas a borrar capítulos con archivos/datos asociados: ${names}. Continuar?`);
-        }
-        if (!confirmed) {
-          renderProjectSelectors();
-          return;
-        }
-      }
-    }
-
-    try {
-      const overview = await dbPost('/api/db/update-production', {
-        production_id: productionId,
-        fields: { episode_count: nextCount },
-      });
-      applyDatabaseOverview(overview);
-    } catch (error) {
-      window.alert('No se pudo actualizar el número de capítulos: ' + error.message);
-      renderProjectSelectors();
-    }
+    return appCommands.updateProductionEpisodeCount(productionId, value);
   }
 
   async function loadProductionStyles() {
