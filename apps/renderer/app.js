@@ -201,6 +201,15 @@
     selectedEpisode: 'creditos:selectedEpisode',
     lastSelection: 'creditos:lastSelection',
   };
+  const appApi = globalThis.CreditosAppApi.createAppApi({
+    host: window,
+    getDatabasePath: () => state.databasePath,
+  });
+  const {
+    dbPost,
+    nativeBridge,
+    writeNativePreference,
+  } = appApi;
   const commonDomain = globalThis.CreditosDomainCommon.createCommonDomain();
   const {
     boolSelectValue,
@@ -830,10 +839,6 @@
   initializeAppInfo();
   initializeAppPreferences();
 
-  function nativeBridge() {
-    return window.creditosNative || null;
-  }
-
   async function initializeAppInfo() {
     const native = nativeBridge();
     if (!native || !native.getAppInfo || !els.appVersion) return;
@@ -859,28 +864,12 @@
   }
 
   async function loadNativePreferences() {
-    const native = nativeBridge();
-    if (!native || !native.readPreferences) return;
     try {
-      state.preferences = await native.readPreferences() || {};
+      state.preferences = await appApi.readNativePreferences();
     } catch (error) {
       console.warn('No se pudieron cargar preferencias:', error.message);
       state.preferences = {};
     }
-  }
-
-  async function dbPost(endpoint, payload = {}) {
-    if (!state.databasePath && endpoint !== '/api/db/init') {
-      throw new Error('Selecciona primero una base de datos.');
-    }
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ db_path: state.databasePath, ...payload }),
-    });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Error de base de datos.');
-    return result;
   }
 
   async function initializeDatabase(options = {}) {
@@ -1791,14 +1780,6 @@
     } catch (_error) {
       // Local persistence is a convenience only.
     }
-  }
-
-  function writeNativePreference(key, value) {
-    const native = nativeBridge();
-    if (!native || !native.writePreference) return;
-    native.writePreference({ key, value }).catch((error) => {
-      console.warn('No se pudo guardar preferencia:', error.message);
-    });
   }
 
   function setupResizablePanels() {
