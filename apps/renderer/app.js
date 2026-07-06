@@ -1058,6 +1058,55 @@
     updatePdfToolbar,
     windowRef: window,
   });
+  const appPageExport = globalThis.CreditosAppPageExport.createAppPageExport({
+    blobToBytes,
+    buildPageMoviePlan,
+    buildScrollMoviePlan,
+    currentExportRenderOptions,
+    documentRef: document,
+    downloadBlob,
+    drawCanvasMarginOverlay,
+    drawCanvasPage,
+    drawCanvasScrollFrame,
+    drawReferenceVideoFrame,
+    els,
+    exportMovFramesIncrementally,
+    exportPageSelection,
+    getCurrentPhysicalPages,
+    getExportRenderOptionsInDomain,
+    getMovieMode,
+    getPreviewAnimationPlan,
+    getProductionSettings,
+    getRenderLayout,
+    getSelectedMovieGroupFrameCounts,
+    getSelectedMoviePageGroups,
+    getSelectedMoviePages,
+    getSelectedScrollCartelaGroups,
+    getSelectedScrollSourceFrames,
+    joinPath,
+    layoutForCartela,
+    movieTargetDurationFrames,
+    movieUsesCustomTargetDuration,
+    nativeBridge,
+    openMovExportProgressModal,
+    readLocalPreference,
+    readMovieSegmentSettings,
+    rememberFileDirectory,
+    safeFilePart,
+    saveBlobAs,
+    selectedRenderProfile,
+    state,
+    storageKeys: STORAGE_KEYS,
+    throwIfMovExportCancelled,
+    updateMovExportProgress,
+    updatePdfToolbar,
+    videoTimeForPage,
+    wait,
+    windowRef: window,
+    writeAnimatedFrames,
+    writeBlobToDirectory,
+    writeRepeatedFrames,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -2723,53 +2772,11 @@
   }
 
   async function exportScrollMovSequence({ native, filePath, fps, layout, encodingProfile, renderOptions = {} }) {
-    const groups = getSelectedScrollCartelaGroups();
-    if (!groups.length) return;
-    const sourceFrames = getSelectedScrollSourceFrames(fps);
-    const segments = readMovieSegmentSettings(fps);
-    const moviePlan = buildScrollMoviePlan({
-      fps,
-      groups,
-      layout,
-      segments,
-      sourceFrames,
-      targetFrames: movieTargetDurationFrames(fps),
-      useTargetFrames: movieUsesCustomTargetDuration(),
-    });
-    const plan = moviePlan.scrollPlan;
-    updateMovExportProgress(0, moviePlan.totalFrames);
-    await exportMovFramesIncrementally(native, filePath, fps, encodingProfile, async (writeFrame) => {
-      await writeAnimatedFrames({
-        frameCount: moviePlan.totalFrames,
-        onFramesWritten: (_count, frame) => updateMovExportProgress(frame + 1, moviePlan.totalFrames),
-        renderFrameBytes: async (frame) => {
-          const blob = await renderScrollFrameToPngBlob(plan, frame, layout, {
-            ...renderOptions,
-            videoTime: frame >= moviePlan.videoStartFrame ? (frame - moviePlan.videoStartFrame) / fps : null,
-          });
-          return blobToBytes(blob);
-        },
-        writeFrame,
-      });
-      updateMovExportProgress(moviePlan.totalFrames, moviePlan.totalFrames);
-    });
+    return appPageExport.exportScrollMovSequence({ native, filePath, fps, layout, encodingProfile, renderOptions });
   }
 
   async function renderScrollFrameToPngBlob(plan, frame, layout, options = {}) {
-    const canvas = document.createElement('canvas');
-    canvas.width = layout.page_width;
-    canvas.height = layout.page_height;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    await drawExportBackground(ctx, layout, options);
-    await drawCanvasScrollFrame(ctx, plan, frame, layout);
-    if (options.includeMargins) drawCanvasMarginOverlay(ctx, layout, 1);
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('No se pudo crear el frame de scroll.'));
-      }, 'image/png');
-    });
+    return appPageExport.renderScrollFrameToPngBlob(plan, frame, layout, options);
   }
 
   function updatePdfBaseName() {
@@ -2806,211 +2813,24 @@
   }
 
   async function exportPngPages(mode) {
-    if (!state.render || !state.structure) return;
-    const layout = getRenderLayout();
-    const pages = getCurrentPhysicalPages();
-    if (!pages.length) return;
-    const selectedPages = mode === 'current'
-      ? [{ page: pages[state.pdfPageIndex], pageNumber: state.pdfPageIndex + 1 }]
-      : readExportPageSelection(pages).pages.map((page, index) => ({
-        page,
-        pageNumber: index + 1,
-      }));
-    const settings = getProductionSettings();
-    const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
-    const renderOptions = currentExportRenderOptions();
-    const native = nativeBridge();
-    try {
-      if (native && mode === 'all' && native.exportPngSequence) {
-        const exportedPages = [];
-        for (const item of selectedPages.filter((candidate) => candidate.page)) {
-          const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
-          const blob = await renderPageToPngBlob(item.page, layout, {
-            ...renderOptions,
-            videoTime: currentVideoTimeForPage(item.page),
-          });
-          exportedPages.push({ fileName, bytes: await blobToBytes(blob) });
-        }
-        await native.exportPngSequence({ pages: exportedPages });
-        return;
-      }
-
-      if (mode === 'all' && window.showDirectoryPicker) {
-        const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
-        for (const item of selectedPages.filter((candidate) => candidate.page)) {
-          const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
-          const blob = await renderPageToPngBlob(item.page, layout, {
-            ...renderOptions,
-            videoTime: currentVideoTimeForPage(item.page),
-          });
-          await writeBlobToDirectory(directory, fileName, blob);
-        }
-        return;
-      }
-
-      for (const item of selectedPages.filter((candidate) => candidate.page)) {
-        const fileName = `${baseName}_${String(item.pageNumber).padStart(3, '0')}.png`;
-        const blob = await renderPageToPngBlob(item.page, layout, {
-          ...renderOptions,
-          videoTime: currentVideoTimeForPage(item.page),
-        });
-        if (mode === 'current') {
-          await saveBlobAs(blob, fileName);
-        } else {
-          downloadBlob(blob, fileName);
-        }
-        await wait(120);
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      window.alert('No se pudo exportar PNG: ' + error.message);
-    }
+    return appPageExport.exportPngPages(mode);
   }
 
   async function exportMov() {
-    if (!state.render || !state.structure) return;
-    const native = nativeBridge();
-    if (!native || !native.chooseMovPath || !native.exportMovSequence) {
-      window.alert('La exportacion MOV necesita la app Electron.');
-      return;
-    }
-
-    const layout = getRenderLayout();
-    const pages = getCurrentPhysicalPages();
-    if (!pages.length) return;
-
-    const selectedPages = getSelectedMoviePages();
-    if (!selectedPages.length) return;
-
-    const settings = getProductionSettings();
-    const fps = Math.max(1, Math.round(Number(settings.movie_fps) || 25));
-    const baseName = safeFilePart(settings.pdf_base_name || 'creditos');
-    const encodingProfile = selectedRenderProfile();
-
-    try {
-      const saveResult = await native.chooseMovPath({
-        defaultPath: joinPath(readLocalPreference(STORAGE_KEYS.renderDir), `${baseName}.mov`),
-        encodingProfile,
-      });
-      if (!saveResult || saveResult.canceled) return;
-      rememberFileDirectory(STORAGE_KEYS.renderDir, saveResult.filePath);
-
-      els.exportMovBtn.disabled = true;
-      state.movExportProgress = openMovExportProgressModal();
-      if (getMovieMode() === 'scroll') {
-        await exportScrollMovSequence({
-          native,
-          filePath: saveResult.filePath,
-          fps,
-          layout,
-          encodingProfile,
-          renderOptions: currentExportRenderOptions(),
-        });
-        return;
-      }
-
-      const moviePlan = buildPageMoviePlan({
-        fps,
-        groups: getSelectedMoviePageGroups(),
-        layout,
-        segments: readMovieSegmentSettings(fps),
-        selectedPages,
-        sourceFrames: getSelectedMovieGroupFrameCounts(fps),
-        targetFrames: movieTargetDurationFrames(fps),
-        useTargetFrames: movieUsesCustomTargetDuration(),
-      });
-      const exportFrameCounts = moviePlan.frameCounts;
-      const totalExportFrames = moviePlan.totalFrames;
-      const renderOptions = currentExportRenderOptions();
-      updateMovExportProgress(0, totalExportFrames);
-      await exportMovFramesIncrementally(native, saveResult.filePath, fps, encodingProfile, async (writeFrame) => {
-        let renderedFrames = 0;
-        for (const [index, item] of selectedPages.entries()) {
-          throwIfMovExportCancelled();
-          updateMovExportProgress(renderedFrames, totalExportFrames);
-          await wait(0);
-          const duration = Math.max(0, Number(item.page.cartela && item.page.cartela.duration) || 0);
-          const frameCount = exportFrameCounts[index] || Math.max(1, Math.round(duration * fps));
-          if (renderOptions.includeVideo) {
-            const startFrame = renderedFrames;
-            await writeAnimatedFrames({
-              frameCount,
-              onFramesWritten: () => {
-                renderedFrames += 1;
-                updateMovExportProgress(renderedFrames, totalExportFrames);
-              },
-              renderFrameBytes: async (frame) => {
-                const blob = await renderPageToPngBlob(item.page, layout, {
-                  ...renderOptions,
-                  videoTime: startFrame + frame >= moviePlan.videoStartFrame ? (startFrame + frame - moviePlan.videoStartFrame) / fps : null,
-                });
-                return blobToBytes(blob);
-              },
-              writeFrame,
-            });
-          } else {
-            const blob = await renderPageToPngBlob(item.page, layout, renderOptions);
-            const bytes = await blobToBytes(blob);
-            await writeRepeatedFrames({
-              bytes,
-              frameCount,
-              onFramesWritten: (chunk) => {
-                renderedFrames += chunk;
-                updateMovExportProgress(renderedFrames, totalExportFrames);
-              },
-              writeFrame,
-            });
-          }
-        }
-        updateMovExportProgress(totalExportFrames, totalExportFrames);
-      });
-    } catch (error) {
-      if (error.name === 'AbortError' || (state.movExportProgress && state.movExportProgress.isCancellationRequested())) return;
-      window.alert('No se pudo exportar MOV: ' + error.message);
-    } finally {
-      if (state.movExportProgress) state.movExportProgress.close();
-      state.movExportProgress = null;
-      els.exportMovBtn.textContent = 'Exportar MOV';
-      updatePdfToolbar(state.pdfPageIndex + 1, pages.length);
-    }
+    return appPageExport.exportMov();
   }
 
   function readExportPageSelection(pages) {
-    const selection = exportPageSelection(
-      pages,
-      els.exportFromPageInput && els.exportFromPageInput.value,
-      els.exportToPageInput && els.exportToPageInput.value
-    );
-    const { start, end } = selection;
-    els.exportFromPageInput.value = String(start);
-    els.exportToPageInput.value = String(end);
-    return selection;
+    return appPageExport.readExportPageSelection(pages);
   }
 
   function currentExportRenderOptions() {
-    return getExportRenderOptionsInDomain({
-      includeBackground: state.exportIncludeBackground,
-      includeVideo: state.exportIncludeVideo,
-      includeMargins: state.exportIncludeMargins,
-    }, state.referenceVideo);
+    return appPageExport.currentExportRenderOptions();
   }
 
   function currentVideoTimeForPage(page) {
-    const plan = getPreviewAnimationPlan();
-    if (!plan || !page) return null;
-    return videoTimeForPage(plan, page, getCurrentPhysicalPages());
-  }
-
-  async function drawExportBackground(ctx, layout, options = {}) {
-    if (options.includeBackground) {
-      ctx.fillStyle = layout.page_background || '#ffffff';
-      ctx.fillRect(0, 0, layout.page_width, layout.page_height);
+    return appPageExport.currentVideoTimeForPage(page);
     }
-    const videoTime = Number(options.videoTime);
-    if (options.includeVideo && Number.isFinite(videoTime) && videoTime >= 0) {
-      await drawReferenceVideoFrame(ctx, layout, videoTime);
-    }
-  }
 
   async function drawReferenceVideoFrame(ctx, layout, time) {
     await drawReferenceVideoFrameInPreview(ctx, layout, time);
@@ -3021,20 +2841,7 @@
   }
 
   async function renderPageToPngBlob(page, layout, options = {}) {
-    const canvas = document.createElement('canvas');
-    canvas.width = layout.page_width;
-    canvas.height = layout.page_height;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    await drawExportBackground(ctx, layout, options);
-    await drawCanvasPage(ctx, page, layout);
-    if (options.includeMargins) drawCanvasMarginOverlay(ctx, layoutForCartela(layout, page && page.cartela), 1);
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error('No se pudo crear el PNG.'));
-      }, 'image/png');
-    });
+    return appPageExport.renderPageToPngBlob(page, layout, options);
   }
 
   async function drawCanvasPage(ctx, page, layout) {
