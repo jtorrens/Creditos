@@ -550,21 +550,23 @@
   } = timelineDomain;
   const domPreview = globalThis.CreditosPreviewDom.createDomPreview({
     applyTypography,
+    cartelaBlockTitleGap,
     cartelaImages,
     contentAreaRect,
+    creditSourceId,
     documentRef: document,
     normalizeBoolean,
     roleNameGapForOrientation,
     transformCartelaText,
+    unitGapBefore,
+    unitRenderOptions,
   });
   const {
     applyTextWrapStyle: applyTextWrapStyleInPreview,
     makeMarginOverlay: makeMarginOverlayInPreview,
     makePdfCartelaImages,
-    makePdfOptionalTitle: makePdfOptionalTitleInPreview,
     makePdfPageTitle: makePdfPageTitleInPreview,
-    renderPdfTheme: renderPdfThemeInPreview,
-    renderPdfUnit: renderPdfUnitInPreview,
+    renderPdfBlock: renderPdfBlockInPreview,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -5850,63 +5852,7 @@
   }
 
   function renderPdfBlock(block, cartela, layout, options = {}) {
-    const blockEl = document.createElement('div');
-    blockEl.className = 'pdf-block';
-    if (block.missing_source) {
-      blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
-      return blockEl;
-    }
-
-    const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela, block.typography, options);
-    const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
-    if (blockTitle) {
-      if (units.length) blockTitle.style.marginBottom = `${cartelaBlockTitleGap(cartela, layout)}px`;
-      blockEl.appendChild(blockTitle);
-    }
-
-    const contentEl = document.createElement('div');
-    contentEl.className = 'pdf-block-content';
-    contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
-    contentEl.style.columnGap = `${layout.column_gap}px`;
-    contentEl.style.rowGap = '0';
-
-    let previousCreditSourceId = null;
-    units.forEach((unit, index) => {
-      const unitOptions = {
-        ...options,
-        ...unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]),
-      };
-      const gapBefore = unitGapBefore(unitOptions, layout);
-      if (block.type === 'music_licenses' && unit.lines) {
-        unitOptions.gapBefore = gapBefore;
-        contentEl.appendChild(renderPdfTheme(unit, block, cartela, layout, unitOptions));
-      } else {
-        unitOptions.gapBefore = gapBefore;
-        contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, unitOptions));
-        previousCreditSourceId = creditSourceId(unit);
-      }
-    });
-
-    blockEl.appendChild(contentEl);
-    return blockEl;
-  }
-
-  function makePdfOptionalTitle(value, className, styleKey, cartela, typography, options = {}) {
-    return makePdfOptionalTitleInPreview(value, className, styleKey, cartela, typography, {
-      ...options,
-      settings: options.settings || getProductionSettings(),
-    });
-  }
-
-  function renderPdfTheme(theme, block, cartela, layout, options = {}) {
-    return renderPdfThemeInPreview(theme, block, cartela, layout, {
-      ...options,
-      settings: options.settings || getProductionSettings(),
-    });
-  }
-
-  function renderPdfUnit(unit, block, cartela, layout, options = {}) {
-    return renderPdfUnitInPreview(unit, block, cartela, layout, {
+    return renderPdfBlockInPreview(block, cartela, layout, {
       ...options,
       settings: options.settings || getProductionSettings(),
     });

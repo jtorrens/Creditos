@@ -2,12 +2,16 @@
   function createDomPreview(dependencies = {}) {
     const {
       applyTypography = () => {},
+      cartelaBlockTitleGap = () => 0,
       cartelaImages = () => [],
       contentAreaRect = () => ({ x: 0, y: 0, width: 0, height: 0 }),
+      creditSourceId = () => null,
       documentRef = root.document,
       normalizeBoolean = (value, fallback) => value === undefined ? fallback : Boolean(value),
       roleNameGapForOrientation = (layout) => layout.role_name_gap,
       transformCartelaText = (text) => text,
+      unitGapBefore = () => 0,
+      unitRenderOptions = () => ({}),
     } = dependencies;
 
     function makeMarginOverlay(layout, zoom = 1) {
@@ -190,6 +194,48 @@
       });
     }
 
+    function renderPdfBlock(block, cartela, layout, options = {}) {
+      const blockEl = documentRef.createElement('div');
+      blockEl.className = 'pdf-block';
+      if (block.missing_source) {
+        blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
+        return blockEl;
+      }
+
+      const blockTitle = makePdfOptionalTitle(block.title, 'pdf-block-title', 'block_title', cartela, block.typography, options);
+      const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      if (blockTitle) {
+        if (units.length) blockTitle.style.marginBottom = `${cartelaBlockTitleGap(cartela, layout)}px`;
+        blockEl.appendChild(blockTitle);
+      }
+
+      const contentEl = documentRef.createElement('div');
+      contentEl.className = 'pdf-block-content';
+      contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
+      contentEl.style.columnGap = `${layout.column_gap}px`;
+      contentEl.style.rowGap = '0';
+
+      let previousCreditSourceId = null;
+      units.forEach((unit, index) => {
+        const unitOptions = {
+          ...options,
+          ...unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]),
+        };
+        const gapBefore = unitGapBefore(unitOptions, layout);
+        if (block.type === 'music_licenses' && unit.lines) {
+          unitOptions.gapBefore = gapBefore;
+          contentEl.appendChild(renderPdfTheme(unit, block, cartela, layout, unitOptions));
+        } else {
+          unitOptions.gapBefore = gapBefore;
+          contentEl.appendChild(renderPdfUnit(unit, block, cartela, layout, unitOptions));
+          previousCreditSourceId = creditSourceId(unit);
+        }
+      });
+
+      blockEl.appendChild(contentEl);
+      return blockEl;
+    }
+
     return {
       applyTextWrapStyle,
       makeMarginOverlay,
@@ -197,6 +243,7 @@
       makePdfOptionalTitle,
       makePdfPageTitle,
       makePdfText,
+      renderPdfBlock,
       renderPdfTheme,
       renderPdfUnit,
     };
