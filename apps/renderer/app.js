@@ -796,6 +796,18 @@
     localNumberRow,
     localSelectRow,
   } = appFormRows;
+  const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
+    fitPreviewZoom,
+    getPngPreviewZoom: () => state.pngPreviewZoom,
+    getProductionSettings,
+    makeMarginOverlayInPreview,
+    makePdfSheetElementInPreview,
+  });
+  const {
+    makeMarginOverlay: makeMarginOverlayFromPreviewRender,
+    makePdfSheetElement: makePdfSheetElementFromPreviewRender,
+    previewZoomForContainer: previewZoomForContainerFromPreviewRender,
+  } = appPreviewRender;
   const settingsPanel = globalThis.CreditosSettingsPanel.createSettingsPanel({
     boolSelectValue,
     currentMovieFps,
@@ -921,6 +933,21 @@
     },
     selectedEpisode,
     state,
+  });
+  const cartelaPreviewPanel = globalThis.CreditosCartelaPreviewPanel.createCartelaPreviewPanel({
+    documentRef: document,
+    els,
+    getCurrentPhysicalPages,
+    getPreviewAnimationPlan,
+    getRenderLayout,
+    getSelectedCartela,
+    layoutForCartela,
+    makeMarginOverlay,
+    makePdfSheetElement,
+    makeReferenceVideoElement,
+    previewZoomForContainer,
+    state,
+    updatePanelMarginButtons,
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
     buildPhysicalPages,
@@ -1483,6 +1510,10 @@
 
   function renderStylePreview(style) {
     return stylesPanel.renderStylePreview(style);
+  }
+
+  function renderCartelaPreview() {
+    return cartelaPreviewPanel.renderCartelaPreview();
   }
 
   function updateStyleName(style, name) {
@@ -2858,59 +2889,20 @@
     renderPreviewAnimationFrame();
   }
 
-  function renderCartelaPreview() {
-    if (!els.cartelaPreview) return;
-    els.cartelaPreview.innerHTML = '';
-    const cartela = getSelectedCartela();
-    if (!state.render || !state.structure || !cartela) {
-      els.cartelaPreview.className = 'cartela-preview empty-state';
-      els.cartelaPreview.textContent = 'Selecciona una cartela.';
-      return;
-    }
-    const layout = getRenderLayout();
-    const pages = getCurrentPhysicalPages();
-    const page = pages.find((candidate) => candidate.cartela && candidate.cartela.id === cartela.id);
-    if (!page) {
-      els.cartelaPreview.className = 'cartela-preview empty-state';
-      els.cartelaPreview.textContent = 'Sin página activa.';
-      return;
-    }
-    els.cartelaPreview.className = 'cartela-preview';
-    const zoom = previewZoomForContainer(els.cartelaPreview, layout);
-    const frame = document.createElement('div');
-    frame.className = 'png-preview-frame';
-    frame.style.width = `${layout.page_width * zoom}px`;
-    frame.style.height = `${layout.page_height * zoom}px`;
-    const plan = getPreviewAnimationPlan();
-    const video = state.showCartelaReferenceVideo && plan ? makeReferenceVideoElement(plan, zoom) : null;
-    if (video) frame.appendChild(video);
-    const sheet = makePdfSheetElement(page, layout, { transparent: !!video });
-    sheet.style.transform = `scale(${zoom})`;
-    frame.appendChild(sheet);
-    if (state.showPanelMarginOverlay) frame.appendChild(makeMarginOverlay(layoutForCartela(layout, page.cartela), zoom));
-    els.cartelaPreview.appendChild(frame);
-    updatePanelMarginButtons();
-  }
-
   function previewZoomForContainer(container, layout) {
-    const availableWidth = Math.max(120, (container && container.clientWidth ? container.clientWidth : 360) - 24);
-    const availableHeight = Math.max(120, (container && container.clientHeight ? container.clientHeight : 260) - 24);
-    return fitPreviewZoom(availableWidth, availableHeight, layout.page_width, layout.page_height);
-  }
-
-  function makeMarginOverlay(layout, zoom = state.pngPreviewZoom) {
-    return makeMarginOverlayInPreview(layout, zoom);
+    return previewZoomForContainerFromPreviewRender(container, layout);
   }
 
   function drawCanvasMarginOverlay(ctx, layout, zoom = state.pngPreviewZoom) {
     drawCanvasMarginOverlayInPreview(ctx, layout, zoom);
   }
 
+  function makeMarginOverlay(layout, zoom = state.pngPreviewZoom) {
+    return makeMarginOverlayFromPreviewRender(layout, zoom);
+  }
+
   function makePdfSheetElement(page, layout, options = {}) {
-    return makePdfSheetElementInPreview(page, layout, {
-      ...options,
-      settings: options.settings || getProductionSettings(),
-    });
+    return makePdfSheetElementFromPreviewRender(page, layout, options);
   }
 
   function getCurrentPhysicalPages() {
