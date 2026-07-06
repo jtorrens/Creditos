@@ -635,6 +635,18 @@
     makeReferenceVideoElement: makeReferenceVideoElementInPreview,
     referenceVideoForCanvas: referenceVideoForCanvasInPreview,
   } = referenceVideoPreview;
+  const frameSequenceExport = globalThis.CreditosExportFrameSequence.createFrameSequenceExport({
+    onCancelAvailable: (cancelHandler) => {
+      if (state.movExportProgress) state.movExportProgress.setCancelHandler(cancelHandler);
+    },
+    onEncoding: () => {
+      if (state.movExportProgress) state.movExportProgress.setPhase('Codificando MOV...');
+    },
+    throwIfCancelled: throwIfMovExportCancelled,
+  });
+  const {
+    exportMovFramesIncrementally,
+  } = frameSequenceExport;
   const fieldControlRegistry = globalThis.CreditosFieldControlRegistry.createFieldControlRegistry();
   fieldControlRegistry.register('text', globalThis.CreditosTextFieldControl.createTextFieldControl({
     documentRef: document,
@@ -4624,47 +4636,6 @@
     const error = new Error('Exportación cancelada.');
     error.name = 'AbortError';
     throw error;
-  }
-
-  async function exportMovFramesIncrementally(native, filePath, fps, encodingProfile, writeFrames) {
-    if (!native.startMovExport || !native.addMovFrame || !native.finishMovExport) {
-      const pages = [];
-      await writeFrames(async ({ bytes, frameCount }) => {
-        pages.push({
-          pageNumber: pages.length + 1,
-          duration: 1 / fps,
-          frameCount,
-          bytes,
-        });
-      });
-      return native.exportMovSequence({ filePath, fps, encodingProfile, pages });
-    }
-
-    const session = await native.startMovExport({ filePath, fps, encodingProfile });
-    if (state.movExportProgress) {
-      state.movExportProgress.setCancelHandler(() => native.cancelMovExport({ exportId: session.exportId }));
-    }
-    try {
-      await writeFrames(async ({ bytes, frameCount }) => {
-        await native.addMovFrame({
-          exportId: session.exportId,
-          bytes,
-          frameCount,
-        });
-      });
-      throwIfMovExportCancelled();
-      if (state.movExportProgress) state.movExportProgress.setPhase('Codificando MOV...');
-      return await native.finishMovExport({ exportId: session.exportId });
-    } catch (error) {
-      if (native.cancelMovExport) {
-        try {
-          await native.cancelMovExport({ exportId: session.exportId });
-        } catch (_cancelError) {
-          // Best effort cleanup; the original error is more useful to report.
-        }
-      }
-      throw error;
-    }
   }
 
   async function exportScrollMovSequence({ native, filePath, fps, layout, encodingProfile, renderOptions = {} }) {
