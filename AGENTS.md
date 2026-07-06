@@ -35,7 +35,7 @@ py apps\renderer\server.py
 Refactor safety checks:
 
 ```bash
-python3 -m py_compile apps/renderer/server.py apps/renderer/import_models/*.py scripts/check_import_models.py
+python3 -m py_compile apps/renderer/server.py apps/renderer/import_models/*.py apps/renderer/import_models/common/*.py scripts/check_import_models.py scripts/check_parser_golden.py
 python3 scripts/check_import_models.py
 python3 scripts/check_parser_golden.py
 ```

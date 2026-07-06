@@ -40,7 +40,6 @@ def main():
     sys.path.insert(0, str(PACKAGE_ROOT))
     registry = importlib.import_module("import_models.registry")
     errors = []
-    warnings = []
 
     if not registry.IMPORT_MODELS:
         errors.append("registry.IMPORT_MODELS is empty")
@@ -76,12 +75,10 @@ def main():
     for path in concrete_model_paths:
         imported = module_imports_concrete_model(path, concrete_model_names - {path.stem})
         if imported:
-            warnings.append(
+            errors.append(
                 f"{path.relative_to(REPO_ROOT)} imports concrete model(s): {', '.join(imported)}"
             )
 
-    for warning in warnings:
-        print(f"WARNING: {warning}", file=sys.stderr)
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
 

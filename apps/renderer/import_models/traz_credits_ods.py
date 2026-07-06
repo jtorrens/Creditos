@@ -1,13 +1,9 @@
 import zipfile
 from io import BytesIO
 
-from .standard_credits_xls import (
-    append_card_item,
-    new_block,
-    normalize_trailing_closing_copy,
-    parse_crew_row,
-    read_ods_workbook,
-)
+from .common.credit_blocks import append_card_item, new_block
+from .common.crew_rules import normalize_trailing_closing_copy, parse_crew_row
+from .common.spreadsheet_readers import read_ods_workbook
 
 
 def stable_group(prefix, title, seen):
