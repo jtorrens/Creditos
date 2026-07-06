@@ -100,6 +100,13 @@ MOVED_DOMAIN_FUNCTIONS = [
     "layoutForCartela",
     "numberWithFallback",
     "contentAreaRect",
+    "buildScrollPlan",
+    "buildScrollItems",
+    "scrollGapAfterItem",
+    "buildScrollItem",
+    "scrollBlocksForPages",
+    "scrollBlockHasVisibleText",
+    "scrollUnitHasVisibleText",
 ]
 
 
