@@ -1009,6 +1009,22 @@
     state,
     windowRef: window,
   });
+  const appEditableInputs = globalThis.CreditosAppEditableInputs.createAppEditableInputs({
+    buildCurrentRenderJson,
+    documentRef: document,
+    fieldControlRegistry,
+    fontWeightFromStyle,
+    getEffectiveCartela,
+    getProductionSettings,
+    getSelectedCartela,
+    normalizeBoolean,
+    normalizeSettings,
+    renderPreview,
+    resolveOverride,
+    setEditableOverride,
+    state,
+    windowRef: window,
+  });
   const appVisualPreview = globalThis.CreditosAppVisualPreview.createAppVisualPreview({
     applyTextWrapStyle,
     applyTypography,
@@ -1954,80 +1970,19 @@
   }
 
   function inputRow(label, refId, field, fallback, options) {
-    const row = document.createElement('div');
-    row.className = 'field-grid';
-    const labelEl = document.createElement('label');
-    labelEl.textContent = label;
-    row.appendChild(labelEl);
-    row.appendChild(makeInput(refId, field, fallback, options));
-    return row;
-  }
-
-  function makeInput(refId, field, fallback, options) {
-    const opts = options || {};
-    const current = resolveOverride(state.structure.overrides || {}, refId, field, fallback);
-    const input = fieldControlRegistry.create('text', {
-      value: Array.isArray(current) ? current.join('\n') : (current || ''),
-      multiline: opts.multiline,
-      rows: opts.multiline ? 1 : undefined,
-      spellcheck: opts.multiline ? false : undefined,
-      onInput: (rawValue, control) => {
-        if (opts.multiline) resizeMultilineInput(control);
-        const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
-        const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
-        setEditableOverride(refId, field, parsedValue, parsedFallback);
-        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-        renderPreview();
-      },
-    });
-    if (opts.multiline) window.requestAnimationFrame(() => resizeMultilineInput(input));
-    return input;
+    return appEditableInputs.inputRow(label, refId, field, fallback, options);
   }
 
   function makePreviewInput(refId, field, fallback, className) {
-    const input = makeInput(refId, field, fallback, { multiline: true });
-    input.classList.add('preview-input', className);
-    configureTextWrapInput(input, normalizeBoolean(getEffectiveCartela(getSelectedCartela() || {}).auto_text_wrap, false));
-    return input;
+    return appEditableInputs.makePreviewInput(refId, field, fallback, className);
   }
 
   function makeVisualInput(refId, field, fallback, className, options = {}) {
-    const input = makeInput(refId, field, fallback, { multiline: true });
-    input.classList.add('visual-input', className);
-    input.setAttribute('aria-label', field);
-    if (options.styleKey) applyTypography(input, options.styleKey, options);
-    if (options.textAlign) input.style.textAlign = options.textAlign;
-    configureTextWrapInput(input, normalizeBoolean(options.autoWrap, false));
-    window.requestAnimationFrame(() => resizeMultilineInput(input));
-    return input;
-  }
-
-  function configureTextWrapInput(input, autoWrap) {
-    input.wrap = autoWrap ? 'soft' : 'off';
-    input.style.whiteSpace = autoWrap ? 'pre-wrap' : 'pre';
-    input.style.overflowWrap = autoWrap ? 'break-word' : 'normal';
-  }
-
-  function resizeMultilineInput(input) {
-    if (!input || input.tagName !== 'TEXTAREA') return;
-    input.style.height = 'auto';
-    input.style.height = `${Math.max(input.scrollHeight, 30)}px`;
+    return appEditableInputs.makeVisualInput(refId, field, fallback, className, options);
   }
 
   function applyTypography(element, key, options = {}) {
-    const settings = normalizeSettings(options.settings || getProductionSettings());
-    const typography = {
-      ...settings.typography[key],
-      ...((options.typography && options.typography[key]) || {}),
-    };
-    const scale = Number(options.multiplier) || 1;
-    const lineScale = Number(options.lineMultiplier) || 1;
-    element.style.fontFamily = typography.font_family;
-    element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
-    element.style.lineHeight = String(settings.layout.line_spacing * lineScale);
-    element.style.fontWeight = fontWeightFromStyle(typography.font_style);
-    element.style.fontStyle = /italic|oblique/i.test(typography.font_style || '') ? 'italic' : 'normal';
-    element.style.color = typography.color;
+    return appEditableInputs.applyTypography(element, key, options);
   }
 
   function getRenderLayout() {
