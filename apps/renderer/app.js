@@ -825,9 +825,15 @@
   });
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
     buildCurrentRenderJson,
+    deleteManualCartela,
+    getSelectedCartela,
     getProductionSettings,
+    insertManualCartela,
+    moveCartelaVisualOrderInStructure,
     persistSelectedProductionFields,
     refreshPdfIfActive,
+    rebuild,
+    renderCartelaList,
     renderEditor,
     renderPreview,
     renderSettings,
@@ -836,6 +842,7 @@
     setSelectedProductionLocalFields,
     state,
     stripProductionLayoutFromSettings,
+    windowRef: window,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
     currentProductionEpisodes,
@@ -2528,32 +2535,15 @@
   }
 
   function addEmptyCartela() {
-    if (!state.structure) return;
-    const cartela = insertManualCartela(state.structure.cartelas, state.selectedCartelaId);
-    if (!cartela) return;
-    state.selectedCartelaId = cartela.id;
-    rebuild();
+    return appCommands.addEmptyCartela();
   }
 
   function deleteSelectedManualCartela() {
-    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
-    const cartela = getSelectedCartela();
-    if (!cartela || !cartela.manual) return;
-    const confirmed = window.confirm('Eliminar esta cartela manual?');
-    if (!confirmed) return;
-    const result = deleteManualCartela(state.structure.cartelas, cartela.id);
-    if (!result.deleted) return;
-    state.selectedCartelaId = result.nextCartelaId;
-    rebuild();
+    return appCommands.deleteSelectedManualCartela();
   }
 
   function moveSelectedCartelaVisualOrder(cartelaId, delta) {
-    if (!state.structure || !Array.isArray(state.structure.cartelas)) return;
-    if (!moveCartelaVisualOrderInStructure(state.structure.cartelas, cartelaId, delta)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderCartelaList();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.moveSelectedCartelaVisualOrder(cartelaId, delta);
   }
 
   function updateSelectedCartela(fields) {
