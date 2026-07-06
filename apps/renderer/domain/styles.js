@@ -178,6 +178,65 @@
       };
     }
 
+    function explicitCartelaTitleTypography(rawTypography, upperTypography = {}) {
+      const output = {};
+      const normalized = normalizeTitleTypographyOverrides(rawTypography);
+      const value = normalized.page_header || {};
+      Object.keys(value).forEach((key) => {
+        if (sameStyleValue(value[key], upperTypography && upperTypography[key])) return;
+        output.page_header = output.page_header || {};
+        output.page_header[key] = clonePlainValue(value[key]);
+      });
+      return output;
+    }
+
+    function explicitCartelaBlockStyle(rawBlockStyle, upperBlockStyle = {}) {
+      const output = {};
+      if (!rawBlockStyle) return output;
+      const normalized = sanitizeStyleBlockOverrides(rawBlockStyle);
+      if (Object.prototype.hasOwnProperty.call(rawBlockStyle, 'columns') && !sameStyleValue(normalized.columns, upperBlockStyle.columns)) {
+        output.columns = normalized.columns;
+      }
+      if (Object.prototype.hasOwnProperty.call(rawBlockStyle, 'vertical_align') && !sameStyleValue(normalized.vertical_align, upperBlockStyle.vertical_align)) {
+        output.vertical_align = normalized.vertical_align;
+      }
+      Object.keys(normalized.alignment || {}).forEach((key) => {
+        if (sameStyleValue(normalized.alignment[key], upperBlockStyle.alignment && upperBlockStyle.alignment[key])) return;
+        output.alignment = output.alignment || {};
+        output.alignment[key] = normalized.alignment[key];
+      });
+      Object.keys(normalized.typography || {}).forEach((key) => {
+        if (sameStyleValue(normalized.typography[key], upperBlockStyle.typography && upperBlockStyle.typography[key])) return;
+        output.typography = output.typography || {};
+        output.typography[key] = clonePlainValue(normalized.typography[key]);
+      });
+      return output;
+    }
+
+    function explicitSourceRefSettings(rawSettings, upperBlockStyle = {}) {
+      const output = {};
+      if (!rawSettings) return output;
+      const normalized = normalizeStyleBlock(rawSettings);
+      if (Object.prototype.hasOwnProperty.call(rawSettings, 'columns') && !sameStyleValue(normalized.columns, upperBlockStyle.columns)) {
+        output.columns = normalized.columns;
+      }
+      if (Object.prototype.hasOwnProperty.call(rawSettings, 'vertical_align') && !sameStyleValue(normalized.vertical_align, upperBlockStyle.vertical_align)) {
+        output.vertical_align = normalized.vertical_align;
+      }
+      Object.keys(rawSettings.alignment || {}).forEach((key) => {
+        const value = normalized.alignment[key];
+        if (sameStyleValue(value, upperBlockStyle.alignment && upperBlockStyle.alignment[key])) return;
+        output.alignment = output.alignment || {};
+        output.alignment[key] = value;
+      });
+      Object.keys(normalized.typography || {}).forEach((key) => {
+        if (sameStyleValue(normalized.typography[key], upperBlockStyle.typography && upperBlockStyle.typography[key])) return;
+        output.typography = output.typography || {};
+        output.typography[key] = clonePlainValue(normalized.typography[key]);
+      });
+      return output;
+    }
+
     function normalizeTypographyOverrides(typography) {
       const normalized = {};
       blockTypographyFields.forEach(([key]) => {
@@ -238,6 +297,10 @@
 
     return {
       baseStyleCartelaFromSettings,
+      clonePlainValue,
+      explicitCartelaBlockStyle,
+      explicitCartelaTitleTypography,
+      explicitSourceRefSettings,
       getEffectiveCartelaTitleTypography,
       getEffectiveStyleBlock,
       getEffectiveStyleCartela,
@@ -262,7 +325,13 @@
     return JSON.stringify(a) === JSON.stringify(b);
   }
 
+  function clonePlainValue(value) {
+    if (value === undefined) return undefined;
+    return JSON.parse(JSON.stringify(value));
+  }
+
   root.CreditosDomainStyles = {
+    clonePlainValue,
     createStyleDomain,
     sameStyleValue,
   };

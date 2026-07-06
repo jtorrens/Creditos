@@ -81,6 +81,10 @@ MOVED_DOMAIN_FUNCTIONS = [
     "defaultBlockAlignment",
     "materialHasPairedText",
     "normalizeVerticalAlign",
+    "explicitCartelaTitleTypography",
+    "explicitCartelaBlockStyle",
+    "explicitSourceRefSettings",
+    "clonePlainValue",
 ]
 
 
