@@ -87,6 +87,16 @@ MOVED_DOMAIN_FUNCTIONS = [
     "explicitCartelaBlockStyle",
     "explicitSourceRefSettings",
     "clonePlainValue",
+    "formatScrollSpeed",
+    "scrollItemExitOffset",
+    "scrollItemNormalOffset",
+    "scrollItemEnterOffset",
+    "buildIntegerScrollPhase",
+    "scrollOffsetForFrame",
+    "scrollOffsetForPhaseFrame",
+    "scrollItemIntersectsClip",
+    "scrollFullAreaItemClip",
+    "scrollClipRect",
 ]
 
 
