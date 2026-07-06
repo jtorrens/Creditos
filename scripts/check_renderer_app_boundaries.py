@@ -48,6 +48,10 @@ MOVED_DOMAIN_FUNCTIONS = [
     "flattenRenderedItems",
     "groupMusicLicenseThemes",
     "renderItem",
+    "defaultPreviewSettings",
+    "normalizePreviewSettings",
+    "normalizeRenderCodec",
+    "normalizeRenderProfile",
 ]
 
 
