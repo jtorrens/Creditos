@@ -159,6 +159,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "directoryFromPath",
     "joinPath",
     "styleNameFromFileName",
+    "safeStyleId",
     "pageForAnimationFrame",
     "pageIndexForAnimationFrame",
     "pageIndexById",

@@ -212,6 +212,7 @@
     normalizeEditableValue,
     normalizeText,
     safeFilePart,
+    safeStyleId,
     styleNameFromFileName,
   } = commonDomain;
   const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
@@ -2284,10 +2285,6 @@
 
   function getEffectiveStyleBlock(style) {
     return getEffectiveStyleBlockWithSettings(style, getProductionSettings());
-  }
-
-  function safeStyleId(value) {
-    return safeFilePart(String(value || 'estilo').toLowerCase().replace(/\s+/g, '_')) || `style_${Date.now()}`;
   }
 
   function getStyleById(styleId) {

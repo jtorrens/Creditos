@@ -57,6 +57,10 @@
         .trim() || fallback;
     }
 
+    function safeStyleId(value) {
+      return safeFilePart(String(value || 'estilo').toLowerCase().replace(/\s+/g, '_')) || `style_${Date.now()}`;
+    }
+
     return {
       clamp,
       directoryFromPath,
@@ -66,6 +70,7 @@
       normalizeEditableValue,
       normalizeText,
       safeFilePart,
+      safeStyleId,
       styleNameFromFileName,
     };
   }
