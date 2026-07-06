@@ -21,10 +21,24 @@
       return `"${String(family || 'Arial').replace(/"/g, '\\"')}"`;
     }
 
+    function dedupeFontStyles(styles) {
+      const byStyle = new Map();
+      (styles || []).forEach((fontStyle) => {
+        if (!byStyle.has(fontStyle.style)) byStyle.set(fontStyle.style, fontStyle);
+      });
+      return Array.from(byStyle.values()).sort((a, b) => a.style.localeCompare(b.style));
+    }
+
+    function styleFromFullName(fullName, family) {
+      return String(fullName || '').replace(String(family || ''), '').trim() || 'Regular';
+    }
+
     return {
+      dedupeFontStyles,
       fontStyleFromStyle,
       fontWeightFromStyle,
       quoteFontFamily,
+      styleFromFullName,
     };
   }
 

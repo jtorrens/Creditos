@@ -217,9 +217,11 @@
   } = commonDomain;
   const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
   const {
+    dedupeFontStyles,
     fontStyleFromStyle,
     fontWeightFromStyle,
     quoteFontFamily,
+    styleFromFullName,
   } = typographyDomain;
   const settingsDomain = globalThis.CreditosDomainSettings.createSettingsDomain({
     languageLocales: LANGUAGE_LOCALES,
@@ -2122,18 +2124,6 @@
   function getFontStyles(family) {
     const catalog = getFontCatalog();
     return catalog.stylesByFamily[family] || [{ style: 'Regular', postscript_name: '' }];
-  }
-
-  function dedupeFontStyles(styles) {
-    const byStyle = new Map();
-    styles.forEach((fontStyle) => {
-      if (!byStyle.has(fontStyle.style)) byStyle.set(fontStyle.style, fontStyle);
-    });
-    return Array.from(byStyle.values()).sort((a, b) => a.style.localeCompare(b.style));
-  }
-
-  function styleFromFullName(fullName, family) {
-    return String(fullName || '').replace(String(family || ''), '').trim() || 'Regular';
   }
 
   function loadStyleObjects(styleObjects) {
