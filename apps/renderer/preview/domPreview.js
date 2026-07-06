@@ -6,6 +6,7 @@
       contentAreaRect = () => ({ x: 0, y: 0, width: 0, height: 0 }),
       documentRef = root.document,
       normalizeBoolean = (value, fallback) => value === undefined ? fallback : Boolean(value),
+      roleNameGapForOrientation = (layout) => layout.role_name_gap,
       transformCartelaText = (text) => text,
     } = dependencies;
 
@@ -129,6 +130,66 @@
       return themeEl;
     }
 
+    function renderPdfUnit(unit, block, cartela, layout, options = {}) {
+      const orientation = cartela.orientation || 'horizontal';
+      const alignment = block.alignment || {};
+      const unitEl = documentRef.createElement('div');
+      unitEl.className = `pdf-unit ${orientation}`;
+      if (options.gapBefore) unitEl.style.marginTop = `${options.gapBefore}px`;
+      if (orientation === 'horizontal') {
+        unitEl.style.gap = `${layout.role_name_gap}px`;
+      } else {
+        unitEl.style.gap = `${roleNameGapForOrientation(layout, orientation)}px`;
+      }
+
+      if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
+        if (!options.repeatedNameRow) {
+          unitEl.appendChild(makePdfText(options.hideRole ? '' : unit.role || '', 'role', {
+            className: 'pdf-role',
+            cartela,
+            typography: block.typography,
+            textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
+            settings: options.settings,
+          }));
+        }
+        unitEl.appendChild(makePdfText(unit.name || '', 'name', {
+          className: 'pdf-name',
+          cartela,
+          typography: block.typography,
+          textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
+          settings: options.settings,
+        }));
+        return unitEl;
+      }
+
+      if (unit.kind === 'cast') {
+        unitEl.appendChild(makePdfText(unit.actor || '', 'role', {
+          className: 'pdf-role',
+          cartela,
+          typography: block.typography,
+          textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
+          settings: options.settings,
+        }));
+        unitEl.appendChild(makePdfText(unit.character || '', 'name', {
+          className: 'pdf-name',
+          cartela,
+          typography: block.typography,
+          textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
+          settings: options.settings,
+        }));
+        return unitEl;
+      }
+
+      return makePdfText(unit.title || unit.value || '', unit.title !== undefined ? 'block_title' : 'name', {
+        className: 'pdf-line',
+        cartela,
+        typography: block.typography,
+        textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
+        settings: options.settings,
+        textAlreadyTransformed: !!unit.text_already_transformed,
+      });
+    }
+
     return {
       applyTextWrapStyle,
       makeMarginOverlay,
@@ -137,6 +198,7 @@
       makePdfPageTitle,
       makePdfText,
       renderPdfTheme,
+      renderPdfUnit,
     };
   }
 
