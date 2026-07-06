@@ -101,12 +101,20 @@
       return row;
     }
 
+    function sectionLabel(text) {
+      const label = documentRef.createElement('div');
+      label.className = 'section-title';
+      label.textContent = text;
+      return label;
+    }
+
     return {
       localCheckboxRow,
       localDurationRow,
       localInputRow,
       localNumberRow,
       localSelectRow,
+      sectionLabel,
     };
   }
 

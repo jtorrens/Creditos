@@ -786,6 +786,7 @@
     localInputRow,
     localNumberRow,
     localSelectRow,
+    sectionLabel,
   } = appFormRows;
   const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
     buildPhysicalPages,
@@ -1785,13 +1786,6 @@
 
   function setEditableOverride(refId, field, value, fallback) {
     setOverrideInDomain(state.structure, refId, field, value, fallback);
-  }
-
-  function sectionLabel(text) {
-    const label = document.createElement('div');
-    label.className = 'section-title';
-    label.textContent = text;
-    return label;
   }
 
   function setPreview(kind) {
