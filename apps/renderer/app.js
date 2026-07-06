@@ -588,6 +588,10 @@
     pdfPageVerticalJustify,
     quoteFontFamily,
     roleNameGapForOrientation,
+    scrollClipRect,
+    scrollFullAreaItemClip,
+    scrollItemIntersectsClip,
+    scrollOffsetForFrame,
     unitGapBefore,
     unitRenderOptions,
     verticalOffset,
@@ -596,11 +600,9 @@
     canvasTextHeight: canvasTextHeightInPreview,
     canvasTextMetrics: canvasTextMetricsInPreview,
     canvasWrappedTextLines: canvasWrappedTextLinesInPreview,
-    drawCanvasBlock: drawCanvasBlockInPreview,
     drawCanvasMarginOverlay: drawCanvasMarginOverlayInPreview,
     drawCanvasPage: drawCanvasPageInPreview,
-    drawCanvasText: drawCanvasTextInPreview,
-    loadCanvasImage: loadCanvasImageInPreview,
+    drawCanvasScrollFrame: drawCanvasScrollFrameInPreview,
     measureCanvasBlock: measureCanvasBlockInPreview,
   } = canvasPreview;
   const referenceVideoPreview = globalThis.CreditosPreviewReferenceVideo.createReferenceVideoPreview({
@@ -4685,80 +4687,6 @@
     });
   }
 
-  async function drawCanvasScrollFrame(ctx, plan, frame, layout) {
-    const offset = scrollOffsetForFrame(plan, frame);
-    for (const item of plan.items) {
-      const y = Math.round(item.stackTop - offset);
-      const clip = scrollClipRect(item.layout);
-      if (!scrollItemIntersectsClip(item, y, clip)) continue;
-      const itemClip = item.fullAreaCartela ? scrollFullAreaItemClip(item, y, clip) : clip;
-      if (itemClip.height <= 0) continue;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(itemClip.x, itemClip.y, itemClip.width, itemClip.height);
-      ctx.clip();
-      await drawCanvasScrollItem(ctx, item, y);
-      ctx.restore();
-    }
-    drawCanvasScrollFade(ctx, layout);
-  }
-
-  function drawCanvasScrollFade(ctx, layout) {
-    const clip = scrollClipRect(layout);
-    const fadeUp = Math.min(clip.height, Math.max(0, Number(layout.scroll_fade_up) || 0));
-    const fadeDown = Math.min(clip.height, Math.max(0, Number(layout.scroll_fade_down) || 0));
-    if (!fadeUp && !fadeDown) return;
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-out';
-    if (fadeUp) {
-      const gradient = ctx.createLinearGradient(0, clip.y, 0, clip.y + fadeUp);
-      gradient.addColorStop(0, 'rgba(0,0,0,1)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(clip.x, clip.y, clip.width, fadeUp);
-    }
-    if (fadeDown) {
-      const gradient = ctx.createLinearGradient(0, clip.y + clip.height - fadeDown, 0, clip.y + clip.height);
-      gradient.addColorStop(0, 'rgba(0,0,0,0)');
-      gradient.addColorStop(1, 'rgba(0,0,0,1)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(clip.x, clip.y + clip.height - fadeDown, clip.width, fadeDown);
-    }
-    ctx.restore();
-  }
-
-  async function drawCanvasScrollItem(ctx, item, y) {
-    const layout = item.layout;
-    const cartela = item.cartela;
-    const x = Math.max(0, Number(layout.page_left_margin) || 0);
-    const width = Math.max(0, layout.page_width - x - (Number(layout.page_right_margin) || 0));
-    await drawCanvasScrollCartelaImages(ctx, item, y);
-    let cursorY = y;
-    if (item.title && item.titleMetrics) {
-      drawCanvasText(ctx, item.title, x, cursorY, width, item.titleMetrics, 'center');
-      cursorY += canvasTextHeight(item.title, item.titleMetrics, width) + (item.blocks.length ? item.blockGap : 0);
-    }
-    item.blocks.forEach((block, index) => {
-      drawCanvasBlock(ctx, block, cartela, layout, x, cursorY, width);
-      cursorY += item.blockHeights[index] + item.blockGap;
-    });
-  }
-
-  async function drawCanvasScrollCartelaImages(ctx, item, itemY) {
-    const area = contentAreaRect(item.layout);
-    for (const image of cartelaImages(item.cartela)) {
-      const bitmap = await loadCanvasImage(image.data_url);
-      const scale = Math.max(0.01, Number(image.scale) || 1);
-      const width = bitmap.naturalWidth * scale;
-      const height = bitmap.naturalHeight * scale;
-      const centerX = area.x + (area.width / 2) + (Number(image.offset_x) || 0);
-      const centerY = item.fullAreaCartela
-        ? itemY + (Math.max(1, Number(item.height) || 1) / 2) + (Number(image.offset_y) || 0)
-        : itemY + ((area.y + (area.height / 2) + (Number(image.offset_y) || 0)) - item.normalTop);
-      ctx.drawImage(bitmap, centerX - (width / 2), centerY - (height / 2), width, height);
-    }
-  }
-
   function changePdfPage(delta) {
     const total = state.render ? getCurrentPhysicalPages().length : 0;
     state.pdfPageIndex = Math.max(0, Math.min(total - 1, state.pdfPageIndex + delta));
@@ -5116,16 +5044,12 @@
     await drawCanvasPageInPreview(ctx, page, layout);
   }
 
-  function loadCanvasImage(src) {
-    return loadCanvasImageInPreview(src);
+  async function drawCanvasScrollFrame(ctx, plan, frame, layout) {
+    await drawCanvasScrollFrameInPreview(ctx, plan, frame, layout);
   }
 
   function measureCanvasBlock(ctx, block, cartela, layout, width) {
     return measureCanvasBlockInPreview(ctx, block, cartela, layout, width);
-  }
-
-  function drawCanvasBlock(ctx, block, cartela, layout, x, y, width) {
-    drawCanvasBlockInPreview(ctx, block, cartela, layout, x, y, width);
   }
 
   function canvasTextMetrics(styleKey, cartela, layout, typographyOverrides = {}) {
@@ -5138,10 +5062,6 @@
 
   function canvasWrappedTextLines(text, metrics, width = Infinity) {
     return canvasWrappedTextLinesInPreview(text, metrics, width);
-  }
-
-  function drawCanvasText(ctx, text, x, y, width, metrics, align) {
-    drawCanvasTextInPreview(ctx, text, x, y, width, metrics, align);
   }
 
   function downloadBlob(blob, fileName) {
