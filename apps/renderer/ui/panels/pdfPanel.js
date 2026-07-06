@@ -3,6 +3,33 @@
     const els = options.els;
     const state = options.state;
 
+    function renderPdfPreview() {
+      if (!state.render) {
+        els.pdfPreview.className = 'pdf-preview empty-state';
+        els.pdfPreview.textContent = 'Asocia un archivo de créditos para ver las páginas.';
+        updatePdfToolbar(0, 0);
+        return;
+      }
+
+      const pages = options.getCurrentPhysicalPages();
+      if (state.pdfPageIndex >= pages.length) state.pdfPageIndex = Math.max(0, pages.length - 1);
+      if (state.pdfPageIndex < 0) state.pdfPageIndex = 0;
+      const page = pages[state.pdfPageIndex];
+      updatePdfToolbar(state.pdfPageIndex + 1, pages.length);
+
+      els.pdfPreview.className = 'pdf-preview';
+      els.pdfPreview.innerHTML = '';
+
+      if (!page) {
+        els.pdfPreview.className = 'pdf-preview empty-state';
+        els.pdfPreview.textContent = 'No hay páginas activas.';
+        return;
+      }
+
+      options.renderPreviewAnimationFrame();
+      options.updatePngZoomStatus();
+    }
+
     function updatePdfToolbar(current, total) {
       if (!els.pdfPageNumberInput) return;
       const page = state.render ? options.getCurrentPhysicalPages()[state.pdfPageIndex] : null;
@@ -72,6 +99,7 @@
     }
 
     return {
+      renderPdfPreview,
       updatePdfToolbar,
     };
   }
