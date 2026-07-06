@@ -352,6 +352,7 @@
     hasStyleCartelaOverride,
     hasStyleTitleTypographyOverride,
     hasStyleTypographyOverride,
+    makeSampleStyleRender,
     normalizeCartelaStyle,
     normalizeTitleTypographyOverrides,
     normalizeTypographyOverrides,
@@ -2885,40 +2886,6 @@
     if (state.showPanelMarginOverlay) frame.appendChild(makeMarginOverlay(layoutForCartela(layout, page.cartela), zoom));
     els.stylePreview.appendChild(frame);
     updatePanelMarginButtons();
-  }
-
-  function makeSampleStyleRender(style) {
-    const cartela = {
-      id: 'style_preview',
-      title: style.name,
-      ...getEffectiveStyleCartela(style),
-      title_typography: getEffectiveStyleTitleTypography(style),
-      style_id: style.id,
-    };
-    const block = getEffectiveStyleBlock(style);
-    return {
-      cartelas: [{
-        ...cartela,
-        pages: [{
-          id: 'style_preview_page',
-          title: '',
-          blocks: [{
-            id: 'style_preview_block',
-            title: 'Dirección de producción',
-            type: 'credits',
-            columns: block.columns,
-            alignment: block.alignment,
-            vertical_align: block.vertical_align,
-            typography: block.typography,
-            items: [
-              { id: 'style_preview_unit_1', source_item_id: 'sample_1', kind: 'credit', role: 'Productora Ejecutiva', name: 'Nombre Apellido' },
-              { id: 'style_preview_unit_2', source_item_id: 'sample_2', kind: 'credit', role: 'Dirección de Producción', name: 'Nombre Apellido' },
-              { id: 'style_preview_unit_3', source_item_id: 'sample_3', kind: 'credit', role: 'Una producción de', name: 'Lorem Ipsum Studio' },
-            ],
-          }],
-        }],
-      }],
-    };
   }
 
   function renderEditor() {

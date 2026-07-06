@@ -196,6 +196,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "hasStyleTypographyOverride",
     "hasStyleTitleTypographyOverride",
     "uniqueStyleId",
+    "makeSampleStyleRender",
     "hasCartelaOverride",
     "hasCartelaBlockAlignmentOverride",
     "hasCartelaBlockTypographyOverride",
