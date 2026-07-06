@@ -34,6 +34,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "findPageWithRef",
     "ensureFirstPage",
     "moveMaterialToCartela",
+    "getCartelaDisplayName",
     "migrateStructure",
     "defaultCartelaForMaterial",
     "normalizeCartela",

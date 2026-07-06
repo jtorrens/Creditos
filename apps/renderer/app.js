@@ -388,6 +388,7 @@
     enforceUniqueMaterialRefs,
     ensureCartelaOrders,
     findPageWithRef,
+    getCartelaDisplayName,
     getCartelaRefs,
     getVisualCartelas,
     insertManualCartela,
@@ -2509,7 +2510,7 @@
 
       button.innerHTML = `
         <div class="block-group">${String(index + 1).padStart(2, '0')}</div>
-        <div class="block-name">${escapeHtml(getCartelaDisplayName(cartela, index))}</div>
+        <div class="block-name">${escapeHtml(getCartelaDisplayName(cartela, state.materials, index))}</div>
         <div class="block-meta">${cartela.enabled === false ? 'excluida · ' : ''}${style ? escapeHtml(style.name) + ' · ' : ''}${escapeHtml(effectiveCartela.orientation || 'horizontal')} · ${Number(effectiveCartela.columns) || 1} col · ${refs.length} bloque${refs.length === 1 ? '' : 's'}</div>
       `;
       const orderControls = document.createElement('div');
@@ -3126,7 +3127,7 @@
     const cartela = getSelectedCartela();
     if (!cartela) return;
 
-    els.editorTitle.textContent = getCartelaDisplayName(cartela);
+    els.editorTitle.textContent = getCartelaDisplayName(cartela, state.materials);
     els.editorKind.innerHTML = `<span class="tag cards">${escapeHtml(cartela.type || 'cartela')}</span>`;
     els.editorBody.className = 'editor-body preview-mode';
     els.editorBody.innerHTML = '';
@@ -4233,16 +4234,6 @@
   function getCartelaStyleBlock(cartela) {
     const style = getStyleById(cartela && cartela.style_id);
     return style ? getEffectiveStyleBlock(style) : null;
-  }
-
-  function getCartelaDisplayName(cartela, index = 0) {
-    if (cartela && cartela.manual && String(cartela.manual_name || '').trim()) return cartela.manual_name;
-    const refs = getCartelaRefs(cartela);
-    const titles = refs
-      .map((ref) => state.materials.find((material) => material.id === ref))
-      .filter(Boolean)
-      .map((material) => material.title || material.id);
-    return titles.length ? titles.join(' + ') : `Cartela ${index + 1}`;
   }
 
   function getSelectedBlockAlignment(ref, material) {

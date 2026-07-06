@@ -483,6 +483,16 @@
       return (cartela && cartela.pages || []).flatMap((page) => page.source_refs || []);
     }
 
+    function getCartelaDisplayName(cartela, materials, index = 0) {
+      if (cartela && cartela.manual && String(cartela.manual_name || '').trim()) return cartela.manual_name;
+      const materialById = new Map((materials || []).map((material) => [material.id, material]));
+      const titles = getCartelaRefs(cartela)
+        .map((ref) => materialById.get(ref))
+        .filter(Boolean)
+        .map((material) => material.title || material.id);
+      return titles.length ? titles.join(' + ') : `Cartela ${index + 1}`;
+    }
+
     function findPageWithRef(cartela, ref) {
       if (!cartela) return null;
       return (cartela.pages || []).find((page) => (page.source_refs || []).includes(ref)) || null;
@@ -538,6 +548,7 @@
       enforceUniqueMaterialRefs,
       ensureCartelaOrders,
       findPageWithRef,
+      getCartelaDisplayName,
       getCartelaRefs,
       getVisualCartelas,
       insertManualCartela,
