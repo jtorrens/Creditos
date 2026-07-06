@@ -2092,65 +2092,52 @@
       labelEl.textContent = label;
       row.appendChild(labelEl);
 
-      const sizeInput = document.createElement('input');
-      sizeInput.className = 'text-input compact-number-input';
-      sizeInput.type = 'number';
-      sizeInput.min = '1';
-      sizeInput.step = '1';
-      sizeInput.value = String(value.font_size);
-      sizeInput.addEventListener('change', () => updateTypographySetting(key, { font_size: Math.max(1, Number(sizeInput.value) || 1) }));
+      const sizeInput = fieldControlRegistry.create('number', {
+        value: value.font_size,
+        min: 1,
+        step: 1,
+        fallbackValue: 1,
+        onInput: (fontSize) => updateTypographySetting(key, { font_size: fontSize }),
+      });
       row.appendChild(sizeInput);
 
-      const fontSelect = document.createElement('select');
-      fontSelect.className = 'text-input font-family-select';
-      fontCatalog.families.forEach((font) => {
-        const option = document.createElement('option');
-        option.value = font;
-        option.textContent = font;
-        fontSelect.appendChild(option);
-      });
-      if (!fontCatalog.families.includes(value.font_family)) {
-        const option = document.createElement('option');
-        option.value = value.font_family;
-        option.textContent = value.font_family;
-        fontSelect.appendChild(option);
-      }
-      fontSelect.value = value.font_family;
-      fontSelect.addEventListener('change', () => {
-        const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
-        updateTypographySetting(key, {
-          font_family: fontSelect.value,
-          font_style: nextStyle.style,
-          font_postscript_name: nextStyle.postscript_name,
-        });
-        renderSettings();
+      const fontOptions = fontCatalog.families.map((font) => [font, font]);
+      if (!fontCatalog.families.includes(value.font_family)) fontOptions.push([value.font_family, value.font_family]);
+      const fontSelect = fieldControlRegistry.create('select', {
+        value: value.font_family,
+        className: 'text-input font-family-select',
+        options: fontOptions,
+        onInput: (fontFamily) => {
+          const nextStyle = getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
+          updateTypographySetting(key, {
+            font_family: fontFamily,
+            font_style: nextStyle.style,
+            font_postscript_name: nextStyle.postscript_name,
+          });
+          renderSettings();
+        },
       });
       row.appendChild(fontSelect);
 
-      const styleSelect = document.createElement('select');
-      styleSelect.className = 'text-input compact-select';
       const styles = getFontStyles(value.font_family);
-      styles.forEach((fontStyle) => {
-        const option = document.createElement('option');
-        option.value = fontStyle.style;
-        option.textContent = fontStyle.style;
-        option.dataset.postscriptName = fontStyle.postscript_name || '';
-        styleSelect.appendChild(option);
-      });
+      const styleOptions = styles.map((fontStyle) => [
+        fontStyle.style,
+        fontStyle.style,
+        { postscriptName: fontStyle.postscript_name || '' },
+      ]);
       if (!styles.some((fontStyle) => fontStyle.style === value.font_style)) {
-        const option = document.createElement('option');
-        option.value = value.font_style;
-        option.textContent = value.font_style;
-        option.dataset.postscriptName = value.font_postscript_name || '';
-        styleSelect.appendChild(option);
+        styleOptions.push([value.font_style, value.font_style, { postscriptName: value.font_postscript_name || '' }]);
       }
-      styleSelect.value = value.font_style;
-      styleSelect.addEventListener('change', () => {
-        const selected = styleSelect.selectedOptions[0];
-        updateTypographySetting(key, {
-          font_style: styleSelect.value,
-          font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
-        });
+      const styleSelect = fieldControlRegistry.create('select', {
+        value: value.font_style,
+        options: styleOptions,
+        onInput: (_fontStyle, select) => {
+          const selected = select.selectedOptions[0];
+          updateTypographySetting(key, {
+            font_style: select.value,
+            font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
+          });
+        },
       });
       row.appendChild(styleSelect);
 
