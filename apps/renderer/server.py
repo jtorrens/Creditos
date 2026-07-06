@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-import cgi
+from email import policy
+from email.parser import BytesParser
 import json
 import mimetypes
 import sys
@@ -109,11 +110,13 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_import_credit_source(self):
         try:
-            form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={"REQUEST_METHOD": "POST"})
-            uploaded = form["file"]
-            file_bytes = uploaded.file.read()
-            source_name = uploaded.filename or "uploaded_source"
-            import_model_id = form.getfirst("import_model_id") or DEFAULT_IMPORT_MODEL_ID
+            fields, files = self.read_multipart_form()
+            uploaded = files.get("file")
+            if not uploaded:
+                raise ValueError("No file uploaded.")
+            file_bytes = uploaded["content"]
+            source_name = uploaded["filename"] or "uploaded_source"
+            import_model_id = fields.get("import_model_id") or DEFAULT_IMPORT_MODEL_ID
             parsed = import_credit_source(file_bytes, source_name, import_model_id)
             self.send_json(200, parsed)
         except Exception as error:
@@ -216,6 +219,41 @@ class Handler(BaseHTTPRequestHandler):
         if not length:
             return {}
         return json.loads(self.rfile.read(length).decode("utf-8"))
+
+    def read_multipart_form(self):
+        content_type = self.headers.get("Content-Type", "")
+        if not content_type.lower().startswith("multipart/form-data"):
+            raise ValueError("Expected multipart/form-data.")
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        if not length:
+            raise ValueError("Empty multipart body.")
+
+        body = self.rfile.read(length)
+        message = BytesParser(policy=policy.default).parsebytes(
+            f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode("utf-8") + body
+        )
+        if not message.is_multipart():
+            raise ValueError("Invalid multipart body.")
+
+        fields = {}
+        files = {}
+        for part in message.iter_parts():
+            if part.get_content_disposition() != "form-data":
+                continue
+            name = part.get_param("name", header="content-disposition")
+            if not name:
+                continue
+            payload = part.get_payload(decode=True) or b""
+            filename = part.get_filename()
+            if filename is None:
+                charset = part.get_content_charset() or "utf-8"
+                fields[name] = payload.decode(charset, errors="replace")
+            else:
+                files[name] = {
+                    "content": payload,
+                    "filename": filename,
+                }
+        return fields, files
 
     def send_json(self, status, payload):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")

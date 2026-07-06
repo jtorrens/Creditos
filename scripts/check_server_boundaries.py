@@ -6,6 +6,8 @@ import sys
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 SERVER_PATH = REPO_ROOT / "apps" / "renderer" / "server.py"
 BANNED_PATTERNS = [
+    "import cgi",
+    "FieldStorage",
     "CREATE TABLE",
     "ALTER TABLE",
     "INSERT INTO",
