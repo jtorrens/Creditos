@@ -215,6 +215,37 @@
       return true;
     }
 
+    function insertManualCartela(cartelas, selectedCartelaId) {
+      if (!Array.isArray(cartelas)) return null;
+      const index = cartelas.length + 1;
+      const cartelaId = uniqueCartelaId(cartelas, index);
+      ensureCartelaOrders(cartelas);
+      const visualCartelas = getVisualCartelas(cartelas);
+      const selectedVisualIndex = visualCartelas.findIndex((cartela) => cartela.id === selectedCartelaId);
+      const nextVisualOrder = selectedVisualIndex >= 0 ? selectedVisualIndex + 2 : visualCartelas.length + 1;
+      visualCartelas.forEach((cartela) => {
+        if (Number(cartela.visual_order) >= nextVisualOrder) cartela.visual_order = Number(cartela.visual_order) + 1;
+      });
+      const cartela = {
+        id: cartelaId,
+        manual_name: `Cartela manual ${index}`,
+        title: '',
+        manual: true,
+        source_order: index,
+        visual_order: nextVisualOrder,
+        type: 'card',
+        duration: 4,
+        orientation: 'vertical',
+        columns: 1,
+        vertical_offset: 0,
+        enabled: true,
+        notes: '',
+        pages: [{ id: `${cartelaId}_page_001`, source_refs: [], source_ref_settings: {} }],
+      };
+      cartelas.push(cartela);
+      return cartela;
+    }
+
     function migrateStructure(structure) {
       if (!structure) return null;
       if (Array.isArray(structure.cartelas)) {
@@ -463,6 +494,7 @@
       ensureCartelaOrders,
       getCartelaRefs,
       getVisualCartelas,
+      insertManualCartela,
       migrateStructure,
       moveCartelaVisualOrder,
       normalizeCartelaImages,

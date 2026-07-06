@@ -29,6 +29,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "getVisualCartelas",
     "uniqueCartelaId",
     "moveCartelaVisualOrder",
+    "insertManualCartela",
     "migrateStructure",
     "defaultCartelaForMaterial",
     "normalizeCartela",

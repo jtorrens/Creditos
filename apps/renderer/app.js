@@ -385,13 +385,13 @@
     ensureCartelaOrders,
     getCartelaRefs,
     getVisualCartelas,
+    insertManualCartela,
     migrateStructure,
     moveCartelaVisualOrder: moveCartelaVisualOrderInStructure,
     normalizeCartelaImages,
     normalizeFrozenMaterial,
     normalizeVisualOrders,
     structureJsonForOutput,
-    uniqueCartelaId: uniqueCartelaIdFromStructure,
   } = structureDomain;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
@@ -3910,32 +3910,8 @@
 
   function addEmptyCartela() {
     if (!state.structure) return;
-    const index = state.structure.cartelas.length + 1;
-    const cartelaId = uniqueCartelaIdFromStructure(state.structure.cartelas, index);
-    ensureCartelaOrders(state.structure.cartelas);
-    const visualCartelas = getVisualCartelas(state.structure.cartelas);
-    const selectedVisualIndex = visualCartelas.findIndex((cartela) => cartela.id === state.selectedCartelaId);
-    const nextVisualOrder = selectedVisualIndex >= 0 ? selectedVisualIndex + 2 : visualCartelas.length + 1;
-    visualCartelas.forEach((cartela) => {
-      if (Number(cartela.visual_order) >= nextVisualOrder) cartela.visual_order = Number(cartela.visual_order) + 1;
-    });
-    const cartela = {
-      id: cartelaId,
-      manual_name: `Cartela manual ${index}`,
-      title: '',
-      manual: true,
-      source_order: index,
-      visual_order: nextVisualOrder,
-      type: 'card',
-      duration: 4,
-      orientation: 'vertical',
-      columns: 1,
-      vertical_offset: 0,
-      enabled: true,
-      notes: '',
-      pages: [{ id: `${cartelaId}_page_001`, source_refs: [], source_ref_settings: {} }],
-    };
-    state.structure.cartelas.push(cartela);
+    const cartela = insertManualCartela(state.structure.cartelas, state.selectedCartelaId);
+    if (!cartela) return;
     state.selectedCartelaId = cartela.id;
     rebuild();
   }
