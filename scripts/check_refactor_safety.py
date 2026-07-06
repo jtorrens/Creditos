@@ -14,9 +14,23 @@ CHECKS = [
     "check_native_boundaries.py",
     "check_branch_isolation.py",
 ]
+PY_COMPILE_FILES = [
+    REPO_ROOT / "apps" / "renderer" / "server.py",
+    *sorted((REPO_ROOT / "apps" / "renderer" / "server_db").glob("*.py")),
+    *sorted((REPO_ROOT / "apps" / "renderer" / "server_services").glob("*.py")),
+    *sorted((REPO_ROOT / "scripts").glob("check_*.py")),
+]
 
 
 def main():
+    compile_result = subprocess.run(
+        [sys.executable, "-m", "py_compile", *[str(path) for path in PY_COMPILE_FILES]],
+        cwd=str(REPO_ROOT),
+        check=False,
+    )
+    if compile_result.returncode != 0:
+        return compile_result.returncode
+
     for check in CHECKS:
         path = REPO_ROOT / "scripts" / check
         result = subprocess.run([sys.executable, str(path)], cwd=str(REPO_ROOT), check=False)
