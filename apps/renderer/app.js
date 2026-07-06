@@ -823,6 +823,20 @@
     updateTypographySetting,
     yesNoOptions: YES_NO_OPTIONS,
   });
+  const appCommands = globalThis.CreditosAppCommands.createAppCommands({
+    buildCurrentRenderJson,
+    getProductionSettings,
+    persistSelectedProductionFields,
+    refreshPdfIfActive,
+    renderEditor,
+    renderPreview,
+    renderSettings,
+    renderStylesPane,
+    selectedProduction,
+    setSelectedProductionLocalFields,
+    state,
+    stripProductionLayoutFromSettings,
+  });
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1555,51 +1569,15 @@
   }
 
   function updateTypographySetting(key, fields) {
-    if (!selectedProduction()) return;
-    const settings = getProductionSettings();
-    settings.typography[key] = {
-      ...settings.typography[key],
-      ...fields,
-    };
-    setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
-    persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
-    state.render = state.source ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateTypographySetting(key, fields);
   }
 
   function updateLayoutSetting(fields) {
-    if (!selectedProduction()) return;
-    const settings = getProductionSettings();
-    settings.layout = {
-      ...settings.layout,
-      ...fields,
-    };
-    setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
-    persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
-    state.render = state.source ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
-    renderStylesPane();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateLayoutSetting(fields);
   }
 
   function updateSettings(fields) {
-    if (!selectedProduction()) return;
-    const settings = {
-      ...getProductionSettings(),
-      ...fields,
-    };
-    setSelectedProductionLocalFields({ settings: stripProductionLayoutFromSettings(settings) });
-    persistSelectedProductionFields({ settings: selectedProduction().settings }).catch((error) => console.warn(error));
-    if (state.source) {
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    }
-    renderSettings();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSettings(fields);
   }
 
   async function associateCartelaImage() {
