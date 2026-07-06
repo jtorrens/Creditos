@@ -7,6 +7,8 @@ const path = require('path');
 const { spawn } = require('child_process');
 const appPackage = require('./package.json');
 
+const APP_DISPLAY_NAME = appPackage.productName || appPackage.name || 'Créditos Refactor';
+
 let mainWindow = null;
 let serverProcess = null;
 let preferenceWriteQueue = Promise.resolve();
@@ -224,7 +226,7 @@ async function createMainWindow() {
     y: Number.isFinite(Number(windowState.y)) ? Number(windowState.y) : undefined,
     minWidth: 1100,
     minHeight: 720,
-    title: 'Créditos',
+    title: APP_DISPLAY_NAME,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -602,7 +604,7 @@ async function finalizeMovExport(tempDir, outputPath, fps, encodingProfile = 'pr
 
 ipcMain.handle('creditos:get-app-info', async () => {
   return {
-    name: appPackage.productName || appPackage.name || 'Créditos',
+    name: APP_DISPLAY_NAME,
     version: appPackage.version || app.getVersion(),
     platform: process.platform,
     arch: process.arch,
@@ -843,7 +845,7 @@ ipcMain.handle('creditos:write-preference', async (_event, payload) => {
 
 app.whenReady().then(() => {
   createMainWindow().catch((error) => {
-    dialog.showErrorBox('No se pudo arrancar Créditos', error.message);
+    dialog.showErrorBox(`No se pudo arrancar ${APP_DISPLAY_NAME}`, error.message);
     app.quit();
   });
 });
@@ -857,6 +859,6 @@ app.on('before-quit', stopPythonServer);
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createMainWindow().catch((error) => dialog.showErrorBox('No se pudo abrir Créditos', error.message));
+    createMainWindow().catch((error) => dialog.showErrorBox(`No se pudo abrir ${APP_DISPLAY_NAME}`, error.message));
   }
 });
