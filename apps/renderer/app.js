@@ -838,10 +838,12 @@
     renderPreview,
     renderSettings,
     renderStylesPane,
+    resetCartelaOverrideInStructure,
     selectedProduction,
     setSelectedProductionLocalFields,
     state,
     stripProductionLayoutFromSettings,
+    updateCartelaInStructure,
     windowRef: window,
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
@@ -2547,23 +2549,11 @@
   }
 
   function updateSelectedCartela(fields) {
-    const cartela = getSelectedCartela();
-    if (!updateCartelaInStructure(cartela, fields)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderCartelaList();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.updateSelectedCartela(fields);
   }
 
   function resetSelectedCartelaOverride(key) {
-    const cartela = getSelectedCartela();
-    if (!resetCartelaOverrideInStructure(cartela, key)) return;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderCartelaList();
-    renderEditor();
-    renderPreview();
-    refreshPdfIfActive();
+    return appCommands.resetSelectedCartelaOverride(key);
   }
 
   function updateSelectedCartelaBlockStyle(fields) {

@@ -79,11 +79,33 @@
       options.refreshPdfIfActive();
     }
 
+    function updateSelectedCartela(fields) {
+      const cartela = options.getSelectedCartela();
+      if (!options.updateCartelaInStructure(cartela, fields)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderCartelaList();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetSelectedCartelaOverride(key) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaOverrideInStructure(cartela, key)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderCartelaList();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
     return {
       addEmptyCartela,
       deleteSelectedManualCartela,
       moveSelectedCartelaVisualOrder,
+      resetSelectedCartelaOverride,
       updateLayoutSetting,
+      updateSelectedCartela,
       updateSettings,
       updateTypographySetting,
     };
