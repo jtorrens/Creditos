@@ -58,6 +58,16 @@ MOVED_DOMAIN_FUNCTIONS = [
     "parseFrameDuration",
     "distributeFrames",
     "fitPageFrameCountsToTarget",
+    "explicitTextLines",
+    "explicitTextLineCount",
+    "unitRenderOptions",
+    "sourceBlankRowsBefore",
+    "sourceUnitStartRow",
+    "sourceUnitEndRow",
+    "sourceBlankRowCounts",
+    "creditSourceId",
+    "blockForTitleRepeat",
+    "countTitleLine",
 ]
 
 
