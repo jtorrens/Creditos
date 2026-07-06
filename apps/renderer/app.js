@@ -3884,23 +3884,19 @@
   function makeInput(refId, field, fallback, options) {
     const opts = options || {};
     const current = resolveOverride(state.structure.overrides || {}, refId, field, fallback);
-    const input = opts.multiline ? document.createElement('textarea') : document.createElement('input');
-    input.className = 'text-input';
-    input.value = Array.isArray(current) ? current.join('\n') : (current || '');
-    if (!opts.multiline) {
-      input.type = 'text';
-    } else {
-      input.rows = 1;
-      input.spellcheck = false;
-    }
-    input.addEventListener('input', () => {
-      if (opts.multiline) resizeMultilineInput(input);
-      const rawValue = input.value;
-      const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
-      const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
-      setEditableOverride(refId, field, parsedValue, parsedFallback);
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-      renderPreview();
+    const input = fieldControlRegistry.create('text', {
+      value: Array.isArray(current) ? current.join('\n') : (current || ''),
+      multiline: opts.multiline,
+      rows: opts.multiline ? 1 : undefined,
+      spellcheck: opts.multiline ? false : undefined,
+      onInput: (rawValue, control) => {
+        if (opts.multiline) resizeMultilineInput(control);
+        const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
+        const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
+        setEditableOverride(refId, field, parsedValue, parsedFallback);
+        state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
+        renderPreview();
+      },
     });
     if (opts.multiline) window.requestAnimationFrame(() => resizeMultilineInput(input));
     return input;

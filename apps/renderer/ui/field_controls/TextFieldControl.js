@@ -8,8 +8,12 @@
       const input = options.multiline ? documentRef.createElement('textarea') : documentRef.createElement('input');
       input.className = options.className || 'text-input';
       if (!options.multiline) input.type = 'text';
+      if (options.rows !== undefined) input.rows = options.rows;
+      if (options.spellcheck !== undefined) input.spellcheck = !!options.spellcheck;
+      if (options.placeholder !== undefined) input.placeholder = options.placeholder;
+      if (options.ariaLabel !== undefined) input.setAttribute('aria-label', options.ariaLabel);
       input.value = options.value || '';
-      const commit = () => (options.onInput || (() => {}))(input.value);
+      const commit = () => (options.onInput || (() => {}))(input.value, input);
       if (options.commitOnChange) {
         input.addEventListener('change', commit);
       } else {
