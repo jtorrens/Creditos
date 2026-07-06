@@ -3,9 +3,9 @@
     const {
       defaultLayoutForMaterial,
       defaultOrientationForMaterial,
+      getMaterialContentItems,
       groupMusicLicenseThemes,
       normalizePreviewSettings,
-      normalizeText,
       normalizeTypographyOverrides,
       normalizeVerticalAlign,
     } = dependencies;
@@ -74,16 +74,6 @@
         page_line_adjustments: previous && previous.page_line_adjustments ? previous.page_line_adjustments : {},
         preview_settings: previousPreviewSettings,
       };
-    }
-
-    function getMaterialContentItems(material) {
-      const items = material && material.items ? material.items : [];
-      if (!items.length) return items;
-      const first = items[0];
-      if (first.kind === 'section' && normalizeText(first.title) === normalizeText(material.title)) {
-        return items.slice(1);
-      }
-      return items;
     }
 
     function materialHasRenderableContent(material) {
@@ -431,7 +421,6 @@
       enforceUniqueMaterialRefs,
       ensureCartelaOrders,
       getCartelaRefs,
-      getMaterialContentItems,
       getVisualCartelas,
       migrateStructure,
       normalizeCartelaImages,

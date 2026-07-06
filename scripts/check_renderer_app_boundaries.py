@@ -40,6 +40,14 @@ MOVED_DOMAIN_FUNCTIONS = [
     "cartelaHasImages",
     "getCartelaRefs",
     "enforceUniqueMaterialRefs",
+    "renderMaterial",
+    "renderedUnitText",
+    "splitRenderedUnitsByBreaks",
+    "countThemeLines",
+    "countItemLines",
+    "flattenRenderedItems",
+    "groupMusicLicenseThemes",
+    "renderItem",
 ]
 
 
