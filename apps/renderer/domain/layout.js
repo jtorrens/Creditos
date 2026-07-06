@@ -58,10 +58,25 @@
       return orientation === 'vertical' ? Math.max(0, Number(layout && layout.role_name_gap) || 0) : 0;
     }
 
+    function fitPreviewZoom(availableWidth, availableHeight, pageWidth, pageHeight, options = {}) {
+      const minZoom = Math.max(0, Number(options.minZoom) || 0.03);
+      const width = Math.max(1, Number(pageWidth) || 1);
+      const height = Math.max(1, Number(pageHeight) || 1);
+      const fit = Math.min(
+        Math.max(1, Number(availableWidth) || 1) / width,
+        Math.max(1, Number(availableHeight) || 1) / height
+      );
+      return Math.max(
+        minZoom,
+        options.maxZoom === undefined ? fit : Math.min(Math.max(minZoom, Number(options.maxZoom) || minZoom), fit)
+      );
+    }
+
     return {
       cartelaBlockGap,
       cartelaBlockTitleGap,
       contentAreaRect,
+      fitPreviewZoom,
       layoutForCartela,
       numberWithFallback,
       pdfPageVerticalJustify,

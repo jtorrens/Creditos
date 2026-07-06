@@ -135,6 +135,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "layoutForCartela",
     "numberWithFallback",
     "contentAreaRect",
+    "fitPreviewZoom",
     "buildScrollPlan",
     "buildScrollItems",
     "scrollGapAfterItem",

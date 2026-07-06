@@ -409,6 +409,7 @@
     cartelaBlockGap,
     cartelaBlockTitleGap,
     contentAreaRect,
+    fitPreviewZoom,
     layoutForCartela,
     numberWithFallback,
     pdfPageVerticalJustify,
@@ -4597,11 +4598,9 @@
   }
 
   function previewZoomForContainer(container, layout) {
-    const width = Math.max(1, Number(layout.page_width) || 1);
-    const height = Math.max(1, Number(layout.page_height) || 1);
     const availableWidth = Math.max(120, (container && container.clientWidth ? container.clientWidth : 360) - 24);
     const availableHeight = Math.max(120, (container && container.clientHeight ? container.clientHeight : 260) - 24);
-    return Math.max(0.03, Math.min(availableWidth / width, availableHeight / height));
+    return fitPreviewZoom(availableWidth, availableHeight, layout.page_width, layout.page_height);
   }
 
   function makeMarginOverlay(layout, zoom = state.pngPreviewZoom) {
@@ -5238,9 +5237,7 @@
     const rect = els.pdfPreview.getBoundingClientRect();
     const availableWidth = Math.max(1, rect.width - 28);
     const availableHeight = Math.max(1, rect.height - 28);
-    const pageWidth = Math.max(1, Number(layout.page_width) || 1);
-    const pageHeight = Math.max(1, Number(layout.page_height) || 1);
-    return Math.max(0.03, Math.min(2, availableWidth / pageWidth, availableHeight / pageHeight));
+    return fitPreviewZoom(availableWidth, availableHeight, layout.page_width, layout.page_height, { maxZoom: 2 });
   }
 
   function toggleMarginOverlay() {
