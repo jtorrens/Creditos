@@ -210,6 +210,12 @@
     normalizeText,
     safeFilePart,
   } = commonDomain;
+  const typographyDomain = globalThis.CreditosDomainTypography.createTypographyDomain();
+  const {
+    fontStyleFromStyle,
+    fontWeightFromStyle,
+    quoteFontFamily,
+  } = typographyDomain;
   const settingsDomain = globalThis.CreditosDomainSettings.createSettingsDomain({
     languageLocales: LANGUAGE_LOCALES,
     languageOptions: LANGUAGE_OPTIONS,
@@ -4713,19 +4719,6 @@
     element.style.color = typography.color;
   }
 
-  function fontWeightFromStyle(style) {
-    const value = String(style || '');
-    if (/thin/i.test(value)) return '100';
-    if (/extra\s*light|ultra\s*light/i.test(value)) return '200';
-    if (/light/i.test(value)) return '300';
-    if (/medium/i.test(value)) return '500';
-    if (/semi\s*bold|demi\s*bold/i.test(value)) return '600';
-    if (/extra\s*bold|ultra\s*bold/i.test(value)) return '800';
-    if (/black|heavy/i.test(value)) return '900';
-    if (/bold/i.test(value)) return '700';
-    return '400';
-  }
-
   function getRenderLayout() {
     return settingsWithProductionLayout(getProductionSettings(), getProductionLayout()).layout;
   }
@@ -6908,14 +6901,6 @@
     const textX = align === 'center' ? x + width / 2 : align === 'right' ? x + width : x;
     lines.forEach((line, index) => ctx.fillText(line, textX, y + index * metrics.lineHeight));
     ctx.restore();
-  }
-
-  function fontStyleFromStyle(style) {
-    return /italic|oblique/i.test(style || '') ? 'italic' : 'normal';
-  }
-
-  function quoteFontFamily(family) {
-    return `"${String(family || 'Arial').replace(/"/g, '\\"')}"`;
   }
 
   function downloadBlob(blob, fileName) {

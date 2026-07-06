@@ -110,6 +110,9 @@ MOVED_DOMAIN_FUNCTIONS = [
     "settingsWithProductionLayout",
     "stripProductionLayoutFromSettings",
     "transformCartelaText",
+    "fontWeightFromStyle",
+    "fontStyleFromStyle",
+    "quoteFontFamily",
 ]
 
 
