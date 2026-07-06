@@ -348,9 +348,14 @@
   } = renderUnitsDomain;
   const layoutDomain = globalThis.CreditosDomainLayout.createLayoutDomain();
   const {
+    cartelaBlockGap,
+    cartelaBlockTitleGap,
     contentAreaRect,
     layoutForCartela,
     numberWithFallback,
+    pdfPageVerticalJustify,
+    roleNameGapForOrientation,
+    verticalOffset,
   } = layoutDomain;
   const structureDomain = globalThis.CreditosDomainStructure.createStructureDomain({
     defaultLayoutForMaterial,
@@ -5842,13 +5847,6 @@
     renderPdfPreview();
   }
 
-  function pdfPageVerticalJustify(page) {
-    const align = page.blocks && page.blocks[0] ? page.blocks[0].vertical_align : 'top';
-    if (align === 'center') return 'center';
-    if (align === 'bottom') return 'flex-end';
-    return 'flex-start';
-  }
-
   function makePdfPageTitle(page, options = {}) {
     const title = page && page.cartela_physical_index === 0 ? page.title : '';
     const text = String(title || '').trim();
@@ -6238,12 +6236,6 @@
     return promise;
   }
 
-  function verticalOffset(availableHeight, contentHeight, justify) {
-    if (justify === 'center') return Math.max(0, (availableHeight - contentHeight) / 2);
-    if (justify === 'flex-end') return Math.max(0, availableHeight - contentHeight);
-    return 0;
-  }
-
   function measureCanvasBlock(ctx, block, cartela, layout, width) {
     let height = 0;
     const title = String(block.title || '').trim();
@@ -6315,18 +6307,6 @@
       gaps[row - 1] = unitGapBefore(options, layout);
     }
     return gaps;
-  }
-
-  function cartelaBlockGap(cartela, layout) {
-    return Math.max(0, Number(layout.block_gap) || 0);
-  }
-
-  function cartelaBlockTitleGap(cartela, layout) {
-    return Math.max(0, Number(layout.block_title_gap) || 0);
-  }
-
-  function roleNameGapForOrientation(layout, orientation) {
-    return orientation === 'vertical' ? Math.max(0, Number(layout.role_name_gap) || 0) : 0;
   }
 
   function measureCanvasUnit(unit, block, cartela, layout, width, options = {}) {

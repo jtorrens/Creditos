@@ -33,10 +33,40 @@
       };
     }
 
+    function pdfPageVerticalJustify(page) {
+      const align = page && page.blocks && page.blocks[0] ? page.blocks[0].vertical_align : 'top';
+      if (align === 'center') return 'center';
+      if (align === 'bottom') return 'flex-end';
+      return 'flex-start';
+    }
+
+    function verticalOffset(availableHeight, contentHeight, justify) {
+      if (justify === 'center') return Math.max(0, (availableHeight - contentHeight) / 2);
+      if (justify === 'flex-end') return Math.max(0, availableHeight - contentHeight);
+      return 0;
+    }
+
+    function cartelaBlockGap(_cartela, layout) {
+      return Math.max(0, Number(layout && layout.block_gap) || 0);
+    }
+
+    function cartelaBlockTitleGap(_cartela, layout) {
+      return Math.max(0, Number(layout && layout.block_title_gap) || 0);
+    }
+
+    function roleNameGapForOrientation(layout, orientation) {
+      return orientation === 'vertical' ? Math.max(0, Number(layout && layout.role_name_gap) || 0) : 0;
+    }
+
     return {
+      cartelaBlockGap,
+      cartelaBlockTitleGap,
       contentAreaRect,
       layoutForCartela,
       numberWithFallback,
+      pdfPageVerticalJustify,
+      roleNameGapForOrientation,
+      verticalOffset,
     };
   }
 
