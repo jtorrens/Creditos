@@ -872,6 +872,17 @@
     selectedEpisode,
     state,
   });
+  const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
+    documentRef: document,
+    els,
+    fieldControlRegistry,
+    getStyleById,
+    renderStyleEditor,
+    renderStylePreview,
+    selectedProduction,
+    state,
+    updateStyleName,
+  });
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1559,74 +1570,7 @@
   }
 
   function renderStylesPane() {
-    if (!els.styleList) return;
-    els.styleList.innerHTML = '';
-    els.styleCount.textContent = String(state.styles.length);
-    if (!state.selectedStyleId || !getStyleById(state.selectedStyleId)) {
-      state.selectedStyleId = state.styles[0] ? state.styles[0].id : null;
-    }
-    if (!state.styles.length) {
-      els.styleList.className = 'style-list empty-state';
-      els.styleList.textContent = selectedProduction() ? 'Sin estilos.' : 'Selecciona una producción.';
-    } else {
-      els.styleList.className = 'style-list';
-      const table = document.createElement('table');
-      table.className = 'data-table';
-      table.innerHTML = '<thead><tr><th></th><th>Estilo</th></tr></thead>';
-      const tbody = document.createElement('tbody');
-      state.styles.forEach((style) => {
-        const row = document.createElement('tr');
-        row.className = style.id === state.selectedStyleId ? 'selected' : '';
-        row.addEventListener('click', (event) => {
-          if (event.target && event.target.closest('input')) return;
-          state.selectedStyleId = style.id;
-          renderStylesPane();
-        });
-        const selectCell = document.createElement('td');
-        selectCell.className = 'table-select-cell';
-        const selectButton = document.createElement('button');
-        selectButton.type = 'button';
-        selectButton.className = 'table-select-button';
-        selectButton.textContent = style.id === state.selectedStyleId ? '●' : '○';
-        selectButton.addEventListener('click', () => {
-          state.selectedStyleId = style.id;
-          renderStylesPane();
-        });
-        selectCell.appendChild(selectButton);
-        row.appendChild(selectCell);
-        const nameCell = document.createElement('td');
-        const nameInput = fieldControlRegistry.create('text', {
-          className: 'table-input',
-          value: style.name,
-          commitOnChange: true,
-          onInput: (value) => updateStyleName(style, value),
-        });
-        nameCell.appendChild(nameInput);
-        row.appendChild(nameCell);
-        tbody.appendChild(row);
-      });
-      table.appendChild(tbody);
-      els.styleList.appendChild(table);
-    }
-    if (els.duplicateStyleBtn) els.duplicateStyleBtn.disabled = !getStyleById(state.selectedStyleId);
-    if (els.deleteStyleBtn) els.deleteStyleBtn.disabled = !getStyleById(state.selectedStyleId);
-
-    const style = getStyleById(state.selectedStyleId);
-    if (!style) {
-      els.styleEditorTitle.textContent = 'Sin estilo seleccionado';
-      els.styleEditorMeta.textContent = '';
-      els.styleEditorBody.className = 'editor-body empty-state';
-      els.styleEditorBody.textContent = selectedProduction() ? 'Crea o importa un estilo.' : 'Selecciona una producción.';
-      renderStylePreview(null);
-      return;
-    }
-
-    els.styleEditorTitle.textContent = style.name;
-    els.styleEditorMeta.textContent = '';
-    els.styleEditorBody.className = 'editor-body';
-    els.styleEditorBody.innerHTML = '';
-    els.styleEditorBody.appendChild(renderStyleEditor(style));
-    renderStylePreview(style);
+    return stylesPanel.renderStylesPane();
   }
 
   function updateStyleName(style, name) {
