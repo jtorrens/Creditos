@@ -295,10 +295,12 @@
     normalizeColor,
     normalizeTextCapitalization,
     safeStyleId,
+    styleCartelaFields: STYLE_CARTELA_FIELDS,
   });
   const {
     applyBlockStyleToCartelaRefs,
     baseStyleCartelaFromSettings: baseStyleCartelaFromSettingsWithSettings,
+    clearCartelaStyleOverrides,
     clonePlainValue,
     explicitCartelaBlockStyle,
     explicitCartelaTitleTypography,
@@ -315,6 +317,7 @@
     hasCartelaBlockAlignmentOverride,
     hasCartelaBlockTypographyOverride,
     hasCartelaOverride,
+    hasCartelaStyleOverrides,
     hasCartelaTitleTypographyOverride,
     hasStyleCartelaOverride,
     hasStyleTitleTypographyOverride,
@@ -3345,21 +3348,6 @@
     if (/^c/i.test(response || '')) return 'keep';
     if (/^d/i.test(response || '')) return 'discard';
     return 'cancel';
-  }
-
-  function hasCartelaStyleOverrides(cartela) {
-    if (!cartela || !cartela.style_id) return false;
-    if (STYLE_CARTELA_FIELDS.some((key) => cartela[key] !== undefined)) return true;
-    return hasCartelaTitleTypographyOverride(cartela) || !!(cartela.block_style && Object.keys(cartela.block_style).length);
-  }
-
-  function clearCartelaStyleOverrides(cartela) {
-    if (!cartela) return;
-    STYLE_CARTELA_FIELDS.forEach((key) => {
-      delete cartela[key];
-    });
-    delete cartela.title_typography;
-    delete cartela.block_style;
   }
 
   function renderCartelaBlockStyleControls(cartela) {

@@ -168,6 +168,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "hasCartelaBlockAlignmentOverride",
     "hasCartelaBlockTypographyOverride",
     "hasCartelaTitleTypographyOverride",
+    "hasCartelaStyleOverrides",
+    "clearCartelaStyleOverrides",
     "resetCartelaBlockOverride",
     "resetCartelaBlockAlignmentOverride",
     "resetCartelaBlockTypographyOverride",

@@ -9,6 +9,7 @@
       normalizeColor,
       normalizeTextCapitalization,
       safeStyleId,
+      styleCartelaFields = [],
     } = dependencies;
 
     function normalizeStyleCartela(value = {}) {
@@ -547,6 +548,22 @@
       );
     }
 
+    function hasCartelaStyleOverrides(cartela) {
+      if (!cartela || !cartela.style_id) return false;
+      if (styleCartelaFields.some((key) => cartela[key] !== undefined)) return true;
+      return hasCartelaTitleTypographyOverride(cartela) || !!(cartela.block_style && Object.keys(cartela.block_style).length);
+    }
+
+    function clearCartelaStyleOverrides(cartela) {
+      if (!cartela) return false;
+      styleCartelaFields.forEach((key) => {
+        delete cartela[key];
+      });
+      delete cartela.title_typography;
+      delete cartela.block_style;
+      return true;
+    }
+
     function pruneEmptyCartelaBlockStyle(cartela) {
       if (cartela && cartela.block_style && !Object.keys(cartela.block_style).length) delete cartela.block_style;
     }
@@ -700,6 +717,7 @@
     return {
       applyBlockStyleToCartelaRefs,
       baseStyleCartelaFromSettings,
+      clearCartelaStyleOverrides,
       clonePlainValue,
       explicitCartelaBlockStyle,
       explicitCartelaTitleTypography,
@@ -716,6 +734,7 @@
       hasCartelaBlockAlignmentOverride,
       hasCartelaBlockTypographyOverride,
       hasCartelaOverride,
+      hasCartelaStyleOverrides,
       hasCartelaTitleTypographyOverride,
       hasStyleBlockAlignmentOverride,
       hasStyleBlockOverride,
