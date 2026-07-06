@@ -50,6 +50,71 @@
       options.refreshPdfIfActive();
     }
 
+    function syncAnimationFrameToPdfPage() {
+      const plan = options.getPreviewAnimationPlan();
+      if (!plan || !plan.totalFrames) return;
+      state.previewAnimation.frame = options.frameForPdfPageIndex(
+        plan,
+        state.pdfPageIndex,
+        options.getCurrentPhysicalPages()
+      );
+      if (state.previewAnimation.playing) {
+        state.previewAnimation.startedAt = performance.now();
+        state.previewAnimation.startFrame = state.previewAnimation.frame;
+      }
+    }
+
+    function changePdfPage(delta) {
+      const total = state.render ? options.getCurrentPhysicalPages().length : 0;
+      state.pdfPageIndex = Math.max(0, Math.min(total - 1, state.pdfPageIndex + delta));
+      syncAnimationFrameToPdfPage();
+      options.renderPdfPreview();
+    }
+
+    function goToPdfPage(index) {
+      const total = state.render ? options.getCurrentPhysicalPages().length : 0;
+      if (!total) {
+        state.pdfPageIndex = 0;
+      } else {
+        state.pdfPageIndex = Math.max(0, Math.min(total - 1, index));
+      }
+      syncAnimationFrameToPdfPage();
+      options.renderPdfPreview();
+    }
+
+    function adjustCurrentPdfPageLines(delta) {
+      if (!state.render || !state.structure) return;
+      const page = options.getCurrentPhysicalPages()[state.pdfPageIndex];
+      if (!page) return;
+      state.structure.page_line_adjustments = state.structure.page_line_adjustments || {};
+      options.adjustPdfPageLineAdjustment(
+        state.structure.page_line_adjustments,
+        page.id,
+        options.getProductionSettings().default_auto_page_lines,
+        delta
+      );
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderPreview();
+      options.renderPdfPreview();
+    }
+
+    function updateCurrentPdfCartela(fields) {
+      if (!state.render || !state.structure) return;
+      const page = options.getCurrentPhysicalPages()[state.pdfPageIndex];
+      if (!page || !page.cartela) return;
+      const cartela = (state.structure.cartelas || []).find((candidate) => candidate.id === page.cartela.id);
+      if (!cartela) return;
+      const previousSelected = state.selectedCartelaId;
+      state.selectedCartelaId = cartela.id;
+      updateSelectedCartela(fields);
+      state.selectedCartelaId = previousSelected;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderCartelaList();
+      options.renderEditor();
+      options.renderPreview();
+      options.renderPdfPreview();
+    }
+
     function addEmptyCartela() {
       if (!state.structure) return;
       const cartela = options.insertManualCartela(state.structure.cartelas, state.selectedCartelaId);
@@ -645,6 +710,8 @@
 
     return {
       addEmptyCartela,
+      adjustCurrentPdfPageLines,
+      changePdfPage,
       copyStylesFromEpisodeFlow,
       createProductionFromUi,
       createStyleFromUi,
@@ -653,6 +720,7 @@
       deleteSelectedManualCartela,
       duplicateSelectedProduction,
       duplicateSelectedStyle,
+      goToPdfPage,
       moveSelectedCartelaVisualOrder,
       resetEditableStyleBlockAlignmentOverride,
       resetEditableStyleBlockOverride,
@@ -674,6 +742,7 @@
       updateProductionImportModelFromUi,
       updateProductionLayoutFromUi,
       updateProductionName,
+      updateCurrentPdfCartela,
       updateSelectedBlockAlignment,
       updateSelectedBlockColumns,
       updateSelectedBlockTypography,

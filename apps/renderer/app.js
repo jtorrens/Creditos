@@ -853,6 +853,7 @@
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
     applyExplicitCartelaOverridesFromSource,
     applyDatabaseOverview,
+    adjustPdfPageLineAdjustment,
     buildCurrentRenderJson,
     clearCartelaStyleOverrides,
     currentProductionEpisodes,
@@ -861,7 +862,10 @@
     deleteManualCartela,
     els,
     findPageWithRef,
+    frameForPdfPageIndex,
+    getCurrentPhysicalPages,
     getEffectiveStyleTitleTypography,
+    getPreviewAnimationPlan,
     getSelectedCartela,
     getStyleById,
     getProductionSettings,
@@ -877,6 +881,7 @@
     renderCartelaList,
     renderCartelaPreview,
     renderEditor,
+    renderPdfPreview,
     renderPreview,
     renderProductionList,
     renderProjectSelectors,
@@ -1398,6 +1403,22 @@
 
   function renderCartelaPreview() {
     return cartelaPreviewPanel.renderCartelaPreview();
+  }
+
+  function changePdfPage(delta) {
+    return appCommands.changePdfPage(delta);
+  }
+
+  function goToPdfPage(index) {
+    return appCommands.goToPdfPage(index);
+  }
+
+  function adjustCurrentPdfPageLines(delta) {
+    return appCommands.adjustCurrentPdfPageLines(delta);
+  }
+
+  function updateCurrentPdfCartela(fields) {
+    return appCommands.updateCurrentPdfCartela(fields);
   }
 
   function updateStyleName(style, name) {
@@ -3032,50 +3053,6 @@
     });
   }
 
-  function changePdfPage(delta) {
-    const total = state.render ? getCurrentPhysicalPages().length : 0;
-    state.pdfPageIndex = Math.max(0, Math.min(total - 1, state.pdfPageIndex + delta));
-    syncAnimationFrameToPdfPage();
-    renderPdfPreview();
-  }
-
-  function goToPdfPage(index) {
-    const total = state.render ? getCurrentPhysicalPages().length : 0;
-    if (!total) {
-      state.pdfPageIndex = 0;
-    } else {
-      state.pdfPageIndex = Math.max(0, Math.min(total - 1, index));
-    }
-    syncAnimationFrameToPdfPage();
-    renderPdfPreview();
-  }
-
-  function syncAnimationFrameToPdfPage() {
-    const plan = getPreviewAnimationPlan();
-    if (!plan || !plan.totalFrames) return;
-    state.previewAnimation.frame = frameForPdfPageIndex(plan, state.pdfPageIndex, getCurrentPhysicalPages());
-    if (state.previewAnimation.playing) {
-      state.previewAnimation.startedAt = performance.now();
-      state.previewAnimation.startFrame = state.previewAnimation.frame;
-    }
-  }
-
-  function adjustCurrentPdfPageLines(delta) {
-    if (!state.render || !state.structure) return;
-    const page = getCurrentPhysicalPages()[state.pdfPageIndex];
-    if (!page) return;
-    state.structure.page_line_adjustments = state.structure.page_line_adjustments || {};
-    adjustPdfPageLineAdjustment(
-      state.structure.page_line_adjustments,
-      page.id,
-      getProductionSettings().default_auto_page_lines,
-      delta
-    );
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderPreview();
-    renderPdfPreview();
-  }
-
   function updatePdfBaseName() {
     updateSettings({ pdf_base_name: safeFilePart(els.pdfBaseNameInput.value || 'creditos') });
     renderPreview();
@@ -3107,23 +3084,6 @@
 
   function updatePanelMarginButtons() {
     return updatePanelMarginButtonsFromPreviewRender();
-  }
-
-  function updateCurrentPdfCartela(fields) {
-    if (!state.render || !state.structure) return;
-    const page = getCurrentPhysicalPages()[state.pdfPageIndex];
-    if (!page || !page.cartela) return;
-    const cartela = (state.structure.cartelas || []).find((candidate) => candidate.id === page.cartela.id);
-    if (!cartela) return;
-    const previousSelected = state.selectedCartelaId;
-    state.selectedCartelaId = cartela.id;
-    updateSelectedCartela(fields);
-    state.selectedCartelaId = previousSelected;
-    state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    renderCartelaList();
-    renderEditor();
-    renderPreview();
-    renderPdfPreview();
   }
 
   async function exportPngPages(mode) {
