@@ -747,15 +747,26 @@
     writeRepeatedFrames,
   } = appComposition;
 
-  const FONT_OPTIONS = [
-    'Arial',
-    'Helvetica',
-    'Georgia',
-    'Times New Roman',
-    'Courier New',
-    'Verdana',
-    'Trebuchet MS',
-  ];
+  const appFonts = globalThis.CreditosAppFonts.createAppFonts({
+    buildFontCatalog,
+    fallbackFontCatalog,
+    fieldControlRegistry,
+    fontStylesForFamily,
+    refreshPdfIfActive,
+    renderEditor,
+    renderPreview,
+    renderProjectSelectors,
+    renderSettings,
+    state,
+    windowRef: window,
+  });
+  const {
+    getFontCatalog,
+    getFontStyles,
+    makeFontFamilyControl,
+    makeFontSizeControl,
+    makeFontStyleControl,
+  } = appFonts;
   let currentPhysicalPagesCache = { render: null, pages: [] };
   let previewPlanCache = { render: null, key: '', plan: null };
 
@@ -1492,75 +1503,8 @@
     });
   }
 
-  function makeFontSizeControl(value, fallbackValue, onInput) {
-    return fieldControlRegistry.create('number', {
-      value,
-      min: 1,
-      step: 1,
-      fallbackValue,
-      onInput,
-    });
-  }
-
-  function makeFontFamilyControl(value, fontCatalog, onInput) {
-    const options = fontCatalog.families.map((font) => [font, font]);
-    if (!fontCatalog.families.includes(value)) options.push([value, value]);
-    return fieldControlRegistry.create('select', {
-      value,
-      className: 'text-input font-family-select',
-      options,
-      onInput,
-    });
-  }
-
-  function makeFontStyleControl(fontFamily, value, postscriptName, onInput) {
-    const styles = getFontStyles(fontFamily);
-    const options = styles.map((fontStyle) => [
-      fontStyle.style,
-      fontStyle.style,
-      { postscriptName: fontStyle.postscript_name || '' },
-    ]);
-    if (!styles.some((fontStyle) => fontStyle.style === value)) {
-      options.push([value, value, { postscriptName: postscriptName || '' }]);
-    }
-    return fieldControlRegistry.create('select', {
-      value,
-      options,
-      onInput: (_fontStyle, select) => {
-        const selected = select.selectedOptions[0];
-        onInput(select.value, selected ? selected.dataset.postscriptName || '' : '');
-      },
-    });
-  }
-
   async function loadSystemFonts(options = {}) {
-    if (!window.queryLocalFonts) {
-      if (!options.silent) window.alert('Chrome no permite leer fuentes del sistema en este entorno. Se usara la lista basica.');
-      return;
-    }
-
-    try {
-      const fonts = await window.queryLocalFonts();
-      state.fontCatalog = buildFontCatalog(fonts);
-      renderProjectSelectors();
-      renderSettings();
-      renderEditor();
-      renderPreview();
-      refreshPdfIfActive();
-    } catch (error) {
-      if (!options.silent && error.name !== 'AbortError') {
-        window.alert('No se pudieron cargar las fuentes del sistema: ' + error.message);
-      }
-    }
-  }
-
-  function getFontCatalog() {
-    if (state.fontCatalog) return state.fontCatalog;
-    return fallbackFontCatalog(FONT_OPTIONS);
-  }
-
-  function getFontStyles(family) {
-    return fontStylesForFamily(getFontCatalog(), family);
+    return appFonts.loadSystemFonts(options);
   }
 
   function loadStyleObjects(styleObjects) {
