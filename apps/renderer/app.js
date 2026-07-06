@@ -294,10 +294,15 @@
     unitRenderOptions,
   } = paginationUnitsDomain;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
+    baseStyleCartela: baseStyleCartelaFromSettings,
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
+    effectiveStyleBlockForStyle: getEffectiveStyleBlock,
+    effectiveStyleCartelaForStyle: getEffectiveStyleCartela,
+    effectiveStyleTitleTypographyForStyle: getEffectiveStyleTitleTypography,
     findPageWithRef: (cartela, ref) => findPageWithRef(cartela, ref),
     getCartelaRefs: (cartela) => getCartelaRefs(cartela),
     getCartelaStyleBlock,
+    getStyleById,
     normalizeBoolean,
     normalizeColor,
     normalizeTextCapitalization,
@@ -306,12 +311,10 @@
   });
   const {
     applyBlockStyleToCartelaRefs,
+    applyExplicitCartelaOverridesFromSource,
     baseStyleCartelaFromSettings: baseStyleCartelaFromSettingsWithSettings,
     clearCartelaStyleOverrides,
-    clonePlainValue,
-    explicitCartelaBlockStyle,
     explicitCartelaTitleTypography,
-    explicitSourceRefSettings,
     getEffectiveCartelaBlockStyle,
     getEffectiveCartelaTitleTypography: getEffectiveCartelaTitleTypographyWithSettings,
     getEffectiveStyleBlock: getEffectiveStyleBlockWithSettings,
@@ -329,11 +332,7 @@
     hasStyleCartelaOverride,
     hasStyleTitleTypographyOverride,
     hasStyleTypographyOverride,
-    mergeBlockTypography,
-    mergeStyleBlockOverrides,
-    normalizeBlockAlignment,
     normalizeCartelaStyle,
-    normalizeStyleCartela,
     normalizeStyleBlock,
     normalizeTitleTypographyOverrides,
     normalizeTypographyOverrides,
@@ -1280,68 +1279,6 @@
     } catch (error) {
       window.alert('No se pudieron asignar los estilos: ' + error.message);
     }
-  }
-
-  function applyExplicitCartelaOverridesFromSource(target, source, sourceRaw = source) {
-    if (!target || !source) return;
-    const styleId = sourceRaw && sourceRaw.style_id !== undefined ? sourceRaw.style_id : source.style_id;
-    target.style_id = styleId || '';
-
-    const upperCartela = target.style_id
-      ? getEffectiveStyleCartela(getStyleById(target.style_id))
-      : baseStyleCartelaFromSettings();
-    STYLE_CARTELA_FIELDS.forEach((key) => {
-      delete target[key];
-      if (!sourceRaw || !Object.prototype.hasOwnProperty.call(sourceRaw, key)) return;
-      const normalized = sanitizeStyleCartelaOverrides({ [key]: sourceRaw[key] });
-      if (normalized[key] === undefined) return;
-      if (!sameStyleValue(normalized[key], upperCartela[key])) target[key] = clonePlainValue(normalized[key]);
-    });
-
-    const explicitBlockStyle = explicitCartelaBlockStyle(sourceRaw && sourceRaw.block_style, getEffectiveStyleBlock(getStyleById(target.style_id)));
-    if (Object.keys(explicitBlockStyle).length) {
-      target.block_style = explicitBlockStyle;
-    } else {
-      delete target.block_style;
-    }
-
-    const explicitTitleTypography = explicitCartelaTitleTypography(
-      sourceRaw && sourceRaw.title_typography,
-      getEffectiveStyleTitleTypography(getStyleById(target.style_id)).page_header
-    );
-    if (Object.keys(explicitTitleTypography).length) {
-      target.title_typography = explicitTitleTypography;
-    } else {
-      delete target.title_typography;
-    }
-
-    applyExplicitSourceRefSettings(target, source, sourceRaw);
-  }
-
-  function applyExplicitSourceRefSettings(target, source, sourceRaw = source) {
-    const explicitByRef = collectExplicitSourceRefSettings(source, sourceRaw);
-    (target.pages || []).forEach((page) => {
-      const nextSettings = {};
-      (page.source_refs || []).forEach((ref) => {
-        if (!explicitByRef.has(ref)) return;
-        nextSettings[ref] = clonePlainValue(explicitByRef.get(ref));
-      });
-      page.source_ref_settings = nextSettings;
-    });
-  }
-
-  function collectExplicitSourceRefSettings(source, sourceRaw = source) {
-    const output = new Map();
-    const sourceUpperBlock = getEffectiveCartelaBlockStyle(source);
-    const rawPages = sourceRaw && Array.isArray(sourceRaw.pages) ? sourceRaw.pages : [];
-    rawPages.forEach((page) => {
-      const settingsByRef = page && page.source_ref_settings ? page.source_ref_settings : {};
-      Object.keys(settingsByRef).forEach((ref) => {
-        const explicit = explicitSourceRefSettings(settingsByRef[ref], sourceUpperBlock);
-        if (Object.keys(explicit).length) output.set(ref, explicit);
-      });
-    });
-    return output;
   }
 
   function showEpisodeStyleSourceModal(episodes) {

@@ -2,9 +2,14 @@
   function createStyleDomain(dependencies = {}) {
     const {
       blockTypographyFields,
+      baseStyleCartela = () => ({}),
+      effectiveStyleBlockForStyle = () => ({}),
+      effectiveStyleCartelaForStyle = () => ({}),
+      effectiveStyleTitleTypographyForStyle = () => ({ page_header: {} }),
       findPageWithRef = () => null,
       getCartelaRefs = () => [],
       getCartelaStyleBlock = () => null,
+      getStyleById = () => null,
       normalizeBoolean,
       normalizeColor,
       normalizeTextCapitalization,
@@ -234,6 +239,72 @@
         if (sameStyleValue(normalized.typography[key], upperBlockStyle.typography && upperBlockStyle.typography[key])) return;
         output.typography = output.typography || {};
         output.typography[key] = clonePlainValue(normalized.typography[key]);
+      });
+      return output;
+    }
+
+    function applyExplicitCartelaOverridesFromSource(target, source, sourceRaw = source) {
+      if (!target || !source) return false;
+      const styleId = sourceRaw && sourceRaw.style_id !== undefined ? sourceRaw.style_id : source.style_id;
+      target.style_id = styleId || '';
+
+      const style = getStyleById(target.style_id);
+      const upperCartela = target.style_id ? effectiveStyleCartelaForStyle(style) : baseStyleCartela();
+      styleCartelaFields.forEach((key) => {
+        delete target[key];
+        if (!sourceRaw || !Object.prototype.hasOwnProperty.call(sourceRaw, key)) return;
+        const normalized = sanitizeStyleCartelaOverrides({ [key]: sourceRaw[key] });
+        if (normalized[key] === undefined) return;
+        if (!sameStyleValue(normalized[key], upperCartela[key])) target[key] = clonePlainValue(normalized[key]);
+      });
+
+      const explicitBlockStyle = explicitCartelaBlockStyle(
+        sourceRaw && sourceRaw.block_style,
+        effectiveStyleBlockForStyle(style)
+      );
+      if (Object.keys(explicitBlockStyle).length) {
+        target.block_style = explicitBlockStyle;
+      } else {
+        delete target.block_style;
+      }
+
+      const explicitTitleTypography = explicitCartelaTitleTypography(
+        sourceRaw && sourceRaw.title_typography,
+        effectiveStyleTitleTypographyForStyle(style).page_header
+      );
+      if (Object.keys(explicitTitleTypography).length) {
+        target.title_typography = explicitTitleTypography;
+      } else {
+        delete target.title_typography;
+      }
+
+      applyExplicitSourceRefSettings(target, source, sourceRaw);
+      return true;
+    }
+
+    function applyExplicitSourceRefSettings(target, source, sourceRaw = source) {
+      const explicitByRef = collectExplicitSourceRefSettings(source, sourceRaw);
+      (target.pages || []).forEach((page) => {
+        const nextSettings = {};
+        (page.source_refs || []).forEach((ref) => {
+          if (!explicitByRef.has(ref)) return;
+          nextSettings[ref] = clonePlainValue(explicitByRef.get(ref));
+        });
+        page.source_ref_settings = nextSettings;
+      });
+      return true;
+    }
+
+    function collectExplicitSourceRefSettings(source, sourceRaw = source) {
+      const output = new Map();
+      const sourceUpperBlock = getEffectiveCartelaBlockStyle(source);
+      const rawPages = sourceRaw && Array.isArray(sourceRaw.pages) ? sourceRaw.pages : [];
+      rawPages.forEach((page) => {
+        const settingsByRef = page && page.source_ref_settings ? page.source_ref_settings : {};
+        Object.keys(settingsByRef).forEach((ref) => {
+          const explicit = explicitSourceRefSettings(settingsByRef[ref], sourceUpperBlock);
+          if (Object.keys(explicit).length) output.set(ref, explicit);
+        });
       });
       return output;
     }
@@ -716,8 +787,11 @@
 
     return {
       applyBlockStyleToCartelaRefs,
+      applyExplicitCartelaOverridesFromSource,
+      applyExplicitSourceRefSettings,
       baseStyleCartelaFromSettings,
       clearCartelaStyleOverrides,
+      collectExplicitSourceRefSettings,
       clonePlainValue,
       explicitCartelaBlockStyle,
       explicitCartelaTitleTypography,
