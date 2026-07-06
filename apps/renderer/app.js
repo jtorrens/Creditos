@@ -382,7 +382,7 @@
     normalizeCartelaImages,
     normalizeFrozenMaterial,
     normalizeVisualOrders,
-    removeDefaultEmptyCartelas,
+    structureJsonForOutput,
   } = structureDomain;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
@@ -4754,19 +4754,7 @@
   }
 
   function getStructureJsonForOutput() {
-    if (!state.structure) return null;
-    const output = JSON.parse(JSON.stringify(state.structure));
-    delete output.settings;
-    output.cartelas = removeDefaultEmptyCartelas(output.cartelas || [], state.materials || []);
-    output.cartelas.forEach(removeLegacyCartelaScaleFields);
-    return output;
-  }
-
-  function removeLegacyCartelaScaleFields(cartela) {
-    delete cartela.font_size_multiplier;
-    delete cartela.line_spacing_multiplier;
-    delete cartela.block_gap_multiplier;
-    return cartela;
+    return structureJsonForOutput(state.structure, state.materials);
   }
 
   function renderVisualPreview() {

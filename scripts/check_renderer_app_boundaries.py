@@ -22,6 +22,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "getMaterialContentItems",
     "materialHasRenderableContent",
     "removeDefaultEmptyCartelas",
+    "structureJsonForOutput",
     "cartelaHasRenderableRefs",
     "ensureCartelaOrders",
     "normalizeVisualOrders",

@@ -101,6 +101,22 @@
       });
     }
 
+    function structureJsonForOutput(structure, materials) {
+      if (!structure) return null;
+      const output = JSON.parse(JSON.stringify(structure));
+      delete output.settings;
+      output.cartelas = removeDefaultEmptyCartelas(output.cartelas || [], materials || []);
+      output.cartelas.forEach(removeLegacyCartelaScaleFields);
+      return output;
+    }
+
+    function removeLegacyCartelaScaleFields(cartela) {
+      delete cartela.font_size_multiplier;
+      delete cartela.line_spacing_multiplier;
+      delete cartela.block_gap_multiplier;
+      return cartela;
+    }
+
     function cartelaHasRenderableRefs(cartela, materialById) {
       if (cartelaHasManualRenderableContent(cartela) || cartelaHasImages(cartela)) return true;
       const refs = getCartelaRefs(cartela);
@@ -427,6 +443,7 @@
       normalizeFrozenMaterial,
       normalizeVisualOrders,
       removeDefaultEmptyCartelas,
+      structureJsonForOutput,
     };
   }
 
