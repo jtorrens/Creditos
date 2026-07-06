@@ -1009,6 +1009,24 @@
     state,
     windowRef: window,
   });
+  const appVisualPreview = globalThis.CreditosAppVisualPreview.createAppVisualPreview({
+    applyTextWrapStyle,
+    applyTypography,
+    blockForTitleRepeat,
+    cartelaBlockTitleGap,
+    creditSourceId,
+    documentRef: document,
+    els,
+    getProductionSettings,
+    getRenderLayout,
+    makeVisualInput,
+    repeatBlockTitlesForCartela,
+    roleNameGapForOrientation,
+    state,
+    transformCartelaText,
+    unitGapBefore,
+    unitRenderOptions,
+  });
   const pdfPanel = globalThis.CreditosPdfPanel.createPdfPanel({
     els,
     getCurrentPhysicalPages,
@@ -2489,18 +2507,6 @@
     input.style.height = `${Math.max(input.scrollHeight, 30)}px`;
   }
 
-  function makeVisualStaticText(value, className, styleKey, options = {}) {
-    const text = String(value || '').trim();
-    if (!text) return null;
-    const element = document.createElement('div');
-    element.className = `visual-static ${className}`;
-    element.textContent = transformCartelaText(text, options.cartela, options.settings || getProductionSettings());
-    applyTypography(element, styleKey, options);
-    applyTextWrapStyle(element, options.cartela);
-    if (options.textAlign) element.style.textAlign = options.textAlign;
-    return element;
-  }
-
   function applyTypography(element, key, options = {}) {
     const settings = normalizeSettings(options.settings || getProductionSettings());
     const typography = {
@@ -2555,52 +2561,7 @@
   }
 
   function renderVisualPreview() {
-    if (!state.render) {
-      els.visualPreview.className = 'visual-preview empty-state';
-      els.visualPreview.textContent = 'Asocia un archivo de créditos para ver el Preview.';
-      return;
-    }
-
-    els.visualPreview.className = 'visual-preview';
-    els.visualPreview.innerHTML = '';
-    (state.render.cartelas || []).forEach((cartela) => {
-      const layout = getRenderLayout();
-      const cartelaEl = document.createElement('section');
-      cartelaEl.className = 'render-cartela';
-
-      const headerEl = document.createElement('div');
-      headerEl.className = 'render-cartela-header';
-      const labelEl = document.createElement('strong');
-      labelEl.textContent = cartela.label || cartela.id;
-      headerEl.appendChild(labelEl);
-      const metaEl = document.createElement('span');
-      metaEl.textContent = `${cartela.orientation || 'horizontal'} · ${cartela.columns || 1} col · ${cartela.duration || 0}s`;
-      headerEl.appendChild(metaEl);
-      cartelaEl.appendChild(headerEl);
-
-      (cartela.pages || []).forEach((cartelaPage) => {
-        const pageEl = document.createElement('div');
-        pageEl.className = 'render-page';
-        const pageLabelEl = document.createElement('div');
-        pageLabelEl.className = 'render-page-label';
-        pageLabelEl.appendChild(makeVisualInput(cartelaPage.id, 'title', cartelaPage.title || '', 'render-page-title-input', {
-          autoWrap: cartela.auto_text_wrap,
-          styleKey: 'page_header',
-          multiplier: cartela.font_size_multiplier,
-          lineMultiplier: cartela.line_spacing_multiplier,
-          typography: cartela.title_typography,
-        }));
-        pageEl.appendChild(pageLabelEl);
-
-        (cartelaPage.blocks || []).forEach((block) => {
-          pageEl.appendChild(renderVisualBlock(block, cartela, layout));
-        });
-
-        cartelaEl.appendChild(pageEl);
-      });
-
-      els.visualPreview.appendChild(cartelaEl);
-    });
+    return appVisualPreview.renderVisualPreview();
   }
 
   function refreshPdfIfActive() {
@@ -3238,141 +3199,6 @@
 
   function applyTextWrapStyle(element, cartela) {
     applyTextWrapStyleInPreview(element, cartela);
-  }
-
-  function renderVisualBlock(block, cartela, layout) {
-    const blockEl = document.createElement('div');
-    blockEl.className = 'render-block';
-    if (block.missing_source) {
-      blockEl.textContent = `Fuente no encontrada: ${block.missing_source}`;
-      return blockEl;
-    }
-
-    const repeatBlockTitles = repeatBlockTitlesForCartela(cartela);
-    (block.pages || []).forEach((blockPage, index) => {
-      const blockPageEl = document.createElement('div');
-      blockPageEl.className = 'render-block-page';
-      const displayBlock = blockForTitleRepeat(block, repeatBlockTitles, index);
-
-      const blockTitle = makeVisualStaticText(displayBlock.title, 'render-block-title-input', 'block_title', {
-        multiplier: cartela.font_size_multiplier,
-        lineMultiplier: cartela.line_spacing_multiplier,
-        typography: block.typography,
-        textAlign: 'center',
-        cartela,
-      });
-
-      const contentEl = document.createElement('div');
-      contentEl.className = 'render-block-content';
-      contentEl.style.gridTemplateColumns = `repeat(${Math.max(1, Number(block.columns) || 1)}, minmax(0, 1fr))`;
-      contentEl.style.columnGap = `${layout.column_gap}px`;
-      contentEl.style.rowGap = '0';
-
-      const units = blockPage.items || [];
-      if (blockTitle) {
-        if (units.length) blockTitle.style.marginBottom = `${cartelaBlockTitleGap(cartela, layout)}px`;
-        blockPageEl.appendChild(blockTitle);
-      }
-      let previousCreditSourceId = null;
-      units.forEach((unit, index) => {
-        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        const gapBefore = unitGapBefore(options, layout);
-        if (block.type === 'music_licenses' && unit.lines) {
-          const themeEl = document.createElement('div');
-          themeEl.className = 'render-theme';
-          if (gapBefore) themeEl.style.marginTop = `${gapBefore}px`;
-          unit.lines.forEach((line, lineIndex) => {
-            themeEl.appendChild(makeVisualInput(line.id, 'value', line.value || '', lineIndex === 0 ? 'render-theme-title-input' : 'render-line-input', {
-              autoWrap: cartela.auto_text_wrap,
-              styleKey: lineIndex === 0 ? 'role' : 'name',
-              multiplier: cartela.font_size_multiplier,
-              lineMultiplier: cartela.line_spacing_multiplier,
-              typography: block.typography,
-              textAlign: block.alignment && block.alignment.text ? block.alignment.text : 'center',
-            }));
-          });
-          contentEl.appendChild(themeEl);
-        } else {
-          contentEl.appendChild(renderVisualUnit(unit, cartela, block.alignment || {}, layout, {
-            ...options,
-            gapBefore,
-            typography: block.typography,
-          }));
-          previousCreditSourceId = creditSourceId(unit);
-        }
-      });
-      blockPageEl.appendChild(contentEl);
-      blockEl.appendChild(blockPageEl);
-    });
-    return blockEl;
-  }
-
-  function renderVisualUnit(unit, cartela, alignment, layout, options = {}) {
-    const orientation = cartela.orientation || 'horizontal';
-    const unitEl = document.createElement('div');
-    unitEl.className = `render-unit ${orientation}`;
-    if (options.gapBefore) unitEl.style.marginTop = `${options.gapBefore}px`;
-    if (orientation === 'horizontal') {
-      unitEl.style.gap = `${layout.role_name_gap}px`;
-    } else {
-      unitEl.style.gap = `${roleNameGapForOrientation(layout, orientation)}px`;
-    }
-    if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-      if (options.repeatedNameRow) {
-        // Continuacion del mismo cargo: solo se pinta el nombre.
-      } else if (options.hideRole) {
-        const roleEl = document.createElement('div');
-        roleEl.className = 'render-role repeated-role';
-        unitEl.appendChild(roleEl);
-      } else {
-        unitEl.appendChild(makeVisualInput(unit.source_item_id || unit.id, 'role', unit.role || '', 'render-role-input', {
-          autoWrap: cartela.auto_text_wrap,
-          styleKey: 'role',
-          multiplier: cartela.font_size_multiplier,
-          lineMultiplier: cartela.line_spacing_multiplier,
-          typography: options.typography,
-          textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
-        }));
-      }
-      unitEl.appendChild(makeVisualInput(unit.source_name_id || unit.id, 'name', unit.name || '', 'render-name-input', {
-        autoWrap: cartela.auto_text_wrap,
-        styleKey: 'name',
-        multiplier: cartela.font_size_multiplier,
-        lineMultiplier: cartela.line_spacing_multiplier,
-        typography: options.typography,
-        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
-      }));
-      return unitEl;
-    }
-    if (unit.kind === 'cast') {
-      unitEl.appendChild(makeVisualInput(unit.id, 'actor', unit.actor || '', 'render-role-input', {
-        autoWrap: cartela.auto_text_wrap,
-        styleKey: 'role',
-        multiplier: cartela.font_size_multiplier,
-        lineMultiplier: cartela.line_spacing_multiplier,
-        typography: options.typography,
-        textAlign: alignment.role || (orientation === 'vertical' ? 'center' : 'right'),
-      }));
-      unitEl.appendChild(makeVisualInput(unit.id, 'character', unit.character || '', 'render-name-input', {
-        autoWrap: cartela.auto_text_wrap,
-        styleKey: 'name',
-        multiplier: cartela.font_size_multiplier,
-        lineMultiplier: cartela.line_spacing_multiplier,
-        typography: options.typography,
-        textAlign: alignment.name || (orientation === 'vertical' ? 'center' : 'left'),
-      }));
-      return unitEl;
-    }
-    const value = unit.title || unit.value || '';
-    unitEl.appendChild(makeVisualInput(unit.id, unit.title !== undefined ? 'title' : 'value', value, 'render-line-input', {
-      autoWrap: cartela.auto_text_wrap,
-      styleKey: unit.title !== undefined ? 'block_title' : 'name',
-      multiplier: cartela.font_size_multiplier,
-      lineMultiplier: cartela.line_spacing_multiplier,
-      typography: options.typography,
-      textAlign: alignment.text || (orientation === 'vertical' ? 'center' : 'left'),
-    }));
-    return unitEl;
   }
 
 }());
