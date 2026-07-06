@@ -62,44 +62,18 @@
         const base = settings.typography[key];
         const value = { ...base, ...((typography && typography[key]) || {}) };
         const isOverride = options.hasStyleTypographyOverride(style, key);
-        const row = documentRef.createElement('div');
-        row.className = 'typography-row block-typography-row' + (isOverride ? ' override-field' : '');
-        const labelEl = documentRef.createElement('label');
-        labelEl.textContent = label;
-        row.appendChild(labelEl);
-        const sizeInput = options.makeFontSizeControl(value.font_size, base.font_size, (fontSize) => options.updateEditableStyleTypography(style, key, { font_size: fontSize }));
-        row.appendChild(sizeInput);
-
-        const fontSelect = options.makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-          const nextStyle = options.getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-          options.updateEditableStyleTypography(style, key, {
-            font_family: fontFamily,
-            font_style: nextStyle.style,
-            font_postscript_name: nextStyle.postscript_name,
-          });
+        const row = fieldControlRegistry.create('typography', {
+          base,
+          className: 'typography-row block-typography-row',
+          fontCatalog,
+          getFontStyles: options.getFontStyles,
+          label,
+          normalizeColor: options.normalizeColor,
+          onInput: (fields) => options.updateEditableStyleTypography(style, key, fields),
+          onReset: () => options.resetEditableStyleTypographyOverride(style, key),
+          override: isOverride,
+          value,
         });
-        row.appendChild(fontSelect);
-
-        const styleSelect = options.makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-          options.updateEditableStyleTypography(style, key, {
-            font_style: fontStyle,
-            font_postscript_name: postscriptName,
-          });
-        });
-        row.appendChild(styleSelect);
-
-        const colorInput = fieldControlRegistry.create('color', {
-          value: options.normalizeColor(value.color),
-          onInput: (color) => options.updateEditableStyleTypography(style, key, { color }),
-        });
-        row.appendChild(colorInput);
-        if (isOverride) {
-          const resetButton = documentRef.createElement('button');
-          resetButton.type = 'button';
-          resetButton.textContent = 'Restablecer';
-          resetButton.addEventListener('click', () => options.resetEditableStyleTypographyOverride(style, key));
-          row.appendChild(resetButton);
-        }
         wrap.appendChild(row);
       });
       return wrap;
@@ -112,46 +86,18 @@
       const base = options.getProductionSettings().typography.page_header;
       const value = options.getEffectiveStyleTitleTypography(style).page_header;
       const fontCatalog = options.getFontCatalog();
-      const row = documentRef.createElement('div');
-      row.className = 'typography-row block-typography-row' + (options.hasStyleTitleTypographyOverride(style) ? ' override-field' : '');
-      const label = documentRef.createElement('label');
-      label.textContent = 'Cabecera';
-      row.appendChild(label);
-
-      const sizeInput = options.makeFontSizeControl(value.font_size, base.font_size, (fontSize) => options.updateEditableStyleTitleTypography(style, { font_size: fontSize }));
-      row.appendChild(sizeInput);
-
-      const fontSelect = options.makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-        const nextStyle = options.getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-        options.updateEditableStyleTitleTypography(style, {
-          font_family: fontFamily,
-          font_style: nextStyle.style,
-          font_postscript_name: nextStyle.postscript_name,
-        });
+      const row = fieldControlRegistry.create('typography', {
+        base,
+        className: 'typography-row block-typography-row',
+        fontCatalog,
+        getFontStyles: options.getFontStyles,
+        label: 'Cabecera',
+        normalizeColor: options.normalizeColor,
+        onInput: (fields) => options.updateEditableStyleTitleTypography(style, fields),
+        onReset: () => options.resetEditableStyleTitleTypographyOverride(style),
+        override: options.hasStyleTitleTypographyOverride(style),
+        value,
       });
-      row.appendChild(fontSelect);
-
-      const styleSelect = options.makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-        options.updateEditableStyleTitleTypography(style, {
-          font_style: fontStyle,
-          font_postscript_name: postscriptName,
-        });
-      });
-      row.appendChild(styleSelect);
-
-      const colorInput = fieldControlRegistry.create('color', {
-        value: options.normalizeColor(value.color),
-        onInput: (color) => options.updateEditableStyleTitleTypography(style, { color }),
-      });
-      row.appendChild(colorInput);
-
-      if (options.hasStyleTitleTypographyOverride(style)) {
-        const resetButton = documentRef.createElement('button');
-        resetButton.type = 'button';
-        resetButton.textContent = 'Restablecer';
-        resetButton.addEventListener('click', () => options.resetEditableStyleTitleTypographyOverride(style));
-        row.appendChild(resetButton);
-      }
       wrap.appendChild(row);
       return wrap;
     }

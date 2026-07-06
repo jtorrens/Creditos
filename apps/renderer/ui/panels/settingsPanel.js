@@ -20,41 +20,16 @@
 
       options.typographyFields.forEach(([key, label]) => {
         const value = settings.typography[key];
-        const row = documentRef.createElement('div');
-        row.className = 'typography-row';
-
-        const labelEl = documentRef.createElement('label');
-        labelEl.textContent = label;
-        row.appendChild(labelEl);
-
-        const sizeInput = options.makeFontSizeControl(value.font_size, 1, (fontSize) => options.updateTypographySetting(key, { font_size: fontSize }));
-        row.appendChild(sizeInput);
-
-        const fontSelect = options.makeFontFamilyControl(value.font_family, fontCatalog, (fontFamily) => {
-          const nextStyle = options.getFontStyles(fontFamily)[0] || { style: 'Regular', postscript_name: '' };
-          options.updateTypographySetting(key, {
-            font_family: fontFamily,
-            font_style: nextStyle.style,
-            font_postscript_name: nextStyle.postscript_name,
-          });
-          renderSettings();
+        const row = fieldControlRegistry.create('typography', {
+          base: { font_size: 1 },
+          className: 'typography-row',
+          fontCatalog,
+          getFontStyles: options.getFontStyles,
+          label,
+          normalizeColor: options.normalizeColor,
+          onInput: (fields) => options.updateTypographySetting(key, fields),
+          value,
         });
-        row.appendChild(fontSelect);
-
-        const styleSelect = options.makeFontStyleControl(value.font_family, value.font_style, value.font_postscript_name, (fontStyle, postscriptName) => {
-          options.updateTypographySetting(key, {
-            font_style: fontStyle,
-            font_postscript_name: postscriptName,
-          });
-        });
-        row.appendChild(styleSelect);
-
-        const colorInput = fieldControlRegistry.create('color', {
-          value: options.normalizeColor(value.color),
-          onInput: (color) => options.updateTypographySetting(key, { color }),
-        });
-        row.appendChild(colorInput);
-
         els.typographySettings.appendChild(row);
       });
     }

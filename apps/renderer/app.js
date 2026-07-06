@@ -757,7 +757,6 @@
   const appFonts = globalThis.CreditosAppFonts.createAppFonts({
     buildFontCatalog,
     fallbackFontCatalog,
-    fieldControlRegistry,
     fontStylesForFamily,
     refreshPdfIfActive,
     renderEditor,
@@ -770,9 +769,6 @@
   const {
     getFontCatalog,
     getFontStyles,
-    makeFontFamilyControl,
-    makeFontSizeControl,
-    makeFontStyleControl,
   } = appFonts;
   const appFormRows = globalThis.CreditosAppFormRows.createAppFormRows({
     currentMovieFps,
@@ -831,9 +827,6 @@
     languageOptions: LANGUAGE_OPTIONS,
     localInputRow,
     localSelectRow,
-    makeFontFamilyControl,
-    makeFontSizeControl,
-    makeFontStyleControl,
     normalizeBoolean,
     normalizeColor,
     normalizeProtectedCapitalizationText,
@@ -1164,9 +1157,6 @@
     localDurationRow,
     localNumberRow,
     localSelectRow,
-    makeFontFamilyControl,
-    makeFontSizeControl,
-    makeFontStyleControl,
     normalizeBoolean,
     normalizeColor,
     resetEditableStyleBlockOverride,
@@ -1193,9 +1183,6 @@
     getStyleById,
     hasCartelaBlockTypographyOverride,
     hasCartelaTitleTypographyOverride,
-    makeFontFamilyControl,
-    makeFontSizeControl,
-    makeFontStyleControl,
     normalizeColor,
     resetSelectedCartelaBlockTypographyOverride,
     resetSelectedCartelaTitleTypographyOverride,

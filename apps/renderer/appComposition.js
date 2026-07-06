@@ -261,6 +261,7 @@
     }));
     registry.register('typography', root.CreditosTypographyFieldControl.createTypographyFieldControl({
       documentRef,
+      fieldControlRegistry: registry,
     }));
     return registry;
   }
