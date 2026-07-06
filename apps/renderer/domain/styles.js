@@ -327,6 +327,54 @@
         : {};
     }
 
+    function ensureSourceRefSettings(page, ref) {
+      page.source_ref_settings = page.source_ref_settings || {};
+      page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
+      return page.source_ref_settings[ref];
+    }
+
+    function updateSourceRefAlignment(page, ref, fields) {
+      if (!page) return false;
+      const settings = ensureSourceRefSettings(page, ref);
+      settings.alignment = {
+        ...(settings.alignment || {}),
+        ...(fields || {}),
+      };
+      return true;
+    }
+
+    function updateSourceRefVerticalAlign(page, ref, value) {
+      if (!page) return false;
+      ensureSourceRefSettings(page, ref).vertical_align = normalizeVerticalAlign(value);
+      return true;
+    }
+
+    function updateSourceRefTypography(page, ref, key, fields) {
+      if (!page) return false;
+      const settings = ensureSourceRefSettings(page, ref);
+      const typography = {
+        ...(settings.typography || {}),
+        [key]: {
+          ...(settings.typography && settings.typography[key] ? settings.typography[key] : {}),
+          ...(fields || {}),
+        },
+      };
+      settings.typography = normalizeTypographyOverrides(typography);
+      return true;
+    }
+
+    function resetSourceRefTypography(page, ref) {
+      if (!page || !page.source_ref_settings || !page.source_ref_settings[ref]) return false;
+      delete page.source_ref_settings[ref].typography;
+      return true;
+    }
+
+    function updateSourceRefColumns(page, ref, columns) {
+      if (!page) return false;
+      ensureSourceRefSettings(page, ref).columns = Math.max(1, Number(columns) || 1);
+      return true;
+    }
+
     function applyBlockStyleToCartelaRefs(cartela, fields) {
       (cartela && cartela.pages || []).forEach((page) => {
         page.source_ref_settings = page.source_ref_settings || {};
@@ -484,6 +532,11 @@
       serializeCartelaStyle,
       sameStyleValue,
       uniqueStyleId,
+      updateSourceRefAlignment,
+      updateSourceRefColumns,
+      updateSourceRefTypography,
+      updateSourceRefVerticalAlign,
+      resetSourceRefTypography,
     };
   }
 

@@ -330,6 +330,11 @@
     serializeCartelaStyle,
     sameStyleValue,
     uniqueStyleId,
+    updateSourceRefAlignment,
+    updateSourceRefColumns,
+    updateSourceRefTypography,
+    updateSourceRefVerticalAlign,
+    resetSourceRefTypography,
   } = styleDomain;
   const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
     safeFilePart,
@@ -4245,13 +4250,7 @@
   function updateSelectedBlockAlignment(ref, fields) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
-    if (!page) return;
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
-    page.source_ref_settings[ref].alignment = {
-      ...(page.source_ref_settings[ref].alignment || {}),
-      ...fields,
-    };
+    if (!updateSourceRefAlignment(page, ref, fields)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
@@ -4266,10 +4265,7 @@
   function updateSelectedBlockVerticalAlign(ref, value) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
-    if (!page) return;
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
-    page.source_ref_settings[ref].vertical_align = normalizeVerticalAlign(value);
+    if (!updateSourceRefVerticalAlign(page, ref, value)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
@@ -4284,17 +4280,7 @@
   function updateSelectedBlockTypography(ref, key, fields, options = {}) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
-    if (!page) return;
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
-    const typography = {
-      ...(page.source_ref_settings[ref].typography || {}),
-      [key]: {
-        ...(page.source_ref_settings[ref].typography && page.source_ref_settings[ref].typography[key] ? page.source_ref_settings[ref].typography[key] : {}),
-        ...fields,
-      },
-    };
-    page.source_ref_settings[ref].typography = normalizeTypographyOverrides(typography);
+    if (!updateSourceRefTypography(page, ref, key, fields)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     if (options.rerenderEditor) renderEditor();
     renderPreview();
@@ -4304,8 +4290,7 @@
   function resetSelectedBlockTypography(ref) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
-    if (!page || !page.source_ref_settings || !page.source_ref_settings[ref]) return;
-    delete page.source_ref_settings[ref].typography;
+    if (!resetSourceRefTypography(page, ref)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderEditor();
     renderPreview();
@@ -4321,10 +4306,7 @@
   function updateSelectedBlockColumns(ref, columns) {
     const cartela = getSelectedCartela();
     const page = findPageWithRef(cartela, ref);
-    if (!page) return;
-    page.source_ref_settings = page.source_ref_settings || {};
-    page.source_ref_settings[ref] = page.source_ref_settings[ref] || {};
-    page.source_ref_settings[ref].columns = Math.max(1, Number(columns) || 1);
+    if (!updateSourceRefColumns(page, ref, columns)) return;
     state.render = buildRenderJson(state.source, state.materials, state.structure);
     renderPreview();
     refreshPdfIfActive();
