@@ -825,6 +825,8 @@
   });
   const appCommands = globalThis.CreditosAppCommands.createAppCommands({
     buildCurrentRenderJson,
+    clearCartelaStyleOverrides,
+    dbPost,
     deleteManualCartela,
     findPageWithRef,
     getEffectiveStyleTitleTypography,
@@ -833,6 +835,7 @@
     getProductionSettings,
     insertManualCartela,
     moveCartelaVisualOrderInStructure,
+    nativeBridge,
     persistSelectedProductionFields,
     pruneCurrentRedundantStyleDefaults,
     refreshPdfIfActive,
@@ -1778,45 +1781,7 @@
   }
 
   async function deleteSelectedStyle() {
-    const style = getStyleById(state.selectedStyleId);
-    if (!style || !state.selectedProductionId) return;
-    const native = nativeBridge();
-    let confirmed = false;
-    if (native && native.confirm) {
-      const result = await native.confirm({
-        title: 'Borrar estilo',
-        message: `Borrar el estilo "${style.name}"? Las cartelas que lo usen quedarán sin estilo.`,
-        confirmLabel: 'Borrar',
-      });
-      confirmed = !!(result && result.confirmed);
-    } else {
-      confirmed = window.confirm(`Borrar el estilo "${style.name}"? Las cartelas que lo usen quedarán sin estilo.`);
-    }
-    if (!confirmed) return;
-    try {
-      await dbPost('/api/db/delete-style', {
-        production_id: state.selectedProductionId,
-        style_id: style.id,
-      });
-      if (state.structure && Array.isArray(state.structure.cartelas)) {
-        state.structure.cartelas.forEach((cartela) => {
-          if (cartela.style_id === style.id) {
-            cartela.style_id = '';
-            clearCartelaStyleOverrides(cartela);
-          }
-        });
-      }
-      state.styles = state.styles.filter((candidate) => candidate.id !== style.id);
-      state.selectedStyleId = state.styles[0] ? state.styles[0].id : null;
-      if (state.source && state.structure) state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-      renderStylesPane();
-      renderCartelaList();
-      renderEditor();
-      renderPreview();
-      refreshPdfIfActive();
-    } catch (error) {
-      window.alert('No se pudo borrar el estilo: ' + error.message);
-    }
+    return appCommands.deleteSelectedStyle();
   }
 
   function renderStylePreview(style) {
