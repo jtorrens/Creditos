@@ -553,12 +553,15 @@
     cartelaImages,
     contentAreaRect,
     documentRef: document,
+    normalizeBoolean,
     transformCartelaText,
   });
   const {
+    applyTextWrapStyle: applyTextWrapStyleInPreview,
     makeMarginOverlay: makeMarginOverlayInPreview,
     makePdfCartelaImages,
     makePdfPageTitle: makePdfPageTitleInPreview,
+    makePdfText: makePdfTextInPreview,
   } = domPreview;
   const canvasPreview = globalThis.CreditosPreviewCanvas.createCanvasPreview();
   const {
@@ -5982,29 +5985,15 @@
     });
   }
 
-  function makePdfText(text, styleKey, options) {
-    const el = document.createElement('div');
-    el.className = options.className;
-    el.textContent = options.textAlreadyTransformed ? String(text || '') : transformCartelaText(text, options.cartela, options.settings || getProductionSettings());
-    applyTextWrapStyle(el, options.cartela);
-    if (options.textAlreadyTransformed) {
-      el.style.whiteSpace = 'pre';
-      el.style.overflowWrap = 'normal';
-    }
-    el.style.textAlign = options.textAlign;
-    applyTypography(el, styleKey, {
-      multiplier: options.cartela.font_size_multiplier,
-      lineMultiplier: options.cartela.line_spacing_multiplier,
-      typography: options.typography,
-      settings: options.settings,
+  function makePdfText(text, styleKey, options = {}) {
+    return makePdfTextInPreview(text, styleKey, {
+      ...options,
+      settings: options.settings || getProductionSettings(),
     });
-    return el;
   }
 
   function applyTextWrapStyle(element, cartela) {
-    const autoWrap = normalizeBoolean(cartela && cartela.auto_text_wrap, false);
-    element.style.whiteSpace = autoWrap ? 'pre-wrap' : 'pre';
-    element.style.overflowWrap = autoWrap ? 'break-word' : 'normal';
+    applyTextWrapStyleInPreview(element, cartela);
   }
 
   function renderVisualBlock(block, cartela, layout) {

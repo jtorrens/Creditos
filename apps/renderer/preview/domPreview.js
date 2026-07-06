@@ -5,6 +5,7 @@
       cartelaImages = () => [],
       contentAreaRect = () => ({ x: 0, y: 0, width: 0, height: 0 }),
       documentRef = root.document,
+      normalizeBoolean = (value, fallback) => value === undefined ? fallback : Boolean(value),
       transformCartelaText = (text) => text,
     } = dependencies;
 
@@ -69,10 +70,39 @@
       return titleEl;
     }
 
+    function applyTextWrapStyle(element, cartela) {
+      const autoWrap = normalizeBoolean(cartela && cartela.auto_text_wrap, false);
+      element.style.whiteSpace = autoWrap ? 'pre-wrap' : 'pre';
+      element.style.overflowWrap = autoWrap ? 'break-word' : 'normal';
+    }
+
+    function makePdfText(text, styleKey, options) {
+      const el = documentRef.createElement('div');
+      el.className = options.className;
+      el.textContent = options.textAlreadyTransformed
+        ? String(text || '')
+        : transformCartelaText(text, options.cartela, options.settings);
+      applyTextWrapStyle(el, options.cartela);
+      if (options.textAlreadyTransformed) {
+        el.style.whiteSpace = 'pre';
+        el.style.overflowWrap = 'normal';
+      }
+      el.style.textAlign = options.textAlign;
+      applyTypography(el, styleKey, {
+        multiplier: options.cartela.font_size_multiplier,
+        lineMultiplier: options.cartela.line_spacing_multiplier,
+        typography: options.typography,
+        settings: options.settings,
+      });
+      return el;
+    }
+
     return {
+      applyTextWrapStyle,
       makeMarginOverlay,
       makePdfCartelaImages,
       makePdfPageTitle,
+      makePdfText,
     };
   }
 
