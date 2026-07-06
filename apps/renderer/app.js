@@ -315,6 +315,24 @@
     unitRenderOptions,
     verticalOffset,
   } = coreDomainComposition;
+  const appPreferences = globalThis.CreditosAppPreferences.createAppPreferences({
+    clamp,
+    directoryFromPath,
+    documentRef: document,
+    renderVisiblePanelPreviews,
+    state,
+    storageKeys: STORAGE_KEYS,
+    windowRef: window,
+    writeNativePreference,
+  });
+  const {
+    readLocalJsonPreference,
+    readLocalPreference,
+    rememberFileDirectory,
+    setupResizablePanels,
+    writeLocalJsonPreference,
+    writeLocalPreference,
+  } = appPreferences;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
     baseStyleCartela: baseStyleCartelaFromSettings,
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
@@ -1568,129 +1586,12 @@
     }, 500));
   }
 
-  function readLocalPreference(key) {
-    if (state.preferences && state.preferences[key]) return state.preferences[key];
-    try {
-      return window.localStorage.getItem(key) || '';
-    } catch (_error) {
-      return '';
-    }
-  }
-
-  function writeLocalPreference(key, value) {
-    if (!value) return;
-    state.preferences = state.preferences || {};
-    state.preferences[key] = value;
-    writeNativePreference(key, value);
-    try {
-      window.localStorage.setItem(key, value);
-    } catch (_error) {
-      // Local persistence is a convenience only.
-    }
-  }
-
-  function readLocalJsonPreference(key, fallback) {
-    if (state.preferences && state.preferences[key] !== undefined) return state.preferences[key];
-    try {
-      const value = window.localStorage.getItem(key);
-      return value ? JSON.parse(value) : fallback;
-    } catch (_error) {
-      return fallback;
-    }
-  }
-
-  function writeLocalJsonPreference(key, value) {
-    state.preferences = state.preferences || {};
-    state.preferences[key] = value;
-    writeNativePreference(key, value);
-    try {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    } catch (_error) {
-      // Local persistence is a convenience only.
-    }
-  }
-
-  function setupResizablePanels() {
-    const stylesWorkspace = document.querySelector('.styles-workspace');
-    const savedStyles = readLocalJsonPreference(STORAGE_KEYS.stylesPanels, null);
-    if (savedStyles) applyPanelWidths('styles', {
-      left: clamp(Number(savedStyles.left) || 320, 300, 620),
-      preview: clamp(Number(savedStyles.preview) || 360, 160, 1400),
-    });
-    setupWorkspaceResizers(stylesWorkspace, 'styles', STORAGE_KEYS.stylesPanels, {
-      left: [300, 620],
-      preview: [160, 1400],
-    });
-
-    const cartelasWorkspace = document.querySelector('.cartelas-workspace');
-    const savedCartelas = readLocalJsonPreference(STORAGE_KEYS.cartelasPanels, null);
-    if (savedCartelas) applyPanelWidths('cartelas', savedCartelas);
-    setupWorkspaceResizers(cartelasWorkspace, 'cartelas', STORAGE_KEYS.cartelasPanels, {
-      left: [140, 520],
-      preview: [160, 1400],
-    });
-  }
-
-  function setupWorkspaceResizers(workspace, namespace, storageKey, limits) {
-    if (!workspace) return;
-    workspace.querySelectorAll('.panel-resizer').forEach((handle) => {
-      handle.addEventListener('pointerdown', (event) => {
-        event.preventDefault();
-        handle.setPointerCapture(event.pointerId);
-        const startX = event.clientX;
-        const current = getPanelWidths(namespace);
-        const side = handle.dataset.resizer;
-        const onMove = (moveEvent) => {
-          const delta = moveEvent.clientX - startX;
-          const next = { ...current };
-          if (side === `${namespace}-left`) {
-            next.left = clamp(current.left + delta, limits.left[0], limits.left[1]);
-          } else if (side === `${namespace}-right`) {
-            next.preview = clamp(current.preview - delta, limits.preview[0], limits.preview[1]);
-          }
-          applyPanelWidths(namespace, next);
-          renderVisiblePanelPreviews();
-        };
-        const onUp = () => {
-          writeLocalJsonPreference(storageKey, getPanelWidths(namespace));
-          handle.removeEventListener('pointermove', onMove);
-          handle.removeEventListener('pointerup', onUp);
-          handle.removeEventListener('pointercancel', onUp);
-        };
-        handle.addEventListener('pointermove', onMove);
-        handle.addEventListener('pointerup', onUp);
-        handle.addEventListener('pointercancel', onUp);
-      });
-    });
-  }
-
-  function getPanelWidths(namespace) {
-    const root = document.documentElement;
-    const fallbackLeft = namespace === 'cartelas' ? 260 : 320;
-    const fallbackPreview = namespace === 'cartelas' ? 360 : 360;
-    return {
-      left: Number.parseFloat(root.style.getPropertyValue(`--${namespace}-left-width`)) || fallbackLeft,
-      preview: Number.parseFloat(root.style.getPropertyValue(`--${namespace}-preview-width`)) || fallbackPreview,
-    };
-  }
-
-  function applyPanelWidths(namespace, widths) {
-    const root = document.documentElement;
-    root.style.setProperty(`--${namespace}-left-width`, `${Number(widths.left) || 240}px`);
-    root.style.setProperty(`--${namespace}-preview-width`, `${Number(widths.preview) || 360}px`);
-  }
-
   function renderVisiblePanelPreviews() {
     window.requestAnimationFrame(() => {
       if (state.activeTab === 'styles') renderStylePreview(getStyleById(state.selectedStyleId));
       if (state.activeTab === 'structure') renderCartelaPreview();
       if (state.activeTab === 'pdf') renderPdfPreview();
     });
-  }
-
-  function rememberFileDirectory(key, filePath) {
-    const directory = directoryFromPath(filePath);
-    if (directory) writeLocalPreference(key, directory);
   }
 
   async function loadXlsxFile(event) {
