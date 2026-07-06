@@ -93,6 +93,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "normalizeText",
     "normalizeColor",
     "normalizeBoolean",
+    "boolSelectValue",
+    "escapeHtml",
     "resolveOverride",
     "setOverride",
     "normalizeTypographyOverrides",

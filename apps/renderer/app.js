@@ -204,8 +204,10 @@
   };
   const commonDomain = globalThis.CreditosDomainCommon.createCommonDomain();
   const {
+    boolSelectValue,
     clamp,
     directoryFromPath,
+    escapeHtml,
     joinPath,
     normalizeBoolean,
     normalizeColor,
@@ -6276,16 +6278,4 @@
     return unitEl;
   }
 
-  function boolSelectValue(value) {
-    return normalizeBoolean(value, true) ? 'true' : 'false';
-  }
-
-  function escapeHtml(value) {
-    return String(value || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-  }
 }());

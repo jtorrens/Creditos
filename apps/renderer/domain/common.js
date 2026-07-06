@@ -34,6 +34,19 @@
       return Boolean(value);
     }
 
+    function boolSelectValue(value) {
+      return normalizeBoolean(value, true) ? 'true' : 'false';
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     function clamp(value, min, max) {
       return Math.max(min, Math.min(max, value));
     }
@@ -62,8 +75,10 @@
     }
 
     return {
+      boolSelectValue,
       clamp,
       directoryFromPath,
+      escapeHtml,
       joinPath,
       normalizeBoolean,
       normalizeColor,
