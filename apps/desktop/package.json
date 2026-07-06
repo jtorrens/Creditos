@@ -24,6 +24,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "native/**/*",
       "repair-electron.js",
       "run-electron.js",
       "package.json"

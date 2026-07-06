@@ -6,69 +6,19 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const appPackage = require('./package.json');
+const { createPreferenceStore } = require('./native/preferences');
 
 const APP_DISPLAY_NAME = appPackage.productName || appPackage.name || 'Créditos Refactor';
+const {
+  readWindowState,
+  readPreferences,
+  queuedWritePreference,
+  writeWindowState,
+} = createPreferenceStore({ getUserDataPath: () => app.getPath('userData') });
 
 let mainWindow = null;
 let serverProcess = null;
-let preferenceWriteQueue = Promise.resolve();
 const movExportSessions = new Map();
-
-function windowStatePath() {
-  return path.join(app.getPath('userData'), 'window-state.json');
-}
-
-function preferencesPath() {
-  return path.join(app.getPath('userData'), 'preferences.json');
-}
-
-async function readWindowState() {
-  try {
-    const data = await fs.readFile(windowStatePath(), 'utf8');
-    return JSON.parse(data);
-  } catch (_error) {
-    return {};
-  }
-}
-
-async function readPreferences() {
-  try {
-    const data = await fs.readFile(preferencesPath(), 'utf8');
-    return JSON.parse(data);
-  } catch (_error) {
-    return {};
-  }
-}
-
-async function writePreference(key, value) {
-  if (!key) return {};
-  const preferences = await readPreferences();
-  preferences[key] = value;
-  await fs.mkdir(path.dirname(preferencesPath()), { recursive: true });
-  await fs.writeFile(preferencesPath(), JSON.stringify(preferences, null, 2));
-  return preferences;
-}
-
-function queuedWritePreference(key, value) {
-  preferenceWriteQueue = preferenceWriteQueue
-    .catch(() => ({}))
-    .then(() => writePreference(key, value));
-  return preferenceWriteQueue;
-}
-
-async function writeWindowState(window) {
-  if (!window || window.isDestroyed()) return;
-  const bounds = window.getBounds();
-  const state = {
-    ...bounds,
-    isMaximized: window.isMaximized(),
-  };
-  try {
-    await fs.writeFile(windowStatePath(), JSON.stringify(state, null, 2));
-  } catch (error) {
-    console.warn('No se pudo guardar el tamano de ventana:', error.message);
-  }
-}
 
 function repoRoot() {
   if (app.isPackaged) {
