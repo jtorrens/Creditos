@@ -261,8 +261,14 @@
     getMovieBodyTargetFramesOrSource,
     getMovieExportFrameCounts,
     getPageFrameCount,
+    groupMoviePageItemsByCartela,
+    groupPhysicalPagesByCartela,
+    movieGroupFrameCounts,
+    moviePageFrameCounts,
+    moviePageItems,
     movieBodySourceTotal,
     parseFrameDuration,
+    scrollSourceFrameCounts,
   } = timecodeDomain;
   const paginationUnitsDomain = globalThis.CreditosDomainPaginationUnits.createPaginationUnitsDomain();
   const {
@@ -5368,35 +5374,19 @@
   function getSelectedMoviePages() {
     if (!state.render || !state.structure) return [];
     const pages = getCurrentPhysicalPages();
-    return getExportPageRange(pages).map((page, index) => ({
-      page,
-      pageNumber: getExportRangeStart(pages) + index,
-    })).filter((candidate) => candidate.page);
+    return moviePageItems(getExportPageRange(pages), getExportRangeStart(pages));
   }
 
   function getSelectedMoviePageGroups() {
-    const groups = [];
-    getSelectedMoviePages().forEach((item) => {
-      const cartelaId = item.page && item.page.cartela ? item.page.cartela.id : '';
-      if (!cartelaId) return;
-      let group = groups[groups.length - 1];
-      if (!group || !group.cartela || group.cartela.id !== cartelaId) {
-        group = { cartela: item.page.cartela, pages: [] };
-        groups.push(group);
-      }
-      group.pages.push(item);
-    });
-    return groups;
+    return groupMoviePageItemsByCartela(getSelectedMoviePages());
   }
 
   function getSelectedMovieFrameCounts(fps) {
-    return getSelectedMoviePages().map((item) => getPageFrameCount(item.page, fps));
+    return moviePageFrameCounts(getSelectedMoviePages(), fps);
   }
 
   function getSelectedMovieGroupFrameCounts(fps) {
-    return getSelectedMoviePageGroups().map((group) => (
-      Math.max(1, group.pages.reduce((sum, item) => sum + getPageFrameCount(item.page, fps), 0))
-    ));
+    return movieGroupFrameCounts(getSelectedMoviePageGroups(), fps);
   }
 
   function getMovieMode() {
@@ -5405,19 +5395,7 @@
 
   function getSelectedScrollCartelaGroups() {
     if (!state.render || !state.structure) return [];
-    const pages = getCurrentPhysicalPages();
-    const groups = [];
-    pages.forEach((page) => {
-      const cartelaId = page && page.cartela ? page.cartela.id : '';
-      if (!cartelaId) return;
-      let group = groups[groups.length - 1];
-      if (!group || !group.cartela || group.cartela.id !== cartelaId) {
-        group = { cartela: page.cartela, pages: [] };
-        groups.push(group);
-      }
-      group.pages.push(page);
-    });
-    return groups;
+    return groupPhysicalPagesByCartela(getCurrentPhysicalPages());
   }
 
   function selectedMovieGroupCount() {
@@ -5427,10 +5405,7 @@
   }
 
   function getSelectedScrollSourceFrames(fps) {
-    return getSelectedScrollCartelaGroups().map((group) => {
-      const duration = Math.max(0, Number(group.cartela && group.cartela.duration) || 0);
-      return Math.max(1, Math.round(duration * fps) * Math.max(1, group.pages.length));
-    });
+    return scrollSourceFrameCounts(getSelectedScrollCartelaGroups(), fps);
   }
 
   function updateMovieDurationFields(options = {}) {

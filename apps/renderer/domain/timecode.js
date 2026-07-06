@@ -141,6 +141,61 @@
       };
     }
 
+    function moviePageItems(pages, startPage = 1) {
+      const start = Math.max(1, Math.round(Number(startPage) || 1));
+      return (pages || []).map((page, index) => ({
+        page,
+        pageNumber: start + index,
+      })).filter((candidate) => candidate.page);
+    }
+
+    function groupMoviePageItemsByCartela(items) {
+      const groups = [];
+      (items || []).forEach((item) => {
+        const cartelaId = item.page && item.page.cartela ? item.page.cartela.id : '';
+        if (!cartelaId) return;
+        let group = groups[groups.length - 1];
+        if (!group || !group.cartela || group.cartela.id !== cartelaId) {
+          group = { cartela: item.page.cartela, pages: [] };
+          groups.push(group);
+        }
+        group.pages.push(item);
+      });
+      return groups;
+    }
+
+    function groupPhysicalPagesByCartela(pages) {
+      const groups = [];
+      (pages || []).forEach((page) => {
+        const cartelaId = page && page.cartela ? page.cartela.id : '';
+        if (!cartelaId) return;
+        let group = groups[groups.length - 1];
+        if (!group || !group.cartela || group.cartela.id !== cartelaId) {
+          group = { cartela: page.cartela, pages: [] };
+          groups.push(group);
+        }
+        group.pages.push(page);
+      });
+      return groups;
+    }
+
+    function moviePageFrameCounts(items, fps) {
+      return (items || []).map((item) => getPageFrameCount(item.page, fps));
+    }
+
+    function movieGroupFrameCounts(groups, fps) {
+      return (groups || []).map((group) => (
+        Math.max(1, (group.pages || []).reduce((sum, item) => sum + getPageFrameCount(item.page, fps), 0))
+      ));
+    }
+
+    function scrollSourceFrameCounts(groups, fps) {
+      return (groups || []).map((group) => {
+        const duration = Math.max(0, Number(group.cartela && group.cartela.duration) || 0);
+        return Math.max(1, Math.round(duration * fps) * Math.max(1, (group.pages || []).length));
+      });
+    }
+
     return {
       distributeFrames,
       fitPageFrameCountsToTarget,
@@ -150,10 +205,16 @@
       getMovieExportFrameCounts,
       getMovieTargetFramesOrSource,
       getPageFrameCount,
+      groupMoviePageItemsByCartela,
+      groupPhysicalPagesByCartela,
+      movieGroupFrameCounts,
+      moviePageFrameCounts,
+      moviePageItems,
       movieBodySourceFrames,
       movieBodySourceTotal,
       normalizeMovieSegments,
       parseFrameDuration,
+      scrollSourceFrameCounts,
     };
   }
 
