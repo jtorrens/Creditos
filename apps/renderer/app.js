@@ -279,6 +279,7 @@
     moviePageItems,
     movieBodySourceTotal,
     movieDurationFrameSummary,
+    normalizeDurationInputValue: normalizeDurationInputValueInDomain,
     normalizeMovieSegmentSettings,
     parseFrameDuration,
     scrollSourceFrameCounts,
@@ -557,7 +558,7 @@
   });
   els.defaultDurationInput.addEventListener('change', () => {
     const fps = getMovieFps();
-    const frames = normalizeDurationInputValue(els.defaultDurationInput, fps);
+    const frames = normalizeDurationInputElement(els.defaultDurationInput, fps);
     if (frames === null) {
       window.alert(`Introduce la duración como mm:ss:ff. También puedes escribir solo números, por ejemplo 35 = ${formatFrameDuration(35, fps)}.`);
       els.defaultDurationInput.value = formatSecondsAsFrameDuration(getProductionSettings().default_cartela_duration, fps);
@@ -4829,19 +4830,19 @@
     return Math.max(1, Math.round(Number(settings.movie_fps) || 25));
   }
 
-  function normalizeDurationInputValue(input, fps) {
-    const frames = parseFrameDuration(input && input.value, fps);
-    if (frames === null) return null;
-    input.value = formatFrameDuration(frames, fps);
-    return frames;
+  function normalizeDurationInputElement(input, fps) {
+    const result = normalizeDurationInputValueInDomain(input && input.value, fps);
+    if (result === null) return null;
+    if (input) input.value = result.value;
+    return result.frames;
   }
 
   function readMovieSegmentSettings(fps) {
     return normalizeMovieSegmentSettings(selectedMovieGroupCount(), {
       preCount: els.moviePrerollCountInput && els.moviePrerollCountInput.value,
       postCount: els.moviePostrollCountInput && els.moviePostrollCountInput.value,
-      preFrames: normalizeDurationInputValue(els.moviePrerollDurationInput, fps) || 0,
-      postFrames: normalizeDurationInputValue(els.moviePostrollDurationInput, fps) || 0,
+      preFrames: normalizeDurationInputElement(els.moviePrerollDurationInput, fps) || 0,
+      postFrames: normalizeDurationInputElement(els.moviePostrollDurationInput, fps) || 0,
     });
   }
 

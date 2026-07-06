@@ -72,6 +72,7 @@ MOVED_DOMAIN_FUNCTIONS = [
     "formatFrameDuration",
     "formatSecondsAsFrameDuration",
     "parseFrameDuration",
+    "normalizeDurationInputValue",
     "distributeFrames",
     "fitPageFrameCountsToTarget",
     "explicitTextLines",

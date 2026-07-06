@@ -46,6 +46,15 @@
       return (minutes * 60 * safeFps) + (seconds * safeFps) + frames;
     }
 
+    function normalizeDurationInputValue(value, fps) {
+      const frames = parseFrameDuration(value, fps);
+      if (frames === null) return null;
+      return {
+        frames,
+        value: formatFrameDuration(frames, fps),
+      };
+    }
+
     function distributeFrames(totalFrames, itemCount) {
       const count = Math.max(0, Math.round(Number(itemCount) || 0));
       if (!count) return [];
@@ -262,6 +271,7 @@
       movieDurationFrameSummary,
       normalizeMovieSegmentSettings,
       normalizeMovieSegments,
+      normalizeDurationInputValue,
       parseFrameDuration,
       scrollSourceFrameCounts,
     };
