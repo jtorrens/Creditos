@@ -417,30 +417,6 @@
     updateReferenceVideoDurationField,
     updateReferenceVideoStatus,
   } = appReferenceVideo;
-  const appSourceImport = globalThis.CreditosAppSourceImport.createAppSourceImport({
-    applyLockedMaterials,
-    createMaterialsFromSource,
-    createStructureFromSource,
-    dbPost,
-    els,
-    getStructureJsonForOutput,
-    nativeBridge,
-    normalizeSource,
-    readLocalPreference,
-    rebuild,
-    rememberFileDirectory,
-    renderMeta,
-    selectedImportModelIdInDomain,
-    selectedProduction,
-    state,
-    storageKeys: STORAGE_KEYS,
-    updateXlsxStatus,
-    windowRef: window,
-  });
-  const {
-    loadXlsxFile,
-    openXlsxFile,
-  } = appSourceImport;
   const appPreviewSettings = globalThis.CreditosAppPreviewSettings.createAppPreviewSettings({
     documentRef: document,
     els,
@@ -585,6 +561,30 @@
     updateCartela: updateCartelaInStructure,
     uniqueCartelaImageId,
   } = structureDomain;
+  const appSourceImport = globalThis.CreditosAppSourceImport.createAppSourceImport({
+    applyLockedMaterials,
+    createMaterialsFromSource,
+    createStructureFromSource,
+    dbPost,
+    els,
+    getStructureJsonForOutput,
+    nativeBridge,
+    normalizeSource,
+    readLocalPreference,
+    rebuild,
+    rememberFileDirectory,
+    renderMeta,
+    selectedImportModelIdInDomain,
+    selectedProduction,
+    state,
+    storageKeys: STORAGE_KEYS,
+    updateXlsxStatus,
+    windowRef: window,
+  });
+  const {
+    loadXlsxFile,
+    openXlsxFile,
+  } = appSourceImport;
   const scrollDomain = globalThis.CreditosDomainScroll.createScrollDomain({
     blockForTitleRepeat,
     canvasTextHeight,
