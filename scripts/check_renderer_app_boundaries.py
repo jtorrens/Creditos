@@ -107,6 +107,8 @@ MOVED_DOMAIN_FUNCTIONS = [
     "scrollBlocksForPages",
     "scrollBlockHasVisibleText",
     "scrollUnitHasVisibleText",
+    "settingsWithProductionLayout",
+    "stripProductionLayoutFromSettings",
 ]
 
 

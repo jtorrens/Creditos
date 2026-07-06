@@ -230,6 +230,8 @@
     normalizeProtectedCapitalizationText,
     normalizeSettings,
     normalizeTextCapitalization,
+    settingsWithProductionLayout,
+    stripProductionLayoutFromSettings,
   } = settingsDomain;
   const previewSettingsDomain = globalThis.CreditosDomainPreviewSettings.createPreviewSettingsDomain({
     movEncodingProfiles: MOV_ENCODING_PROFILES,
@@ -1875,30 +1877,6 @@
     );
   }
 
-  function settingsWithProductionLayout(settings) {
-    const normalized = normalizeSettings(settings || getProductionSettings());
-    const productionLayout = getProductionLayout();
-    return {
-      ...normalized,
-      layout: {
-        ...normalized.layout,
-        page_width: productionLayout.page_width,
-        page_height: productionLayout.page_height,
-        page_background: productionLayout.preview_background,
-      },
-    };
-  }
-
-  function stripProductionLayoutFromSettings(settings) {
-    const output = normalizeSettings(settings || {});
-    if (output.layout) {
-      delete output.layout.page_width;
-      delete output.layout.page_height;
-      delete output.layout.page_background;
-    }
-    return output;
-  }
-
   function buildRenderJson(source, materials, structure) {
     const materialById = new Map(materials.map((material) => [material.id, material]));
     const overrides = structure.overrides || {};
@@ -1915,7 +1893,7 @@
         protected_capitalizations: productionSettings.protected_capitalizations,
         use_protected_capitalization: productionSettings.use_protected_capitalization,
         typography: productionSettings.typography,
-        layout: settingsWithProductionLayout(productionSettings).layout,
+        layout: settingsWithProductionLayout(productionSettings, getProductionLayout()).layout,
       },
       cartelas: getVisualCartelas(structure.cartelas || [])
         .filter((cartela) => cartela.enabled !== false)
@@ -2005,7 +1983,7 @@
         ? cartela.use_protected_capitalization
         : normalizedSettings.use_protected_capitalization
     );
-    const layout = layoutForCartela(settingsWithProductionLayout(normalizedSettings).layout, cartela);
+    const layout = layoutForCartela(settingsWithProductionLayout(normalizedSettings, getProductionLayout()).layout, cartela);
     const columns = Math.max(1, Number(block.columns) || 1);
     const contentWidth = Math.max(1, layout.page_width - layout.page_left_margin - layout.page_right_margin);
     const columnWidth = Math.max(1, (contentWidth - layout.column_gap * (columns - 1)) / columns);
@@ -4766,7 +4744,7 @@
   }
 
   function getRenderLayout() {
-    return settingsWithProductionLayout(getProductionSettings()).layout;
+    return settingsWithProductionLayout(getProductionSettings(), getProductionLayout()).layout;
   }
 
   function setOverride(refId, field, value, fallback) {

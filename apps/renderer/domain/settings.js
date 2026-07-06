@@ -107,6 +107,29 @@
       return normalized;
     }
 
+    function settingsWithProductionLayout(settings = {}, productionLayout = {}) {
+      const normalized = normalizeSettings(settings || {});
+      return {
+        ...normalized,
+        layout: {
+          ...normalized.layout,
+          page_width: Math.max(1, Number(productionLayout.page_width) || normalized.layout.page_width),
+          page_height: Math.max(1, Number(productionLayout.page_height) || normalized.layout.page_height),
+          page_background: normalizeColor(productionLayout.preview_background || productionLayout.page_background || normalized.layout.page_background),
+        },
+      };
+    }
+
+    function stripProductionLayoutFromSettings(settings) {
+      const output = normalizeSettings(settings || {});
+      if (output.layout) {
+        delete output.layout.page_width;
+        delete output.layout.page_height;
+        delete output.layout.page_background;
+      }
+      return output;
+    }
+
     function normalizeLanguage(value) {
       const key = String(value || 'es').toLowerCase();
       return languageOptions.some(([option]) => option === key) ? key : 'es';
@@ -188,6 +211,8 @@
       normalizeProtectedCapitalizationText,
       normalizeSettings,
       normalizeTextCapitalization,
+      settingsWithProductionLayout,
+      stripProductionLayoutFromSettings,
     };
   }
 
