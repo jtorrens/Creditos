@@ -10,7 +10,7 @@ DATABASE_SYNC_PATH = REPO_ROOT / "apps" / "desktop" / "native" / "databaseSync.j
 
 REQUIRED_REFACTOR_DB_FILES = [
     REPO_ROOT / "apps" / "desktop" / "native" / "appPaths.js",
-    REPO_ROOT / "apps" / "renderer" / "app.js",
+    REPO_ROOT / "apps" / "renderer" / "appProjectSelection.js",
     REPO_ROOT / "apps" / "renderer" / "server_db" / "connection.py",
     REPO_ROOT / "apps" / "renderer" / "start.command",
     REPO_ROOT / "scripts" / "updateCreditosPC.bat",
