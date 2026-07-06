@@ -614,6 +614,89 @@
       return output;
     }
 
+    function updateStyleCartela(style, fields) {
+      if (!style) return false;
+      style.cartela = sanitizeStyleCartelaOverrides({ ...(style.cartela || {}), ...(fields || {}) });
+      return true;
+    }
+
+    function resetStyleCartelaOverride(style, key) {
+      if (!style || !style.cartela) return false;
+      delete style.cartela[key];
+      if (!Object.keys(style.cartela).length) style.cartela = {};
+      return true;
+    }
+
+    function updateStyleBlock(style, fields) {
+      if (!style) return false;
+      style.block = sanitizeStyleBlockOverrides({
+        ...(style.block || {}),
+        ...(fields || {}),
+        alignment: fields && fields.alignment || (style.block && style.block.alignment) || {},
+        typography: fields && fields.typography || (style.block && style.block.typography) || {},
+      });
+      return true;
+    }
+
+    function updateStyleBlockAlignment(style, key, value) {
+      if (!style) return false;
+      const current = style.block && style.block.alignment ? style.block.alignment : {};
+      return updateStyleBlock(style, { alignment: { ...current, [key]: value } });
+    }
+
+    function resetStyleBlockOverride(style, key) {
+      if (!style || !style.block) return false;
+      delete style.block[key];
+      if (!Object.keys(style.block).length) style.block = {};
+      return true;
+    }
+
+    function resetStyleBlockAlignmentOverride(style, key) {
+      if (!style || !style.block || !style.block.alignment) return false;
+      delete style.block.alignment[key];
+      if (!Object.keys(style.block.alignment).length) delete style.block.alignment;
+      if (!Object.keys(style.block).length) style.block = {};
+      return true;
+    }
+
+    function updateStyleTitleTypography(style, fields, base = {}) {
+      if (!style) return false;
+      const current = style.title_typography && style.title_typography.page_header ? style.title_typography.page_header : {};
+      const next = normalizeTitleTypographyOverrides({ page_header: { ...current, ...(fields || {}) } });
+      Object.keys(next.page_header || {}).forEach((key) => {
+        if (sameStyleValue(next.page_header[key], base && base[key])) delete next.page_header[key];
+      });
+      style.title_typography = next.page_header && Object.keys(next.page_header).length ? next : {};
+      return true;
+    }
+
+    function resetStyleTitleTypographyOverride(style) {
+      if (!style) return false;
+      style.title_typography = {};
+      return true;
+    }
+
+    function updateStyleTypography(style, key, fields) {
+      if (!style) return false;
+      const block = sanitizeStyleBlockOverrides(style.block || {});
+      block.typography = normalizeTypographyOverrides({
+        ...(block.typography || {}),
+        [key]: {
+          ...(block.typography && block.typography[key] ? block.typography[key] : {}),
+          ...(fields || {}),
+        },
+      });
+      return updateStyleBlock(style, { typography: block.typography });
+    }
+
+    function resetStyleTypographyOverride(style, key) {
+      if (!style || !style.block || !style.block.typography) return false;
+      delete style.block.typography[key];
+      if (!Object.keys(style.block.typography).length) delete style.block.typography;
+      if (!Object.keys(style.block).length) style.block = {};
+      return true;
+    }
+
     return {
       applyBlockStyleToCartelaRefs,
       baseStyleCartelaFromSettings,
@@ -653,6 +736,11 @@
       resetCartelaBlockTypographyOverride,
       resetCartelaTitleTypographyOverride,
       resetSourceRefTypography,
+      resetStyleBlockAlignmentOverride,
+      resetStyleBlockOverride,
+      resetStyleCartelaOverride,
+      resetStyleTitleTypographyOverride,
+      resetStyleTypographyOverride,
       sanitizeStyleCartelaOverrides,
       sanitizeStyleBlockOverrides,
       serializeCartelaStyle,
@@ -666,6 +754,11 @@
       updateSourceRefColumns,
       updateSourceRefTypography,
       updateSourceRefVerticalAlign,
+      updateStyleBlock,
+      updateStyleBlockAlignment,
+      updateStyleCartela,
+      updateStyleTitleTypography,
+      updateStyleTypography,
     };
   }
 

@@ -333,6 +333,11 @@
     resetCartelaBlockTypographyOverride: resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaTitleTypographyOverride: resetCartelaTitleTypographyOverrideInDomain,
     resetSourceRefTypography,
+    resetStyleBlockAlignmentOverride: resetStyleBlockAlignmentOverrideInDomain,
+    resetStyleBlockOverride: resetStyleBlockOverrideInDomain,
+    resetStyleCartelaOverride: resetStyleCartelaOverrideInDomain,
+    resetStyleTitleTypographyOverride: resetStyleTitleTypographyOverrideInDomain,
+    resetStyleTypographyOverride: resetStyleTypographyOverrideInDomain,
     sanitizeStyleCartelaOverrides,
     sanitizeStyleBlockOverrides,
     serializeCartelaStyle,
@@ -346,6 +351,11 @@
     updateSourceRefColumns,
     updateSourceRefTypography,
     updateSourceRefVerticalAlign,
+    updateStyleBlock: updateStyleBlockInDomain,
+    updateStyleBlockAlignment: updateStyleBlockAlignmentInDomain,
+    updateStyleCartela: updateStyleCartelaInDomain,
+    updateStyleTitleTypography: updateStyleTitleTypographyInDomain,
+    updateStyleTypography: updateStyleTypographyInDomain,
   } = styleDomain;
   const sourceDomain = globalThis.CreditosDomainSource.createSourceDomain({
     safeFilePart,
@@ -2645,47 +2655,47 @@
     wrap.appendChild(localSelectRow('Orientación', cartela.orientation, [
       ['horizontal', 'Horizontal'],
       ['vertical', 'Vertical'],
-    ], (value) => updateStyleCartela(style, { orientation: value })));
-    wrap.appendChild(localNumberRow('Columnas', cartela.columns, 1, 6, (value) => updateStyleCartela(style, { columns: value })));
-    wrap.appendChild(localNumberRow('Desplazamiento vertical', cartela.vertical_offset, null, null, (value) => updateStyleCartela(style, { vertical_offset: value })));
-    wrap.appendChild(localDurationRow('Duración por página', cartela.duration, (value) => updateStyleCartela(style, { duration: value }), { override: hasStyleCartelaOverride(style, 'duration'), reset: () => resetStyleCartelaOverride(style, 'duration') }));
-    wrap.appendChild(localNumberRow('Interlineado', cartela.line_spacing, 0.1, null, (value) => updateStyleCartela(style, { line_spacing: value }), 0.01, { override: hasStyleCartelaOverride(style, 'line_spacing'), reset: () => resetStyleCartelaOverride(style, 'line_spacing') }));
-    wrap.appendChild(localNumberRow('Separación entre columnas', cartela.column_gap, 0, null, (value) => updateStyleCartela(style, { column_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'column_gap'), reset: () => resetStyleCartelaOverride(style, 'column_gap') }));
-    wrap.appendChild(localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => updateStyleCartela(style, { role_name_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => resetStyleCartelaOverride(style, 'role_name_gap') }));
-    wrap.appendChild(localNumberRow('Separación de grupos del origen', cartela.source_group_gap, 0, null, (value) => updateStyleCartela(style, { source_group_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'source_group_gap'), reset: () => resetStyleCartelaOverride(style, 'source_group_gap') }));
-    wrap.appendChild(localNumberRow('Separación entre bloques', cartela.block_gap, 0, null, (value) => updateStyleCartela(style, { block_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_gap'), reset: () => resetStyleCartelaOverride(style, 'block_gap') }));
-    wrap.appendChild(localNumberRow('Separación título/primera fila', cartela.block_title_gap, 0, null, (value) => updateStyleCartela(style, { block_title_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_title_gap'), reset: () => resetStyleCartelaOverride(style, 'block_title_gap') }));
-    wrap.appendChild(localNumberRow('Margen superior', cartela.page_top_margin, 0, null, (value) => updateStyleCartela(style, { page_top_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_top_margin'), reset: () => resetStyleCartelaOverride(style, 'page_top_margin') }));
-    wrap.appendChild(localNumberRow('Margen inferior', cartela.page_bottom_margin, 0, null, (value) => updateStyleCartela(style, { page_bottom_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_bottom_margin'), reset: () => resetStyleCartelaOverride(style, 'page_bottom_margin') }));
-    wrap.appendChild(localNumberRow('Margen izquierdo', cartela.page_left_margin, 0, null, (value) => updateStyleCartela(style, { page_left_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_left_margin'), reset: () => resetStyleCartelaOverride(style, 'page_left_margin') }));
-    wrap.appendChild(localNumberRow('Margen derecho', cartela.page_right_margin, 0, null, (value) => updateStyleCartela(style, { page_right_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_right_margin'), reset: () => resetStyleCartelaOverride(style, 'page_right_margin') }));
-    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(cartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { repeat_block_titles: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'repeat_block_titles'), reset: () => resetStyleCartelaOverride(style, 'repeat_block_titles') }));
-    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(cartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { auto_text_wrap: normalizeBoolean(value, false) }), { override: hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => resetStyleCartelaOverride(style, 'auto_text_wrap') }));
-    wrap.appendChild(localSelectRow('Capitalización', cartela.text_capitalization, TEXT_CAPITALIZATION_OPTIONS, (value) => updateStyleCartela(style, { text_capitalization: value }), { override: hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => resetStyleCartelaOverride(style, 'text_capitalization') }));
-    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(cartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateStyleCartela(style, { use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => resetStyleCartelaOverride(style, 'use_protected_capitalization') }));
+    ], (value) => updateEditableStyleCartela(style, { orientation: value })));
+    wrap.appendChild(localNumberRow('Columnas', cartela.columns, 1, 6, (value) => updateEditableStyleCartela(style, { columns: value })));
+    wrap.appendChild(localNumberRow('Desplazamiento vertical', cartela.vertical_offset, null, null, (value) => updateEditableStyleCartela(style, { vertical_offset: value })));
+    wrap.appendChild(localDurationRow('Duración por página', cartela.duration, (value) => updateEditableStyleCartela(style, { duration: value }), { override: hasStyleCartelaOverride(style, 'duration'), reset: () => resetEditableStyleCartelaOverride(style, 'duration') }));
+    wrap.appendChild(localNumberRow('Interlineado', cartela.line_spacing, 0.1, null, (value) => updateEditableStyleCartela(style, { line_spacing: value }), 0.01, { override: hasStyleCartelaOverride(style, 'line_spacing'), reset: () => resetEditableStyleCartelaOverride(style, 'line_spacing') }));
+    wrap.appendChild(localNumberRow('Separación entre columnas', cartela.column_gap, 0, null, (value) => updateEditableStyleCartela(style, { column_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'column_gap'), reset: () => resetEditableStyleCartelaOverride(style, 'column_gap') }));
+    wrap.appendChild(localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => updateEditableStyleCartela(style, { role_name_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => resetEditableStyleCartelaOverride(style, 'role_name_gap') }));
+    wrap.appendChild(localNumberRow('Separación de grupos del origen', cartela.source_group_gap, 0, null, (value) => updateEditableStyleCartela(style, { source_group_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'source_group_gap'), reset: () => resetEditableStyleCartelaOverride(style, 'source_group_gap') }));
+    wrap.appendChild(localNumberRow('Separación entre bloques', cartela.block_gap, 0, null, (value) => updateEditableStyleCartela(style, { block_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_gap'), reset: () => resetEditableStyleCartelaOverride(style, 'block_gap') }));
+    wrap.appendChild(localNumberRow('Separación título/primera fila', cartela.block_title_gap, 0, null, (value) => updateEditableStyleCartela(style, { block_title_gap: value }), 1, { override: hasStyleCartelaOverride(style, 'block_title_gap'), reset: () => resetEditableStyleCartelaOverride(style, 'block_title_gap') }));
+    wrap.appendChild(localNumberRow('Margen superior', cartela.page_top_margin, 0, null, (value) => updateEditableStyleCartela(style, { page_top_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_top_margin'), reset: () => resetEditableStyleCartelaOverride(style, 'page_top_margin') }));
+    wrap.appendChild(localNumberRow('Margen inferior', cartela.page_bottom_margin, 0, null, (value) => updateEditableStyleCartela(style, { page_bottom_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_bottom_margin'), reset: () => resetEditableStyleCartelaOverride(style, 'page_bottom_margin') }));
+    wrap.appendChild(localNumberRow('Margen izquierdo', cartela.page_left_margin, 0, null, (value) => updateEditableStyleCartela(style, { page_left_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_left_margin'), reset: () => resetEditableStyleCartelaOverride(style, 'page_left_margin') }));
+    wrap.appendChild(localNumberRow('Margen derecho', cartela.page_right_margin, 0, null, (value) => updateEditableStyleCartela(style, { page_right_margin: value }), 1, { override: hasStyleCartelaOverride(style, 'page_right_margin'), reset: () => resetEditableStyleCartelaOverride(style, 'page_right_margin') }));
+    wrap.appendChild(localSelectRow('Repetir nombre de bloque', boolSelectValue(cartela.repeat_block_titles), YES_NO_OPTIONS, (value) => updateEditableStyleCartela(style, { repeat_block_titles: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'repeat_block_titles'), reset: () => resetEditableStyleCartelaOverride(style, 'repeat_block_titles') }));
+    wrap.appendChild(localSelectRow('Ajuste automático de texto', boolSelectValue(cartela.auto_text_wrap), YES_NO_OPTIONS, (value) => updateEditableStyleCartela(style, { auto_text_wrap: normalizeBoolean(value, false) }), { override: hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => resetEditableStyleCartelaOverride(style, 'auto_text_wrap') }));
+    wrap.appendChild(localSelectRow('Capitalización', cartela.text_capitalization, TEXT_CAPITALIZATION_OPTIONS, (value) => updateEditableStyleCartela(style, { text_capitalization: value }), { override: hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => resetEditableStyleCartelaOverride(style, 'text_capitalization') }));
+    wrap.appendChild(localSelectRow('Usar capitalización protegida', boolSelectValue(cartela.use_protected_capitalization), YES_NO_OPTIONS, (value) => updateEditableStyleCartela(style, { use_protected_capitalization: normalizeBoolean(value, true) }), { override: hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => resetEditableStyleCartelaOverride(style, 'use_protected_capitalization') }));
     wrap.appendChild(renderStyleTitleTypographyControls(style));
 
     wrap.appendChild(sectionLabel('Bloque'));
     const block = getEffectiveStyleBlock(style);
     const alignment = block.alignment || {};
     const options = [['left', 'Izquierda'], ['center', 'Centro'], ['right', 'Derecha']];
-    wrap.appendChild(localNumberRow('Columnas del bloque', block.columns, 1, 6, (value) => updateStyleBlock(style, { columns: value })));
-    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(block.concatenate_rows), YES_NO_OPTIONS, (value) => updateStyleBlock(style, { concatenate_rows: normalizeBoolean(value, false) }), { override: !!(style.block && style.block.concatenate_rows !== undefined), reset: () => resetStyleBlockOverride(style, 'concatenate_rows') }));
-    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(block.force_role_name_columns), YES_NO_OPTIONS, (value) => updateStyleBlock(style, { force_role_name_columns: normalizeBoolean(value, false) }), { override: !!(style.block && style.block.force_role_name_columns !== undefined), reset: () => resetStyleBlockOverride(style, 'force_role_name_columns') }));
-    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (value) => updateStyleBlockAlignment(style, 'role', value)));
-    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (value) => updateStyleBlockAlignment(style, 'name', value)));
-    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (value) => updateStyleBlockAlignment(style, 'text', value)));
+    wrap.appendChild(localNumberRow('Columnas del bloque', block.columns, 1, 6, (value) => updateEditableStyleBlock(style, { columns: value })));
+    wrap.appendChild(localSelectRow('Concatenar filas', boolSelectValue(block.concatenate_rows), YES_NO_OPTIONS, (value) => updateEditableStyleBlock(style, { concatenate_rows: normalizeBoolean(value, false) }), { override: !!(style.block && style.block.concatenate_rows !== undefined), reset: () => resetEditableStyleBlockOverride(style, 'concatenate_rows') }));
+    wrap.appendChild(localSelectRow('Forzar estructura cargo/nombre', boolSelectValue(block.force_role_name_columns), YES_NO_OPTIONS, (value) => updateEditableStyleBlock(style, { force_role_name_columns: normalizeBoolean(value, false) }), { override: !!(style.block && style.block.force_role_name_columns !== undefined), reset: () => resetEditableStyleBlockOverride(style, 'force_role_name_columns') }));
+    wrap.appendChild(localSelectRow('Alineación cargo', alignment.role || 'right', options, (value) => updateEditableStyleBlockAlignment(style, 'role', value)));
+    wrap.appendChild(localSelectRow('Alineación nombre', alignment.name || 'left', options, (value) => updateEditableStyleBlockAlignment(style, 'name', value)));
+    wrap.appendChild(localSelectRow('Alineación texto', alignment.text || 'center', options, (value) => updateEditableStyleBlockAlignment(style, 'text', value)));
     wrap.appendChild(localSelectRow('Alineación vertical', block.vertical_align, [
       ['top', 'Arriba'],
       ['center', 'Centrado'],
       ['bottom', 'Abajo'],
-    ], (value) => updateStyleBlock(style, { vertical_align: value })));
+    ], (value) => updateEditableStyleBlock(style, { vertical_align: value })));
     wrap.appendChild(renderStyleTypographyControls(style));
     return wrap;
   }
 
-  function updateStyleCartela(style, fields) {
-    style.cartela = sanitizeStyleCartelaOverrides({ ...(style.cartela || {}), ...fields });
+  function updateEditableStyleCartela(style, fields) {
+    if (!updateStyleCartelaInDomain(style, fields)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
@@ -2696,20 +2706,13 @@
     refreshPdfIfActive();
   }
 
-  function resetStyleCartelaOverride(style, key) {
-    if (!style || !style.cartela) return;
-    delete style.cartela[key];
-    if (!Object.keys(style.cartela).length) style.cartela = {};
+  function resetEditableStyleCartelaOverride(style, key) {
+    if (!resetStyleCartelaOverrideInDomain(style, key)) return;
     updateStyleAfterOverrideChange(style);
   }
 
-  function updateStyleBlock(style, fields) {
-    style.block = sanitizeStyleBlockOverrides({
-      ...(style.block || {}),
-      ...fields,
-      alignment: fields.alignment || (style.block && style.block.alignment) || {},
-      typography: fields.typography || (style.block && style.block.typography) || {},
-    });
+  function updateEditableStyleBlock(style, fields) {
+    if (!updateStyleBlockInDomain(style, fields)) return;
     pruneRedundantStyleDefaults();
     syncStyleSnapshot(style.id);
     state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
@@ -2720,23 +2723,25 @@
     refreshPdfIfActive();
   }
 
-  function updateStyleBlockAlignment(style, key, value) {
-    const current = style.block && style.block.alignment ? style.block.alignment : {};
-    updateStyleBlock(style, { alignment: { ...current, [key]: value } });
+  function updateEditableStyleBlockAlignment(style, key, value) {
+    if (!updateStyleBlockAlignmentInDomain(style, key, value)) return;
+    pruneRedundantStyleDefaults();
+    syncStyleSnapshot(style.id);
+    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    scheduleStyleAutosave(style.id);
+    renderStylesPane();
+    renderEditor();
+    renderPreview();
+    refreshPdfIfActive();
   }
 
-  function resetStyleBlockOverride(style, key) {
-    if (!style || !style.block) return;
-    delete style.block[key];
-    if (!Object.keys(style.block).length) style.block = {};
+  function resetEditableStyleBlockOverride(style, key) {
+    if (!resetStyleBlockOverrideInDomain(style, key)) return;
     updateStyleAfterOverrideChange(style);
   }
 
-  function resetStyleBlockAlignmentOverride(style, key) {
-    if (!style || !style.block || !style.block.alignment) return;
-    delete style.block.alignment[key];
-    if (!Object.keys(style.block.alignment).length) delete style.block.alignment;
-    if (!Object.keys(style.block).length) style.block = {};
+  function resetEditableStyleBlockAlignmentOverride(style, key) {
+    if (!resetStyleBlockAlignmentOverrideInDomain(style, key)) return;
     updateStyleAfterOverrideChange(style);
   }
 
@@ -2774,7 +2779,7 @@
       sizeInput.type = 'number';
       sizeInput.min = '1';
       sizeInput.value = String(value.font_size);
-      sizeInput.addEventListener('change', () => updateStyleTypography(style, key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+      sizeInput.addEventListener('change', () => updateEditableStyleTypography(style, key, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
       row.appendChild(sizeInput);
 
       const fontSelect = document.createElement('select');
@@ -2794,7 +2799,7 @@
       fontSelect.value = value.font_family;
       fontSelect.addEventListener('change', () => {
         const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
-        updateStyleTypography(style, key, {
+        updateEditableStyleTypography(style, key, {
           font_family: fontSelect.value,
           font_style: nextStyle.style,
           font_postscript_name: nextStyle.postscript_name,
@@ -2822,7 +2827,7 @@
       styleSelect.value = value.font_style;
       styleSelect.addEventListener('change', () => {
         const selected = styleSelect.selectedOptions[0];
-        updateStyleTypography(style, key, {
+        updateEditableStyleTypography(style, key, {
           font_style: styleSelect.value,
           font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
         });
@@ -2833,13 +2838,13 @@
       colorInput.className = 'color-input';
       colorInput.type = 'color';
       colorInput.value = normalizeColor(value.color);
-      colorInput.addEventListener('input', () => updateStyleTypography(style, key, { color: colorInput.value }));
+      colorInput.addEventListener('input', () => updateEditableStyleTypography(style, key, { color: colorInput.value }));
       row.appendChild(colorInput);
       if (isOverride) {
         const resetButton = document.createElement('button');
         resetButton.type = 'button';
         resetButton.textContent = 'Restablecer';
-        resetButton.addEventListener('click', () => resetStyleTypographyOverride(style, key));
+        resetButton.addEventListener('click', () => resetEditableStyleTypographyOverride(style, key));
         row.appendChild(resetButton);
       }
       wrap.appendChild(row);
@@ -2865,7 +2870,7 @@
     sizeInput.type = 'number';
     sizeInput.min = '1';
     sizeInput.value = String(value.font_size);
-    sizeInput.addEventListener('change', () => updateStyleTitleTypography(style, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
+    sizeInput.addEventListener('change', () => updateEditableStyleTitleTypography(style, { font_size: Math.max(1, Number(sizeInput.value) || base.font_size) }));
     row.appendChild(sizeInput);
 
     const fontSelect = document.createElement('select');
@@ -2885,7 +2890,7 @@
     fontSelect.value = value.font_family;
     fontSelect.addEventListener('change', () => {
       const nextStyle = getFontStyles(fontSelect.value)[0] || { style: 'Regular', postscript_name: '' };
-      updateStyleTitleTypography(style, {
+      updateEditableStyleTitleTypography(style, {
         font_family: fontSelect.value,
         font_style: nextStyle.style,
         font_postscript_name: nextStyle.postscript_name,
@@ -2913,7 +2918,7 @@
     styleSelect.value = value.font_style;
     styleSelect.addEventListener('change', () => {
       const selected = styleSelect.selectedOptions[0];
-      updateStyleTitleTypography(style, {
+      updateEditableStyleTitleTypography(style, {
         font_style: styleSelect.value,
         font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
       });
@@ -2924,54 +2929,45 @@
     colorInput.className = 'color-input';
     colorInput.type = 'color';
     colorInput.value = normalizeColor(value.color);
-    colorInput.addEventListener('input', () => updateStyleTitleTypography(style, { color: colorInput.value }));
+    colorInput.addEventListener('input', () => updateEditableStyleTitleTypography(style, { color: colorInput.value }));
     row.appendChild(colorInput);
 
     if (hasStyleTitleTypographyOverride(style)) {
       const resetButton = document.createElement('button');
       resetButton.type = 'button';
       resetButton.textContent = 'Restablecer';
-      resetButton.addEventListener('click', () => resetStyleTitleTypographyOverride(style));
+      resetButton.addEventListener('click', () => resetEditableStyleTitleTypographyOverride(style));
       row.appendChild(resetButton);
     }
     wrap.appendChild(row);
     return wrap;
   }
 
-  function updateStyleTitleTypography(style, fields) {
-    const current = style.title_typography && style.title_typography.page_header ? style.title_typography.page_header : {};
-    const next = normalizeTitleTypographyOverrides({ page_header: { ...current, ...fields } });
+  function updateEditableStyleTitleTypography(style, fields) {
     const base = getProductionSettings().typography.page_header;
-    Object.keys(next.page_header || {}).forEach((key) => {
-      if (sameStyleValue(next.page_header[key], base && base[key])) delete next.page_header[key];
-    });
-    style.title_typography = next.page_header && Object.keys(next.page_header).length ? next : {};
+    if (!updateStyleTitleTypographyInDomain(style, fields, base)) return;
     updateStyleAfterOverrideChange(style);
   }
 
-  function resetStyleTitleTypographyOverride(style) {
-    if (!style) return;
-    style.title_typography = {};
+  function resetEditableStyleTitleTypographyOverride(style) {
+    if (!resetStyleTitleTypographyOverrideInDomain(style)) return;
     updateStyleAfterOverrideChange(style);
   }
 
-  function updateStyleTypography(style, key, fields) {
-    const block = sanitizeStyleBlockOverrides(style.block || {});
-    block.typography = normalizeTypographyOverrides({
-      ...(block.typography || {}),
-      [key]: {
-        ...(block.typography && block.typography[key] ? block.typography[key] : {}),
-        ...fields,
-      },
-    });
-    updateStyleBlock(style, { typography: block.typography });
+  function updateEditableStyleTypography(style, key, fields) {
+    if (!updateStyleTypographyInDomain(style, key, fields)) return;
+    pruneRedundantStyleDefaults();
+    syncStyleSnapshot(style.id);
+    state.render = state.source && state.structure ? buildRenderJson(state.source, state.materials, state.structure) : state.render;
+    scheduleStyleAutosave(style.id);
+    renderStylesPane();
+    renderEditor();
+    renderPreview();
+    refreshPdfIfActive();
   }
 
-  function resetStyleTypographyOverride(style, key) {
-    if (!style || !style.block || !style.block.typography) return;
-    delete style.block.typography[key];
-    if (!Object.keys(style.block.typography).length) delete style.block.typography;
-    if (!Object.keys(style.block).length) style.block = {};
+  function resetEditableStyleTypographyOverride(style, key) {
+    if (!resetStyleTypographyOverrideInDomain(style, key)) return;
     updateStyleAfterOverrideChange(style);
   }
 
