@@ -17,7 +17,7 @@
         if (optionMeta.postscriptName !== undefined) option.dataset.postscriptName = optionMeta.postscriptName || '';
         select.appendChild(option);
       });
-      select.value = options.value;
+      if (options.value !== undefined && options.value !== null) select.value = options.value;
       select.addEventListener('change', () => {
         (options.onInput || (() => {}))(select.value, select);
         (options.onAfterCommit || (() => {}))();

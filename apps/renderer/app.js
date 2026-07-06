@@ -651,6 +651,9 @@
   fieldControlRegistry.register('select', globalThis.CreditosSelectFieldControl.createSelectFieldControl({
     documentRef: document,
   }));
+  fieldControlRegistry.register('checkbox', globalThis.CreditosCheckboxFieldControl.createCheckboxFieldControl({
+    documentRef: document,
+  }));
   fieldControlRegistry.register('typography', globalThis.CreditosTypographyFieldControl.createTypographyFieldControl({
     documentRef: document,
   }));
@@ -1007,20 +1010,22 @@
         selectCell.appendChild(selectButton);
         row.appendChild(selectCell);
         const nameCell = document.createElement('td');
-        const nameInput = document.createElement('input');
-        nameInput.className = 'table-input';
-        nameInput.value = production.name;
-        nameInput.addEventListener('change', () => updateProductionName(production.id, nameInput.value));
+        const nameInput = fieldControlRegistry.create('text', {
+          className: 'table-input',
+          value: production.name,
+          commitOnChange: true,
+          onInput: (value) => updateProductionName(production.id, value),
+        });
         nameCell.appendChild(nameInput);
         row.appendChild(nameCell);
         const episodesCell = document.createElement('td');
-        const episodesInput = document.createElement('input');
-        episodesInput.className = 'table-input compact-number';
-        episodesInput.type = 'number';
-        episodesInput.min = '1';
-        episodesInput.step = '1';
-        episodesInput.value = String(Number(production.episode_count) || currentProductionEpisodes(production.id).length || 1);
-        episodesInput.addEventListener('change', () => updateProductionEpisodeCount(production.id, episodesInput.value));
+        const episodesInput = fieldControlRegistry.create('number', {
+          className: 'table-input compact-number',
+          min: 1,
+          step: 1,
+          value: Number(production.episode_count) || currentProductionEpisodes(production.id).length || 1,
+          onInput: (value) => updateProductionEpisodeCount(production.id, value),
+        });
         episodesCell.appendChild(episodesInput);
         row.appendChild(episodesCell);
         const formatCell = document.createElement('td');
@@ -1396,13 +1401,12 @@
       title.textContent = 'Asignar estilos de otro capítulo';
       const text = document.createElement('p');
       text.textContent = 'Elige el capítulo origen. Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.';
-      const select = document.createElement('select');
-      select.className = 'text-input';
-      episodes.forEach((episode) => {
-        const option = document.createElement('option');
-        option.value = episode.id;
-        option.textContent = episode.name || `Capítulo ${episode.episode_number || episode.id}`;
-        select.appendChild(option);
+      const select = fieldControlRegistry.create('select', {
+        className: 'text-input',
+        options: episodes.map((episode) => ({
+          value: episode.id,
+          label: episode.name || `Capítulo ${episode.episode_number || episode.id}`,
+        })),
       });
       const actions = document.createElement('div');
       actions.className = 'modal-actions';
@@ -2499,10 +2503,12 @@
         selectCell.appendChild(selectButton);
         row.appendChild(selectCell);
         const nameCell = document.createElement('td');
-        const nameInput = document.createElement('input');
-        nameInput.className = 'table-input';
-        nameInput.value = style.name;
-        nameInput.addEventListener('change', () => updateStyleName(style, nameInput.value));
+        const nameInput = fieldControlRegistry.create('text', {
+          className: 'table-input',
+          value: style.name,
+          commitOnChange: true,
+          onInput: (value) => updateStyleName(style, value),
+        });
         nameCell.appendChild(nameInput);
         row.appendChild(nameCell);
         tbody.appendChild(row);
@@ -3866,16 +3872,9 @@
     row.className = 'field-grid';
     const labelEl = document.createElement('label');
     labelEl.textContent = label;
-    const inputWrap = document.createElement('label');
-    inputWrap.className = 'check-row';
-    const input = document.createElement('input');
-    input.type = 'checkbox';
-    input.checked = value;
-    input.addEventListener('change', () => onInput(input.checked));
-    inputWrap.appendChild(input);
-    inputWrap.appendChild(document.createTextNode(value ? 'Activa' : 'Excluida'));
-    input.addEventListener('change', () => {
-      inputWrap.lastChild.textContent = input.checked ? 'Activa' : 'Excluida';
+    const inputWrap = fieldControlRegistry.create('checkbox', {
+      value,
+      onInput,
     });
     row.appendChild(labelEl);
     row.appendChild(inputWrap);
