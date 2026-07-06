@@ -333,6 +333,21 @@
     writeLocalJsonPreference,
     writeLocalPreference,
   } = appPreferences;
+  const appBootstrap = globalThis.CreditosAppBootstrap.createAppBootstrap({
+    appApi,
+    els,
+    initializeDatabase,
+    loadSystemFonts,
+    nativeBridge,
+    refreshDatabaseSyncStatus,
+    renderProjectSelectors,
+    setupResizablePanels,
+    state,
+  });
+  const {
+    initializeAppInfo,
+    initializeAppPreferences,
+  } = appBootstrap;
   const styleDomain = globalThis.CreditosDomainStyles.createStyleDomain({
     baseStyleCartela: baseStyleCartelaFromSettings,
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
@@ -684,39 +699,6 @@
   });
   initializeAppInfo();
   initializeAppPreferences();
-
-  async function initializeAppInfo() {
-    const native = nativeBridge();
-    if (!native || !native.getAppInfo || !els.appVersion) return;
-    try {
-      const info = await native.getAppInfo();
-      if (info && info.version) {
-        els.appVersion.textContent = `v${info.version}`;
-        els.appVersion.title = `${info.name || 'Créditos'} ${info.version} (${info.platform || ''} ${info.arch || ''})`.trim();
-      }
-    } catch (_error) {
-      els.appVersion.textContent = '';
-    }
-  }
-
-  async function initializeAppPreferences() {
-    await loadNativePreferences();
-    setupResizablePanels();
-    await initializeDatabase();
-    await refreshDatabaseSyncStatus();
-
-    loadSystemFonts({ silent: true });
-    renderProjectSelectors();
-  }
-
-  async function loadNativePreferences() {
-    try {
-      state.preferences = await appApi.readNativePreferences();
-    } catch (error) {
-      console.warn('No se pudieron cargar preferencias:', error.message);
-      state.preferences = {};
-    }
-  }
 
   async function initializeDatabase(options = {}) {
     try {
