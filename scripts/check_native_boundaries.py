@@ -12,6 +12,7 @@ BANNED_PATTERNS = [
     "showMessageBox",
     "net.createServer",
     "http.get",
+    "ipcMain.handle",
     "CREDITOS_FFMPEG",
     "CREDITOS_FFPROBE",
     "MOV_ENCODING_ARGS",
