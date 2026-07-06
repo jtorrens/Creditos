@@ -23,17 +23,14 @@ function normalizeMovEncodingProfile(value) {
   return Object.prototype.hasOwnProperty.call(MOV_ENCODING_ARGS, value) ? value : 'prores_4444';
 }
 
-async function resolveExecutable(envName, executable, extraCandidates = []) {
+async function resolveExecutable(envName, executable) {
   if (process.env[envName]) return process.env[envName];
 
   const names = process.platform === 'win32'
     ? [`${executable}.exe`, executable]
     : [executable];
   const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
-  const candidates = [
-    ...pathEntries.flatMap((entry) => names.map((name) => path.join(entry, name))),
-    ...extraCandidates,
-  ];
+  const candidates = pathEntries.flatMap((entry) => names.map((name) => path.join(entry, name)));
 
   for (const candidate of candidates) {
     try {
@@ -48,19 +45,11 @@ async function resolveExecutable(envName, executable, extraCandidates = []) {
 }
 
 async function resolveFfmpegPath() {
-  return resolveExecutable('CREDITOS_FFMPEG', 'ffmpeg', [
-    '/opt/homebrew/bin/ffmpeg',
-    '/usr/local/bin/ffmpeg',
-    '/usr/bin/ffmpeg',
-  ]);
+  return resolveExecutable('CREDITOS_FFMPEG', 'ffmpeg');
 }
 
 async function resolveFfprobePath() {
-  return resolveExecutable('CREDITOS_FFPROBE', 'ffprobe', [
-    '/opt/homebrew/bin/ffprobe',
-    '/usr/local/bin/ffprobe',
-    '/usr/bin/ffprobe',
-  ]);
+  return resolveExecutable('CREDITOS_FFPROBE', 'ffprobe');
 }
 
 function runFfmpeg(command, args, options = {}) {

@@ -116,7 +116,7 @@ function cleanPartialInstall() {
 
 async function extractElectronZip(zipPath, destination) {
   if (process.platform === 'darwin') {
-    const result = spawnSync('/usr/bin/ditto', ['-x', '-k', zipPath, destination], { stdio: 'inherit' });
+    const result = spawnSync('ditto', ['-x', '-k', zipPath, destination], { stdio: 'inherit' });
     if (result.status !== 0) {
       throw new Error(`ditto fallo al descomprimir Electron con codigo ${result.status}`);
     }
