@@ -69,8 +69,8 @@ Build outputs are written to `apps/desktop/dist/` and are not versioned.
 
 ## SQLite Project Storage
 
-The app stores project data in one SQLite database at `data/creditos.db`.
-This file is intentionally versioned so Mac and Windows can share project data through GitHub.
+The refactor app stores project data in a separate SQLite database at `data/creditos-refactor.db`.
+This file is intentionally separate from the production `main` database.
 
 Hierarchy:
 

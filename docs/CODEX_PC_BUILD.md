@@ -51,7 +51,7 @@ Desde PowerShell o Terminal:
 ```powershell
 cd D:\PROYECTOS\CREDITOS
 git status
-git switch main
+git switch codex/refactor-parallel
 git pull
 scripts\updateCreditosPC.bat
 ```
@@ -60,7 +60,8 @@ El `.bat` intenta hacer el flujo completo:
 
 ```text
 git pull
-configurar CREDITOS_DB_PATH a data\creditos.db del repositorio
+configurar CREDITOS_APP_CHANNEL=refactor
+configurar CREDITOS_DB_PATH a data\creditos-refactor.db del repositorio
 npm install
 npm run dist:win
 ejecutar el instalador .exe mas reciente
@@ -95,18 +96,25 @@ dir dist
 
 Si se genera un `.exe`, ejecutar el instalador mas reciente desde `apps\desktop\dist`.
 
-## DB compartida
+## DB refactor
 
-La DB que debe sincronizarse por Git es:
+En producción/main la DB histórica es:
 
 ```text
 D:\PROYECTOS\CREDITOS\data\creditos.db
 ```
 
+En la rama refactor no se usa esa DB. La DB refactor debe ser:
+
+```text
+D:\PROYECTOS\CREDITOS\data\creditos-refactor.db
+```
+
 La app instalada en Windows puede arrancar fuera del repositorio. Por eso el script `scripts\updateCreditosPC.bat` deja configurada una variable de entorno de usuario:
 
 ```text
-CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos.db
+CREDITOS_APP_CHANNEL=refactor
+CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos-refactor.db
 ```
 
 Comprobar en PowerShell:
@@ -187,7 +195,7 @@ py apps\renderer\server.py
 ## Que comprobar en la app Windows
 
 1. La app abre sin consola inutil o errores visibles.
-2. Producciones carga la DB de `data\creditos.db`.
+2. Producciones carga la DB de `data\creditos-refactor.db`.
 3. Se puede seleccionar produccion y episodio.
 4. Se ve la version de la app en la interfaz.
 5. Preview funciona en modo paginas y scroll.

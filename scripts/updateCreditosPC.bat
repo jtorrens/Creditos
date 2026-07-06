@@ -4,7 +4,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "REPO=%~dp0.."
 set "DESKTOP=%REPO%\apps\desktop"
 set "DIST=%DESKTOP%\dist"
-set "DB_PATH=%REPO%\data\creditos.db"
+set "DB_PATH=%REPO%\data\creditos-refactor.db"
 set "STASH_CREATED="
 set "RESTORE_NEEDED="
 
@@ -26,9 +26,13 @@ if errorlevel 1 goto restore_error
 
 echo.
 echo === Configurando DB compartida ===
+set "CREDITOS_APP_CHANNEL=refactor"
 set "CREDITOS_DB_PATH=%DB_PATH%"
+setx CREDITOS_APP_CHANNEL "refactor" >nul
+if errorlevel 1 goto error
 setx CREDITOS_DB_PATH "%DB_PATH%" >nul
 if errorlevel 1 goto error
+echo CREDITOS_APP_CHANNEL=refactor
 echo CREDITOS_DB_PATH=%DB_PATH%
 
 echo.

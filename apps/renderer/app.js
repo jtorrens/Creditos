@@ -886,7 +886,7 @@
   async function initializeDatabase(options = {}) {
     try {
       const overview = await dbPost('/api/db/init', { db_path: null });
-      state.databasePath = overview.db_path || 'data/creditos.db';
+      state.databasePath = overview.db_path || 'data/creditos-refactor.db';
       applyDatabaseOverview(overview);
       updateDatabaseStatus();
     } catch (error) {
@@ -935,7 +935,7 @@
   function updateDatabaseStatus() {
     if (!els.databaseStatus) return;
     const status = state.databaseSyncStatus;
-    const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
+    const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
     let suffix = '';
     if (status && status.remoteIsNewer) suffix = ' · GitHub tiene una DB mas reciente';
     else if (status && status.localChanged) suffix = ' · DB local pendiente de subir';

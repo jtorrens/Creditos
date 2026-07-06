@@ -11,7 +11,8 @@ RENDERER_ROOT = Path(__file__).resolve().parents[1]
 def default_db_path():
     if os.environ.get("CREDITOS_DB_PATH"):
         return Path(os.environ["CREDITOS_DB_PATH"]).expanduser()
-    return RENDERER_ROOT.parents[1] / "data" / "creditos.db"
+    database_name = "creditos.db" if os.environ.get("CREDITOS_APP_CHANNEL") == "production" else "creditos-refactor.db"
+    return RENDERER_ROOT.parents[1] / "data" / database_name
 
 
 def db_connect(db_path):

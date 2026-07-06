@@ -14,6 +14,8 @@ const { createPreferenceStore } = require('./native/preferences');
 const { createServerProcessManager } = require('./native/serverProcess');
 
 const APP_DISPLAY_NAME = appPackage.productName || appPackage.name || 'Créditos Refactor';
+const APP_CHANNEL = process.env.CREDITOS_APP_CHANNEL
+  || (/refactor/i.test(`${APP_DISPLAY_NAME} ${appPackage.name || ''} ${appPackage.build && appPackage.build.appId || ''}`) ? 'refactor' : 'production');
 const {
   readWindowState,
   readPreferences,
@@ -26,12 +28,13 @@ const {
   repoRoot,
   repositoryRootForDatabase,
   serverScriptPath,
-} = createAppPaths({ app, appDir: __dirname });
+} = createAppPaths({ app, appChannel: APP_CHANNEL, appDir: __dirname });
 
 let mainWindow = null;
 const movExportManager = createMovExportManager();
 
 const serverProcessManager = createServerProcessManager({
+  getAppChannel: () => APP_CHANNEL,
   getMainWindow: () => mainWindow,
   getPersistentDatabasePath: persistentDatabasePath,
   getRendererPath: rendererPath,

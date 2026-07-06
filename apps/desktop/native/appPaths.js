@@ -1,7 +1,11 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-function createAppPaths({ app, appDir }) {
+function createAppPaths({ app, appChannel = 'production', appDir }) {
+  function databaseFileName() {
+    return appChannel === 'refactor' ? 'creditos-refactor.db' : 'creditos.db';
+  }
+
   function repoRoot() {
     if (app.isPackaged) {
       return process.resourcesPath;
@@ -32,10 +36,10 @@ function createAppPaths({ app, appDir }) {
       : [repoRoot()];
     for (const start of searchStarts) {
       const root = await findRepositoryRoot(start);
-      if (root) return path.join(root, 'data', 'creditos.db');
+      if (root) return path.join(root, 'data', databaseFileName());
     }
 
-    return path.join(app.getPath('userData'), 'data', 'creditos.db');
+    return path.join(app.getPath('userData'), 'data', databaseFileName());
   }
 
   async function repositoryRootForDatabase() {
@@ -55,6 +59,7 @@ function createAppPaths({ app, appDir }) {
 
   return {
     findRepositoryRoot,
+    databaseFileName,
     persistentDatabasePath,
     rendererPath,
     repoRoot,

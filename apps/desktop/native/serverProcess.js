@@ -3,6 +3,7 @@ const net = require('net');
 const { spawn } = require('child_process');
 
 function createServerProcessManager({
+  getAppChannel = () => 'production',
   getMainWindow,
   getPersistentDatabasePath,
   getRendererPath,
@@ -58,6 +59,7 @@ function createServerProcessManager({
       cwd: getRendererPath(),
       env: {
         ...process.env,
+        CREDITOS_APP_CHANNEL: getAppChannel(),
         CREDITOS_DB_PATH: dbPath,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
