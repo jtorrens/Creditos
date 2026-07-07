@@ -856,6 +856,20 @@ button.primary:hover {
   width: 100%;
 }
 
+.db-sync-progress {
+  accent-color: var(--accent);
+  height: 12px;
+  width: 100%;
+}
+
+.db-sync-modal-ok {
+  border-color: rgba(79, 208, 122, 0.42);
+}
+
+.db-sync-modal-error {
+  border-color: rgba(255, 90, 99, 0.55);
+}
+
 .mov-export-counter {
   color: var(--ink);
   font-size: 12px;

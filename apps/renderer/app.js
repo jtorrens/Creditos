@@ -211,7 +211,7 @@
     writeNativePreference,
   } = appApi;
   const appDatabaseSync = globalThis.CreditosAppDatabaseSync.createAppDatabaseSync({
-    els,
+    documentRef: document, els,
     initializeDatabase,
     nativeBridge,
     state,
