@@ -6,6 +6,13 @@ function createAppPaths({ app, appChannel = 'production', appDir }) {
     return appChannel === 'refactor' ? 'creditos-refactor.db' : 'creditos.db';
   }
 
+  function environmentDatabasePath() {
+    if (!process.env.CREDITOS_DB_PATH) return null;
+    const dbPath = process.env.CREDITOS_DB_PATH;
+    if (path.basename(dbPath) !== databaseFileName()) return null;
+    return dbPath;
+  }
+
   function repoRoot() {
     if (app.isPackaged) {
       return process.resourcesPath;
@@ -29,7 +36,8 @@ function createAppPaths({ app, appChannel = 'production', appDir }) {
   }
 
   async function persistentDatabasePath() {
-    if (process.env.CREDITOS_DB_PATH) return process.env.CREDITOS_DB_PATH;
+    const dbPathFromEnvironment = environmentDatabasePath();
+    if (dbPathFromEnvironment) return dbPathFromEnvironment;
 
     const searchStarts = app.isPackaged
       ? [process.resourcesPath, path.dirname(process.execPath)]
