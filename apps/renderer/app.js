@@ -523,6 +523,15 @@
     updateStyleTitleTypography: updateStyleTitleTypographyInDomain,
     updateStyleTypography: updateStyleTypographyInDomain,
   } = styleDomain;
+  const appSelectors = globalThis.CreditosAppSelectors.createAppSelectors({
+    baseStyleCartelaFromSettingsWithSettings,
+    getEffectiveCartelaTitleTypographyWithSettings,
+    getEffectiveStyleBlockWithSettings,
+    getEffectiveStyleCartelaWithSettings,
+    getEffectiveStyleTitleTypographyWithSettings,
+    getProductionLayout, getProductionSettings,
+    settingsWithProductionLayout, state,
+  });
   const structureDomain = globalThis.CreditosDomainStructure.createStructureDomain({
     defaultLayoutForMaterial,
     defaultOrientationForMaterial,
@@ -1515,29 +1524,27 @@
   }
 
   function getEffectiveStyleCartela(style) {
-    return getEffectiveStyleCartelaWithSettings(style, getProductionSettings());
+    return appSelectors.getEffectiveStyleCartela(style);
   }
 
   function getEffectiveStyleTitleTypography(style) {
-    return getEffectiveStyleTitleTypographyWithSettings(style, getProductionSettings());
+    return appSelectors.getEffectiveStyleTitleTypography(style);
   }
 
   function getEffectiveCartelaTitleTypography(cartela) {
-    const style = getStyleById(cartela && cartela.style_id);
-    return getEffectiveCartelaTitleTypographyWithSettings(cartela, style, getProductionSettings());
+    return appSelectors.getEffectiveCartelaTitleTypography(cartela);
   }
 
   function baseStyleCartelaFromSettings() {
-    return baseStyleCartelaFromSettingsWithSettings(getProductionSettings());
+    return appSelectors.baseStyleCartelaFromSettings();
   }
 
   function getEffectiveStyleBlock(style) {
-    return getEffectiveStyleBlockWithSettings(style, getProductionSettings());
+    return appSelectors.getEffectiveStyleBlock(style);
   }
 
   function getStyleById(styleId) {
-    if (!styleId) return null;
-    return state.styles.find((style) => style.id === styleId) || null;
+    return appSelectors.getStyleById(styleId);
   }
 
   function updateTypographySetting(key, fields) {
@@ -1746,22 +1753,15 @@
   }
 
   function getSelectedCartela() {
-    return state.structure && state.structure.cartelas
-      ? state.structure.cartelas.find((cartela) => cartela.id === state.selectedCartelaId)
-      : null;
+    return appSelectors.getSelectedCartela();
   }
 
   function getEffectiveCartela(cartela) {
-    const style = getStyleById(cartela && cartela.style_id);
-    return {
-      ...(style ? getEffectiveStyleCartela(style) : baseStyleCartelaFromSettings()),
-      ...(cartela || {}),
-    };
+    return appSelectors.getEffectiveCartela(cartela);
   }
 
   function getCartelaStyleBlock(cartela) {
-    const style = getStyleById(cartela && cartela.style_id);
-    return style ? getEffectiveStyleBlock(style) : null;
+    return appSelectors.getCartelaStyleBlock(cartela);
   }
 
   function inputRow(label, refId, field, fallback, options) {
@@ -1781,7 +1781,7 @@
   }
 
   function getRenderLayout() {
-    return settingsWithProductionLayout(getProductionSettings(), getProductionLayout()).layout;
+    return appSelectors.getRenderLayout();
   }
 
   function setEditableOverride(refId, field, value, fallback) {

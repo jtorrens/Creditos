@@ -40,6 +40,7 @@ apps/renderer/start.command
 - `index.html`: estructura de la UI.
 - `app.js`: composition root del renderer y cableado de estado.
 - `appLifecycle.js`: ciclo de rebuild/render, tabs y preview JSON.
+- `appSelectors.js`: lecturas derivadas de estado para estilos, cartela seleccionada y layout.
 - `styles.css`: interfaz dark y layout de preview.
 
 ## Datos
