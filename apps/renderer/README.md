@@ -41,6 +41,7 @@ apps/renderer/start.command
 - `app.js`: composition root del renderer y cableado de estado.
 - `appLifecycle.js`: ciclo de rebuild/render, tabs y preview JSON.
 - `appSelectors.js`: lecturas derivadas de estado para estilos, cartela seleccionada y layout.
+- `appStyleState.js`: carga, poda y guardado de estilos de producción.
 - `styles.css`: interfaz dark y layout de preview.
 
 ## Datos

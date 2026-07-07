@@ -532,6 +532,18 @@
     getProductionLayout, getProductionSettings,
     settingsWithProductionLayout, state,
   });
+  const appStyleState = globalThis.CreditosAppStyleState.createAppStyleState({
+    buildCurrentRenderJson,
+    dbPost, getProductionSettings,
+    normalizeCartelaStyle,
+    pruneRedundantStyleDefaultsInDomain,
+    pruneRedundantStyleOverridesInDomain,
+    refreshPdfIfActive,
+    renderCartelaList, renderEditor,
+    renderPreview, renderStylesPane,
+    serializeCartelaStyle,
+    state,
+  });
   const structureDomain = globalThis.CreditosDomainStructure.createStructureDomain({
     defaultLayoutForMaterial,
     defaultOrientationForMaterial,
@@ -1508,19 +1520,7 @@
   }
 
   function loadStyleObjects(styleObjects) {
-    state.styles = (styleObjects || [])
-      .map((style) => normalizeCartelaStyle(style, { name: style.file_name || `${style.id || 'estilo'}.json` }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    pruneCurrentRedundantStyleDefaults();
-    pruneCurrentRedundantStyleOverrides();
-    if (state.source && state.structure) {
-      state.render = buildCurrentRenderJson(state.source, state.materials, state.structure);
-    }
-    renderEditor();
-    renderCartelaList();
-    renderStylesPane();
-    renderPreview();
-    refreshPdfIfActive();
+    return appStyleState.loadStyleObjects(styleObjects);
   }
 
   function getEffectiveStyleCartela(style) {
@@ -1736,20 +1736,15 @@
   }
 
   function pruneCurrentRedundantStyleOverrides() {
-    pruneRedundantStyleOverridesInDomain(state.structure);
+    return appStyleState.pruneCurrentRedundantStyleOverrides();
   }
 
   function pruneCurrentRedundantStyleDefaults() {
-    pruneRedundantStyleDefaultsInDomain(state.styles, getProductionSettings());
+    return appStyleState.pruneCurrentRedundantStyleDefaults();
   }
 
   async function writeStyleFile(style, options = {}) {
-    const data = serializeCartelaStyle(style);
-    await dbPost('/api/db/save-style', {
-      production_id: state.selectedProductionId,
-      data,
-    });
-    return { canceled: false, name: style.name };
+    return appStyleState.writeStyleFile(style, options);
   }
 
   function getSelectedCartela() {
