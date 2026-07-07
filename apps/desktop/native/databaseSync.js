@@ -277,6 +277,7 @@ function createDatabaseSync({
       const remoteIsNewer = remoteTimestamp !== null && remoteTimestamp > localTimestamp + 1000;
       const localIsNewerOrEqual = remoteTimestamp === null || localTimestamp + 1000 >= remoteTimestamp;
       const remoteChanged = workingDiffersFromUpstream && remoteIsNewer;
+      const remoteDbAhead = workingDiffersFromUpstream && upstreamHasDbChange;
       const conflict = false;
       let message = 'DB sincronizada.';
       if (remoteChanged) {
@@ -297,7 +298,8 @@ function createDatabaseSync({
         upstream,
         localChanged,
         remoteChanged,
-        remoteAhead: behindCount > 0,
+        remoteAhead: remoteDbAhead,
+        branchBehindCount: behindCount,
         localAheadDbCommitCount,
         localAheadDbCommits: localAheadDbCommitCount > 0,
         upstreamHasDbChange,
@@ -311,7 +313,7 @@ function createDatabaseSync({
           available: true,
           localChanged,
           remoteChanged,
-          remoteAhead: behindCount > 0,
+          remoteAhead: remoteDbAhead,
         }),
       };
     } catch (error) {
