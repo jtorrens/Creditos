@@ -129,6 +129,15 @@ rama origin/codex/refactor-parallel
 
 Si la rama mostrada es `origin/main`, no usar botones de sincronización y parar la prueba.
 
+El sync de DB es manual:
+
+```text
+Bajar de GitHub: para el servidor Python, crea backup timestamped en data/db-backups/, baja la DB, ejecuta PRAGMA quick_check y restaura el backup si la validación falla.
+Subir a GitHub: ejecuta PRAGMA quick_check, bloquea main, bloquea una DB que no sea creditos-refactor.db y bloquea commits locales pendientes que ya afecten a la DB.
+```
+
+Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
+
 ## QA manual mínima
 
 1. Abrir `Creditos Refactor`.

@@ -10,15 +10,38 @@
       if (!els.databaseStatus) return;
       const status = state.databaseSyncStatus;
       const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
-      let suffix = '';
-      if (status && status.remoteIsNewer) suffix = ' · GitHub tiene una DB mas reciente';
-      else if (status && status.localChanged) suffix = ' · DB local pendiente de subir';
-      else if (status && status.available) suffix = ' · sincronizada';
-      const targetText = status && status.syncTarget ? ` · rama ${status.syncTarget}` : '';
-      els.databaseStatus.textContent = `${pathText}${targetText}${suffix}`;
-      els.databaseStatus.classList.toggle('db-sync-warning', Boolean(status && status.remoteIsNewer));
-      els.databaseStatus.classList.toggle('db-sync-ok', Boolean(status && !status.remoteIsNewer));
-      els.databaseStatus.title = status && status.message ? `${status.message}${targetText}` : pathText;
+      const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
+      const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
+      const statusLabel = databaseStatusLabel(status, statusKind);
+      els.databaseStatus.textContent = [
+        `DB: ${pathText}`,
+        `Rama: ${targetText}`,
+        `Estado: ${statusLabel}`,
+      ].join('\n');
+      els.databaseStatus.classList.toggle('db-sync-error', statusKind === 'error' || statusKind === 'unavailable');
+      els.databaseStatus.classList.toggle('db-sync-warning', statusKind === 'remote');
+      els.databaseStatus.classList.toggle('db-sync-pending', statusKind === 'local');
+      els.databaseStatus.classList.toggle('db-sync-ok', statusKind === 'synced');
+      els.databaseStatus.title = status && status.message ? status.message : pathText;
+    }
+
+    function databaseStatusKind(status) {
+      if (!status) return 'unavailable';
+      if (status.error || status.available === false) return 'error';
+      if (status.remoteIsNewer || status.remoteChanged || status.remoteAhead) return 'remote';
+      if (status.localChanged) return 'local';
+      if (status.available) return 'synced';
+      return 'unavailable';
+    }
+
+    function databaseStatusLabel(status, statusKind) {
+      if (!status) return 'sin estado';
+      if (statusKind === 'error') return `error - ${status.message || status.error || 'revisar Git'}`;
+      if (statusKind === 'unavailable') return status.message || 'no disponible';
+      if (statusKind === 'remote') return 'remota mas reciente';
+      if (statusKind === 'local') return 'local pendiente de subir';
+      if (statusKind === 'synced') return 'sincronizada';
+      return status.message || 'sin estado';
     }
 
     async function refreshDatabaseSyncStatus() {
@@ -35,6 +58,13 @@
     async function applyDatabaseSyncAction(action) {
       const native = nativeBridge();
       if (!native) throw new Error('La sincronizacion solo esta disponible desde la app de escritorio.');
+      if (native.getDatabaseSyncStatus) {
+        state.databaseSyncStatus = await native.getDatabaseSyncStatus();
+        updateDatabaseStatus();
+        if (state.databaseSyncStatus && state.databaseSyncStatus.error) {
+          throw new Error(state.databaseSyncStatus.error);
+        }
+      }
       if (action === 'download') {
         if (!native.forceDatabaseFromGitHub) throw new Error('No esta disponible la actualizacion desde GitHub.');
         state.databaseSyncStatus = await native.forceDatabaseFromGitHub();
@@ -57,11 +87,24 @@
         return;
       }
       const isDownload = action === 'download';
+      if (native.getDatabaseSyncStatus) {
+        try {
+          state.databaseSyncStatus = await native.getDatabaseSyncStatus();
+          updateDatabaseStatus();
+        } catch (_error) {
+          // applyDatabaseSyncAction will surface the actionable error after confirmation.
+        }
+      }
+      const status = state.databaseSyncStatus;
+      const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
+      const statusLabel = databaseStatusLabel(status, statusKind);
+      const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
+      const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
       const result = await native.confirm({
         title: isDownload ? 'Bajar DB de GitHub' : 'Subir DB a GitHub',
         message: isDownload
-          ? 'Esto reemplazara la base de datos local por la version de GitHub.'
-          : 'Esto subira la base de datos local a GitHub y reemplazara la version remota.',
+          ? `Esto reemplazara la base de datos local por la version de GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nEstado: ${statusLabel}`
+          : `Esto validara la DB local y la subira a GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nEstado: ${statusLabel}`,
         confirmLabel: isDownload ? 'Bajar de GitHub' : 'Subir a GitHub',
       });
       if (!result || !result.confirmed) return;

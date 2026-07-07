@@ -42,6 +42,38 @@ function createDatabaseSync({
     });
   }
 
+  function runPython(args, options = {}) {
+    return new Promise((resolve, reject) => {
+      const child = spawn(getPythonCommand(), args, {
+        cwd: options.cwd,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk.toString();
+      });
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+      child.on('error', (error) => {
+        if (error.code === 'ENOENT') {
+          reject(new Error('No se encontro Python para validar la base de datos.'));
+          return;
+        }
+        reject(error);
+      });
+      child.on('exit', (code) => {
+        if (code === 0) {
+          resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+          return;
+        }
+        const message = (stderr.trim() || stdout.trim() || `python termino con codigo ${code}`).slice(-4000);
+        reject(new Error(message));
+      });
+    });
+  }
+
   async function gitOutput(args, cwd) {
     const result = await runGit(args, { cwd });
     return result.stdout;
@@ -63,6 +95,58 @@ function createDatabaseSync({
 
   function appChannel() {
     return String(getAppChannel() || process.env.CREDITOS_APP_CHANNEL || 'production').toLowerCase();
+  }
+
+  function getPythonCommand() {
+    if (process.env.CREDITOS_PYTHON) return process.env.CREDITOS_PYTHON;
+    return process.platform === 'win32' ? 'py' : 'python3';
+  }
+
+  function timestampForFileName(date = new Date()) {
+    const pad = (value) => String(value).padStart(2, '0');
+    return [
+      date.getFullYear(),
+      pad(date.getMonth() + 1),
+      pad(date.getDate()),
+      '-',
+      pad(date.getHours()),
+      pad(date.getMinutes()),
+      pad(date.getSeconds()),
+    ].join('');
+  }
+
+  async function createDatabaseBackup(dbPath) {
+    const backupDir = path.join(path.dirname(dbPath), 'db-backups');
+    await fs.mkdir(backupDir, { recursive: true });
+    const parsed = path.parse(dbPath);
+    const backupPath = path.join(backupDir, `${parsed.name}-${timestampForFileName()}.db`);
+    await fs.copyFile(dbPath, backupPath);
+    return backupPath;
+  }
+
+  async function restoreDatabaseBackup(backupPath, dbPath) {
+    if (!backupPath) return;
+    await fs.copyFile(backupPath, dbPath);
+  }
+
+  async function verifyDatabaseQuickCheck(dbPath) {
+    const script = [
+      'import sqlite3, sys',
+      'db_path = sys.argv[1]',
+      'connection = sqlite3.connect(db_path)',
+      'try:',
+      '    row = connection.execute("PRAGMA quick_check").fetchone()',
+      'finally:',
+      '    connection.close()',
+      'result = row[0] if row else ""',
+      'print(result)',
+      'sys.exit(0 if result == "ok" else 2)',
+    ].join('\n');
+    try {
+      await runPython(['-c', script, dbPath]);
+    } catch (error) {
+      throw new Error(`La validacion SQLite de la DB fallo: ${error.message}`);
+    }
   }
 
   async function currentBranch(cwd) {
@@ -112,6 +196,35 @@ function createDatabaseSync({
     }
   }
 
+  function assertUsableStatus(status) {
+    if (!status.available || !status.repoPath) {
+      throw new Error(status.message || 'La DB no esta dentro del repositorio.');
+    }
+    if (status.error) {
+      throw new Error(status.error);
+    }
+  }
+
+  function assertSafePushTarget(status) {
+    if (!status.syncTargetRemote || !status.syncTargetBranch) {
+      throw new Error('No se pudo detectar el target Git de DB.');
+    }
+    if (status.syncTargetBranch === 'main') {
+      throw new Error('La DB no se puede subir contra main.');
+    }
+    if (status.appChannel === 'refactor' && path.basename(status.dbPath) !== 'creditos-refactor.db') {
+      throw new Error('Creditos Refactor solo puede subir data/creditos-refactor.db.');
+    }
+  }
+
+  function statusKindFor(status) {
+    if (!status.available) return 'unavailable';
+    if (status.error) return 'error';
+    if (status.remoteChanged || status.remoteAhead) return 'remote';
+    if (status.localChanged) return 'local';
+    return 'synced';
+  }
+
   async function databaseGitStatus(options = {}) {
     const dbPath = await getPersistentDatabasePath();
     const repoPath = await getRepositoryRootForDatabase();
@@ -150,6 +263,12 @@ function createDatabaseSync({
       } catch (_error) {
         behindCount = 0;
       }
+      let localAheadDbCommitCount = 0;
+      try {
+        localAheadDbCommitCount = Number(await gitOutput(['rev-list', '--count', `${upstream}..HEAD`, '--', relativeDbPath], repoPath)) || 0;
+      } catch (_error) {
+        localAheadDbCommitCount = 0;
+      }
       const workingDiffersFromUpstream = await gitHasDiff(['diff', '--quiet', upstream, '--', relativeDbPath], repoPath);
       const localChanged = Boolean(localStatus) && workingDiffersFromUpstream;
       const upstreamHasDbChange = behindCount > 0
@@ -179,6 +298,8 @@ function createDatabaseSync({
         localChanged,
         remoteChanged,
         remoteAhead: behindCount > 0,
+        localAheadDbCommitCount,
+        localAheadDbCommits: localAheadDbCommitCount > 0,
         upstreamHasDbChange,
         localTimestamp,
         remoteTimestamp,
@@ -186,6 +307,12 @@ function createDatabaseSync({
         remoteIsNewer,
         conflict,
         message,
+        statusKind: statusKindFor({
+          available: true,
+          localChanged,
+          remoteChanged,
+          remoteAhead: behindCount > 0,
+        }),
       };
     } catch (error) {
       return {
@@ -194,42 +321,33 @@ function createDatabaseSync({
         relativeDbPath,
         message: error.message,
         error: error.message,
+        statusKind: 'error',
       };
     }
   }
 
   async function synchronizeDatabaseWithGit() {
-    let status = await databaseGitStatus({ fetch: true });
-    if (!status.available || !status.repoPath) {
-      throw new Error(status.message || 'La DB no esta dentro del repositorio.');
-    }
-    if (status.conflict) {
-      throw new Error('Hay cambios locales y remotos en la DB. Sincroniza desde Git para resolver el conflicto.');
-    }
-
-    if (status.remoteChanged || status.remoteAhead) {
-      await runGit(['pull', '--ff-only', status.syncTargetRemote, status.syncTargetBranch], { cwd: status.repoPath });
-      status = await databaseGitStatus({ fetch: false });
-    }
-
-    if (status.localChanged) {
-      await runGit(['add', status.relativeDbPath], { cwd: status.repoPath });
-      await runGit(['commit', '-m', 'Update credits database'], { cwd: status.repoPath });
-      await runGit(['push', status.syncTargetRemote, `HEAD:${status.syncTargetBranch}`], { cwd: status.repoPath });
-    }
-
-    return databaseGitStatus({ fetch: true });
+    throw new Error('La sincronizacion automatica de DB esta deshabilitada. Usa Bajar de GitHub o Subir a GitHub.');
   }
 
   async function forceDatabaseFromGitHub() {
     const status = await databaseGitStatus({ fetch: true });
-    if (!status.available || !status.repoPath) {
-      throw new Error(status.message || 'La DB no esta dentro del repositorio.');
-    }
+    assertUsableStatus(status);
+    assertSafePushTarget(status);
     await stopPythonServerAndWait();
+    const backupPath = await createDatabaseBackup(status.dbPath);
     try {
       await runGit(['checkout', status.upstream, '--', status.relativeDbPath], { cwd: status.repoPath });
-      return await databaseGitStatus({ fetch: true });
+      await verifyDatabaseQuickCheck(status.dbPath);
+      const nextStatus = await databaseGitStatus({ fetch: true });
+      return {
+        ...nextStatus,
+        backupPath,
+        message: `${nextStatus.message} Backup local: ${backupPath}`,
+      };
+    } catch (error) {
+      await restoreDatabaseBackup(backupPath, status.dbPath);
+      throw new Error(`${error.message}. Se restauro el backup local: ${backupPath}`);
     } finally {
       await reloadMainWindowServer();
     }
@@ -237,9 +355,12 @@ function createDatabaseSync({
 
   async function forceDatabaseToGitHub() {
     const status = await databaseGitStatus({ fetch: true });
-    if (!status.available || !status.repoPath) {
-      throw new Error(status.message || 'La DB no esta dentro del repositorio.');
+    assertUsableStatus(status);
+    assertSafePushTarget(status);
+    if (status.localAheadDbCommits) {
+      throw new Error('Hay commits locales pendientes que ya modifican la DB. Empuja o sincroniza la rama antes de subir otro snapshot.');
     }
+    await verifyDatabaseQuickCheck(status.dbPath);
     const databaseDiffersFromGitHub = await gitHasDiff(['diff', '--quiet', status.upstream, '--', status.relativeDbPath], status.repoPath);
     if (!status.localChanged && !databaseDiffersFromGitHub) return status;
 

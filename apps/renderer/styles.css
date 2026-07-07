@@ -738,11 +738,34 @@ button.primary:hover {
   flex: 0 0 auto;
 }
 
+.database-sync-row .settings-status {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  line-height: 1.45;
+  margin: 0;
+  padding: 9px 10px;
+  white-space: pre-line;
+}
+
+.settings-status.db-sync-error {
+  border-color: rgba(255, 90, 99, 0.55);
+  color: #ff7a82;
+}
+
 .settings-status.db-sync-warning {
-  color: #ff5a63;
+  border-color: rgba(255, 189, 89, 0.5);
+  color: #ffbd59;
+}
+
+.settings-status.db-sync-pending {
+  border-color: rgba(255, 189, 89, 0.5);
+  color: #ffbd59;
 }
 
 .settings-status.db-sync-ok {
+  border-color: rgba(79, 208, 122, 0.42);
   color: #4fd07a;
 }
 

@@ -30,6 +30,7 @@ build/
 *.mp4
 *.m4v
 test/renders/
+data/db-backups/
 
 # Logs
 *.log
