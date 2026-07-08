@@ -26,7 +26,7 @@
         onInput: (fontSize) => onChange(options, { font_size: fontSize }, 'font_size'),
       });
       if (base.font_size !== undefined) sizeInput.placeholder = String(base.font_size);
-      row.appendChild(sizeInput);
+      row.appendChild(wrapMiniField('Tamaño', sizeInput));
 
       const letterSpacingInput = fieldControlRegistry.create('number', {
         value: value.letter_spacing,
@@ -37,7 +37,7 @@
       letterSpacingInput.title = 'Espaciado entre caracteres';
       letterSpacingInput.setAttribute('aria-label', 'Espaciado entre caracteres');
       if (base.letter_spacing !== undefined) letterSpacingInput.placeholder = String(base.letter_spacing);
-      row.appendChild(letterSpacingInput);
+      row.appendChild(wrapMiniField('Caracteres', letterSpacingInput));
 
       let styleSelect = null;
       const familySelect = fieldControlRegistry.create('select', {
@@ -136,6 +136,16 @@
 
     function onChange(options, fields, field) {
       (options.onInput || options.onChange || (() => {}))(fields, { field });
+    }
+
+    function wrapMiniField(label, control) {
+      const wrap = documentRef.createElement('label');
+      wrap.className = 'typography-mini-field';
+      const labelEl = documentRef.createElement('span');
+      labelEl.textContent = label;
+      wrap.appendChild(labelEl);
+      wrap.appendChild(control);
+      return wrap;
     }
 
     return { create };

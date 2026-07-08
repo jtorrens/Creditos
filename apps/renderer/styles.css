@@ -1469,6 +1469,18 @@ textarea.visual-input {
   font-size: 12px;
 }
 
+.typography-mini-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.typography-mini-field span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1;
+}
+
 .block-typography-settings {
   border-top: 1px solid var(--line);
   margin-top: 10px;

@@ -181,7 +181,7 @@
             await options.wait(0);
             const duration = Math.max(0, Number(item.page.cartela && item.page.cartela.duration) || 0);
             const frameCount = exportFrameCounts[index] || Math.max(1, Math.round(duration * fps));
-            if (renderOptions.includeVideo) {
+            if (renderOptions.includeVideo || pageHasActiveAnimation(item.page)) {
               const startFrame = renderedFrames;
               await options.writeAnimatedFrames({
                 frameCount,
@@ -192,6 +192,13 @@
                 renderFrameBytes: async (frame) => {
                   const blob = await renderPageToPngBlob(item.page, layout, {
                     ...renderOptions,
+                    animationFrame: {
+                      index,
+                      page: item.page,
+                      localFrame: frame,
+                      frameCount,
+                      fps,
+                    },
                     videoTime: startFrame + frame >= moviePlan.videoStartFrame ? (startFrame + frame - moviePlan.videoStartFrame) / fps : null,
                   });
                   return options.blobToBytes(blob);
@@ -262,6 +269,13 @@
       }
     }
 
+    function pageHasActiveAnimation(page) {
+      const animation = page && page.cartela && page.cartela.animation;
+      if (!animation || animation.enabled === false) return false;
+      const properties = animation.properties && typeof animation.properties === 'object' ? animation.properties : {};
+      return Object.values(properties).some((property) => property && property.animate !== false);
+    }
+
     async function renderPageToPngBlob(page, layout, renderOptions = {}) {
       const canvas = documentRef.createElement('canvas');
       canvas.width = layout.page_width;
@@ -269,7 +283,7 @@
       const ctx = canvas.getContext('2d');
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       await drawExportBackground(ctx, layout, renderOptions);
-      await options.drawCanvasPage(ctx, page, layout);
+      await options.drawCanvasPage(ctx, page, layout, renderOptions);
       if (renderOptions.includeMargins) {
         options.drawCanvasMarginOverlay(ctx, options.layoutForCartela(layout, page && page.cartela), 1);
       }

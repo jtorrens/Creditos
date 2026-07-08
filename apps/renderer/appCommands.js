@@ -347,6 +347,7 @@
     function updateEditableStyleAnimation(style, animation) {
       if (!style) return;
       style.animation = options.normalizeStyleAnimation(animation || {});
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
       options.renderStylesPane();
       options.renderEditor();
