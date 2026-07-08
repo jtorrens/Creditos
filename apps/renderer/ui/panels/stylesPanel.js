@@ -4,6 +4,7 @@
     const els = options.els;
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
+    const stylePreviewLoopPauseMs = 3000;
     let stylePreviewRenderId = 0;
     let stylePreviewPairCount = 3;
     const stylePreviewPlayback = {
@@ -73,7 +74,7 @@
         stopStylePreviewPlayback();
       }
       const localFrame = stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id
-        ? stylePreviewPlayback.frame % frameState.frameCount
+        ? stylePreviewDisplayFrame(frameState)
         : 0;
       const localFrameState = { ...frameState, localFrame };
       drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
@@ -195,7 +196,7 @@
       const status = controls && controls.querySelector('span');
       const tick = (time) => {
         if (!stylePreviewPlayback.playing || stylePreviewPlayback.renderId !== playbackOptions.renderId || stylePreviewRenderId !== playbackOptions.renderId) return;
-        const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
+        const frameCount = stylePreviewLoopFrameCount(playbackOptions.frameState);
         if (!stylePreviewPlayback.time) stylePreviewPlayback.time = time;
         const elapsedMs = Math.max(0, time - stylePreviewPlayback.time);
         const elapsedFrames = Math.max(1, Math.floor((elapsedMs / 1000) * playbackOptions.frameState.fps));
@@ -203,13 +204,13 @@
         stylePreviewPlayback.frame = (stylePreviewPlayback.frame + elapsedFrames) % frameCount;
         drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, {
           ...playbackOptions.frameState,
-          localFrame: stylePreviewPlayback.frame,
+          localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
         }).catch((error) => {
           if (stylePreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
         });
         updateStylePreviewPlaybackUi(button, status, {
           ...playbackOptions.frameState,
-          localFrame: stylePreviewPlayback.frame,
+          localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
         }, playbackOptions.page, playbackOptions.rowState);
         stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
       };
@@ -236,6 +237,17 @@
         const localFrame = Math.max(0, Math.min(frameCount - 1, Number(frameState && frameState.localFrame) || stylePreviewPlayback.frame));
         status.textContent = `${localFrame}/${frameCount - 1} · sep ${formatPreviewGap(page, frameState, rowState)}`;
       }
+    }
+
+    function stylePreviewLoopFrameCount(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const fps = Math.max(1, Number(frameState && frameState.fps) || 25);
+      return frameCount + msToFrames(stylePreviewLoopPauseMs, fps);
+    }
+
+    function stylePreviewDisplayFrame(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      return Math.min(frameCount - 1, Math.max(0, Math.round(Number(stylePreviewPlayback.frame) || 0)));
     }
 
     function formatPreviewGap(page, frameState, rowState) {
