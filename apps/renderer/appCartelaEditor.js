@@ -7,8 +7,54 @@
 
     function renderCartelaFields(cartela) {
       const wrap = documentRef.createElement('div');
+      const cards = [
+        {
+          id: 'cartela',
+          title: 'Cartela',
+          render: (panel) => panel.appendChild(renderCartelaBaseControls(cartela)),
+        },
+        {
+          id: 'animacion',
+          title: 'Animación',
+          render: (panel) => {
+            if (options.renderCartelaAnimationControls) panel.appendChild(options.renderCartelaAnimationControls(cartela, { includeTitle: false }));
+          },
+        },
+        {
+          id: 'titulo',
+          title: 'Título de cartela',
+          render: (panel) => panel.appendChild(options.renderCartelaTitleTypographyControls(cartela, { includeTitle: false })),
+        },
+        {
+          id: 'bloque',
+          title: 'Bloque',
+          render: (panel) => panel.appendChild(renderCartelaBlockStyleControls(cartela, { includeTypography: false })),
+        },
+        {
+          id: 'tipografia',
+          title: 'Tipografía',
+          render: (panel) => {
+            const value = options.getEffectiveCartelaBlockStyle(cartela);
+            panel.appendChild(options.renderCartelaBlockTypographyControls(cartela, value.typography || {}, { includeTitle: false }));
+          },
+        },
+      ];
+
+      if (options.renderAccordionGroup) {
+        wrap.appendChild(options.renderAccordionGroup(`cartela-editor:${cartela.id || 'selected'}`, cards, { initialOpenId: 'cartela' }));
+        return wrap;
+      }
+
+      cards.forEach((card) => {
+        wrap.appendChild(options.sectionLabel(card.title));
+        card.render(wrap);
+      });
+      return wrap;
+    }
+
+    function renderCartelaBaseControls(cartela) {
+      const wrap = documentRef.createElement('div');
       const effectiveCartela = options.getEffectiveCartela(cartela);
-      wrap.appendChild(options.sectionLabel('Cartela'));
       wrap.appendChild(options.localCheckboxRow('Incluir en salida', cartela.enabled !== false, (value) => options.updateSelectedCartela({ enabled: value })));
       wrap.appendChild(renderCartelaStyleControls(cartela));
       if (cartela.manual) wrap.appendChild(manualCartelaActionsRow());
@@ -37,10 +83,7 @@
       wrap.appendChild(options.localSelectRow('Ajuste automático de texto', options.boolSelectValue(effectiveCartela.auto_text_wrap), options.yesNoOptions, (value) => options.updateSelectedCartela({ auto_text_wrap: options.normalizeBoolean(value, false) }), { override: options.hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => options.resetSelectedCartelaOverride('auto_text_wrap') }));
       wrap.appendChild(options.localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', options.textCapitalizationOptions, (value) => options.updateSelectedCartela({ text_capitalization: value }), { override: options.hasCartelaOverride(cartela, 'text_capitalization'), reset: () => options.resetSelectedCartelaOverride('text_capitalization') }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(effectiveCartela.use_protected_capitalization), options.yesNoOptions, (value) => options.updateSelectedCartela({ use_protected_capitalization: options.normalizeBoolean(value, true) }), { override: options.hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => options.resetSelectedCartelaOverride('use_protected_capitalization') }));
-      if (options.renderCartelaAnimationControls) wrap.appendChild(options.renderCartelaAnimationControls(cartela));
       wrap.appendChild(options.renderCartelaImageControls(cartela));
-      wrap.appendChild(options.renderCartelaTitleTypographyControls(cartela));
-      wrap.appendChild(renderCartelaBlockStyleControls(cartela));
       wrap.appendChild(options.localInputRow('Notas', cartela.notes || '', (value) => options.updateSelectedCartela({ notes: value }), { multiline: true }));
       return wrap;
     }
@@ -113,9 +156,8 @@
       return 'cancel';
     }
 
-    function renderCartelaBlockStyleControls(cartela) {
+    function renderCartelaBlockStyleControls(cartela, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
-      wrap.appendChild(options.sectionLabel('Formato del bloque'));
       const value = options.getEffectiveCartelaBlockStyle(cartela);
       const alignment = value.alignment || {};
       const alignmentOptions = [
@@ -134,7 +176,7 @@
         ['center', 'Centrado'],
         ['bottom', 'Abajo'],
       ], (next) => options.updateSelectedCartelaBlockStyle({ vertical_align: next }), { override: !!(cartela.block_style && cartela.block_style.vertical_align !== undefined), reset: () => options.resetSelectedCartelaBlockOverride('vertical_align') }));
-      wrap.appendChild(options.renderCartelaBlockTypographyControls(cartela, value.typography || {}));
+      if (controlOptions.includeTypography !== false) wrap.appendChild(options.renderCartelaBlockTypographyControls(cartela, value.typography || {}));
       return wrap;
     }
 

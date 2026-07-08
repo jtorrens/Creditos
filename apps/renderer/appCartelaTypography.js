@@ -3,10 +3,10 @@
     const documentRef = options.documentRef || root.document;
     const fieldControlRegistry = options.fieldControlRegistry;
 
-    function renderCartelaBlockTypographyControls(cartela, overrides) {
+    function renderCartelaBlockTypographyControls(cartela, overrides, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'block-typography-settings';
-      wrap.appendChild(options.sectionLabel('Tipografía del bloque'));
+      if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Tipografía del bloque'));
 
       const settings = options.getProductionSettings();
       const fontCatalog = options.getFontCatalog();
@@ -35,10 +35,10 @@
       return wrap;
     }
 
-    function renderCartelaTitleTypographyControls(cartela) {
+    function renderCartelaTitleTypographyControls(cartela, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'block-typography-settings';
-      wrap.appendChild(options.sectionLabel('Tipografía del título de cartela'));
+      if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Tipografía del título de cartela'));
 
       const fontCatalog = options.getFontCatalog();
       const key = 'page_header';

@@ -22,10 +22,10 @@
         protected_capitalizations: '',
         use_protected_capitalization: true,
         typography: {
-          page_header: { font_size: 12, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#58616a' },
-          block_title: { font_size: 16, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#24545f' },
-          role: { font_size: 14, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
-          name: { font_size: 14, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
+          page_header: { font_size: 12, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#58616a' },
+          block_title: { font_size: 16, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#24545f' },
+          role: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
+          name: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_postscript_name: '', color: '#171b1f' },
         },
         layout: {
           line_spacing: 1.12,
@@ -72,6 +72,7 @@
           ...(settings.typography && settings.typography[key] ? settings.typography[key] : {}),
         };
         normalized.typography[key].font_size = Math.max(1, Number(normalized.typography[key].font_size) || defaults.typography[key].font_size);
+        normalized.typography[key].letter_spacing = Number.isFinite(Number(normalized.typography[key].letter_spacing)) ? Number(normalized.typography[key].letter_spacing) : defaults.typography[key].letter_spacing;
         normalized.typography[key].font_family = normalized.typography[key].font_family || defaults.typography[key].font_family;
         normalized.typography[key].font_style = normalized.typography[key].font_style || defaults.typography[key].font_style;
         normalized.typography[key].font_postscript_name = normalized.typography[key].font_postscript_name || '';

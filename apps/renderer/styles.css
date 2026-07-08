@@ -1190,6 +1190,7 @@ button.primary:hover {
   background: #121820;
   border: 0;
   border-radius: 0;
+  cursor: pointer;
   display: grid;
   gap: 8px;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -1225,6 +1226,10 @@ button.primary:hover {
   display: grid;
   gap: 0;
   padding: 10px 12px 12px;
+}
+
+.accordion-card-panel[hidden] {
+  display: none;
 }
 
 .accordion-card-panel > .section-title:first-child {
@@ -1433,7 +1438,7 @@ textarea.visual-input {
   align-items: center;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(100px, 160px) 72px minmax(0, 25ch) minmax(92px, 140px) 44px;
+  grid-template-columns: minmax(100px, 160px) 72px 72px minmax(0, 25ch) minmax(92px, 140px) 44px;
   margin-bottom: 8px;
 }
 
@@ -1449,17 +1454,20 @@ textarea.visual-input {
 }
 
 .block-typography-row {
-  grid-template-columns: minmax(72px, 100px) 58px minmax(0, 25ch) minmax(86px, 120px) 44px;
+  grid-template-columns: minmax(72px, 100px) 58px 58px minmax(0, 25ch) minmax(86px, 120px) 44px;
 }
 
 .block-typography-row.override-field {
-  grid-template-columns: minmax(72px, 96px) 54px minmax(0, 25ch) minmax(82px, 112px) 42px 106px;
+  grid-template-columns: minmax(72px, 96px) 54px 54px minmax(0, 25ch) minmax(82px, 112px) 42px 36px;
 }
 
 .block-typography-row.override-field button {
   color: var(--override);
+  font-size: 16px;
+  height: 32px;
+  padding: 0;
   white-space: nowrap;
-  width: 106px;
+  width: 36px;
 }
 
 .styles-workspace .typography-row,

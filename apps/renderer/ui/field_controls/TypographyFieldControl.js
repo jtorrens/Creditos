@@ -28,6 +28,17 @@
       if (base.font_size !== undefined) sizeInput.placeholder = String(base.font_size);
       row.appendChild(sizeInput);
 
+      const letterSpacingInput = fieldControlRegistry.create('number', {
+        value: value.letter_spacing,
+        step: options.letterSpacingStep === undefined ? 0.1 : options.letterSpacingStep,
+        fallbackValue: base.letter_spacing === undefined ? 0 : base.letter_spacing,
+        onInput: (letterSpacing) => onChange(options, { letter_spacing: letterSpacing }, 'letter_spacing'),
+      });
+      letterSpacingInput.title = 'Espaciado entre caracteres';
+      letterSpacingInput.setAttribute('aria-label', 'Espaciado entre caracteres');
+      if (base.letter_spacing !== undefined) letterSpacingInput.placeholder = String(base.letter_spacing);
+      row.appendChild(letterSpacingInput);
+
       let styleSelect = null;
       const familySelect = fieldControlRegistry.create('select', {
         value: value.font_family,
@@ -67,7 +78,10 @@
       if (options.override && options.onReset) {
         const resetButton = documentRef.createElement('button');
         resetButton.type = 'button';
-        resetButton.textContent = 'Restablecer';
+        resetButton.className = 'override-reset-button';
+        resetButton.textContent = '↻';
+        resetButton.title = 'Restablecer';
+        resetButton.setAttribute('aria-label', 'Restablecer');
         resetButton.addEventListener('click', options.onReset);
         row.appendChild(resetButton);
       }

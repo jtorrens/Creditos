@@ -338,10 +338,12 @@
         ...((typographyOverrides && typographyOverrides[styleKey]) || {}),
       };
       const fontSize = Math.max(1, Number(typography.font_size) || 1) * (Number(cartela.font_size_multiplier) || 1);
+      const letterSpacing = Number(typography.letter_spacing) || 0;
       return {
         color: typography.color,
         font: `${fontStyleFromStyle(typography.font_style)} ${fontWeightFromStyle(typography.font_style)} ${fontSize}px ${quoteFontFamily(typography.font_family)}`,
         fontSize,
+        letterSpacing,
         lineHeight: fontSize * Math.max(0.1, Number(layout.line_spacing) || settings.layout.line_spacing) * (Number(cartela.line_spacing_multiplier) || 1),
         textCapitalization: normalizeTextCapitalization(cartela && cartela.text_capitalization !== undefined ? cartela.text_capitalization : settings.text_capitalization),
         language: normalizeLanguage(settings.language),
@@ -367,13 +369,14 @@
       );
       const sourceLines = explicitTextLines(transformed);
       if (!metrics.autoWrap || !Number.isFinite(width) || width <= 0) return sourceLines;
-      const cacheKey = [metrics.font, metrics.textCapitalization, metrics.language, Math.round(width * 100) / 100, transformed].join('\u0001');
+      const cacheKey = [metrics.font, metrics.letterSpacing, metrics.textCapitalization, metrics.language, Math.round(width * 100) / 100, transformed].join('\u0001');
       const cached = canvasWrapCache.get(cacheKey);
       if (cached) return cached;
       if (!canvasMeasureContext) canvasMeasureContext = documentRef.createElement('canvas').getContext('2d');
       canvasMeasureContext.font = metrics.font;
+      const measureLine = (value) => canvasTextWidth(canvasMeasureContext, value, metrics);
       const output = [];
-      const fits = (value) => canvasMeasureContext.measureText(value).width <= width;
+      const fits = (value) => measureLine(value) <= width;
       const pushLongWord = (word) => {
         let line = '';
         for (const character of word) {
@@ -422,8 +425,34 @@
       ctx.textBaseline = 'top';
       ctx.textAlign = align;
       const textX = align === 'center' ? x + width / 2 : align === 'right' ? x + width : x;
-      lines.forEach((line, index) => ctx.fillText(line, textX, y + index * metrics.lineHeight));
+      lines.forEach((line, index) => drawCanvasTextLine(ctx, line, textX, y + index * metrics.lineHeight, metrics, align));
       ctx.restore();
+    }
+
+    function canvasTextWidth(ctx, text, metrics) {
+      const value = String(text || '');
+      const spacing = Number(metrics.letterSpacing) || 0;
+      if (!value || !spacing) return ctx.measureText(value).width;
+      return Math.max(0, ctx.measureText(value).width + Math.max(0, Array.from(value).length - 1) * spacing);
+    }
+
+    function drawCanvasTextLine(ctx, line, x, y, metrics, align) {
+      const value = String(line || '');
+      const spacing = Number(metrics.letterSpacing) || 0;
+      if (!value || !spacing) {
+        ctx.fillText(value, x, y);
+        return;
+      }
+      const characters = Array.from(value);
+      const width = canvasTextWidth(ctx, value, metrics);
+      let cursorX = align === 'center' ? x - width / 2 : align === 'right' ? x - width : x;
+      const previousAlign = ctx.textAlign;
+      ctx.textAlign = 'left';
+      characters.forEach((character, index) => {
+        ctx.fillText(character, cursorX, y);
+        cursorX += ctx.measureText(character).width + (index < characters.length - 1 ? spacing : 0);
+      });
+      ctx.textAlign = previousAlign;
     }
 
     return {

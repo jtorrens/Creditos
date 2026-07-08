@@ -1291,6 +1291,7 @@
     normalizeBoolean,
     rebuild,
     refreshPdfIfActive,
+    renderAccordionGroup: appAccordion.renderAccordionGroup,
     renderCartelaBlockTypographyControls,
     renderCartelaAnimationControls: appStyleAnimationEditor.renderCartelaAnimationControls,
     cartelaAnimationRowMeta: appStyleAnimationEditor.cartelaAnimationRowMeta,

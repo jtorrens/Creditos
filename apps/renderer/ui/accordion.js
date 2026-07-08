@@ -13,7 +13,7 @@
 
       const storedOpenId = openByGroup.get(groupId);
       const defaultOpenId = groupOptions.initialOpenId || validItems[0].id;
-      const currentOpenId = validItems.some((item) => item.id === storedOpenId) ? storedOpenId : defaultOpenId;
+      const currentOpenId = storedOpenId === null || validItems.some((item) => item.id === storedOpenId) ? storedOpenId : defaultOpenId;
       openByGroup.set(groupId, currentOpenId);
 
       const cards = validItems.map((item) => {
@@ -48,7 +48,7 @@
         item.render(panel);
 
         header.addEventListener('click', () => {
-          openByGroup.set(groupId, item.id);
+          openByGroup.set(groupId, openByGroup.get(groupId) === item.id ? null : item.id);
           updateCards();
         });
 

@@ -76,6 +76,7 @@
       const lineScale = Number(typographyOptions.lineMultiplier) || 1;
       element.style.fontFamily = typography.font_family;
       element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
+      element.style.letterSpacing = `${Number(typography.letter_spacing) || 0}px`;
       element.style.lineHeight = String(settings.layout.line_spacing * lineScale);
       element.style.fontWeight = options.fontWeightFromStyle(typography.font_style);
       element.style.fontStyle = /italic|oblique/i.test(typography.font_style || '') ? 'italic' : 'normal';

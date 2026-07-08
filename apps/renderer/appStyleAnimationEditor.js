@@ -48,10 +48,10 @@
       });
     }
 
-    function renderCartelaAnimationControls(cartela) {
+    function renderCartelaAnimationControls(cartela, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-settings';
-      wrap.appendChild(options.sectionLabel('Animacion'));
+      if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Animacion'));
       const hasOverride = options.hasCartelaAnimationOverride && options.hasCartelaAnimationOverride(cartela);
       const effective = options.getEffectiveCartelaAnimation
         ? options.getEffectiveCartelaAnimation(cartela)

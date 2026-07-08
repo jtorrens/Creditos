@@ -340,6 +340,7 @@
         const value = typography[key];
         const item = {};
         if (value.font_size !== undefined && value.font_size !== '') item.font_size = Math.max(1, Number(value.font_size) || 1);
+        if (value.letter_spacing !== undefined && value.letter_spacing !== '') item.letter_spacing = Number(value.letter_spacing) || 0;
         if (value.font_family) item.font_family = value.font_family;
         if (value.font_style) item.font_style = value.font_style;
         if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
@@ -355,6 +356,7 @@
       if (!value) return normalized;
       const item = {};
       if (value.font_size !== undefined && value.font_size !== '') item.font_size = Math.max(1, Number(value.font_size) || 1);
+      if (value.letter_spacing !== undefined && value.letter_spacing !== '') item.letter_spacing = Number(value.letter_spacing) || 0;
       if (value.font_family) item.font_family = value.font_family;
       if (value.font_style) item.font_style = value.font_style;
       if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
