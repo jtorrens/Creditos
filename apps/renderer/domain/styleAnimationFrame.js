@@ -117,7 +117,7 @@
           progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing),
           mode: animation.out && animation.out.mode,
           direction: animation.out && animation.out.direction,
-          relativeFactor: relativeCascadeFactor(rowState, animation.out && animation.out.direction),
+          relativeFactor: animationFactor(rowState, animation.out),
           fade: !!(animation.out && animation.out.fade),
           featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
@@ -128,7 +128,7 @@
           progress: 1,
           mode: animation.out && animation.out.mode,
           direction: animation.out && animation.out.direction,
-          relativeFactor: relativeCascadeFactor(rowState, animation.out && animation.out.direction),
+          relativeFactor: animationFactor(rowState, animation.out),
           fade: !!(animation.out && animation.out.fade),
           featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
@@ -142,7 +142,7 @@
           progress: 0,
           mode: animation.in && animation.in.mode,
           direction: animation.in && animation.in.direction,
-          relativeFactor: relativeCascadeFactor(rowState, animation.in && animation.in.direction),
+          relativeFactor: animationFactor(rowState, animation.in),
           fade: !!(animation.in && animation.in.fade),
           featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
         };
@@ -153,7 +153,7 @@
           progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing),
           mode: animation.in && animation.in.mode,
           direction: animation.in && animation.in.direction,
-          relativeFactor: relativeCascadeFactor(rowState, animation.in && animation.in.direction),
+          relativeFactor: animationFactor(rowState, animation.in),
           fade: !!(animation.in && animation.in.fade),
           featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
         };
@@ -264,14 +264,29 @@
     function resolvedEdgeValue(property, phase, stable) {
       const edgeValue = Number(phase.name === 'in' ? property.inValue : property.outValue);
       if (!Number.isFinite(edgeValue)) return edgeValue;
-      if (phase.mode !== 'relativeCascade') return edgeValue;
+      if (phase.mode !== 'relativeCascade' && phase.mode !== 'symmetricCascade') return edgeValue;
       return stable + ((edgeValue - stable) * relativeFactor(phase.relativeFactor));
+    }
+
+    function animationFactor(rowState = {}, phase = {}) {
+      if (phase && phase.mode === 'symmetricCascade') return symmetricCascadeFactor(rowState, phase.direction);
+      return relativeCascadeFactor(rowState, phase && phase.direction);
     }
 
     function relativeCascadeFactor(rowState = {}, direction) {
       const rowCount = Math.max(1, Math.round(Number(rowState.rowCount) || 1));
       const orderedIndex = orderedRowIndex(rowState.rowIndex, rowCount, direction);
       return (rowCount - orderedIndex) / rowCount;
+    }
+
+    function symmetricCascadeFactor(rowState = {}, direction) {
+      const rowCount = Math.max(1, Math.round(Number(rowState.rowCount) || 1));
+      if (rowCount === 1) return direction === 'bottomToTop' || direction === 'rightToLeft' ? 0 : 1;
+      const index = Math.max(0, Math.min(rowCount - 1, Math.round(Number(rowState.rowIndex) || 0)));
+      const center = (rowCount - 1) / 2;
+      const distance = center ? Math.abs(index - center) / center : 0;
+      const edgeFactor = Math.max(0, Math.min(1, distance));
+      return direction === 'bottomToTop' || direction === 'rightToLeft' ? 1 - edgeFactor : edgeFactor;
     }
 
     function relativeFactor(value) {

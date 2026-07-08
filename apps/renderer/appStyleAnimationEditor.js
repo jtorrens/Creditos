@@ -7,6 +7,7 @@
       ['together', 'Full Frame'],
       ['cascade', 'En cascada'],
       ['relativeCascade', 'Cascada relativa'],
+      ['symmetricCascade', 'Cascada simétrica'],
     ];
     const fadeModeOptions = [
       ['fullFrame', 'Full Frame'],
