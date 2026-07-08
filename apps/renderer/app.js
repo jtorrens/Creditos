@@ -246,6 +246,7 @@
     applyProductionFields,
     applyProtectedCapitalizations,
     applyTextCapitalization,
+    animationFadeAlpha,
     animatableStyleProperties,
     blockForTitleRepeat,
     boolSelectValue,
@@ -717,6 +718,7 @@
     },
     previewDependencies: {
       applyTextCapitalization,
+      animationFadeAlpha,
       applyTypography,
       cartelaBlockGap,
       cartelaBlockTitleGap,

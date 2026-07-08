@@ -40,6 +40,7 @@
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
+        fade: false,
       }),
       out: Object.freeze({
         durationMs: 500,
@@ -48,6 +49,7 @@
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
+        fade: false,
       }),
       properties: Object.freeze({}),
     });
@@ -55,10 +57,12 @@
     function normalizeStyleAnimation(value = {}) {
       const input = value && typeof value === 'object' ? value : {};
       const properties = normalizeAnimatedProperties(input.properties || {});
+      const inputPhase = normalizeAnimationPhase(input.in, defaultStyleAnimation.in);
+      const outputPhase = normalizeAnimationPhase(input.out, defaultStyleAnimation.out);
       return {
-        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0),
-        in: normalizeAnimationPhase(input.in, defaultStyleAnimation.in),
-        out: normalizeAnimationPhase(input.out, defaultStyleAnimation.out),
+        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0 || inputPhase.fade || outputPhase.fade),
+        in: inputPhase,
+        out: outputPhase,
         properties,
       };
     }
@@ -95,7 +99,7 @@
     function hasStyleAnimation(value) {
       if (!value || typeof value !== 'object') return false;
       const properties = value.properties && typeof value.properties === 'object' ? value.properties : {};
-      return !!value.enabled || Object.keys(properties).length > 0;
+      return !!value.enabled || Object.keys(properties).length > 0 || !!(value.in && value.in.fade) || !!(value.out && value.out.fade);
     }
 
     function normalizeAnimationPhase(value = {}, defaults = defaultStyleAnimation.in) {
@@ -107,6 +111,7 @@
         mode: transitionModes.includes(input.mode) ? input.mode : defaults.mode,
         direction: transitionDirections.includes(input.direction) ? input.direction : defaults.direction,
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
+        fade: normalizeBoolean(input.fade, defaults.fade || false),
       };
     }
 

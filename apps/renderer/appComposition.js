@@ -47,6 +47,7 @@
       applyProductionFields: projectsDomain.applyProductionFields,
       applyProtectedCapitalizations: settingsDomain.applyProtectedCapitalizations,
       applyTextCapitalization: settingsDomain.applyTextCapitalization,
+      animationFadeAlpha: styleAnimationFrameDomain.animationFadeAlpha,
       animatableStyleProperties: styleAnimationDomain.animatableProperties,
       blockForTitleRepeat: paginationUnitsDomain.blockForTitleRepeat,
       boolSelectValue: commonDomain.boolSelectValue,
@@ -193,6 +194,7 @@
     });
     const canvasPreview = root.CreditosPreviewCanvas.createCanvasPreview({
       applyTextCapitalization: dependencies.applyTextCapitalization,
+      animationFadeAlpha: dependencies.animationFadeAlpha,
       cartelaBlockGap: dependencies.cartelaBlockGap,
       cartelaBlockTitleGap: dependencies.cartelaBlockTitleGap,
       cartelaImages: dependencies.cartelaImages,

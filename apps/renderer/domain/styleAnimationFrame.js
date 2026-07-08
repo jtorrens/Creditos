@@ -23,10 +23,7 @@
       if (!cartela) return cartela;
       const animation = normalizeStyleAnimation(cartela.animation || {});
       if (!animation.enabled) return cartela;
-      const localFrame = Math.max(0, Math.round(Number(frameState.localFrame) || 0));
-      const frameCount = Math.max(1, Math.round(Number(frameState.frameCount) || 1));
-      const fps = Math.max(1, Math.round(Number(frameState.fps) || 25));
-      const phase = animationPhase(animation, localFrame, frameCount, fps, rowState);
+      const phase = animationPhaseForFrame(animation, frameState, rowState);
       if (!phase) return cartela;
       const properties = animation.properties || {};
       let changed = false;
@@ -52,10 +49,7 @@
       if (!cartela || !typography) return typography;
       const animation = normalizeStyleAnimation(cartela.animation || {});
       if (!animation.enabled) return typography;
-      const localFrame = Math.max(0, Math.round(Number(frameState.localFrame) || 0));
-      const frameCount = Math.max(1, Math.round(Number(frameState.frameCount) || 1));
-      const fps = Math.max(1, Math.round(Number(frameState.fps) || 25));
-      const phase = animationPhase(animation, localFrame, frameCount, fps, rowState);
+      const phase = animationPhaseForFrame(animation, frameState, rowState);
       if (!phase) return typography;
 
       const properties = animation.properties || {};
@@ -82,6 +76,24 @@
       return changed ? output : typography;
     }
 
+    function animationFadeAlpha(cartela, frameState = {}, rowState = {}) {
+      if (!cartela) return 1;
+      const animation = normalizeStyleAnimation(cartela.animation || {});
+      if (!animation.enabled) return 1;
+      const phase = animationPhaseForFrame(animation, frameState, rowState);
+      if (!phase || !phase.fade) return 1;
+      if (rowState.fadeScope === 'fullFrame' && phase.mode === 'cascade') return 1;
+      if (rowState.fadeScope === 'row' && phase.mode !== 'cascade') return 1;
+      return phase.name === 'in' ? phase.progress : 1 - phase.progress;
+    }
+
+    function animationPhaseForFrame(animation, frameState = {}, rowState = {}) {
+      const localFrame = Math.max(0, Math.round(Number(frameState.localFrame) || 0));
+      const frameCount = Math.max(1, Math.round(Number(frameState.frameCount) || 1));
+      const fps = Math.max(1, Math.round(Number(frameState.fps) || 25));
+      return animationPhase(animation, localFrame, frameCount, fps, rowState);
+    }
+
     function animationPhase(animation, localFrame, frameCount, fps, rowState = {}) {
       const out = phaseFrameInfo(animation.out, fps);
       const outRow = rowPhaseWindow(animation.out, out, frameCount, rowState);
@@ -89,24 +101,39 @@
         return {
           name: 'out',
           progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing),
+          mode: animation.out && animation.out.mode,
+          fade: !!(animation.out && animation.out.fade),
+          featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
       }
       if (localFrame >= outRow.endFrame) {
         return {
           name: 'out',
           progress: 1,
+          mode: animation.out && animation.out.mode,
+          fade: !!(animation.out && animation.out.fade),
+          featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
       }
 
       const input = phaseFrameInfo(animation.in, fps);
       const inRow = rowPhaseWindow(animation.in, input, frameCount, rowState, true);
       if (localFrame < inRow.startFrame && input.durationFrames > 0) {
-        return { name: 'in', progress: 0 };
+        return {
+          name: 'in',
+          progress: 0,
+          mode: animation.in && animation.in.mode,
+          fade: !!(animation.in && animation.in.fade),
+          featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
+        };
       }
       if (localFrame >= inRow.startFrame && localFrame < inRow.endFrame) {
         return {
           name: 'in',
           progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing),
+          mode: animation.in && animation.in.mode,
+          fade: !!(animation.in && animation.in.fade),
+          featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
         };
       }
       return null;
@@ -192,6 +219,7 @@
     }
 
     return {
+      animationFadeAlpha,
       cartelaWithResolvedRowAnimation,
       typographyWithResolvedRowAnimation,
     };

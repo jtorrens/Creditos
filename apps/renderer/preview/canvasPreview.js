@@ -2,6 +2,7 @@
   function createCanvasPreview(dependencies = {}) {
     const {
       applyTextCapitalization = (text) => text,
+      animationFadeAlpha = () => 1,
       cartelaBlockGap = () => 0,
       cartelaBlockTitleGap = () => 0,
       cartelaImages = () => [],
@@ -70,7 +71,13 @@
         rowCount: rowPlan.rowCount,
         rowIndex,
       });
+      const rowFadeAlpha = (rowIndex) => animationFadeAlpha(rowCartela(rowIndex), renderOptions.animationFrame, {
+        fadeScope: 'row',
+        rowCount: rowPlan.rowCount,
+        rowIndex,
+      });
       const heights = blocks.map((block, index) => measureCanvasBlock(ctx, block, page.cartela, effectiveLayout, width, {
+        rowFadeAlpha,
         rowCartela,
         rowTypography,
         startRowIndex: rowPlan.blockStartRows[index],
@@ -84,21 +91,33 @@
       const totalHeight = titleHeight + (titleHeight && blocks.length ? blockGap : 0) + totalBlocksHeight + gaps;
       let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page)) + (Number(page.cartela.vertical_offset) || 0);
 
-      await drawCanvasCartelaImages(ctx, page.cartela, effectiveLayout);
-
-      if (titleText && titleMetrics) {
-        drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center');
-        cursorY += canvasTextHeight(titleText, titleMetrics, width) + (blocks.length ? blockGap : 0);
-      }
-
-      blocks.forEach((block, index) => {
-        drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width, {
-          rowCartela,
-          rowTypography,
-          startRowIndex: rowPlan.blockStartRows[index],
-        });
-        cursorY += heights[index] + blockGap;
+      const fullFrameFadeAlpha = animationFadeAlpha(page.cartela, renderOptions.animationFrame, {
+        fadeScope: 'fullFrame',
+        rowCount: 1,
+        rowIndex: 0,
       });
+      ctx.save();
+      ctx.globalAlpha *= clampAlpha(fullFrameFadeAlpha);
+      try {
+        await drawCanvasCartelaImages(ctx, page.cartela, effectiveLayout);
+
+        if (titleText && titleMetrics) {
+          drawWithAlpha(ctx, rowFadeAlpha(0), () => drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center'));
+          cursorY += canvasTextHeight(titleText, titleMetrics, width) + (blocks.length ? blockGap : 0);
+        }
+
+        blocks.forEach((block, index) => {
+          drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width, {
+            rowFadeAlpha,
+            rowCartela,
+            rowTypography,
+            startRowIndex: rowPlan.blockStartRows[index],
+          });
+          cursorY += heights[index] + blockGap;
+        });
+      } finally {
+        ctx.restore();
+      }
     }
 
     async function drawCanvasCartelaImages(ctx, cartela, layout) {
@@ -219,8 +238,7 @@
 
     function canvasBlockRowCount(block) {
       const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
-      const columns = Math.max(1, Number(block && block.columns) || 1);
-      return (String(block && block.title || '').trim() ? 1 : 0) + Math.max(0, Math.ceil(units.length / columns));
+      return (String(block && block.title || '').trim() ? 1 : 0) + units.length;
     }
 
     function measureCanvasBlock(ctx, block, cartela, layout, width, rowContext = {}) {
@@ -241,15 +259,15 @@
       const rowHeights = [];
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
-        const row = Math.floor(index / columns);
+        const layoutRow = Math.floor(index / columns);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
         const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
         const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
         const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography);
-        rowHeights[row] = Math.max(rowHeights[row] || 0, unitHeight);
+        rowHeights[layoutRow] = Math.max(rowHeights[layoutRow] || 0, unitHeight);
         previousCreditSourceId = creditSourceId(unit);
       });
       height += rowHeights.reduce((total, value) => total + value, 0);
@@ -268,38 +286,40 @@
         const titleLayout = layoutForCartela(layout, titleCartela);
         const titleTypography = rowContext.rowTypography ? rowContext.rowTypography(titleRowIndex, block.typography) : block.typography;
         const metrics = canvasTextMetrics('block_title', titleCartela, titleLayout, titleTypography);
-        drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
+        drawWithAlpha(ctx, rowContext.rowFadeAlpha ? rowContext.rowFadeAlpha(titleRowIndex) : 1, () => drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center'));
         cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(titleCartela, titleLayout) : 0);
       }
       const columns = Math.max(1, Number(block.columns) || 1);
       const rowHeights = [];
       const rowGaps = canvasRowGaps(units, cartela, layout, columns);
       units.forEach((unit, index) => {
-        const row = Math.floor(index / columns);
+        const layoutRow = Math.floor(index / columns);
         const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
         const options = unitRenderOptions(unit, previousSourceId, cartela, index > 0, units[index - 1]);
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
         const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
         const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
-        rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography));
+        rowHeights[layoutRow] = Math.max(rowHeights[layoutRow] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography));
       });
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
-        const row = Math.floor(index / columns);
+        const layoutRow = Math.floor(index / columns);
         const col = index % columns;
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
         const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
         const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
         const unitX = x + col * (columnWidth + rowLayout.column_gap);
         const unitY = cursorY +
-          rowHeights.slice(0, row).reduce((total, value) => total + value, 0) +
-          rowGaps.slice(0, row).reduce((total, value) => total + value, 0);
+          rowHeights.slice(0, layoutRow).reduce((total, value) => total + value, 0) +
+          rowGaps.slice(0, layoutRow).reduce((total, value) => total + value, 0);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options, rowTypography);
+        drawWithAlpha(ctx, rowContext.rowFadeAlpha ? rowContext.rowFadeAlpha(rowIndex) : 1, () => {
+          drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options, rowTypography);
+        });
         previousCreditSourceId = creditSourceId(unit);
       });
     }
@@ -490,6 +510,21 @@
       const textX = align === 'center' ? x + width / 2 : align === 'right' ? x + width : x;
       lines.forEach((line, index) => drawCanvasTextLine(ctx, line, textX, y + index * metrics.lineHeight, metrics, align));
       ctx.restore();
+    }
+
+    function drawWithAlpha(ctx, alpha, draw) {
+      const normalized = clampAlpha(alpha);
+      if (normalized <= 0) return;
+      ctx.save();
+      ctx.globalAlpha *= normalized;
+      draw();
+      ctx.restore();
+    }
+
+    function clampAlpha(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return 1;
+      return Math.max(0, Math.min(1, numeric));
     }
 
     function canvasTextWidth(ctx, text, metrics) {

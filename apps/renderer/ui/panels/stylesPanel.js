@@ -125,8 +125,7 @@
         const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
         const blockTitleRows = String(block && block.title || '').trim() ? 1 : 0;
         if (index === 0) firstUnitRow = nextRow + blockTitleRows;
-        const columns = Math.max(1, Number(block && block.columns) || 1);
-        nextRow += blockTitleRows + Math.max(0, Math.ceil(units.length / columns));
+        nextRow += blockTitleRows + units.length;
       });
       return {
         rowCount: Math.max(1, nextRow),
