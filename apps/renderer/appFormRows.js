@@ -76,18 +76,36 @@
 
     function wrapFieldControl(control, meta = {}) {
       if (!meta || (!meta.override && !meta.beforeControl && !meta.afterControl)) return control;
-      const wrap = documentRef.createElement('div');
-      wrap.className = 'field-control-inline' + (meta.override ? ' override-control' : '');
-      if (meta.beforeControl) wrap.appendChild(meta.beforeControl);
-      wrap.appendChild(control);
-      if (meta.afterControl) wrap.appendChild(meta.afterControl);
-      if (!meta.override) return wrap;
+      if (!meta.override) {
+        const inlineWrap = documentRef.createElement('div');
+        inlineWrap.className = 'field-control-inline';
+        if (meta.beforeControl) inlineWrap.appendChild(meta.beforeControl);
+        inlineWrap.appendChild(control);
+        if (meta.afterControl) inlineWrap.appendChild(meta.afterControl);
+        return inlineWrap;
+      }
+
+      const overrideWrap = documentRef.createElement('div');
+      overrideWrap.className = 'override-control';
+      overrideWrap.appendChild(control);
+
       const reset = documentRef.createElement('button');
       reset.type = 'button';
-      reset.textContent = 'Restablecer';
+      reset.className = 'override-reset-button';
+      reset.textContent = '↻';
+      reset.title = 'Restablecer';
+      reset.setAttribute('aria-label', 'Restablecer');
       reset.addEventListener('click', meta.reset || (() => {}));
-      wrap.appendChild(reset);
-      return wrap;
+      overrideWrap.appendChild(reset);
+
+      if (!meta.beforeControl && !meta.afterControl) return overrideWrap;
+
+      const inlineWrap = documentRef.createElement('div');
+      inlineWrap.className = 'field-control-inline';
+      if (meta.beforeControl) inlineWrap.appendChild(meta.beforeControl);
+      inlineWrap.appendChild(overrideWrap);
+      if (meta.afterControl) inlineWrap.appendChild(meta.afterControl);
+      return inlineWrap;
     }
 
     function rowHasOverride(meta) {

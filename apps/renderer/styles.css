@@ -1013,7 +1013,7 @@ button.primary:hover {
   border-radius: 6px;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(0, auto) 106px;
+  grid-template-columns: minmax(0, auto) 36px;
   justify-content: start;
   max-width: 100%;
   padding: 5px;
@@ -1029,8 +1029,11 @@ button.primary:hover {
 
 .override-control button {
   color: var(--override);
+  font-size: 16px;
+  height: 32px;
+  padding: 0;
   white-space: nowrap;
-  width: 106px;
+  width: 36px;
 }
 
 .wide-action {
@@ -1130,11 +1133,6 @@ button.primary:hover {
   width: fit-content;
 }
 
-.override-control.field-control-inline {
-  display: flex;
-  grid-template-columns: none;
-}
-
 .keyframe-toggle {
   align-items: center;
   background: transparent;
@@ -1155,18 +1153,6 @@ button.primary:hover {
   color: var(--accent-strong);
 }
 
-.override-control .keyframe-toggle {
-  color: var(--muted);
-  height: 18px;
-  padding: 0;
-  white-space: normal;
-  width: 18px;
-}
-
-.override-control .keyframe-toggle.active {
-  color: var(--accent-strong);
-}
-
 .style-animation-inline-values {
   align-items: center;
   display: flex;
@@ -1182,6 +1168,67 @@ button.primary:hover {
 .style-animation-inline-value span {
   color: var(--muted);
   font-size: 11px;
+}
+
+.accordion-group {
+  display: grid;
+  gap: 8px;
+}
+
+.accordion-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.accordion-card.open {
+  border-color: #33414d;
+}
+
+.accordion-card-header {
+  align-items: center;
+  background: #121820;
+  border: 0;
+  border-radius: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 42px;
+  padding: 10px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.accordion-card-header:hover {
+  background: #18222b;
+}
+
+.accordion-card-title {
+  color: var(--text);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.accordion-card-summary {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.accordion-card-marker {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.accordion-card-panel {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 0;
+  padding: 10px 12px 12px;
+}
+
+.accordion-card-panel > .section-title:first-child {
+  margin-top: 0;
 }
 
 .field-grid {

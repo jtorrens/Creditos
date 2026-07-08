@@ -1197,6 +1197,9 @@
     updateSelectedCartelaAnimation,
     yesNoOptions: YES_NO_OPTIONS,
   });
+  const appAccordion = globalThis.CreditosUiAccordion.createAccordion({
+    documentRef: document,
+  });
   const appStyleEditor = globalThis.CreditosAppStyleEditor.createAppStyleEditor({
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
     boolSelectValue,
@@ -1222,6 +1225,7 @@
     resetEditableStyleTitleTypographyOverride,
     resetEditableStyleTypographyOverride,
     renderStyleAnimationControls: appStyleAnimationEditor.renderStyleAnimationControls,
+    renderAccordionGroup: appAccordion.renderAccordionGroup,
     styleAnimationRowMeta: appStyleAnimationEditor.styleAnimationRowMeta,
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,

@@ -5,7 +5,50 @@
 
     function renderStyleEditor(style) {
       const wrap = documentRef.createElement('div');
-      wrap.appendChild(options.sectionLabel('Cartela'));
+      const cards = [
+        {
+          id: 'cartela',
+          title: 'Cartela',
+          render: (panel) => panel.appendChild(renderStyleCartelaControls(style)),
+        },
+        {
+          id: 'animacion',
+          title: 'Animación',
+          render: (panel) => {
+            if (options.renderStyleAnimationControls) panel.appendChild(options.renderStyleAnimationControls(style, { includeTitle: false }));
+          },
+        },
+        {
+          id: 'titulo',
+          title: 'Título de cartela',
+          render: (panel) => panel.appendChild(renderStyleTitleTypographyControls(style, { includeTitle: false })),
+        },
+        {
+          id: 'bloque',
+          title: 'Bloque',
+          render: (panel) => panel.appendChild(renderStyleBlockControls(style)),
+        },
+        {
+          id: 'tipografia',
+          title: 'Tipografía',
+          render: (panel) => panel.appendChild(renderStyleTypographyControls(style, { includeTitle: false })),
+        },
+      ];
+
+      if (options.renderAccordionGroup) {
+        wrap.appendChild(options.renderAccordionGroup('style-editor', cards, { initialOpenId: 'cartela' }));
+        return wrap;
+      }
+
+      cards.forEach((card) => {
+        wrap.appendChild(options.sectionLabel(card.title));
+        card.render(wrap);
+      });
+      return wrap;
+    }
+
+    function renderStyleCartelaControls(style) {
+      const wrap = documentRef.createElement('div');
       const cartela = options.getEffectiveStyleCartela(style);
       wrap.appendChild(options.localSelectRow('Orientación', cartela.orientation, [
         ['horizontal', 'Horizontal'],
@@ -16,7 +59,7 @@
       wrap.appendChild(options.localDurationRow('Duración por página', cartela.duration, (value) => options.updateEditableStyleCartela(style, { duration: value }), { override: options.hasStyleCartelaOverride(style, 'duration'), reset: () => options.resetEditableStyleCartelaOverride(style, 'duration') }));
       wrap.appendChild(options.localNumberRow('Interlineado', cartela.line_spacing, 0.1, null, (value) => options.updateEditableStyleCartela(style, { line_spacing: value }), 0.01, animationMeta(style, 'line_spacing', { override: options.hasStyleCartelaOverride(style, 'line_spacing'), reset: () => options.resetEditableStyleCartelaOverride(style, 'line_spacing') })));
       wrap.appendChild(options.localNumberRow('Separación entre columnas', cartela.column_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { column_gap: value }), 1, animationMeta(style, 'column_gap', { override: options.hasStyleCartelaOverride(style, 'column_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'column_gap') })));
-      wrap.appendChild(options.localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { role_name_gap: value }), 1, { override: options.hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'role_name_gap') }));
+      wrap.appendChild(options.localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { role_name_gap: value }), 1, animationMeta(style, 'role_name_gap', { override: options.hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'role_name_gap') })));
       wrap.appendChild(options.localNumberRow('Separación de grupos del origen', cartela.source_group_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { source_group_gap: value }), 1, animationMeta(style, 'source_group_gap', { override: options.hasStyleCartelaOverride(style, 'source_group_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'source_group_gap') })));
       wrap.appendChild(options.localNumberRow('Separación entre bloques', cartela.block_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { block_gap: value }), 1, animationMeta(style, 'block_gap', { override: options.hasStyleCartelaOverride(style, 'block_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'block_gap') })));
       wrap.appendChild(options.localNumberRow('Separación título/primera fila', cartela.block_title_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { block_title_gap: value }), 1, animationMeta(style, 'block_title_gap', { override: options.hasStyleCartelaOverride(style, 'block_title_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'block_title_gap') })));
@@ -28,10 +71,11 @@
       wrap.appendChild(options.localSelectRow('Ajuste automático de texto', options.boolSelectValue(cartela.auto_text_wrap), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { auto_text_wrap: options.normalizeBoolean(value, false) }), { override: options.hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'auto_text_wrap') }));
       wrap.appendChild(options.localSelectRow('Capitalización', cartela.text_capitalization, options.textCapitalizationOptions, (value) => options.updateEditableStyleCartela(style, { text_capitalization: value }), { override: options.hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'text_capitalization') }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(cartela.use_protected_capitalization), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { use_protected_capitalization: options.normalizeBoolean(value, true) }), { override: options.hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'use_protected_capitalization') }));
-      if (options.renderStyleAnimationControls) wrap.appendChild(options.renderStyleAnimationControls(style));
-      wrap.appendChild(renderStyleTitleTypographyControls(style));
+      return wrap;
+    }
 
-      wrap.appendChild(options.sectionLabel('Bloque'));
+    function renderStyleBlockControls(style) {
+      const wrap = documentRef.createElement('div');
       const block = options.getEffectiveStyleBlock(style);
       const alignment = block.alignment || {};
       const alignmentOptions = [['left', 'Izquierda'], ['center', 'Centro'], ['right', 'Derecha']];
@@ -46,14 +90,13 @@
         ['center', 'Centrado'],
         ['bottom', 'Abajo'],
       ], (value) => options.updateEditableStyleBlock(style, { vertical_align: value })));
-      wrap.appendChild(renderStyleTypographyControls(style));
       return wrap;
     }
 
-    function renderStyleTypographyControls(style) {
+    function renderStyleTypographyControls(style, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'block-typography-settings';
-      wrap.appendChild(options.sectionLabel('Tipografía'));
+      if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Tipografía'));
       const settings = options.getProductionSettings();
       const block = options.getEffectiveStyleBlock(style);
       const typography = block.typography || {};
@@ -84,10 +127,10 @@
       return options.styleAnimationRowMeta ? options.styleAnimationRowMeta(style, key, meta) : meta;
     }
 
-    function renderStyleTitleTypographyControls(style) {
+    function renderStyleTitleTypographyControls(style, controlOptions = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'block-typography-settings';
-      wrap.appendChild(options.sectionLabel('Tipografía del título de cartela'));
+      if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Tipografía del título de cartela'));
       const base = options.getProductionSettings().typography.page_header;
       const value = options.getEffectiveStyleTitleTypography(style).page_header;
       const fontCatalog = options.getFontCatalog();

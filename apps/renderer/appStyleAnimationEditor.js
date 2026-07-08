@@ -23,6 +23,7 @@
     const propertyLabels = {
       line_spacing: 'Interlineado',
       column_gap: 'Separacion entre columnas',
+      role_name_gap: 'Separacion cargo/nombre',
       source_group_gap: 'Separacion de grupos',
       block_gap: 'Separacion entre bloques',
       block_title_gap: 'Separacion titulo/primera fila',
@@ -37,12 +38,13 @@
       translate_y: 'Desplazamiento Y',
     };
 
-    function renderStyleAnimationControls(style) {
+    function renderStyleAnimationControls(style, controlOptions = {}) {
       return renderAnimationControls({
         subject: style,
         title: 'Animacion',
         animation: options.normalizeStyleAnimation(style.animation || {}),
         updateAnimation: (animation) => options.updateEditableStyleAnimation(style, animation),
+        includeTitle: controlOptions.includeTitle !== false,
       });
     }
 

@@ -10,6 +10,7 @@
     const animatableProperties = [
       'line_spacing',
       'column_gap',
+      'role_name_gap',
       'source_group_gap',
       'block_gap',
       'block_title_gap',
