@@ -545,75 +545,72 @@
     }
 
     function applyRevealMask(ctx, rect, direction, progress, featherPx, phase) {
-      const feather = Math.max(0, Number(featherPx) || 0);
+      const normalizedProgress = clampAlpha(progress);
       const dir = direction || 'topToBottom';
+      const vertical = dir === 'topToBottom' || dir === 'bottomToTop';
+      const start = vertical ? rect.y : rect.x;
+      const length = Math.max(1, vertical ? rect.height : rect.width);
+      const feather = Math.min(length, Math.max(0, Number(featherPx) || 0));
+      let edge = start;
+      let visibleSide = 'before';
       if (phase === 'out') {
-        const hiddenProgress = 1 - progress;
+        const hiddenProgress = 1 - normalizedProgress;
         if (dir === 'bottomToTop') {
-          const edge = rect.y + rect.height - rect.height * hiddenProgress;
-          fillRevealMask(ctx, rect.x, rect.y, rect.width, edge - rect.y - feather, 1);
-          fillRevealGradient(ctx, rect.x, edge - feather, rect.width, feather, true, true);
-          return;
+          edge = start + length - length * hiddenProgress;
+          visibleSide = 'before';
+        } else if (dir === 'rightToLeft') {
+          edge = start + length - length * hiddenProgress;
+          visibleSide = 'before';
+        } else {
+          edge = start + length * hiddenProgress;
+          visibleSide = 'after';
         }
-        if (dir === 'leftToRight') {
-          const edge = rect.x + rect.width * hiddenProgress;
-          fillRevealMask(ctx, edge + feather, rect.y, rect.x + rect.width - edge - feather, rect.height, 1);
-          fillRevealGradient(ctx, edge, rect.y, feather, rect.height, false, false);
-          return;
-        }
-        if (dir === 'rightToLeft') {
-          const edge = rect.x + rect.width - rect.width * hiddenProgress;
-          fillRevealMask(ctx, rect.x, rect.y, edge - rect.x - feather, rect.height, 1);
-          fillRevealGradient(ctx, edge - feather, rect.y, feather, rect.height, false, true);
-          return;
-        }
-        const edge = rect.y + rect.height * hiddenProgress;
-        fillRevealMask(ctx, rect.x, edge + feather, rect.width, rect.y + rect.height - edge - feather, 1);
-        fillRevealGradient(ctx, rect.x, edge, rect.width, feather, true, false);
-        return;
+      } else if (dir === 'bottomToTop' || dir === 'rightToLeft') {
+        edge = start + length - length * normalizedProgress;
+        visibleSide = 'after';
+      } else {
+        edge = start + length * normalizedProgress;
+        visibleSide = 'before';
       }
-      if (dir === 'bottomToTop') {
-        const edge = rect.y + rect.height - rect.height * progress;
-        fillRevealMask(ctx, rect.x, edge + feather, rect.width, rect.y + rect.height - edge - feather, 1);
-        fillRevealGradient(ctx, rect.x, edge, rect.width, feather, true, false);
-        return;
-      }
-      if (dir === 'leftToRight') {
-        const edge = rect.x + rect.width * progress;
-        fillRevealMask(ctx, rect.x, rect.y, edge - rect.x - feather, rect.height, 1);
-        fillRevealGradient(ctx, edge - feather, rect.y, feather, rect.height, false, true);
-        return;
-      }
-      if (dir === 'rightToLeft') {
-        const edge = rect.x + rect.width - rect.width * progress;
-        fillRevealMask(ctx, edge + feather, rect.y, rect.x + rect.width - edge - feather, rect.height, 1);
-        fillRevealGradient(ctx, edge, rect.y, feather, rect.height, false, false);
-        return;
-      }
-      const edge = rect.y + rect.height * progress;
-      fillRevealMask(ctx, rect.x, rect.y, rect.width, edge - rect.y - feather, 1);
-      fillRevealGradient(ctx, rect.x, edge - feather, rect.width, feather, true, true);
+      drawRevealGradientMask(ctx, rect, vertical, visibleSide, edge, feather);
     }
 
-    function fillRevealMask(ctx, x, y, width, height, alpha) {
-      const safeWidth = Math.max(0, Number(width) || 0);
-      const safeHeight = Math.max(0, Number(height) || 0);
-      if (safeWidth <= 0 || safeHeight <= 0) return;
-      ctx.fillStyle = `rgba(0,0,0,${clampAlpha(alpha)})`;
-      ctx.fillRect(x, y, safeWidth, safeHeight);
-    }
-
-    function fillRevealGradient(ctx, x, y, width, height, vertical, forward) {
-      const safeWidth = Math.max(0, Number(width) || 0);
-      const safeHeight = Math.max(0, Number(height) || 0);
-      if (safeWidth <= 0 || safeHeight <= 0) return;
+    function drawRevealGradientMask(ctx, rect, vertical, visibleSide, edge, feather) {
+      const start = vertical ? rect.y : rect.x;
+      const length = Math.max(1, vertical ? rect.height : rect.width);
       const gradient = vertical
-        ? ctx.createLinearGradient(0, y, 0, y + safeHeight)
-        : ctx.createLinearGradient(x, 0, x + safeWidth, 0);
-      gradient.addColorStop(0, forward ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0)');
-      gradient.addColorStop(1, forward ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,1)');
+        ? ctx.createLinearGradient(0, start, 0, start + length)
+        : ctx.createLinearGradient(start, 0, start + length, 0);
+      if (!feather) {
+        const stop = clampAlpha((edge - start) / length);
+        if (visibleSide === 'before') {
+          gradient.addColorStop(0, 'rgba(0,0,0,1)');
+          gradient.addColorStop(stop, 'rgba(0,0,0,1)');
+          gradient.addColorStop(stop, 'rgba(0,0,0,0)');
+          gradient.addColorStop(1, 'rgba(0,0,0,0)');
+        } else {
+          gradient.addColorStop(0, 'rgba(0,0,0,0)');
+          gradient.addColorStop(stop, 'rgba(0,0,0,0)');
+          gradient.addColorStop(stop, 'rgba(0,0,0,1)');
+          gradient.addColorStop(1, 'rgba(0,0,0,1)');
+        }
+      } else if (visibleSide === 'before') {
+        const featherStart = clampAlpha((edge - feather - start) / length);
+        const featherEnd = clampAlpha((edge - start) / length);
+        gradient.addColorStop(0, 'rgba(0,0,0,1)');
+        gradient.addColorStop(featherStart, 'rgba(0,0,0,1)');
+        gradient.addColorStop(featherEnd, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      } else {
+        const featherStart = clampAlpha((edge - start) / length);
+        const featherEnd = clampAlpha((edge + feather - start) / length);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(featherStart, 'rgba(0,0,0,0)');
+        gradient.addColorStop(featherEnd, 'rgba(0,0,0,1)');
+        gradient.addColorStop(1, 'rgba(0,0,0,1)');
+      }
       ctx.fillStyle = gradient;
-      ctx.fillRect(x, y, safeWidth, safeHeight);
+      ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
     }
 
     function createCanvasLayer(width, height) {
