@@ -195,6 +195,7 @@
       cartelaBlockGap: dependencies.cartelaBlockGap,
       cartelaBlockTitleGap: dependencies.cartelaBlockTitleGap,
       cartelaImages: dependencies.cartelaImages,
+      cartelaWithResolvedRowAnimation: dependencies.cartelaWithResolvedRowAnimation,
       contentAreaRect: dependencies.contentAreaRect,
       creditSourceId: dependencies.creditSourceId,
       documentRef,
