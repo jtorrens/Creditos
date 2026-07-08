@@ -12,8 +12,10 @@
       getStyleById = () => null,
       normalizeBoolean,
       normalizeColor,
+      normalizeStyleAnimation = (value) => value || {},
       normalizeTextCapitalization,
       safeStyleId,
+      serializeStyleAnimation = () => undefined,
       styleCartelaFields = [],
     } = dependencies;
 
@@ -99,6 +101,7 @@
         filePath: file.filePath || null,
         fileHandle: file.handle || null,
         cartela: sanitizeStyleCartelaOverrides(json.cartela || json),
+        animation: normalizeStyleAnimation(json.animation || {}),
         title_typography: normalizeTitleTypographyOverrides(json.title_typography || {}),
         block: sanitizeStyleBlockOverrides(json.block || {}),
       };
@@ -173,7 +176,7 @@
     }
 
     function serializeCartelaStyle(style) {
-      return {
+      const output = {
         schema: 'credits_cartela_style_json',
         version: 2,
         id: style.id,
@@ -182,6 +185,9 @@
         title_typography: normalizeTitleTypographyOverrides(style.title_typography || {}),
         block: sanitizeStyleBlockOverrides(style.block || {}),
       };
+      const animation = serializeStyleAnimation(style.animation || {});
+      if (animation !== undefined) output.animation = animation;
+      return output;
     }
 
     function explicitCartelaTitleTypography(rawTypography, upperTypography = {}) {

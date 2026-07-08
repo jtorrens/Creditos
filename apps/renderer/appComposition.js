@@ -2,6 +2,9 @@
   function createCoreDomainComposition(options = {}) {
     const commonDomain = root.CreditosDomainCommon.createCommonDomain();
     const typographyDomain = root.CreditosDomainTypography.createTypographyDomain();
+    const styleAnimationDomain = root.CreditosDomainStyleAnimation.createStyleAnimationDomain({
+      normalizeBoolean: commonDomain.normalizeBoolean,
+    });
     const settingsDomain = root.CreditosDomainSettings.createSettingsDomain({
       languageLocales: options.languageLocales,
       languageOptions: options.languageOptions,
@@ -41,6 +44,7 @@
       applyProductionFields: projectsDomain.applyProductionFields,
       applyProtectedCapitalizations: settingsDomain.applyProtectedCapitalizations,
       applyTextCapitalization: settingsDomain.applyTextCapitalization,
+      animatableStyleProperties: styleAnimationDomain.animatableProperties,
       blockForTitleRepeat: paginationUnitsDomain.blockForTitleRepeat,
       boolSelectValue: commonDomain.boolSelectValue,
       buildFontCatalog: typographyDomain.buildFontCatalog,
@@ -104,6 +108,7 @@
       normalizeRenderCodec: previewSettingsDomain.normalizeRenderCodec,
       normalizeRenderProfile: previewSettingsDomain.normalizeRenderProfile,
       normalizeSettings: settingsDomain.normalizeSettings,
+      normalizeStyleAnimation: styleAnimationDomain.normalizeStyleAnimation,
       normalizeSource: sourceDomain.normalizeSource,
       normalizeText: commonDomain.normalizeText,
       normalizeTextCapitalization: settingsDomain.normalizeTextCapitalization,
@@ -126,6 +131,7 @@
       selectedProductionHasStoredSettings: settingsDomain.selectedProductionHasStoredSettings,
       setOverrideInDomain: overridesDomain.setOverride,
       settingsWithProductionLayout: settingsDomain.settingsWithProductionLayout,
+      serializeStyleAnimation: styleAnimationDomain.serializeStyleAnimation,
       sourceBlankRowCounts: paginationUnitsDomain.sourceBlankRowCounts,
       sourceUnitStartRow: paginationUnitsDomain.sourceUnitStartRow,
       stripProductionLayoutFromSettings: settingsDomain.stripProductionLayoutFromSettings,
