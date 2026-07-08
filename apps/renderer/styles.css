@@ -1023,6 +1023,20 @@ button.primary:hover {
   padding: 4px 10px;
 }
 
+.style-preview-pair-count {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 5px;
+}
+
+.style-preview-pair-input {
+  max-width: 6ch;
+  min-width: 6ch;
+  width: 6ch;
+}
+
 .style-preview-playback span {
   color: var(--muted);
   font-size: 11px;

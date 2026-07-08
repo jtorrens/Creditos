@@ -5,6 +5,7 @@
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
     let stylePreviewRenderId = 0;
+    let stylePreviewPairCount = 3;
     const stylePreviewPlayback = {
       frame: 0,
       playing: false,
@@ -25,7 +26,9 @@
       els.stylePreview.className = 'style-preview';
       const layout = options.getRenderLayout();
       const settings = options.getProductionSettings();
-      const pages = options.buildPhysicalPages(options.makeSampleStyleRender(style).cartelas, {}, {
+      const pages = options.buildPhysicalPages(options.makeSampleStyleRender(style, {
+        pairCount: stylePreviewPairCount,
+      }).cartelas, {}, {
         settings,
         pageLineAdjustments: {},
       });
@@ -136,9 +139,11 @@
     function renderStylePreviewPlaybackControls(playbackOptions) {
       const controls = documentRef.createElement('div');
       controls.className = 'style-preview-playback';
+      const pairInput = renderStylePreviewPairCountInput(playbackOptions.style);
       const button = documentRef.createElement('button');
       button.type = 'button';
       const status = documentRef.createElement('span');
+      controls.appendChild(pairInput);
       controls.appendChild(button);
       controls.appendChild(status);
       button.addEventListener('click', () => {
@@ -152,6 +157,31 @@
       });
       updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState, playbackOptions.page, playbackOptions.rowState);
       return controls;
+    }
+
+    function renderStylePreviewPairCountInput(style) {
+      const wrap = documentRef.createElement('label');
+      wrap.className = 'style-preview-pair-count';
+      const label = documentRef.createElement('span');
+      label.textContent = 'Pares';
+      const input = fieldControlRegistry.create('number', {
+        value: stylePreviewPairCount,
+        min: 1,
+        max: 50,
+        step: 1,
+        fallbackValue: 3,
+        onInput: (value) => {
+          stylePreviewPairCount = Math.max(1, Math.min(50, Math.round(Number(value) || 3)));
+        },
+        onAfterCommit: () => {
+          stopStylePreviewPlayback();
+          renderStylePreview(style);
+        },
+      });
+      input.classList.add('style-preview-pair-input');
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      return wrap;
     }
 
     function startStylePreviewPlayback(playbackOptions) {

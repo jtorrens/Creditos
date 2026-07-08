@@ -468,7 +468,7 @@
       return !!(settings && settings.locked);
     }
 
-    function makeSampleStyleRender(style) {
+    function makeSampleStyleRender(style, options = {}) {
       const cartela = {
         id: 'style_preview',
         title: style.name,
@@ -478,6 +478,7 @@
         style_id: style.id,
       };
       const block = effectiveStyleBlockForStyle(style);
+      const pairCount = Math.max(1, Math.min(50, Math.round(Number(options.pairCount) || 3)));
       return {
         cartelas: [{
           ...cartela,
@@ -492,15 +493,32 @@
               alignment: block.alignment,
               vertical_align: block.vertical_align,
               typography: block.typography,
-              items: [
-                { id: 'style_preview_unit_1', source_item_id: 'sample_1', kind: 'credit', role: 'Productora Ejecutiva', name: 'Nombre Apellido' },
-                { id: 'style_preview_unit_2', source_item_id: 'sample_2', kind: 'credit', role: 'Dirección de Producción', name: 'Nombre Apellido' },
-                { id: 'style_preview_unit_3', source_item_id: 'sample_3', kind: 'credit', role: 'Una producción de', name: 'Lorem Ipsum Studio' },
-              ],
+              items: sampleStyleItems(pairCount),
             }],
           }],
         }],
       };
+    }
+
+    function sampleStyleItems(count) {
+      const samples = [
+        ['Productora Ejecutiva', 'Nombre Apellido'],
+        ['Dirección de Producción', 'Nombre Apellido'],
+        ['Una producción de', 'Lorem Ipsum Studio'],
+        ['Jefa de Equipo', 'Nombre Apellido'],
+        ['Coordinación', 'Nombre Apellido'],
+        ['Asistente', 'Nombre Apellido'],
+      ];
+      return Array.from({ length: count }, (_item, index) => {
+        const sample = samples[index % samples.length];
+        return {
+          id: `style_preview_unit_${index + 1}`,
+          source_item_id: `sample_${index + 1}`,
+          kind: 'credit',
+          role: sample[0],
+          name: sample[1],
+        };
+      });
     }
 
     function updateSourceRefAlignment(page, ref, fields) {
