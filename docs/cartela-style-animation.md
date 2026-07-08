@@ -7,7 +7,7 @@ Permitir que una cartela anime propiedades de estilo durante la entrada y la sal
 La referencia visual inicial es una transicion por cartelas con revelado vertical, cascada y borde suavizado. Por eso el modelo separa:
 
 - la transicion visual de cartela;
-- las propiedades internas del estilo que pueden interpolarse.
+- las propiedades de pagina/cartela que pueden interpolarse.
 
 ## Reglas de arquitectura
 
@@ -28,7 +28,7 @@ style.animation = {
   in: {
     durationMs: 600,
     delayMs: 0,
-    easing: "cubic-bezier(0, 0, 0.2, 1)",
+    easing: "easeOut",
     mode: "cascade",
     direction: "topToBottom",
     featherPx: 80
@@ -37,7 +37,7 @@ style.animation = {
   out: {
     durationMs: 500,
     delayMs: 0,
-    easing: "cubic-bezier(0.4, 0, 1, 1)",
+    easing: "easeIn",
     mode: "cascade",
     direction: "topToBottom",
     featherPx: 80
@@ -49,10 +49,10 @@ style.animation = {
       inValue: 1.45,
       outValue: 0.9
     },
-    role_name_gap: {
+    block_gap: {
       animate: true,
-      inValue: 42,
-      outValue: 8
+      inValue: 80,
+      outValue: 20
     }
   }
 }
@@ -75,6 +75,14 @@ El valor estable de cada propiedad no se duplica en `animation.properties`; sigu
 - `together`: toda la cartela progresa a la vez.
 - `cascade`: el progreso se reparte espacialmente segun direccion.
 
+## Curvas
+
+Las curvas se guardan como enum, no como texto libre:
+
+```js
+"linear" | "easeIn" | "easeOut" | "easeInOut" | "emphasized"
+```
+
 ## Direcciones
 
 ```js
@@ -92,7 +100,6 @@ Para creditos, las direcciones verticales son prioritarias. Las horizontales que
 ```js
 line_spacing
 column_gap
-role_name_gap
 source_group_gap
 block_gap
 block_title_gap
@@ -119,6 +126,8 @@ repeat_block_titles
 ```
 
 Estas propiedades cambian estructura o texto y pueden provocar saltos de layout.
+
+Tampoco se animan inicialmente propiedades internas de item, como separacion cargo/nombre por item.
 
 ## Overrides por cartela
 

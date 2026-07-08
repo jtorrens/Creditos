@@ -6,10 +6,10 @@
 
     const transitionModes = ['together', 'cascade'];
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
+    const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
     const animatableProperties = [
       'line_spacing',
       'column_gap',
-      'role_name_gap',
       'source_group_gap',
       'block_gap',
       'block_title_gap',
@@ -29,7 +29,7 @@
       in: Object.freeze({
         durationMs: 600,
         delayMs: 0,
-        easing: 'cubic-bezier(0, 0, 0.2, 1)',
+        easing: 'easeOut',
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
@@ -37,7 +37,7 @@
       out: Object.freeze({
         durationMs: 500,
         delayMs: 0,
-        easing: 'cubic-bezier(0.4, 0, 1, 1)',
+        easing: 'easeIn',
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
@@ -151,7 +151,15 @@
 
     function normalizeEasing(value, fallback) {
       const easing = String(value || '').trim();
-      return easing || fallback;
+      const legacyMap = {
+        linear: 'linear',
+        'cubic-bezier(0.4, 0, 1, 1)': 'easeIn',
+        'cubic-bezier(0, 0, 0.2, 1)': 'easeOut',
+        'cubic-bezier(0.4, 0, 0.2, 1)': 'easeInOut',
+        'cubic-bezier(0.2, 0, 0, 1)': 'emphasized',
+      };
+      const normalized = legacyMap[easing] || easing;
+      return transitionEasings.includes(normalized) ? normalized : fallback;
     }
 
     return {
@@ -164,6 +172,7 @@
       normalizeStyleAnimation,
       serializeStyleAnimation,
       transitionDirections,
+      transitionEasings,
       transitionModes,
     };
   }

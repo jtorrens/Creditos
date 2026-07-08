@@ -137,6 +137,7 @@
       sourceUnitStartRow: paginationUnitsDomain.sourceUnitStartRow,
       stripProductionLayoutFromSettings: settingsDomain.stripProductionLayoutFromSettings,
       styleNameFromFileName: commonDomain.styleNameFromFileName,
+      styleTransitionEasings: styleAnimationDomain.transitionEasings,
       transformCartelaText: settingsDomain.transformCartelaText,
       unitRenderOptions: paginationUnitsDomain.unitRenderOptions,
       verticalOffset: layoutDomain.verticalOffset,
