@@ -6,7 +6,6 @@
     const fieldControlRegistry = options.fieldControlRegistry;
     let cartelaPreviewRenderId = 0;
     let cartelaPreviewHoldFrames = 75;
-    let cartelaPreviewLoopBlackFrames = 75;
     const cartelaPreviewPlayback = {
       frame: 0,
       lastTickTime: 0,
@@ -30,7 +29,8 @@
       }
       const layout = options.getRenderLayout();
       const pages = options.getCurrentPhysicalPages();
-      const page = pages.find((candidate) => candidate.cartela && candidate.cartela.id === cartela.id);
+      const cartelaPages = pages.filter((candidate) => candidate.cartela && candidate.cartela.id === cartela.id);
+      const page = cartelaPages[0];
       if (!page) {
         els.cartelaPreview.className = 'cartela-preview empty-state';
         els.cartelaPreview.textContent = 'Sin página activa.';
@@ -61,13 +61,12 @@
         frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
       }
       const renderId = ++cartelaPreviewRenderId;
-      const frameState = panelAnimationFrame(page);
+      const frameState = panelAnimationFrame(page, cartelaPages);
       const playbackOptions = {
         canvas,
         cartela,
         frameState,
         layout,
-        page,
         realtimeDot,
         renderId,
         transparent: !!video,
@@ -83,11 +82,11 @@
       if (cartelaPreviewPlayback.playing && !sameCartela) {
         stopCartelaPreviewPlayback();
       }
-      const localFrame = sameCartela ? cartelaPreviewDisplayFrame(frameState, { includeBlack: true }) : 0;
+      const localFrame = sameCartela ? cartelaPreviewDisplayFrame(frameState) : 0;
       cartelaPreviewPlayback.frame = localFrame;
       cartelaPreviewPlayback.cartelaId = cartela.id;
       const localFrameState = cartelaPreviewRenderFrameState(frameState);
-      drawPanelPage(canvas, page, layout, zoom, localFrameState, { transparent: !!video }).catch((error) => {
+      drawPanelPage(canvas, localFrameState.page, layout, zoom, localFrameState, { transparent: !!video }).catch((error) => {
         if (renderId === cartelaPreviewRenderId) console.warn(error);
       });
       updateCartelaPreviewPlaybackUi(playbackOptions, localFrameState);
@@ -100,11 +99,6 @@
       const ctx = canvas.getContext('2d');
       ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
       ctx.clearRect(0, 0, layout.page_width, layout.page_height);
-      if (animationFrame && animationFrame.blackFrame) {
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(0, 0, layout.page_width, layout.page_height);
-        return;
-      }
       if (!renderOptions.transparent) {
         ctx.fillStyle = layout.page_background || '#ffffff';
         ctx.fillRect(0, 0, layout.page_width, layout.page_height);
@@ -112,19 +106,23 @@
       await options.drawCanvasPage(ctx, page, layout, { animationFrame });
     }
 
-    function panelAnimationFrame(page) {
+    function panelAnimationFrame(page, pages = []) {
       const settings = options.getProductionSettings();
       const fps = options.currentMovieFps ? options.currentMovieFps() : Math.max(1, Math.round(Number(settings.movie_fps) || 25));
       const animation = page && page.cartela && page.cartela.animation ? page.cartela.animation : {};
       const inFrames = phaseFrames(animation.in, 'duration', 600, fps);
       const outFrames = phaseFrames(animation.out, 'duration', 500, fps);
-      const frameCount = Math.max(1, inFrames + cartelaPreviewHoldFrames + outFrames);
+      const pageFrameCount = Math.max(1, inFrames + cartelaPreviewHoldFrames + outFrames);
+      const pageCount = Math.max(1, pages.length);
       return {
         holdFrames: cartelaPreviewHoldFrames,
         inFrames,
         page,
+        pageCount,
+        pageFrameCount,
+        pages,
         localFrame: 0,
-        frameCount,
+        frameCount: pageFrameCount * pageCount,
         fps,
         outFrames,
       };
@@ -135,9 +133,6 @@
       controls.className = 'style-preview-playback';
       const topRow = documentRef.createElement('div');
       topRow.className = 'style-preview-playback-row';
-      const blackInput = renderCartelaPreviewTimingInput(playbackOptions.cartela, 'Negro', 'Frames en negro entre loops', cartelaPreviewLoopBlackFrames, (value) => {
-        cartelaPreviewLoopBlackFrames = value;
-      });
       const holdInput = renderCartelaPreviewTimingInput(playbackOptions.cartela, 'Pausa', 'Frames parado entre entrada y salida', cartelaPreviewHoldFrames, (value) => {
         cartelaPreviewHoldFrames = value;
       });
@@ -145,7 +140,6 @@
       buttons.className = 'style-preview-transport';
       const status = documentRef.createElement('span');
       status.className = 'style-preview-frame-status';
-      topRow.appendChild(blackInput);
       topRow.appendChild(holdInput);
       buttons.appendChild(transportButton('⏮', 'Inicio', () => setCartelaPreviewFrame(playbackOptions, 0)));
       buttons.appendChild(transportButton('‹', 'Frame anterior', () => setCartelaPreviewFrame(playbackOptions, cartelaPreviewDisplayFrame(playbackOptions.frameState) - 1)));
@@ -206,7 +200,7 @@
       cartelaPreviewPlayback.cartelaId = playbackOptions.cartela.id;
       cartelaPreviewPlayback.lastTickTime = 0;
       cartelaPreviewPlayback.realTime = true;
-      cartelaPreviewPlayback.startFrame = cartelaPreviewDisplayFrame(playbackOptions.frameState, { includeBlack: true });
+      cartelaPreviewPlayback.startFrame = cartelaPreviewDisplayFrame(playbackOptions.frameState);
       cartelaPreviewPlayback.startedAt = 0;
       const tick = (time) => {
         if (!cartelaPreviewPlayback.playing || cartelaPreviewPlayback.renderId !== playbackOptions.renderId || cartelaPreviewRenderId !== playbackOptions.renderId) return;
@@ -219,7 +213,7 @@
         const elapsedFrames = Math.floor(Math.max(0, time - cartelaPreviewPlayback.startedAt) / frameMs);
         cartelaPreviewPlayback.frame = (cartelaPreviewPlayback.startFrame + elapsedFrames) % frameCount;
         const renderFrameState = cartelaPreviewRenderFrameState(playbackOptions.frameState);
-        drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
+        drawPanelPage(playbackOptions.canvas, renderFrameState.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
           if (cartelaPreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
         });
         updateCartelaPreviewPlaybackUi(playbackOptions, renderFrameState);
@@ -244,7 +238,7 @@
       cartelaPreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
       cartelaPreviewPlayback.cartelaId = playbackOptions.cartela.id;
       const renderFrameState = cartelaPreviewRenderFrameState(playbackOptions.frameState);
-      drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
+      drawPanelPage(playbackOptions.canvas, renderFrameState.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
         if (cartelaPreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
       });
       updateCartelaPreviewPlaybackUi(playbackOptions, renderFrameState);
@@ -274,16 +268,14 @@
         button.setAttribute('aria-label', button.title);
       }
       if (status) {
-        const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
-        if (frameState && frameState.blackFrame) {
-          const blackFrame = Math.max(1, Math.round(Number(frameState.blackFrameIndex) || 1));
-          const blackTotal = Math.max(1, Math.round(Number(frameState.blackFrameCount) || 1));
-          status.textContent = `Negro ${blackFrame}/${blackTotal}`;
-        } else {
-          const rawFrame = frameState && frameState.localFrame !== undefined ? Number(frameState.localFrame) : cartelaPreviewPlayback.frame;
-          const localFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
-          status.textContent = `${localFrame}/${frameCount - 1}`;
-        }
+        const frameCount = Math.max(1, frameState && (frameState.totalFrameCount || frameState.frameCount) || 1);
+        const rawFrame = frameState && frameState.absoluteFrame !== undefined ? Number(frameState.absoluteFrame) : cartelaPreviewPlayback.frame;
+        const absoluteFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
+        const pageCount = Math.max(1, Number(frameState && frameState.pageCount) || 1);
+        const pageIndex = Math.max(0, Math.min(pageCount - 1, Math.round(Number(frameState && frameState.pageIndex) || 0)));
+        status.textContent = pageCount > 1
+          ? `Pág ${pageIndex + 1}/${pageCount} · ${absoluteFrame}/${frameCount - 1}`
+          : `${absoluteFrame}/${frameCount - 1}`;
       }
       if (playbackOptions && playbackOptions.realtimeDot) {
         playbackOptions.realtimeDot.className = 'style-preview-realtime-dot ' + (cartelaPreviewPlayback.realTime ? 'ok' : 'late');
@@ -291,43 +283,45 @@
     }
 
     function cartelaPreviewLoopFrameCount(frameState) {
-      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
-      return frameCount + Math.max(0, Math.round(Number(cartelaPreviewLoopBlackFrames) || 0));
+      return Math.max(1, Number(frameState && frameState.frameCount) || 1);
     }
 
-    function cartelaPreviewDisplayFrame(frameState, options = {}) {
-      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
-      const maxFrame = options.includeBlack ? cartelaPreviewLoopFrameCount(frameState) - 1 : frameCount - 1;
+    function cartelaPreviewDisplayFrame(frameState) {
+      const maxFrame = cartelaPreviewLoopFrameCount(frameState) - 1;
       return Math.min(maxFrame, Math.max(0, Math.round(Number(cartelaPreviewPlayback.frame) || 0)));
     }
 
     function cartelaPreviewRenderFrameState(frameState) {
       const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
-      const rawFrame = cartelaPreviewDisplayFrame(frameState, { includeBlack: true });
-      if (rawFrame >= frameCount) {
-        const blackFrameCount = Math.max(0, Math.round(Number(cartelaPreviewLoopBlackFrames) || 0));
-        return {
-          ...frameState,
-          blackFrame: true,
-          blackFrameCount,
-          blackFrameIndex: rawFrame - frameCount + 1,
-          localFrame: frameCount - 1,
-        };
-      }
+      const rawFrame = cartelaPreviewDisplayFrame(frameState);
+      const pageFrameCount = Math.max(1, Number(frameState && frameState.pageFrameCount) || frameCount);
+      const pageCount = Math.max(1, Number(frameState && frameState.pageCount) || 1);
+      const pageIndex = Math.max(0, Math.min(pageCount - 1, Math.floor(rawFrame / pageFrameCount)));
+      const localFrame = Math.max(0, Math.min(pageFrameCount - 1, rawFrame - pageIndex * pageFrameCount));
+      const pages = Array.isArray(frameState && frameState.pages) ? frameState.pages : [];
       return {
         ...frameState,
-        localFrame: rawFrame,
+        absoluteFrame: rawFrame,
+        frameCount: pageFrameCount,
+        page: pages[pageIndex] || frameState.page,
+        pageIndex,
+        localFrame,
+        totalFrameCount: frameCount,
       };
     }
 
     function neutralStartFrame(frameState) {
-      return Math.max(0, Math.min(Math.max(1, frameState.frameCount) - 1, Number(frameState.inFrames) || 0));
+      const pageFrameCount = Math.max(1, Number(frameState && frameState.pageFrameCount) || Number(frameState && frameState.frameCount) || 1);
+      const currentPageStart = Math.floor(cartelaPreviewDisplayFrame(frameState) / pageFrameCount) * pageFrameCount;
+      return Math.max(0, Math.min(Math.max(1, frameState.frameCount) - 1, currentPageStart + (Number(frameState.inFrames) || 0)));
     }
 
     function neutralEndFrame(frameState) {
       const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const pageFrameCount = Math.max(1, Number(frameState && frameState.pageFrameCount) || frameCount);
+      const currentPageStart = Math.floor(cartelaPreviewDisplayFrame(frameState) / pageFrameCount) * pageFrameCount;
       const outFrames = Math.max(0, Number(frameState && frameState.outFrames) || 0);
-      return Math.max(0, Math.min(frameCount - 1, frameCount - outFrames - 1));
+      return Math.max(0, Math.min(frameCount - 1, currentPageStart + pageFrameCount - outFrames - 1));
     }
 
     function msToFrames(ms, fps) {
