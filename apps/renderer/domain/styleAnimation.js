@@ -8,6 +8,7 @@
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
     const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
     const fadeModes = ['fullFrame', 'cascade'];
+    const fadeBounds = ['screen', 'visibleFrame'];
     const animatableProperties = [
       'line_spacing',
       'column_gap',
@@ -44,6 +45,7 @@
         fadeDurationMs: 0,
         fadeMode: 'fullFrame',
         fadeDirection: 'topToBottom',
+        fadeBounds: 'screen',
       }),
       out: Object.freeze({
         durationMs: 500,
@@ -55,6 +57,7 @@
         fadeDurationMs: 0,
         fadeMode: 'fullFrame',
         fadeDirection: 'topToBottom',
+        fadeBounds: 'screen',
       }),
       properties: Object.freeze({}),
     });
@@ -65,7 +68,7 @@
       const inputPhase = normalizeAnimationPhase(input.in, defaultStyleAnimation.in);
       const outputPhase = normalizeAnimationPhase(input.out, defaultStyleAnimation.out);
       return {
-        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0 || inputPhase.fadeDurationMs > 0 || outputPhase.fadeDurationMs > 0),
+        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0 || phaseHasFade(inputPhase) || phaseHasFade(outputPhase)),
         in: inputPhase,
         out: outputPhase,
         properties,
@@ -106,8 +109,12 @@
       const properties = value.properties && typeof value.properties === 'object' ? value.properties : {};
       return !!value.enabled
         || Object.keys(properties).length > 0
-        || !!(value.in && (value.in.fade || Number(value.in.fadeDurationMs) > 0))
-        || !!(value.out && (value.out.fade || Number(value.out.fadeDurationMs) > 0));
+        || !!(value.in && (value.in.fade || phaseHasFade(value.in)))
+        || !!(value.out && (value.out.fade || phaseHasFade(value.out)));
+    }
+
+    function phaseHasFade(phase = {}) {
+      return Number(phase.fadeDurationFrames) > 0 || Number(phase.fadeDurationMs) > 0;
     }
 
     function normalizeAnimationPhase(value = {}, defaults = defaultStyleAnimation.in) {
@@ -125,6 +132,7 @@
         fadeDurationFrames: normalizeOptionalFrames(input.fadeDurationFrames, defaults.fadeDurationFrames),
         fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
         fadeDirection: normalizeFadeDirection(input.fadeDirection, input, defaults),
+        fadeBounds: normalizeFadeBounds(input.fadeBounds, defaults),
       };
     }
 
@@ -152,6 +160,12 @@
       if (input.fade !== undefined && input.mode === 'cascade' && transitionDirections.includes(input.direction)) return input.direction;
       if (transitionDirections.includes(defaults.fadeDirection)) return defaults.fadeDirection;
       return 'topToBottom';
+    }
+
+    function normalizeFadeBounds(value, defaults = {}) {
+      if (fadeBounds.includes(value)) return value;
+      if (fadeBounds.includes(defaults.fadeBounds)) return defaults.fadeBounds;
+      return 'screen';
     }
 
     function normalizeAnimatedProperties(properties = {}) {
@@ -233,6 +247,7 @@
       normalizeAnimatedProperties,
       normalizeStyleAnimation,
       serializeStyleAnimation,
+      fadeBounds,
       fadeModes,
       transitionDirections,
       transitionEasings,

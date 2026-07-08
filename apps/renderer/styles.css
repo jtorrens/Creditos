@@ -1024,6 +1024,7 @@ button.primary:hover {
 .style-preview-playback-row {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
 }

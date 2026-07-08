@@ -144,6 +144,7 @@
       sourceUnitStartRow: paginationUnitsDomain.sourceUnitStartRow,
       stripProductionLayoutFromSettings: settingsDomain.stripProductionLayoutFromSettings,
       styleNameFromFileName: commonDomain.styleNameFromFileName,
+      styleFadeBounds: styleAnimationDomain.fadeBounds,
       styleTransitionEasings: styleAnimationDomain.transitionEasings,
       transformCartelaText: settingsDomain.transformCartelaText,
       unitRenderOptions: paginationUnitsDomain.unitRenderOptions,

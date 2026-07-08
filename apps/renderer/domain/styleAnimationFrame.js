@@ -205,6 +205,7 @@
       const progress = Math.max(0, Math.min(1, Number(visibleProgress) || 0));
       if (!includeMeta) return progress;
       return {
+        bounds: phase.fadeBounds || 'screen',
         direction: phase.fadeDirection || 'topToBottom',
         featherPx: Math.max(0, Number(phase.featherPx) || 0),
         phase: phaseName,

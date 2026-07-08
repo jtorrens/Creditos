@@ -129,15 +129,11 @@
         targetCtx.restore();
       }
       if (target) {
+        const revealRect = revealMaskRect(effectiveLayout, frameReveal);
         targetCtx.save();
         targetCtx.globalCompositeOperation = 'destination-in';
         targetCtx.globalAlpha = 1;
-        applyRevealMask(targetCtx, {
-          height: effectiveLayout.page_height,
-          width: effectiveLayout.page_width,
-          x: 0,
-          y: 0,
-        }, frameReveal.direction, frameReveal.progress, frameReveal.featherPx, frameReveal.phase);
+        applyRevealMask(targetCtx, revealRect, frameReveal.direction, frameReveal.progress, frameReveal.featherPx, frameReveal.phase);
         targetCtx.restore();
         ctx.drawImage(target.canvas, 0, 0, effectiveLayout.page_width, effectiveLayout.page_height);
       }
@@ -548,8 +544,8 @@
       const normalizedProgress = clampAlpha(progress);
       const dir = direction || 'topToBottom';
       const vertical = dir === 'topToBottom' || dir === 'bottomToTop';
-      const start = vertical ? rect.y : rect.x;
-      const length = Math.max(1, vertical ? rect.height : rect.width);
+      const start = vertical ? revealRangeY(rect) : revealRangeX(rect);
+      const length = Math.max(1, vertical ? revealRangeHeight(rect) : revealRangeWidth(rect));
       const feather = Math.min(length, Math.max(0, Number(featherPx) || 0));
       let edge = start;
       let visibleSide = 'before';
@@ -576,13 +572,13 @@
     }
 
     function drawRevealGradientMask(ctx, rect, vertical, visibleSide, edge, feather) {
-      const start = vertical ? rect.y : rect.x;
-      const length = Math.max(1, vertical ? rect.height : rect.width);
+      const rangeStart = vertical ? revealRangeY(rect) : revealRangeX(rect);
+      const length = Math.max(1, vertical ? revealRangeHeight(rect) : revealRangeWidth(rect));
       const gradient = vertical
-        ? ctx.createLinearGradient(0, start, 0, start + length)
-        : ctx.createLinearGradient(start, 0, start + length, 0);
+        ? ctx.createLinearGradient(0, rangeStart, 0, rangeStart + length)
+        : ctx.createLinearGradient(rangeStart, 0, rangeStart + length, 0);
       if (!feather) {
-        const stop = clampAlpha((edge - start) / length);
+        const stop = clampAlpha((edge - rangeStart) / length);
         if (visibleSide === 'before') {
           gradient.addColorStop(0, 'rgba(0,0,0,1)');
           gradient.addColorStop(stop, 'rgba(0,0,0,1)');
@@ -595,15 +591,15 @@
           gradient.addColorStop(1, 'rgba(0,0,0,1)');
         }
       } else if (visibleSide === 'before') {
-        const featherStart = clampAlpha((edge - feather - start) / length);
-        const featherEnd = clampAlpha((edge - start) / length);
+        const featherStart = clampAlpha((edge - feather - rangeStart) / length);
+        const featherEnd = clampAlpha((edge - rangeStart) / length);
         gradient.addColorStop(0, 'rgba(0,0,0,1)');
         gradient.addColorStop(featherStart, 'rgba(0,0,0,1)');
         gradient.addColorStop(featherEnd, 'rgba(0,0,0,0)');
         gradient.addColorStop(1, 'rgba(0,0,0,0)');
       } else {
-        const featherStart = clampAlpha((edge - start) / length);
-        const featherEnd = clampAlpha((edge + feather - start) / length);
+        const featherStart = clampAlpha((edge - rangeStart) / length);
+        const featherEnd = clampAlpha((edge + feather - rangeStart) / length);
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
         gradient.addColorStop(featherStart, 'rgba(0,0,0,0)');
         gradient.addColorStop(featherEnd, 'rgba(0,0,0,1)');
@@ -611,6 +607,51 @@
       }
       ctx.fillStyle = gradient;
       ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+    }
+
+    function revealMaskRect(layout, reveal = {}) {
+      const area = contentAreaRect(layout);
+      const maskWidth = Math.max(0, Number(area.width) || 0);
+      const maskHeight = Math.max(0, Number(area.height) || 0);
+      const maskRect = maskWidth > 0 && maskHeight > 0
+        ? {
+          height: maskHeight,
+          width: maskWidth,
+          x: Number(area.x) || 0,
+          y: Number(area.y) || 0,
+        }
+        : {
+          height: Math.max(1, Number(layout.page_height) || 1),
+          width: Math.max(1, Number(layout.page_width) || 1),
+          x: 0,
+          y: 0,
+        };
+      if (reveal.bounds === 'visibleFrame') {
+        return maskRect;
+      }
+      return {
+        ...maskRect,
+        rangeHeight: Math.max(1, Number(layout.page_height) || 1),
+        rangeWidth: Math.max(1, Number(layout.page_width) || 1),
+        rangeX: 0,
+        rangeY: 0,
+      };
+    }
+
+    function revealRangeX(rect) {
+      return Number(rect.rangeX !== undefined ? rect.rangeX : rect.x) || 0;
+    }
+
+    function revealRangeY(rect) {
+      return Number(rect.rangeY !== undefined ? rect.rangeY : rect.y) || 0;
+    }
+
+    function revealRangeWidth(rect) {
+      return Math.max(1, Number(rect.rangeWidth !== undefined ? rect.rangeWidth : rect.width) || 1);
+    }
+
+    function revealRangeHeight(rect) {
+      return Math.max(1, Number(rect.rangeHeight !== undefined ? rect.rangeHeight : rect.height) || 1);
     }
 
     function createCanvasLayer(width, height) {
