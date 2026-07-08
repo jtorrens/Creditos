@@ -52,12 +52,14 @@
       }
       const renderId = ++stylePreviewRenderId;
       const frameState = panelAnimationFrame(page);
+      const rowState = previewAnimatedRowState(page);
       const controls = renderStylePreviewPlaybackControls({
         canvas,
         frameState,
         layout,
         page,
         renderId,
+        rowState,
         style,
         zoom,
       });
@@ -70,11 +72,19 @@
       const localFrame = stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id
         ? stylePreviewPlayback.frame % frameState.frameCount
         : 0;
-      drawPanelPage(canvas, page, layout, zoom, { ...frameState, localFrame }).catch((error) => {
+      const localFrameState = { ...frameState, localFrame };
+      drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
         if (renderId === stylePreviewRenderId) console.warn(error);
       });
+      updateStylePreviewPlaybackUi(
+        controls.querySelector('button'),
+        controls.querySelector('span'),
+        localFrameState,
+        page,
+        rowState
+      );
       if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id) {
-        startStylePreviewPlayback({ canvas, frameState, layout, page, renderId, style, zoom });
+        startStylePreviewPlayback({ canvas, frameState, layout, page, renderId, rowState, style, zoom });
       }
     }
 
@@ -90,12 +100,37 @@
     function panelAnimationFrame(page) {
       const settings = options.getProductionSettings();
       const fps = options.currentMovieFps ? options.currentMovieFps() : Math.max(1, Math.round(Number(settings.movie_fps) || 25));
-      const duration = Math.max(0.1, Number(page && page.cartela && page.cartela.duration) || Number(settings.default_cartela_duration) || 1);
+      const animation = page && page.cartela && page.cartela.animation ? page.cartela.animation : {};
+      const inMs = animation.in && animation.in.durationMs !== undefined ? animation.in.durationMs : 600;
+      const outMs = animation.out && animation.out.durationMs !== undefined ? animation.out.durationMs : 500;
+      const frameCount = msToFrames(inMs, fps) + msToFrames(3000, fps) + msToFrames(outMs, fps);
       return {
         page,
         localFrame: 0,
-        frameCount: Math.max(1, Math.round(duration * fps)),
+        frameCount: Math.max(1, frameCount),
         fps,
+      };
+    }
+
+    function msToFrames(ms, fps) {
+      return Math.max(0, Math.round((Math.max(0, Number(ms) || 0) / 1000) * fps));
+    }
+
+    function previewAnimatedRowState(page) {
+      const blocks = page && Array.isArray(page.blocks) ? page.blocks.filter((block) => !block.missing_source) : [];
+      const titleRows = page && page.cartela_physical_index === 0 && String(page.title || '').trim() ? 1 : 0;
+      let nextRow = titleRows;
+      let firstUnitRow = titleRows;
+      blocks.forEach((block, index) => {
+        const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+        const blockTitleRows = String(block && block.title || '').trim() ? 1 : 0;
+        if (index === 0) firstUnitRow = nextRow + blockTitleRows;
+        const columns = Math.max(1, Number(block && block.columns) || 1);
+        nextRow += blockTitleRows + Math.max(0, Math.ceil(units.length / columns));
+      });
+      return {
+        rowCount: Math.max(1, nextRow),
+        rowIndex: Math.max(0, Math.min(Math.max(1, nextRow) - 1, firstUnitRow)),
       };
     }
 
@@ -116,7 +151,7 @@
         stylePreviewPlayback.frame = 0;
         startStylePreviewPlayback(playbackOptions);
       });
-      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState, playbackOptions.page, playbackOptions.rowState);
       return controls;
     }
 
@@ -143,10 +178,13 @@
         }).catch((error) => {
           if (stylePreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
         });
-        updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+        updateStylePreviewPlaybackUi(button, status, {
+          ...playbackOptions.frameState,
+          localFrame: stylePreviewPlayback.frame,
+        }, playbackOptions.page, playbackOptions.rowState);
         stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
       };
-      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState, playbackOptions.page, playbackOptions.rowState);
       stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
     }
 
@@ -162,12 +200,21 @@
       }
     }
 
-    function updateStylePreviewPlaybackUi(button, status, frameState) {
+    function updateStylePreviewPlaybackUi(button, status, frameState, page, rowState) {
       if (button) button.textContent = stylePreviewPlayback.playing ? 'Pausa' : 'Play';
       if (status) {
         const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
-        status.textContent = `${Math.min(frameCount - 1, stylePreviewPlayback.frame)}/${frameCount - 1}`;
+        const localFrame = Math.max(0, Math.min(frameCount - 1, Number(frameState && frameState.localFrame) || stylePreviewPlayback.frame));
+        status.textContent = `${localFrame}/${frameCount - 1} · sep ${formatPreviewGap(page, frameState, rowState)}`;
       }
+    }
+
+    function formatPreviewGap(page, frameState, rowState) {
+      const resolver = options.cartelaWithResolvedRowAnimation || ((cartela) => cartela);
+      const cartela = resolver(page && page.cartela, frameState, rowState);
+      const value = Number(cartela && cartela.role_name_gap);
+      if (!Number.isFinite(value)) return '-';
+      return value.toFixed(1).replace(/\.0$/, '');
     }
 
     function renderStylesPane() {

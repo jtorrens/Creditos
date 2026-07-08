@@ -53,7 +53,7 @@
       if (localFrame >= outRow.startFrame && localFrame < outRow.endFrame) {
         return {
           name: 'out',
-          progress: easeProgress((localFrame - outRow.startFrame) / Math.max(1, outRow.durationFrames), animation.out && animation.out.easing),
+          progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing),
         };
       }
       if (localFrame >= outRow.endFrame) {
@@ -71,7 +71,7 @@
       if (localFrame >= inRow.startFrame && localFrame < inRow.endFrame) {
         return {
           name: 'in',
-          progress: easeProgress((localFrame - inRow.startFrame) / Math.max(1, inRow.durationFrames), animation.in && animation.in.easing),
+          progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing),
         };
       }
       return null;
@@ -82,7 +82,7 @@
       const orderedIndex = orderedRowIndex(rowState.rowIndex, rowCount, phase.direction);
       const mode = phase.mode || 'together';
       const durationFrames = mode === 'cascade'
-        ? Math.max(1, Math.round(info.durationFrames / rowCount))
+        ? Math.max(0.0001, info.durationFrames / rowCount)
         : Math.max(1, info.durationFrames);
       const offset = mode === 'cascade' ? orderedIndex * durationFrames : 0;
       const baseStart = isIn
@@ -94,6 +94,12 @@
         startFrame,
         endFrame: Math.min(frameCount, startFrame + durationFrames),
       };
+    }
+
+    function phaseProgress(localFrame, window, easing) {
+      const duration = Math.max(0.0001, Number(window && window.durationFrames) || 1);
+      const denominator = Math.max(0.0001, duration - 1);
+      return easeProgress((localFrame - window.startFrame) / denominator, easing);
     }
 
     function orderedRowIndex(rowIndex, rowCount, direction) {

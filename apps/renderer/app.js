@@ -1347,6 +1347,7 @@
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
     buildPhysicalPages,
+    cartelaWithResolvedRowAnimation,
     currentMovieFps,
     documentRef: document,
     drawCanvasPage,
