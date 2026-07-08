@@ -474,6 +474,7 @@
         title: style.name,
         ...effectiveStyleCartelaForStyle(style),
         title_typography: effectiveStyleTitleTypographyForStyle(style),
+        animation: getEffectiveStyleAnimation(style),
         style_id: style.id,
       };
       const block = effectiveStyleBlockForStyle(style);

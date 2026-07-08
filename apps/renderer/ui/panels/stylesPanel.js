@@ -4,6 +4,7 @@
     const els = options.els;
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
+    let stylePreviewRenderId = 0;
 
     function renderStylePreview(style) {
       if (!els.stylePreview) return;
@@ -31,16 +32,43 @@
       frame.className = 'png-preview-frame';
       frame.style.width = `${layout.page_width * zoom}px`;
       frame.style.height = `${layout.page_height * zoom}px`;
-      const sheet = options.makePdfSheetElement(page, layout, {
-        settings,
-      });
-      sheet.style.transform = `scale(${zoom})`;
-      frame.appendChild(sheet);
+      const canvas = documentRef.createElement('canvas');
+      canvas.className = 'preview-animation-canvas';
+      canvas.width = Math.max(1, Math.round(layout.page_width * zoom));
+      canvas.height = Math.max(1, Math.round(layout.page_height * zoom));
+      canvas.style.width = `${canvas.width}px`;
+      canvas.style.height = `${canvas.height}px`;
+      frame.appendChild(canvas);
       if (state.showPanelMarginOverlay) {
         frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
       }
       els.stylePreview.appendChild(frame);
       options.updatePanelMarginButtons();
+      const renderId = ++stylePreviewRenderId;
+      drawPanelPage(canvas, page, layout, zoom, panelAnimationFrame(page)).catch((error) => {
+        if (renderId === stylePreviewRenderId) console.warn(error);
+      });
+    }
+
+    async function drawPanelPage(canvas, page, layout, zoom, animationFrame) {
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
+      ctx.clearRect(0, 0, layout.page_width, layout.page_height);
+      ctx.fillStyle = layout.page_background || '#ffffff';
+      ctx.fillRect(0, 0, layout.page_width, layout.page_height);
+      await options.drawCanvasPage(ctx, page, layout, { animationFrame });
+    }
+
+    function panelAnimationFrame(page) {
+      const settings = options.getProductionSettings();
+      const fps = options.currentMovieFps ? options.currentMovieFps() : Math.max(1, Math.round(Number(settings.movie_fps) || 25));
+      const duration = Math.max(0.1, Number(page && page.cartela && page.cartela.duration) || Number(settings.default_cartela_duration) || 1);
+      return {
+        page,
+        localFrame: 0,
+        frameCount: Math.max(1, Math.round(duration * fps)),
+        fps,
+      };
     }
 
     function renderStylesPane() {

@@ -1021,8 +1021,11 @@
   });
   const cartelaPreviewPanel = globalThis.CreditosCartelaPreviewPanel.createCartelaPreviewPanel({
     documentRef: document,
+    currentMovieFps,
+    drawCanvasPage,
     els,
     getCurrentPhysicalPages,
+    getProductionSettings,
     getPreviewAnimationPlan,
     getRenderLayout,
     getSelectedCartela,
@@ -1344,7 +1347,9 @@
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
     buildPhysicalPages,
+    currentMovieFps,
     documentRef: document,
+    drawCanvasPage,
     els,
     fieldControlRegistry,
     getProductionSettings,
