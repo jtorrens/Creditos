@@ -6,7 +6,7 @@
 
     function localInputRow(label, value, onInput, rowOptions) {
       const row = documentRef.createElement('div');
-      row.className = 'field-grid' + (rowOptions && rowOptions.override ? ' override-field' : '');
+      row.className = 'field-grid' + (rowHasOverride(rowOptions) ? ' override-field' : '');
       const labelEl = documentRef.createElement('label');
       labelEl.textContent = label;
       const input = fieldControlRegistry.create('text', {
@@ -16,13 +16,13 @@
         onInput,
       });
       row.appendChild(labelEl);
-      row.appendChild(wrapOverrideControl(input, rowOptions));
+      row.appendChild(wrapFieldControl(input, rowOptions));
       return row;
     }
 
     function localSelectRow(label, value, selectOptions, onInput, meta = {}) {
       const row = documentRef.createElement('div');
-      row.className = 'field-grid' + (meta.override ? ' override-field' : '');
+      row.className = 'field-grid' + (rowHasOverride(meta) ? ' override-field' : '');
       const labelEl = documentRef.createElement('label');
       labelEl.textContent = label;
       const select = fieldControlRegistry.create('select', {
@@ -32,13 +32,13 @@
         onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
-      row.appendChild(wrapOverrideControl(select, meta));
+      row.appendChild(wrapFieldControl(select, meta));
       return row;
     }
 
     function localDurationRow(label, secondsValue, onInput, meta = {}) {
       const row = documentRef.createElement('div');
-      row.className = 'field-grid' + (meta.override ? ' override-field' : '');
+      row.className = 'field-grid' + (rowHasOverride(meta) ? ' override-field' : '');
       const labelEl = documentRef.createElement('label');
       labelEl.textContent = label;
       const input = fieldControlRegistry.create('duration', {
@@ -52,13 +52,13 @@
         onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
-      row.appendChild(wrapOverrideControl(input, meta));
+      row.appendChild(wrapFieldControl(input, meta));
       return row;
     }
 
     function localNumberRow(label, value, min, max, onInput, step = 1, meta = {}) {
       const row = documentRef.createElement('div');
-      row.className = 'field-grid' + (meta.override ? ' override-field' : '');
+      row.className = 'field-grid' + (rowHasOverride(meta) ? ' override-field' : '');
       const labelEl = documentRef.createElement('label');
       labelEl.textContent = label;
       const input = fieldControlRegistry.create('number', {
@@ -70,21 +70,28 @@
         onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
-      row.appendChild(wrapOverrideControl(input, meta));
+      row.appendChild(wrapFieldControl(input, meta));
       return row;
     }
 
-    function wrapOverrideControl(control, meta = {}) {
-      if (!meta.override) return control;
+    function wrapFieldControl(control, meta = {}) {
+      if (!meta || (!meta.override && !meta.beforeControl && !meta.afterControl)) return control;
       const wrap = documentRef.createElement('div');
-      wrap.className = 'override-control';
+      wrap.className = 'field-control-inline' + (meta.override ? ' override-control' : '');
+      if (meta.beforeControl) wrap.appendChild(meta.beforeControl);
       wrap.appendChild(control);
+      if (meta.afterControl) wrap.appendChild(meta.afterControl);
+      if (!meta.override) return wrap;
       const reset = documentRef.createElement('button');
       reset.type = 'button';
       reset.textContent = 'Restablecer';
       reset.addEventListener('click', meta.reset || (() => {}));
       wrap.appendChild(reset);
       return wrap;
+    }
+
+    function rowHasOverride(meta) {
+      return !!(meta && meta.override);
     }
 
     function localCheckboxRow(label, value, onInput) {

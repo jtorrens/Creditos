@@ -1,6 +1,7 @@
 (function (root) {
   function createAppStyleAnimationEditor(options = {}) {
     const documentRef = options.documentRef || root.document;
+    const fieldControlRegistry = options.fieldControlRegistry;
 
     const modeOptions = [
       ['together', 'Todo a la vez'],
@@ -90,7 +91,6 @@
 
       wrap.appendChild(renderPhaseControls(subject, animation, 'in', 'Entrada', updateAnimation));
       wrap.appendChild(renderPhaseControls(subject, animation, 'out', 'Salida', updateAnimation));
-      wrap.appendChild(renderPropertyControls(subject, animation, updateAnimation));
       return wrap;
     }
 
@@ -108,22 +108,40 @@
       return wrap;
     }
 
-    function renderPropertyControls(subject, animation, updateAnimation) {
-      const wrap = documentRef.createElement('div');
-      wrap.className = 'style-animation-properties';
-      wrap.appendChild(options.sectionLabel('Propiedades animables'));
-      (options.animatableStyleProperties || []).forEach((key) => {
-        wrap.appendChild(renderPropertyControl(subject, animation, key, updateAnimation));
+    function styleAnimationRowMeta(style, key, meta = {}) {
+      return animationRowMeta({
+        animation: options.normalizeStyleAnimation(style.animation || {}),
+        key,
+        meta,
+        subject: style,
+        updateAnimation: (animation) => options.updateEditableStyleAnimation(style, animation),
       });
-      return wrap;
     }
 
-    function renderPropertyControl(subject, animation, key, updateAnimation) {
+    function cartelaAnimationRowMeta(cartela, key, meta = {}) {
+      const effective = options.getEffectiveCartelaAnimation
+        ? options.getEffectiveCartelaAnimation(cartela)
+        : options.normalizeStyleAnimation(cartela.animation || {});
+      return animationRowMeta({
+        animation: effective,
+        key,
+        meta,
+        subject: options.getEffectiveCartela ? { ...cartela, ...options.getEffectiveCartela(cartela) } : cartela,
+        updateAnimation: (animation) => options.updateSelectedCartelaAnimation(animation),
+      });
+    }
+
+    function animationRowMeta({ subject, key, animation, updateAnimation, meta = {} }) {
+      if (!canAnimateProperty(key)) return meta;
       const property = animation.properties && animation.properties[key] ? animation.properties[key] : {};
-      const block = documentRef.createElement('div');
-      block.className = 'style-animation-property' + (property.animate ? ' active' : '');
-      const header = documentRef.createElement('div');
-      header.className = 'style-animation-property-header';
+      return {
+        ...meta,
+        beforeControl: renderKeyframeToggle(subject, animation, key, property, updateAnimation),
+        afterControl: property.animate ? renderInlinePropertyValues(subject, animation, key, property, updateAnimation) : null,
+      };
+    }
+
+    function renderKeyframeToggle(subject, animation, key, property, updateAnimation) {
       const toggle = documentRef.createElement('button');
       toggle.type = 'button';
       toggle.className = 'keyframe-toggle' + (property.animate ? ' active' : '');
@@ -136,20 +154,31 @@
           animate: !property.animate,
         }, updateAnimation);
       });
+      return toggle;
+    }
+
+    function renderInlinePropertyValues(subject, animation, key, property, updateAnimation) {
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'style-animation-inline-values';
+      wrap.appendChild(renderInlineNumber('In', property.inValue, (value) => updateProperty(subject, animation, key, { inValue: value }, updateAnimation), stepForProperty(key)));
+      wrap.appendChild(renderInlineNumber('Out', property.outValue, (value) => updateProperty(subject, animation, key, { outValue: value }, updateAnimation), stepForProperty(key)));
+      return wrap;
+    }
+
+    function renderInlineNumber(labelText, value, onInput, step) {
+      const wrap = documentRef.createElement('label');
+      wrap.className = 'style-animation-inline-value';
       const label = documentRef.createElement('span');
-      label.className = 'style-animation-property-label';
-      label.textContent = propertyLabels[key] || key;
-      header.appendChild(toggle);
-      header.appendChild(label);
-      block.appendChild(header);
-      if (property.animate) {
-        const values = documentRef.createElement('div');
-        values.className = 'style-animation-property-values';
-        values.appendChild(options.localNumberRow('Valor entrada', property.inValue, null, null, (value) => updateProperty(subject, animation, key, { inValue: value }, updateAnimation), stepForProperty(key)));
-        values.appendChild(options.localNumberRow('Valor salida', property.outValue, null, null, (value) => updateProperty(subject, animation, key, { outValue: value }, updateAnimation), stepForProperty(key)));
-        block.appendChild(values);
-      }
-      return block;
+      label.textContent = labelText;
+      const input = fieldControlRegistry.create('number', {
+        value,
+        step,
+        onInput,
+        onAfterCommit: options.renderEditor,
+      });
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      return wrap;
     }
 
     function updatePhase(subject, animation, phase, fields, updateAnimation) {
@@ -205,9 +234,15 @@
       return 0;
     }
 
+    function canAnimateProperty(key) {
+      return (options.animatableStyleProperties || []).includes(key);
+    }
+
     return {
+      cartelaAnimationRowMeta,
       renderCartelaAnimationControls,
       renderStyleAnimationControls,
+      styleAnimationRowMeta,
     };
   }
 

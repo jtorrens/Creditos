@@ -1120,27 +1120,19 @@ button.primary:hover {
   text-transform: uppercase;
 }
 
-.style-animation-properties {
-  display: grid;
-  gap: 8px;
-}
-
-.style-animation-property {
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 8px;
-}
-
-.style-animation-property.active {
-  border-color: var(--accent);
-}
-
-.style-animation-property-header {
+.field-control-inline {
   align-items: center;
-  display: grid;
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  grid-template-columns: 28px minmax(0, 1fr);
-  min-height: 30px;
+  max-width: 100%;
+  min-width: 0;
+  width: fit-content;
+}
+
+.override-control.field-control-inline {
+  display: flex;
+  grid-template-columns: none;
 }
 
 .keyframe-toggle {
@@ -1150,12 +1142,12 @@ button.primary:hover {
   border-radius: 50%;
   color: var(--muted);
   display: inline-flex;
-  font-size: 16px;
-  height: 24px;
+  font-size: 11px;
+  height: 18px;
   justify-content: center;
   line-height: 1;
   padding: 0;
-  width: 24px;
+  width: 18px;
 }
 
 .keyframe-toggle.active {
@@ -1163,19 +1155,33 @@ button.primary:hover {
   color: var(--accent-strong);
 }
 
-.style-animation-property-label {
-  color: var(--ink);
-  font-size: 13px;
-  font-weight: 650;
+.override-control .keyframe-toggle {
+  color: var(--muted);
+  height: 18px;
+  padding: 0;
+  white-space: normal;
+  width: 18px;
 }
 
-.style-animation-property-values {
-  margin-top: 8px;
+.override-control .keyframe-toggle.active {
+  color: var(--accent-strong);
 }
 
-.style-animation-property-values .field-grid {
-  grid-template-columns: minmax(110px, 160px) minmax(0, 1fr);
-  margin-bottom: 8px;
+.style-animation-inline-values {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+
+.style-animation-inline-value {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.style-animation-inline-value span {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .field-grid {
