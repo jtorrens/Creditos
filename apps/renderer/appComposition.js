@@ -5,6 +5,9 @@
     const styleAnimationDomain = root.CreditosDomainStyleAnimation.createStyleAnimationDomain({
       normalizeBoolean: commonDomain.normalizeBoolean,
     });
+    const styleAnimationFrameDomain = root.CreditosDomainStyleAnimationFrame.createStyleAnimationFrameDomain({
+      normalizeStyleAnimation: styleAnimationDomain.normalizeStyleAnimation,
+    });
     const settingsDomain = root.CreditosDomainSettings.createSettingsDomain({
       languageLocales: options.languageLocales,
       languageOptions: options.languageOptions,
@@ -110,6 +113,7 @@
       normalizeRenderProfile: previewSettingsDomain.normalizeRenderProfile,
       normalizeSettings: settingsDomain.normalizeSettings,
       normalizeStyleAnimation: styleAnimationDomain.normalizeStyleAnimation,
+      cartelaWithResolvedRowAnimation: styleAnimationFrameDomain.cartelaWithResolvedRowAnimation,
       normalizeSource: sourceDomain.normalizeSource,
       normalizeText: commonDomain.normalizeText,
       normalizeTextCapitalization: settingsDomain.normalizeTextCapitalization,
@@ -173,6 +177,7 @@
       cartelaBlockGap: dependencies.cartelaBlockGap,
       cartelaBlockTitleGap: dependencies.cartelaBlockTitleGap,
       cartelaImages: dependencies.cartelaImages,
+      cartelaWithResolvedRowAnimation: dependencies.cartelaWithResolvedRowAnimation,
       contentAreaRect: dependencies.contentAreaRect,
       creditSourceId: dependencies.creditSourceId,
       documentRef,

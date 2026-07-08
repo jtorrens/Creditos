@@ -41,11 +41,17 @@
         const marker = documentRef.createElement('span');
         marker.className = 'accordion-card-marker';
         marker.textContent = 'v';
-        header.appendChild(marker);
 
         const panel = documentRef.createElement('div');
         panel.className = 'accordion-card-panel';
         item.render(panel);
+
+        const status = documentRef.createElement('span');
+        status.className = 'accordion-card-status';
+        status.setAttribute('aria-hidden', 'true');
+        updateStatusDots(status, panel);
+        header.appendChild(status);
+        header.appendChild(marker);
 
         header.addEventListener('click', () => {
           openByGroup.set(groupId, openByGroup.get(groupId) === item.id ? null : item.id);
@@ -71,6 +77,22 @@
 
       updateCards();
       return group;
+    }
+
+    function updateStatusDots(status, panel) {
+      status.innerHTML = '';
+      if (panel.querySelector('.override-field, .override-control')) {
+        status.appendChild(statusDot('override'));
+      }
+      if (panel.querySelector('.keyframe-toggle.active')) {
+        status.appendChild(statusDot('animation'));
+      }
+    }
+
+    function statusDot(kind) {
+      const dot = documentRef.createElement('span');
+      dot.className = `accordion-status-dot ${kind}`;
+      return dot;
     }
 
     return {

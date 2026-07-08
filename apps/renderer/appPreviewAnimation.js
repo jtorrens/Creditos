@@ -102,10 +102,13 @@
         syncPdfPageToAnimationFrame(plan, state.previewAnimation.frame);
         if (state.showMarginOverlay) options.drawCanvasMarginOverlay(ctx, plan.layout, zoom);
       } else {
-        const page = options.pageForAnimationFrame(plan, state.previewAnimation.frame);
+        const pageState = options.pageFrameStateForAnimationFrame
+          ? options.pageFrameStateForAnimationFrame(plan, state.previewAnimation.frame)
+          : { page: options.pageForAnimationFrame(plan, state.previewAnimation.frame), localFrame: 0, frameCount: 1, fps: plan.fps };
+        const page = pageState && pageState.page;
         if (page) {
           syncPdfPageToAnimationFrame(plan, state.previewAnimation.frame);
-          await options.drawCanvasPage(ctx, page, plan.layout);
+          await options.drawCanvasPage(ctx, page, plan.layout, { animationFrame: pageState });
           if (state.showMarginOverlay) {
             options.drawCanvasMarginOverlay(ctx, options.layoutForCartela(plan.layout, page.cartela), zoom);
           }

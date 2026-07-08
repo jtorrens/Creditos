@@ -252,6 +252,7 @@
     buildFontCatalog,
     cartelaBlockGap,
     cartelaBlockTitleGap,
+    cartelaWithResolvedRowAnimation,
     clamp,
     contentAreaRect,
     countTitleLine,
@@ -694,6 +695,7 @@
   const {
     frameForPdfPageIndex,
     pageForAnimationFrame,
+    pageFrameStateForAnimationFrame,
     pageIndexForAnimationFrame,
     videoTimeForPage,
   } = timelineDomain;
@@ -718,6 +720,7 @@
       cartelaBlockGap,
       cartelaBlockTitleGap,
       cartelaImages,
+      cartelaWithResolvedRowAnimation,
       contentAreaRect,
       creditSourceId,
       explicitTextLines,
@@ -1121,6 +1124,7 @@
     movieTargetDurationFrames,
     movieUsesCustomTargetDuration,
     pageForAnimationFrame,
+    pageFrameStateForAnimationFrame,
     pageIndexForAnimationFrame,
     readMovieSegmentSettings,
     state,
@@ -2060,8 +2064,8 @@
     return appPageExport.renderPageToPngBlob(page, layout, options);
   }
 
-  async function drawCanvasPage(ctx, page, layout) {
-    await drawCanvasPageInPreview(ctx, page, layout);
+  async function drawCanvasPage(ctx, page, layout, renderOptions) {
+    await drawCanvasPageInPreview(ctx, page, layout, renderOptions);
   }
 
   async function drawCanvasScrollFrame(ctx, plan, frame, layout) {

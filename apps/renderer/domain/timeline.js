@@ -5,13 +5,35 @@
     } = dependencies;
 
     function pageForAnimationFrame(plan, frame) {
+      const state = pageFrameStateForAnimationFrame(plan, frame);
+      return state ? state.page : null;
+    }
+
+    function pageFrameStateForAnimationFrame(plan, frame) {
       let remaining = Math.max(0, Math.round(Number(frame) || 0));
       for (let index = 0; index < plan.selectedPages.length; index += 1) {
         const frameCount = Math.max(1, Number(plan.frameCounts[index]) || 1);
-        if (remaining < frameCount) return plan.selectedPages[index].page;
+        if (remaining < frameCount) {
+          return {
+            index,
+            page: plan.selectedPages[index].page,
+            localFrame: remaining,
+            frameCount,
+            fps: plan.fps,
+          };
+        }
         remaining -= frameCount;
       }
-      return plan.selectedPages.length ? plan.selectedPages[plan.selectedPages.length - 1].page : null;
+      if (!plan.selectedPages.length) return null;
+      const lastIndex = plan.selectedPages.length - 1;
+      const frameCount = Math.max(1, Number(plan.frameCounts[lastIndex]) || 1);
+      return {
+        index: lastIndex,
+        page: plan.selectedPages[lastIndex].page,
+        localFrame: frameCount - 1,
+        frameCount,
+        fps: plan.fps,
+      };
     }
 
     function pageIndexForAnimationFrame(plan, frame, pages = []) {
@@ -133,6 +155,7 @@
       frameForScrollOffset,
       frameForScrollPage,
       pageForAnimationFrame,
+      pageFrameStateForAnimationFrame,
       pageIndexById,
       pageIndexForAnimationFrame,
       scrollPageLocalCenter,

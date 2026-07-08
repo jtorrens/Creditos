@@ -5,6 +5,7 @@
       cartelaBlockGap = () => 0,
       cartelaBlockTitleGap = () => 0,
       cartelaImages = () => [],
+      cartelaWithResolvedRowAnimation = (cartela) => cartela,
       contentAreaRect = () => ({ x: 0, y: 0, width: 0, height: 0 }),
       creditSourceId = () => null,
       documentRef = root.document,
@@ -51,7 +52,7 @@
       ctx.restore();
     }
 
-    async function drawCanvasPage(ctx, page, layout) {
+    async function drawCanvasPage(ctx, page, layout, renderOptions = {}) {
       const effectiveLayout = layoutForCartela(layout, page && page.cartela);
       const blockGap = cartelaBlockGap(page.cartela, effectiveLayout);
       const x = Math.max(0, Number(effectiveLayout.page_left_margin) || 0);
@@ -59,9 +60,18 @@
       const width = Math.max(0, effectiveLayout.page_width - x - (Number(effectiveLayout.page_right_margin) || 0));
       const height = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
       const blocks = page.blocks.filter((block) => !block.missing_source);
-      const heights = blocks.map((block) => measureCanvasBlock(ctx, block, page.cartela, effectiveLayout, width));
+      const rowPlan = canvasPageRowPlan(page, blocks);
+      const rowCartela = (rowIndex) => cartelaWithResolvedRowAnimation(page.cartela, renderOptions.animationFrame, {
+        rowCount: rowPlan.rowCount,
+        rowIndex,
+      });
+      const heights = blocks.map((block, index) => measureCanvasBlock(ctx, block, page.cartela, effectiveLayout, width, {
+        rowCartela,
+        startRowIndex: rowPlan.blockStartRows[index],
+      }));
       const titleText = page && page.cartela_physical_index === 0 ? String(page.title || '').trim() : '';
-      const titleMetrics = titleText ? canvasTextMetrics('page_header', page.cartela, effectiveLayout, page.cartela.title_typography) : null;
+      const titleCartela = titleText ? rowCartela(0) : page.cartela;
+      const titleMetrics = titleText ? canvasTextMetrics('page_header', titleCartela, effectiveLayout, page.cartela.title_typography) : null;
       const titleHeight = titleMetrics ? canvasTextHeight(titleText, titleMetrics, width) : 0;
       const totalBlocksHeight = heights.reduce((total, value) => total + value, 0);
       const gaps = Math.max(0, blocks.length - 1) * blockGap;
@@ -76,7 +86,10 @@
       }
 
       blocks.forEach((block, index) => {
-        drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width);
+        drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width, {
+          rowCartela,
+          startRowIndex: rowPlan.blockStartRows[index],
+        });
         cursorY += heights[index] + blockGap;
       });
     }
@@ -183,23 +196,48 @@
       return promise;
     }
 
-    function measureCanvasBlock(ctx, block, cartela, layout, width) {
+    function canvasPageRowPlan(page, blocks) {
+      const titleRows = page && page.cartela_physical_index === 0 && String(page.title || '').trim() ? 1 : 0;
+      let nextRow = titleRows;
+      const blockStartRows = [];
+      (blocks || []).forEach((block) => {
+        blockStartRows.push(nextRow);
+        nextRow += canvasBlockRowCount(block);
+      });
+      return {
+        blockStartRows,
+        rowCount: Math.max(1, nextRow),
+      };
+    }
+
+    function canvasBlockRowCount(block) {
+      const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      const columns = Math.max(1, Number(block && block.columns) || 1);
+      return (String(block && block.title || '').trim() ? 1 : 0) + Math.max(0, Math.ceil(units.length / columns));
+    }
+
+    function measureCanvasBlock(ctx, block, cartela, layout, width, rowContext = {}) {
       let height = 0;
       const title = String(block.title || '').trim();
       const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      const titleRows = title ? 1 : 0;
       if (title) {
-        const titleMetrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
+        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(rowContext.startRowIndex || 0) : cartela;
+        const titleLayout = layoutForCartela(layout, titleCartela);
+        const titleMetrics = canvasTextMetrics('block_title', titleCartela, titleLayout, block.typography);
         height += canvasTextHeight(title, titleMetrics, width);
-        if (units.length) height += cartelaBlockTitleGap(cartela, layout);
+        if (units.length) height += cartelaBlockTitleGap(titleCartela, titleLayout);
       }
       const columns = Math.max(1, Number(block.columns) || 1);
-      const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
       const rowHeights = [];
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        const unitHeight = measureCanvasUnit(unit, block, cartela, layout, columnWidth, options);
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowLayout = layoutForCartela(layout, rowCartela);
+        const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
+        const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options);
         rowHeights[row] = Math.max(rowHeights[row] || 0, unitHeight);
         previousCreditSourceId = creditSourceId(unit);
       });
@@ -208,35 +246,43 @@
       return height;
     }
 
-    function drawCanvasBlock(ctx, block, cartela, layout, x, y, width) {
+    function drawCanvasBlock(ctx, block, cartela, layout, x, y, width, rowContext = {}) {
       let cursorY = y;
       const title = String(block.title || '').trim();
       const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      const titleRows = title ? 1 : 0;
       if (title) {
-        const metrics = canvasTextMetrics('block_title', cartela, layout, block.typography);
+        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(rowContext.startRowIndex || 0) : cartela;
+        const titleLayout = layoutForCartela(layout, titleCartela);
+        const metrics = canvasTextMetrics('block_title', titleCartela, titleLayout, block.typography);
         drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
-        cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(cartela, layout) : 0);
+        cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(titleCartela, titleLayout) : 0);
       }
       const columns = Math.max(1, Number(block.columns) || 1);
-      const columnWidth = (width - layout.column_gap * (columns - 1)) / columns;
       const rowHeights = [];
       const rowGaps = canvasRowGaps(units, cartela, layout, columns);
       units.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
         const options = unitRenderOptions(unit, previousSourceId, cartela, index > 0, units[index - 1]);
-        rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, cartela, layout, columnWidth, options));
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowLayout = layoutForCartela(layout, rowCartela);
+        const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
+        rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options));
       });
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const col = index % columns;
-        const unitX = x + col * (columnWidth + layout.column_gap);
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowLayout = layoutForCartela(layout, rowCartela);
+        const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
+        const unitX = x + col * (columnWidth + rowLayout.column_gap);
         const unitY = cursorY +
           rowHeights.slice(0, row).reduce((total, value) => total + value, 0) +
           rowGaps.slice(0, row).reduce((total, value) => total + value, 0);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        drawCanvasUnit(ctx, unit, block, cartela, layout, unitX, unitY, columnWidth, options);
+        drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options);
         previousCreditSourceId = creditSourceId(unit);
       });
     }

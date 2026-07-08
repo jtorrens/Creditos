@@ -1221,6 +1221,28 @@ button.primary:hover {
   line-height: 1;
 }
 
+.accordion-card-status {
+  align-items: center;
+  display: inline-flex;
+  gap: 5px;
+  min-width: 0;
+}
+
+.accordion-status-dot {
+  border-radius: 50%;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}
+
+.accordion-status-dot.override {
+  background: var(--override);
+}
+
+.accordion-status-dot.animation {
+  background: var(--accent);
+}
+
 .accordion-card-panel {
   border-top: 1px solid var(--line);
   display: grid;
