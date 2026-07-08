@@ -7,6 +7,7 @@
     const transitionModes = ['together', 'cascade', 'relativeCascade'];
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
     const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
+    const fadeModes = ['fullFrame', 'cascadeUp', 'cascadeDown'];
     const animatableProperties = [
       'line_spacing',
       'column_gap',
@@ -40,7 +41,8 @@
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
-        fade: false,
+        fadeDurationMs: 0,
+        fadeMode: 'fullFrame',
       }),
       out: Object.freeze({
         durationMs: 500,
@@ -49,7 +51,8 @@
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
-        fade: false,
+        fadeDurationMs: 0,
+        fadeMode: 'fullFrame',
       }),
       properties: Object.freeze({}),
     });
@@ -60,7 +63,7 @@
       const inputPhase = normalizeAnimationPhase(input.in, defaultStyleAnimation.in);
       const outputPhase = normalizeAnimationPhase(input.out, defaultStyleAnimation.out);
       return {
-        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0 || inputPhase.fade || outputPhase.fade),
+        enabled: normalizeBoolean(input.enabled, Object.keys(properties).length > 0 || inputPhase.fadeDurationMs > 0 || outputPhase.fadeDurationMs > 0),
         in: inputPhase,
         out: outputPhase,
         properties,
@@ -99,7 +102,10 @@
     function hasStyleAnimation(value) {
       if (!value || typeof value !== 'object') return false;
       const properties = value.properties && typeof value.properties === 'object' ? value.properties : {};
-      return !!value.enabled || Object.keys(properties).length > 0 || !!(value.in && value.in.fade) || !!(value.out && value.out.fade);
+      return !!value.enabled
+        || Object.keys(properties).length > 0
+        || !!(value.in && (value.in.fade || Number(value.in.fadeDurationMs) > 0))
+        || !!(value.out && (value.out.fade || Number(value.out.fadeDurationMs) > 0));
     }
 
     function normalizeAnimationPhase(value = {}, defaults = defaultStyleAnimation.in) {
@@ -111,8 +117,25 @@
         mode: transitionModes.includes(input.mode) ? input.mode : defaults.mode,
         direction: transitionDirections.includes(input.direction) ? input.direction : defaults.direction,
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
-        fade: normalizeBoolean(input.fade, defaults.fade || false),
+        fadeDurationMs: normalizeFadeDurationMs(input, defaults),
+        fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
       };
+    }
+
+    function normalizeFadeDurationMs(input, defaults) {
+      if (input.fadeDurationMs !== undefined) return normalizeMs(input.fadeDurationMs, defaults.fadeDurationMs || 0);
+      if (input.fadeMs !== undefined) return normalizeMs(input.fadeMs, defaults.fadeDurationMs || 0);
+      if (input.fade !== undefined) return normalizeBoolean(input.fade, false) ? normalizeMs(input.durationMs, defaults.durationMs) : 0;
+      return normalizeMs(defaults.fadeDurationMs, 0);
+    }
+
+    function normalizeFadeMode(value, input = {}, defaults = {}) {
+      if (fadeModes.includes(value)) return value;
+      if (input.fade !== undefined && input.mode === 'cascade') {
+        return input.direction === 'bottomToTop' || input.direction === 'rightToLeft' ? 'cascadeUp' : 'cascadeDown';
+      }
+      if (fadeModes.includes(defaults.fadeMode)) return defaults.fadeMode;
+      return 'fullFrame';
     }
 
     function normalizeAnimatedProperties(properties = {}) {
@@ -187,6 +210,7 @@
       normalizeAnimatedProperties,
       normalizeStyleAnimation,
       serializeStyleAnimation,
+      fadeModes,
       transitionDirections,
       transitionEasings,
       transitionModes,

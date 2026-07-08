@@ -80,11 +80,13 @@
       if (!cartela) return 1;
       const animation = normalizeStyleAnimation(cartela.animation || {});
       if (!animation.enabled) return 1;
-      const phase = animationPhaseForFrame(animation, frameState, rowState);
-      if (!phase || !phase.fade) return 1;
-      if (rowState.fadeScope === 'fullFrame' && phase.mode === 'cascade') return 1;
-      if (rowState.fadeScope === 'row' && phase.mode !== 'cascade') return 1;
-      return phase.name === 'in' ? phase.progress : 1 - phase.progress;
+      const localFrame = Math.max(0, Math.round(Number(frameState.localFrame) || 0));
+      const frameCount = Math.max(1, Math.round(Number(frameState.frameCount) || 1));
+      const fps = Math.max(1, Math.round(Number(frameState.fps) || 25));
+      const outAlpha = fadePhaseAlpha(animation.out, 'out', localFrame, frameCount, fps, rowState);
+      if (outAlpha !== null) return outAlpha;
+      const inAlpha = fadePhaseAlpha(animation.in, 'in', localFrame, frameCount, fps, rowState);
+      return inAlpha === null ? 1 : inAlpha;
     }
 
     function animationPhaseForFrame(animation, frameState = {}, rowState = {}) {
@@ -164,6 +166,39 @@
         startFrame,
         endFrame: Math.min(frameCount, startFrame + durationFrames),
       };
+    }
+
+    function fadePhaseAlpha(phase = {}, phaseName, localFrame, frameCount, fps, rowState = {}) {
+      const fadeDurationFrames = msToFrames(phase.fadeDurationMs, fps);
+      if (fadeDurationFrames <= 0 || !fadeScopeMatches(phase.fadeMode, rowState.fadeScope)) return null;
+      const fadePhase = {
+        delayMs: phase.delayMs,
+        direction: fadeDirection(phase.fadeMode),
+        easing: phase.easing,
+        mode: phase.fadeMode === 'fullFrame' ? 'together' : 'cascade',
+      };
+      const window = rowPhaseWindow(fadePhase, {
+        delayFrames: msToFrames(phase.delayMs, fps),
+        durationFrames: Math.max(1, fadeDurationFrames),
+      }, frameCount, rowState, phaseName === 'in');
+      if (phaseName === 'out') {
+        if (localFrame < window.startFrame) return null;
+        if (localFrame < window.endFrame) return 1 - phaseProgress(localFrame, window, phase.easing);
+        return 0;
+      }
+      if (localFrame < window.startFrame) return 0;
+      if (localFrame < window.endFrame) return phaseProgress(localFrame, window, phase.easing);
+      return null;
+    }
+
+    function fadeScopeMatches(fadeMode, fadeScope) {
+      if (fadeMode === 'fullFrame') return fadeScope === 'fullFrame';
+      if (fadeMode === 'cascadeUp' || fadeMode === 'cascadeDown') return fadeScope === 'row';
+      return false;
+    }
+
+    function fadeDirection(fadeMode) {
+      return fadeMode === 'cascadeUp' ? 'bottomToTop' : 'topToBottom';
     }
 
     function phaseProgress(localFrame, window, easing) {
