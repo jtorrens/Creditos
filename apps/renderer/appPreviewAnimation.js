@@ -80,6 +80,8 @@
       stage.className = 'preview-animation-stage';
       stage.style.width = `${Math.max(1, Math.round(plan.layout.page_width * zoom))}px`;
       stage.style.height = `${Math.max(1, Math.round(plan.layout.page_height * zoom))}px`;
+      const realtimeDot = documentRef.createElement('span');
+      realtimeDot.className = 'style-preview-realtime-dot ' + (state.previewAnimation.realTime ? 'ok' : 'late');
       const video = state.showPreviewReferenceVideo ? options.makeReferenceVideoElement(plan, zoom) : null;
       if (video) stage.appendChild(video);
 
@@ -115,6 +117,7 @@
         }
       }
       stage.appendChild(canvas);
+      stage.appendChild(realtimeDot);
       els.pdfPreview.appendChild(stage);
     }
 
@@ -158,6 +161,8 @@
       if (!plan || !plan.totalFrames) return;
       if (state.previewAnimation.frame >= plan.totalFrames - 1) state.previewAnimation.frame = 0;
       state.previewAnimation.playing = true;
+      state.previewAnimation.lastTickTime = 0;
+      state.previewAnimation.realTime = true;
       state.previewAnimation.startedAt = performance.now();
       state.previewAnimation.startFrame = state.previewAnimation.frame;
       updatePreviewPlaybackControls(plan);
@@ -168,6 +173,8 @@
       state.previewAnimation.playing = false;
       if (state.previewAnimation.raf) windowRef.cancelAnimationFrame(state.previewAnimation.raf);
       state.previewAnimation.raf = null;
+      state.previewAnimation.lastTickTime = 0;
+      state.previewAnimation.realTime = true;
       updatePreviewPlaybackControls(getPreviewAnimationPlan());
     }
 
@@ -178,6 +185,10 @@
         stopPreviewAnimation();
         return;
       }
+      const frameMs = 1000 / Math.max(1, Number(plan.fps) || 25);
+      const tickDelta = state.previewAnimation.lastTickTime ? now - state.previewAnimation.lastTickTime : frameMs;
+      state.previewAnimation.realTime = tickDelta <= frameMs * 1.5;
+      state.previewAnimation.lastTickTime = now;
       const elapsedFrames = Math.floor(((now - state.previewAnimation.startedAt) / 1000) * plan.fps);
       const nextFrame = Math.min(plan.totalFrames - 1, state.previewAnimation.startFrame + elapsedFrames);
       if (nextFrame !== state.previewAnimation.frame) {

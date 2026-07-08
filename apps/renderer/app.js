@@ -36,8 +36,10 @@
     lastPreviewRangeTotal: 0,
     previewAnimation: {
       frame: 0,
+      lastTickTime: 0,
       playing: false,
       raf: null,
+      realTime: true,
       startedAt: 0,
       startFrame: 0,
     },
