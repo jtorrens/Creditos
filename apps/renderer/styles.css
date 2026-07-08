@@ -1004,7 +1004,8 @@ button.primary:hover {
   color: var(--muted);
 }
 
-.style-preview-stack {
+.style-preview-stack,
+.cartela-preview-stack {
   display: grid;
   gap: 8px;
   justify-items: center;

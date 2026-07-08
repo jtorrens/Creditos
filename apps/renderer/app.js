@@ -1031,6 +1031,7 @@
     currentMovieFps,
     drawCanvasPage,
     els,
+    fieldControlRegistry,
     getCurrentPhysicalPages,
     getProductionSettings,
     getPreviewAnimationPlan,

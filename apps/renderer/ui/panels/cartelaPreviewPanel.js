@@ -3,7 +3,21 @@
     const documentRef = options.documentRef || root.document;
     const els = options.els;
     const state = options.state;
+    const fieldControlRegistry = options.fieldControlRegistry;
     let cartelaPreviewRenderId = 0;
+    let cartelaPreviewHoldFrames = 75;
+    let cartelaPreviewLoopBlackFrames = 75;
+    const cartelaPreviewPlayback = {
+      frame: 0,
+      lastTickTime: 0,
+      playing: false,
+      raf: null,
+      realTime: true,
+      renderId: 0,
+      startFrame: 0,
+      startedAt: 0,
+      cartelaId: null,
+    };
 
     function renderCartelaPreview() {
       if (!els.cartelaPreview) return;
@@ -24,6 +38,8 @@
       }
       els.cartelaPreview.className = 'cartela-preview';
       const zoom = options.previewZoomForContainer(els.cartelaPreview, layout);
+      const stack = documentRef.createElement('div');
+      stack.className = 'cartela-preview-stack';
       const frame = documentRef.createElement('div');
       frame.className = 'png-preview-frame';
       frame.style.width = `${layout.page_width * zoom}px`;
@@ -38,21 +54,57 @@
       canvas.style.width = `${canvas.width}px`;
       canvas.style.height = `${canvas.height}px`;
       frame.appendChild(canvas);
+      const realtimeDot = documentRef.createElement('span');
+      realtimeDot.className = 'style-preview-realtime-dot ok';
+      frame.appendChild(realtimeDot);
       if (state.showPanelMarginOverlay) {
         frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
       }
-      els.cartelaPreview.appendChild(frame);
-      options.updatePanelMarginButtons();
       const renderId = ++cartelaPreviewRenderId;
-      drawPanelPage(canvas, page, layout, zoom, panelAnimationFrame(page), { transparent: !!video }).catch((error) => {
+      const frameState = panelAnimationFrame(page);
+      const playbackOptions = {
+        canvas,
+        cartela,
+        frameState,
+        layout,
+        page,
+        realtimeDot,
+        renderId,
+        transparent: !!video,
+        zoom,
+      };
+      const controls = renderCartelaPreviewPlaybackControls(playbackOptions);
+      playbackOptions.controls = controls;
+      stack.appendChild(frame);
+      stack.appendChild(controls);
+      els.cartelaPreview.appendChild(stack);
+      options.updatePanelMarginButtons();
+      const sameCartela = cartelaPreviewPlayback.cartelaId === cartela.id;
+      if (cartelaPreviewPlayback.playing && !sameCartela) {
+        stopCartelaPreviewPlayback();
+      }
+      const localFrame = sameCartela ? cartelaPreviewDisplayFrame(frameState, { includeBlack: true }) : 0;
+      cartelaPreviewPlayback.frame = localFrame;
+      cartelaPreviewPlayback.cartelaId = cartela.id;
+      const localFrameState = cartelaPreviewRenderFrameState(frameState);
+      drawPanelPage(canvas, page, layout, zoom, localFrameState, { transparent: !!video }).catch((error) => {
         if (renderId === cartelaPreviewRenderId) console.warn(error);
       });
+      updateCartelaPreviewPlaybackUi(playbackOptions, localFrameState);
+      if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === cartela.id) {
+        startCartelaPreviewPlayback(playbackOptions);
+      }
     }
 
     async function drawPanelPage(canvas, page, layout, zoom, animationFrame, renderOptions = {}) {
       const ctx = canvas.getContext('2d');
       ctx.setTransform(zoom, 0, 0, zoom, 0, 0);
       ctx.clearRect(0, 0, layout.page_width, layout.page_height);
+      if (animationFrame && animationFrame.blackFrame) {
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, layout.page_width, layout.page_height);
+        return;
+      }
       if (!renderOptions.transparent) {
         ctx.fillStyle = layout.page_background || '#ffffff';
         ctx.fillRect(0, 0, layout.page_width, layout.page_height);
@@ -63,13 +115,231 @@
     function panelAnimationFrame(page) {
       const settings = options.getProductionSettings();
       const fps = options.currentMovieFps ? options.currentMovieFps() : Math.max(1, Math.round(Number(settings.movie_fps) || 25));
-      const duration = Math.max(0.1, Number(page && page.cartela && page.cartela.duration) || Number(settings.default_cartela_duration) || 1);
+      const animation = page && page.cartela && page.cartela.animation ? page.cartela.animation : {};
+      const inFrames = phaseFrames(animation.in, 'duration', 600, fps);
+      const outFrames = phaseFrames(animation.out, 'duration', 500, fps);
+      const frameCount = Math.max(1, inFrames + cartelaPreviewHoldFrames + outFrames);
       return {
+        holdFrames: cartelaPreviewHoldFrames,
+        inFrames,
         page,
         localFrame: 0,
-        frameCount: Math.max(1, Math.round(duration * fps)),
+        frameCount,
         fps,
+        outFrames,
       };
+    }
+
+    function renderCartelaPreviewPlaybackControls(playbackOptions) {
+      const controls = documentRef.createElement('div');
+      controls.className = 'style-preview-playback';
+      const topRow = documentRef.createElement('div');
+      topRow.className = 'style-preview-playback-row';
+      const blackInput = renderCartelaPreviewTimingInput(playbackOptions.cartela, 'Negro', 'Frames en negro entre loops', cartelaPreviewLoopBlackFrames, (value) => {
+        cartelaPreviewLoopBlackFrames = value;
+      });
+      const holdInput = renderCartelaPreviewTimingInput(playbackOptions.cartela, 'Pausa', 'Frames parado entre entrada y salida', cartelaPreviewHoldFrames, (value) => {
+        cartelaPreviewHoldFrames = value;
+      });
+      const buttons = documentRef.createElement('div');
+      buttons.className = 'style-preview-transport';
+      const status = documentRef.createElement('span');
+      status.className = 'style-preview-frame-status';
+      topRow.appendChild(blackInput);
+      topRow.appendChild(holdInput);
+      buttons.appendChild(transportButton('⏮', 'Inicio', () => setCartelaPreviewFrame(playbackOptions, 0)));
+      buttons.appendChild(transportButton('‹', 'Frame anterior', () => setCartelaPreviewFrame(playbackOptions, cartelaPreviewDisplayFrame(playbackOptions.frameState) - 1)));
+      buttons.appendChild(transportButton('|‹', 'Inicio neutro', () => setCartelaPreviewFrame(playbackOptions, neutralStartFrame(playbackOptions.frameState))));
+      buttons.appendChild(transportButton('▶', 'Play', () => toggleCartelaPreviewPlayback(playbackOptions), 'play'));
+      buttons.appendChild(transportButton('›|', 'Fin neutro', () => setCartelaPreviewFrame(playbackOptions, neutralEndFrame(playbackOptions.frameState))));
+      buttons.appendChild(transportButton('›', 'Frame siguiente', () => setCartelaPreviewFrame(playbackOptions, cartelaPreviewDisplayFrame(playbackOptions.frameState) + 1)));
+      buttons.appendChild(transportButton('⏭', 'Fin', () => setCartelaPreviewFrame(playbackOptions, playbackOptions.frameState.frameCount - 1)));
+      topRow.appendChild(buttons);
+      topRow.appendChild(status);
+      controls.appendChild(topRow);
+      return controls;
+    }
+
+    function transportButton(text, title, onClick, role) {
+      const button = documentRef.createElement('button');
+      button.type = 'button';
+      button.className = 'style-preview-transport-button';
+      if (role) button.dataset.role = role;
+      button.textContent = text;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    function renderCartelaPreviewTimingInput(cartela, labelText, title, value, onChange) {
+      const wrap = documentRef.createElement('label');
+      wrap.className = 'style-preview-pair-count';
+      wrap.title = title;
+      const label = documentRef.createElement('span');
+      label.textContent = labelText;
+      const input = fieldControlRegistry.create('number', {
+        value,
+        min: 0,
+        max: 1000,
+        step: 1,
+        fallbackValue: 75,
+        onInput: (nextValue) => {
+          onChange(Math.max(0, Math.min(1000, Math.round(Number(nextValue) || 0))));
+        },
+        onAfterCommit: () => {
+          stopCartelaPreviewPlayback({ keepFrame: true });
+          cartelaPreviewPlayback.cartelaId = cartela.id;
+          renderCartelaPreview();
+        },
+      });
+      input.classList.add('style-preview-pair-input');
+      wrap.appendChild(label);
+      wrap.appendChild(input);
+      return wrap;
+    }
+
+    function startCartelaPreviewPlayback(playbackOptions) {
+      stopCartelaPreviewPlayback({ keepFrame: true });
+      cartelaPreviewPlayback.playing = true;
+      cartelaPreviewPlayback.renderId = playbackOptions.renderId;
+      cartelaPreviewPlayback.cartelaId = playbackOptions.cartela.id;
+      cartelaPreviewPlayback.lastTickTime = 0;
+      cartelaPreviewPlayback.realTime = true;
+      cartelaPreviewPlayback.startFrame = cartelaPreviewDisplayFrame(playbackOptions.frameState, { includeBlack: true });
+      cartelaPreviewPlayback.startedAt = 0;
+      const tick = (time) => {
+        if (!cartelaPreviewPlayback.playing || cartelaPreviewPlayback.renderId !== playbackOptions.renderId || cartelaPreviewRenderId !== playbackOptions.renderId) return;
+        const frameCount = cartelaPreviewLoopFrameCount(playbackOptions.frameState);
+        const frameMs = 1000 / Math.max(1, Number(playbackOptions.frameState.fps) || 25);
+        if (!cartelaPreviewPlayback.startedAt) cartelaPreviewPlayback.startedAt = time;
+        const tickDelta = cartelaPreviewPlayback.lastTickTime ? time - cartelaPreviewPlayback.lastTickTime : frameMs;
+        cartelaPreviewPlayback.realTime = tickDelta <= frameMs * 1.5;
+        cartelaPreviewPlayback.lastTickTime = time;
+        const elapsedFrames = Math.floor(Math.max(0, time - cartelaPreviewPlayback.startedAt) / frameMs);
+        cartelaPreviewPlayback.frame = (cartelaPreviewPlayback.startFrame + elapsedFrames) % frameCount;
+        const renderFrameState = cartelaPreviewRenderFrameState(playbackOptions.frameState);
+        drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
+          if (cartelaPreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
+        });
+        updateCartelaPreviewPlaybackUi(playbackOptions, renderFrameState);
+        cartelaPreviewPlayback.raf = root.requestAnimationFrame(tick);
+      };
+      updateCartelaPreviewPlaybackUi(playbackOptions, cartelaPreviewRenderFrameState(playbackOptions.frameState));
+      cartelaPreviewPlayback.raf = root.requestAnimationFrame(tick);
+    }
+
+    function toggleCartelaPreviewPlayback(playbackOptions) {
+      if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === playbackOptions.cartela.id) {
+        stopCartelaPreviewPlayback({ keepFrame: true });
+        updateCartelaPreviewPlaybackUi(playbackOptions, cartelaPreviewRenderFrameState(playbackOptions.frameState));
+        return;
+      }
+      startCartelaPreviewPlayback(playbackOptions);
+    }
+
+    function setCartelaPreviewFrame(playbackOptions, frame) {
+      stopCartelaPreviewPlayback({ keepFrame: true });
+      const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
+      cartelaPreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
+      cartelaPreviewPlayback.cartelaId = playbackOptions.cartela.id;
+      const renderFrameState = cartelaPreviewRenderFrameState(playbackOptions.frameState);
+      drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, renderFrameState, { transparent: playbackOptions.transparent }).catch((error) => {
+        if (cartelaPreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
+      });
+      updateCartelaPreviewPlaybackUi(playbackOptions, renderFrameState);
+    }
+
+    function stopCartelaPreviewPlayback(options = {}) {
+      if (cartelaPreviewPlayback.raf) root.cancelAnimationFrame(cartelaPreviewPlayback.raf);
+      cartelaPreviewPlayback.raf = null;
+      cartelaPreviewPlayback.playing = false;
+      cartelaPreviewPlayback.renderId = 0;
+      cartelaPreviewPlayback.lastTickTime = 0;
+      cartelaPreviewPlayback.realTime = true;
+      cartelaPreviewPlayback.startedAt = 0;
+      if (!options.keepFrame) {
+        cartelaPreviewPlayback.frame = 0;
+        cartelaPreviewPlayback.cartelaId = null;
+      }
+    }
+
+    function updateCartelaPreviewPlaybackUi(playbackOptions, frameState) {
+      const controls = playbackOptions && playbackOptions.controls;
+      const button = controls && controls.querySelector('[data-role="play"]');
+      const status = controls && controls.querySelector('.style-preview-frame-status');
+      if (button) {
+        button.textContent = cartelaPreviewPlayback.playing ? '⏸' : '▶';
+        button.title = cartelaPreviewPlayback.playing ? 'Pausa' : 'Play';
+        button.setAttribute('aria-label', button.title);
+      }
+      if (status) {
+        const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
+        if (frameState && frameState.blackFrame) {
+          const blackFrame = Math.max(1, Math.round(Number(frameState.blackFrameIndex) || 1));
+          const blackTotal = Math.max(1, Math.round(Number(frameState.blackFrameCount) || 1));
+          status.textContent = `Negro ${blackFrame}/${blackTotal}`;
+        } else {
+          const rawFrame = frameState && frameState.localFrame !== undefined ? Number(frameState.localFrame) : cartelaPreviewPlayback.frame;
+          const localFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
+          status.textContent = `${localFrame}/${frameCount - 1}`;
+        }
+      }
+      if (playbackOptions && playbackOptions.realtimeDot) {
+        playbackOptions.realtimeDot.className = 'style-preview-realtime-dot ' + (cartelaPreviewPlayback.realTime ? 'ok' : 'late');
+      }
+    }
+
+    function cartelaPreviewLoopFrameCount(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      return frameCount + Math.max(0, Math.round(Number(cartelaPreviewLoopBlackFrames) || 0));
+    }
+
+    function cartelaPreviewDisplayFrame(frameState, options = {}) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const maxFrame = options.includeBlack ? cartelaPreviewLoopFrameCount(frameState) - 1 : frameCount - 1;
+      return Math.min(maxFrame, Math.max(0, Math.round(Number(cartelaPreviewPlayback.frame) || 0)));
+    }
+
+    function cartelaPreviewRenderFrameState(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const rawFrame = cartelaPreviewDisplayFrame(frameState, { includeBlack: true });
+      if (rawFrame >= frameCount) {
+        const blackFrameCount = Math.max(0, Math.round(Number(cartelaPreviewLoopBlackFrames) || 0));
+        return {
+          ...frameState,
+          blackFrame: true,
+          blackFrameCount,
+          blackFrameIndex: rawFrame - frameCount + 1,
+          localFrame: frameCount - 1,
+        };
+      }
+      return {
+        ...frameState,
+        localFrame: rawFrame,
+      };
+    }
+
+    function neutralStartFrame(frameState) {
+      return Math.max(0, Math.min(Math.max(1, frameState.frameCount) - 1, Number(frameState.inFrames) || 0));
+    }
+
+    function neutralEndFrame(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const outFrames = Math.max(0, Number(frameState && frameState.outFrames) || 0);
+      return Math.max(0, Math.min(frameCount - 1, frameCount - outFrames - 1));
+    }
+
+    function msToFrames(ms, fps) {
+      return Math.max(0, Math.round((Math.max(0, Number(ms) || 0) / 1000) * fps));
+    }
+
+    function phaseFrames(phase = {}, field, fallbackMs, fps) {
+      const frameKey = field === 'fadeDuration' ? 'fadeDurationFrames' : `${field}Frames`;
+      const msKey = field === 'fadeDuration' ? 'fadeDurationMs' : `${field}Ms`;
+      const frames = Number(phase && phase[frameKey]);
+      if (Number.isFinite(frames)) return Math.max(0, Math.round(frames));
+      return msToFrames(phase && phase[msKey] !== undefined ? phase[msKey] : fallbackMs, fps);
     }
 
     return {
