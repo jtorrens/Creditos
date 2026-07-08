@@ -322,6 +322,16 @@
       options.refreshPdfIfActive();
     }
 
+    function updateEditableStyleAnimation(style, animation) {
+      if (!style) return;
+      style.animation = options.normalizeStyleAnimation(animation || {});
+      options.scheduleStyleAutosave(style.id);
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
     function resetEditableStyleTypographyOverride(style, key) {
       if (!options.resetStyleTypographyOverrideInDomain(style, key)) return;
       updateStyleAfterOverrideChange(style);
@@ -688,6 +698,7 @@
       updateEditableStyleBlock,
       updateEditableStyleBlockAlignment,
       updateEditableStyleCartela,
+      updateEditableStyleAnimation,
       updateEditableStyleTitleTypography,
       updateEditableStyleTypography,
       updateProductionEpisodeCount,

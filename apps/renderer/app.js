@@ -913,6 +913,7 @@
     resetStyleTitleTypographyOverrideInDomain,
     resetStyleTypographyOverrideInDomain,
     normalizeColor,
+    normalizeStyleAnimation,
     normalizeTitleTypographyOverrides,
     safeStyleId,
     sanitizeStyleBlockOverrides,
@@ -1167,6 +1168,19 @@
     writeBlobToDirectory,
     writeRepeatedFrames,
   });
+  const appStyleAnimationEditor = globalThis.CreditosAppStyleAnimationEditor.createAppStyleAnimationEditor({
+    animatableStyleProperties,
+    boolSelectValue,
+    documentRef: document,
+    localInputRow,
+    localNumberRow,
+    localSelectRow,
+    normalizeBoolean,
+    normalizeStyleAnimation,
+    sectionLabel,
+    updateEditableStyleAnimation,
+    yesNoOptions: YES_NO_OPTIONS,
+  });
   const appStyleEditor = globalThis.CreditosAppStyleEditor.createAppStyleEditor({
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
     boolSelectValue,
@@ -1181,6 +1195,7 @@
     hasStyleCartelaOverride,
     hasStyleTitleTypographyOverride,
     hasStyleTypographyOverride,
+    localInputRow,
     localDurationRow,
     localNumberRow,
     localSelectRow,
@@ -1190,6 +1205,7 @@
     resetEditableStyleCartelaOverride,
     resetEditableStyleTitleTypographyOverride,
     resetEditableStyleTypographyOverride,
+    renderStyleAnimationControls: appStyleAnimationEditor.renderStyleAnimationControls,
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     updateEditableStyleBlock,
@@ -1606,6 +1622,10 @@
 
   function updateEditableStyleCartela(style, fields) {
     return appCommands.updateEditableStyleCartela(style, fields);
+  }
+
+  function updateEditableStyleAnimation(style, animation) {
+    return appCommands.updateEditableStyleAnimation(style, animation);
   }
 
   function resetEditableStyleCartelaOverride(style, key) {

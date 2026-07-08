@@ -28,6 +28,7 @@
       wrap.appendChild(options.localSelectRow('Ajuste automático de texto', options.boolSelectValue(cartela.auto_text_wrap), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { auto_text_wrap: options.normalizeBoolean(value, false) }), { override: options.hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'auto_text_wrap') }));
       wrap.appendChild(options.localSelectRow('Capitalización', cartela.text_capitalization, options.textCapitalizationOptions, (value) => options.updateEditableStyleCartela(style, { text_capitalization: value }), { override: options.hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'text_capitalization') }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(cartela.use_protected_capitalization), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { use_protected_capitalization: options.normalizeBoolean(value, true) }), { override: options.hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'use_protected_capitalization') }));
+      if (options.renderStyleAnimationControls) wrap.appendChild(options.renderStyleAnimationControls(style));
       wrap.appendChild(renderStyleTitleTypographyControls(style));
 
       wrap.appendChild(options.sectionLabel('Bloque'));
