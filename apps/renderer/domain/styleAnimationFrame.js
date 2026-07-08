@@ -169,7 +169,7 @@
     }
 
     function fadePhaseAlpha(phase = {}, phaseName, localFrame, frameCount, fps, rowState = {}) {
-      const fadeDurationFrames = msToFrames(phase.fadeDurationMs, fps);
+      const fadeDurationFrames = phaseFrameCount(phase.fadeDurationFrames, phase.fadeDurationMs, fps);
       if (fadeDurationFrames <= 0 || !fadeScopeMatches(phase.fadeMode, rowState.fadeScope)) return null;
       const fadePhase = {
         delayMs: phase.delayMs,
@@ -178,7 +178,7 @@
         mode: phase.fadeMode === 'cascade' ? 'cascade' : 'together',
       };
       const window = rowPhaseWindow(fadePhase, {
-        delayFrames: msToFrames(phase.delayMs, fps),
+        delayFrames: phaseFrameCount(phase.delayFrames, phase.delayMs, fps),
         durationFrames: Math.max(1, fadeDurationFrames),
       }, frameCount, rowState, phaseName === 'in');
       if (phaseName === 'out') {
@@ -211,9 +211,15 @@
 
     function phaseFrameInfo(phase = {}, fps) {
       return {
-        delayFrames: msToFrames(phase.delayMs, fps),
-        durationFrames: Math.max(1, msToFrames(phase.durationMs, fps)),
+        delayFrames: phaseFrameCount(phase.delayFrames, phase.delayMs, fps),
+        durationFrames: Math.max(1, phaseFrameCount(phase.durationFrames, phase.durationMs, fps)),
       };
+    }
+
+    function phaseFrameCount(frameValue, msValue, fps) {
+      const frames = Number(frameValue);
+      if (Number.isFinite(frames)) return Math.max(0, Math.round(frames));
+      return msToFrames(msValue, fps);
     }
 
     function msToFrames(ms, fps) {

@@ -1190,6 +1190,7 @@
   const appStyleAnimationEditor = globalThis.CreditosAppStyleAnimationEditor.createAppStyleAnimationEditor({
     animatableStyleProperties,
     boolSelectValue,
+    currentMovieFps,
     documentRef: document,
     fieldControlRegistry,
     getEffectiveCartela,

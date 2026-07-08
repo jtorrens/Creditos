@@ -112,13 +112,13 @@
       wrap.className = 'style-animation-phase';
       wrap.appendChild(options.sectionLabel(label));
       const phaseValue = animation[phase] || {};
-      wrap.appendChild(options.localNumberRow(`${label} duracion ms`, phaseValue.durationMs, 0, null, (value) => updatePhase(subject, animation, phase, { durationMs: value }, updateAnimation)));
-      wrap.appendChild(options.localNumberRow(`${label} delay ms`, phaseValue.delayMs, 0, null, (value) => updatePhase(subject, animation, phase, { delayMs: value }, updateAnimation)));
+      wrap.appendChild(options.localNumberRow(`${label} duracion frames`, phaseFrames(phaseValue, 'duration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'duration', value, updateAnimation)));
+      wrap.appendChild(options.localNumberRow(`${label} delay frames`, phaseFrames(phaseValue, 'delay'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'delay', value, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} curva`, phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { easing: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} modo`, phaseValue.mode, modeOptions, (value) => updatePhase(subject, animation, phase, { mode: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
-      wrap.appendChild(options.localNumberRow(`${label} fade ms`, phaseValue.fadeDurationMs, 0, null, (value) => updatePhase(subject, animation, phase, { fadeDurationMs: value }, updateAnimation)));
+      wrap.appendChild(options.localNumberRow(`${label} fade frames`, phaseFrames(phaseValue, 'fadeDuration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'fadeDuration', value, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade modo`, phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade direccion`, phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)));
       return wrap;
@@ -206,6 +206,42 @@
           ...(fields || {}),
         },
       });
+    }
+
+    function updatePhaseFrames(subject, animation, phase, field, value, updateAnimation) {
+      const frames = Math.max(0, Math.round(Number(value) || 0));
+      const fields = {};
+      if (field === 'duration') {
+        fields.durationFrames = frames;
+        fields.durationMs = framesToMs(frames);
+      } else if (field === 'delay') {
+        fields.delayFrames = frames;
+        fields.delayMs = framesToMs(frames);
+      } else if (field === 'fadeDuration') {
+        fields.fadeDurationFrames = frames;
+        fields.fadeDurationMs = framesToMs(frames);
+      }
+      updatePhase(subject, animation, phase, fields, updateAnimation);
+    }
+
+    function phaseFrames(phaseValue = {}, field) {
+      const frameKey = field === 'fadeDuration' ? 'fadeDurationFrames' : `${field}Frames`;
+      const msKey = field === 'fadeDuration' ? 'fadeDurationMs' : `${field}Ms`;
+      const frames = Number(phaseValue[frameKey]);
+      if (Number.isFinite(frames)) return Math.max(0, Math.round(frames));
+      return msToFrames(phaseValue[msKey]);
+    }
+
+    function framesToMs(frames) {
+      return Math.max(0, Math.round((Math.max(0, Number(frames) || 0) / currentFps()) * 1000));
+    }
+
+    function msToFrames(ms) {
+      return Math.max(0, Math.round((Math.max(0, Number(ms) || 0) / 1000) * currentFps()));
+    }
+
+    function currentFps() {
+      return Math.max(1, Math.round(typeof options.currentMovieFps === 'function' ? Number(options.currentMovieFps()) || 25 : 25));
     }
 
     function updateProperty(subject, animation, key, fields, updateAnimation, meta = {}) {

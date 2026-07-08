@@ -115,11 +115,14 @@
       return {
         durationMs: normalizeMs(input.durationMs, defaults.durationMs),
         delayMs: normalizeMs(input.delayMs, defaults.delayMs),
+        durationFrames: normalizeOptionalFrames(input.durationFrames, defaults.durationFrames),
+        delayFrames: normalizeOptionalFrames(input.delayFrames, defaults.delayFrames),
         easing: normalizeEasing(input.easing, defaults.easing),
         mode: transitionModes.includes(input.mode) ? input.mode : defaults.mode,
         direction: transitionDirections.includes(input.direction) ? input.direction : defaults.direction,
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
         fadeDurationMs: normalizeFadeDurationMs(input, defaults),
+        fadeDurationFrames: normalizeOptionalFrames(input.fadeDurationFrames, defaults.fadeDurationFrames),
         fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
         fadeDirection: normalizeFadeDirection(input.fadeDirection, input, defaults),
       };
@@ -198,6 +201,13 @@
     function normalizeMs(value, fallback) {
       const number = Number(value !== undefined ? value : fallback);
       if (!Number.isFinite(number)) return Math.max(0, Number(fallback) || 0);
+      return Math.max(0, Math.round(number));
+    }
+
+    function normalizeOptionalFrames(value, fallback) {
+      if (value === undefined && fallback === undefined) return undefined;
+      const number = Number(value !== undefined ? value : fallback);
+      if (!Number.isFinite(number)) return undefined;
       return Math.max(0, Math.round(number));
     }
 

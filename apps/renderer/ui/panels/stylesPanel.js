@@ -83,12 +83,13 @@
       stack.appendChild(controls);
       els.stylePreview.appendChild(stack);
       options.updatePanelMarginButtons();
-      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId !== style.id) {
+      const samePreviewStyle = stylePreviewPlayback.styleId === style.id;
+      if (stylePreviewPlayback.playing && !samePreviewStyle) {
         stopStylePreviewPlayback();
       }
-      const localFrame = stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id
-        ? stylePreviewDisplayFrame(frameState)
-        : 0;
+      const localFrame = samePreviewStyle ? stylePreviewDisplayFrame(frameState) : 0;
+      stylePreviewPlayback.frame = localFrame;
+      stylePreviewPlayback.styleId = style.id;
       const localFrameState = { ...frameState, localFrame };
       drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
         if (renderId === stylePreviewRenderId) console.warn(error);
@@ -112,11 +113,9 @@
       const settings = options.getProductionSettings();
       const fps = options.currentMovieFps ? options.currentMovieFps() : Math.max(1, Math.round(Number(settings.movie_fps) || 25));
       const animation = page && page.cartela && page.cartela.animation ? page.cartela.animation : {};
-      const inMs = animation.in && animation.in.durationMs !== undefined ? animation.in.durationMs : 600;
-      const outMs = animation.out && animation.out.durationMs !== undefined ? animation.out.durationMs : 500;
-      const inFrames = msToFrames(inMs, fps);
+      const inFrames = phaseFrames(animation.in, 'duration', 600, fps);
       const holdFrames = msToFrames(3000, fps);
-      const outFrames = msToFrames(outMs, fps);
+      const outFrames = phaseFrames(animation.out, 'duration', 500, fps);
       const frameCount = inFrames + holdFrames + outFrames;
       return {
         holdFrames,
@@ -131,6 +130,14 @@
 
     function msToFrames(ms, fps) {
       return Math.max(0, Math.round((Math.max(0, Number(ms) || 0) / 1000) * fps));
+    }
+
+    function phaseFrames(phase = {}, field, fallbackMs, fps) {
+      const frameKey = field === 'fadeDuration' ? 'fadeDurationFrames' : `${field}Frames`;
+      const msKey = field === 'fadeDuration' ? 'fadeDurationMs' : `${field}Ms`;
+      const frames = Number(phase && phase[frameKey]);
+      if (Number.isFinite(frames)) return Math.max(0, Math.round(frames));
+      return msToFrames(phase && phase[msKey] !== undefined ? phase[msKey] : fallbackMs, fps);
     }
 
     function previewAnimatedRowState(page) {
@@ -205,7 +212,8 @@
           stylePreviewPairCount = Math.max(1, Math.min(50, Math.round(Number(value) || 3)));
         },
         onAfterCommit: () => {
-          stopStylePreviewPlayback();
+          stopStylePreviewPlayback({ keepFrame: true });
+          stylePreviewPlayback.styleId = style.id;
           renderStylePreview(style);
         },
       });
@@ -266,6 +274,7 @@
       stopStylePreviewPlayback({ keepFrame: true });
       const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
       stylePreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
+      stylePreviewPlayback.styleId = playbackOptions.style.id;
       drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, {
         ...playbackOptions.frameState,
         localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
