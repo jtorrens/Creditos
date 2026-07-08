@@ -664,6 +664,7 @@
     cartelaImages,
     forceRenderedRoleNameColumns,
     getEffectiveCartela,
+    getEffectiveCartelaAnimation,
     getEffectiveCartelaBlockStyle,
     getEffectiveCartelaTitleTypography,
     getSourceRefAlignment,
@@ -679,6 +680,7 @@
     renderMaterial,
     renderedUnitText,
     resolveOverride,
+    serializeStyleAnimation,
     settingsWithProductionLayout,
     sourceUnitStartRow,
   });

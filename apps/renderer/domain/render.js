@@ -9,6 +9,7 @@
       cartelaImages = () => [],
       forceRenderedRoleNameColumns = () => {},
       getEffectiveCartela = (cartela) => cartela || {},
+      getEffectiveCartelaAnimation = () => ({}),
       getEffectiveCartelaBlockStyle = () => ({}),
       getEffectiveCartelaTitleTypography = () => ({}),
       getSourceRefAlignment = () => ({}),
@@ -24,6 +25,7 @@
       renderMaterial = () => ({ pages: [] }),
       renderedUnitText = (unit) => unit && unit.value || '',
       resolveOverride = (overrides, refId, field, fallback) => fallback,
+      serializeStyleAnimation = () => undefined,
       settingsWithProductionLayout = (settings, productionLayout) => ({ layout: productionLayout || settings.layout || {} }),
       sourceUnitStartRow = (unit) => Number(unit && (unit.start_row !== undefined ? unit.start_row : unit.row)),
     } = dependencies;
@@ -52,6 +54,7 @@
           .filter((cartela) => cartelaHasRenderableRefs(cartela, materialById))
           .map((cartela, cartelaIndex) => {
             const effectiveCartela = getEffectiveCartela(cartela);
+            const animation = serializeStyleAnimation(getEffectiveCartelaAnimation(cartela));
             return {
               id: cartela.id,
               style_id: cartela.style_id || '',
@@ -69,6 +72,7 @@
               text_capitalization: normalizeTextCapitalization(effectiveCartela.text_capitalization),
               use_protected_capitalization: normalizeBoolean(effectiveCartela.use_protected_capitalization, true),
               auto_text_wrap: normalizeBoolean(effectiveCartela.auto_text_wrap, false),
+              ...(animation ? { animation } : {}),
               images: cartelaImages(cartela),
               title_typography: getEffectiveCartelaTitleTypography(cartela),
               line_spacing: Math.max(0.1, Number(effectiveCartela.line_spacing) || 1.12),
