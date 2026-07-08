@@ -3,6 +3,7 @@
     const {
       applyTextCapitalization = (text) => text,
       animationFadeAlpha = () => 1,
+      animationFadeRevealState = () => null,
       cartelaBlockGap = () => 0,
       cartelaBlockTitleGap = () => 0,
       cartelaImages = () => [],
@@ -96,18 +97,27 @@
         rowCount: 1,
         rowIndex: 0,
       });
-      ctx.save();
-      ctx.globalAlpha *= clampAlpha(fullFrameFadeAlpha);
+      const frameReveal = animationFadeRevealState(page.cartela, renderOptions.animationFrame, {
+        fadeScope: 'frame',
+        rowCount: 1,
+        rowIndex: 0,
+      });
+      const target = frameReveal && clampAlpha(frameReveal.progress) < 1
+        ? createCanvasLayer(effectiveLayout.page_width, effectiveLayout.page_height)
+        : null;
+      const targetCtx = target ? target.ctx : ctx;
+      targetCtx.save();
+      targetCtx.globalAlpha *= clampAlpha(fullFrameFadeAlpha);
       try {
-        await drawCanvasCartelaImages(ctx, page.cartela, effectiveLayout);
+        await drawCanvasCartelaImages(targetCtx, page.cartela, effectiveLayout);
 
         if (titleText && titleMetrics) {
-          drawWithAlpha(ctx, rowFadeAlpha(0), () => drawCanvasText(ctx, titleText, x, cursorY, width, titleMetrics, 'center'));
+          drawWithAlpha(targetCtx, rowFadeAlpha(0), () => drawCanvasText(targetCtx, titleText, x, cursorY, width, titleMetrics, 'center'));
           cursorY += canvasTextHeight(titleText, titleMetrics, width) + (blocks.length ? blockGap : 0);
         }
 
         blocks.forEach((block, index) => {
-          drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width, {
+          drawCanvasBlock(targetCtx, block, page.cartela, effectiveLayout, x, cursorY, width, {
             rowFadeAlpha,
             rowCartela,
             rowTypography,
@@ -116,7 +126,20 @@
           cursorY += heights[index] + blockGap;
         });
       } finally {
-        ctx.restore();
+        targetCtx.restore();
+      }
+      if (target) {
+        targetCtx.save();
+        targetCtx.globalCompositeOperation = 'destination-in';
+        targetCtx.globalAlpha = 1;
+        applyRevealMask(targetCtx, {
+          height: effectiveLayout.page_height,
+          width: effectiveLayout.page_width,
+          x: 0,
+          y: 0,
+        }, frameReveal.direction, frameReveal.progress, frameReveal.featherPx, frameReveal.phase);
+        targetCtx.restore();
+        ctx.drawImage(target.canvas, 0, 0, effectiveLayout.page_width, effectiveLayout.page_height);
       }
     }
 
@@ -519,6 +542,88 @@
       ctx.globalAlpha *= normalized;
       draw();
       ctx.restore();
+    }
+
+    function applyRevealMask(ctx, rect, direction, progress, featherPx, phase) {
+      const feather = Math.max(0, Number(featherPx) || 0);
+      const dir = direction || 'topToBottom';
+      if (phase === 'out') {
+        const hiddenProgress = 1 - progress;
+        if (dir === 'bottomToTop') {
+          const edge = rect.y + rect.height - rect.height * hiddenProgress;
+          fillRevealMask(ctx, rect.x, rect.y, rect.width, edge - rect.y - feather, 1);
+          fillRevealGradient(ctx, rect.x, edge - feather, rect.width, feather, true, true);
+          return;
+        }
+        if (dir === 'leftToRight') {
+          const edge = rect.x + rect.width * hiddenProgress;
+          fillRevealMask(ctx, edge + feather, rect.y, rect.x + rect.width - edge - feather, rect.height, 1);
+          fillRevealGradient(ctx, edge, rect.y, feather, rect.height, false, false);
+          return;
+        }
+        if (dir === 'rightToLeft') {
+          const edge = rect.x + rect.width - rect.width * hiddenProgress;
+          fillRevealMask(ctx, rect.x, rect.y, edge - rect.x - feather, rect.height, 1);
+          fillRevealGradient(ctx, edge - feather, rect.y, feather, rect.height, false, true);
+          return;
+        }
+        const edge = rect.y + rect.height * hiddenProgress;
+        fillRevealMask(ctx, rect.x, edge + feather, rect.width, rect.y + rect.height - edge - feather, 1);
+        fillRevealGradient(ctx, rect.x, edge, rect.width, feather, true, false);
+        return;
+      }
+      if (dir === 'bottomToTop') {
+        const edge = rect.y + rect.height - rect.height * progress;
+        fillRevealMask(ctx, rect.x, edge + feather, rect.width, rect.y + rect.height - edge - feather, 1);
+        fillRevealGradient(ctx, rect.x, edge, rect.width, feather, true, false);
+        return;
+      }
+      if (dir === 'leftToRight') {
+        const edge = rect.x + rect.width * progress;
+        fillRevealMask(ctx, rect.x, rect.y, edge - rect.x - feather, rect.height, 1);
+        fillRevealGradient(ctx, edge - feather, rect.y, feather, rect.height, false, true);
+        return;
+      }
+      if (dir === 'rightToLeft') {
+        const edge = rect.x + rect.width - rect.width * progress;
+        fillRevealMask(ctx, edge + feather, rect.y, rect.x + rect.width - edge - feather, rect.height, 1);
+        fillRevealGradient(ctx, edge, rect.y, feather, rect.height, false, false);
+        return;
+      }
+      const edge = rect.y + rect.height * progress;
+      fillRevealMask(ctx, rect.x, rect.y, rect.width, edge - rect.y - feather, 1);
+      fillRevealGradient(ctx, rect.x, edge - feather, rect.width, feather, true, true);
+    }
+
+    function fillRevealMask(ctx, x, y, width, height, alpha) {
+      const safeWidth = Math.max(0, Number(width) || 0);
+      const safeHeight = Math.max(0, Number(height) || 0);
+      if (safeWidth <= 0 || safeHeight <= 0) return;
+      ctx.fillStyle = `rgba(0,0,0,${clampAlpha(alpha)})`;
+      ctx.fillRect(x, y, safeWidth, safeHeight);
+    }
+
+    function fillRevealGradient(ctx, x, y, width, height, vertical, forward) {
+      const safeWidth = Math.max(0, Number(width) || 0);
+      const safeHeight = Math.max(0, Number(height) || 0);
+      if (safeWidth <= 0 || safeHeight <= 0) return;
+      const gradient = vertical
+        ? ctx.createLinearGradient(0, y, 0, y + safeHeight)
+        : ctx.createLinearGradient(x, 0, x + safeWidth, 0);
+      gradient.addColorStop(0, forward ? 'rgba(0,0,0,1)' : 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, forward ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,1)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(x, y, safeWidth, safeHeight);
+    }
+
+    function createCanvasLayer(width, height) {
+      const canvas = documentRef.createElement('canvas');
+      canvas.width = Math.max(1, Math.ceil(Number(width) || 1));
+      canvas.height = Math.max(1, Math.ceil(Number(height) || 1));
+      return {
+        canvas,
+        ctx: canvas.getContext('2d'),
+      };
     }
 
     function clampAlpha(value) {

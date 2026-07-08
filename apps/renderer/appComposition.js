@@ -48,6 +48,7 @@
       applyProtectedCapitalizations: settingsDomain.applyProtectedCapitalizations,
       applyTextCapitalization: settingsDomain.applyTextCapitalization,
       animationFadeAlpha: styleAnimationFrameDomain.animationFadeAlpha,
+      animationFadeRevealState: styleAnimationFrameDomain.animationFadeRevealState,
       animatableStyleProperties: styleAnimationDomain.animatableProperties,
       blockForTitleRepeat: paginationUnitsDomain.blockForTitleRepeat,
       boolSelectValue: commonDomain.boolSelectValue,
@@ -195,6 +196,7 @@
     const canvasPreview = root.CreditosPreviewCanvas.createCanvasPreview({
       applyTextCapitalization: dependencies.applyTextCapitalization,
       animationFadeAlpha: dependencies.animationFadeAlpha,
+      animationFadeRevealState: dependencies.animationFadeRevealState,
       cartelaBlockGap: dependencies.cartelaBlockGap,
       cartelaBlockTitleGap: dependencies.cartelaBlockTitleGap,
       cartelaImages: dependencies.cartelaImages,

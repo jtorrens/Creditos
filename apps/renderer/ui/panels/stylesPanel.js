@@ -385,20 +385,36 @@
         });
       });
       ['in', 'out'].forEach((phase) => {
-        if (!animation[phase] || !(Number(animation[phase].fadeDurationMs) > 0)) return;
-        const alpha = options.animationFadeAlpha
-          ? options.animationFadeAlpha(cartela, frameState, {
-            fadeScope: animation[phase].fadeMode === 'cascade' ? 'row' : 'fullFrame',
-            rowCount: playbackOptions.rowState.rowCount,
-            rowIndex: playbackOptions.rowState.rowIndex,
-          })
-          : 1;
+        if (!animation[phase] || !phaseHasFade(animation[phase])) return;
+        const isReveal = animation[phase].fadeMode === 'cascade';
+        const value = isReveal && options.animationFadeRevealState
+          ? revealPreviewValue(options.animationFadeRevealState(cartela, frameState, {
+            fadeScope: 'frame',
+            rowCount: 1,
+            rowIndex: 0,
+          }), phase)
+          : options.animationFadeAlpha
+            ? options.animationFadeAlpha(cartela, frameState, {
+              fadeScope: 'fullFrame',
+              rowCount: 1,
+              rowIndex: 0,
+            })
+            : 1;
         rows.push({
-          label: `Fade ${phase === 'in' ? 'entrada' : 'salida'}`,
-          value: formatAnimatedValue(alpha),
+          label: `${isReveal ? 'Reveal' : 'Fade'} ${phase === 'in' ? 'entrada' : 'salida'}`,
+          value: formatAnimatedValue(value),
         });
       });
       return rows;
+    }
+
+    function phaseHasFade(phase = {}) {
+      return Number(phase.fadeDurationFrames) > 0 || Number(phase.fadeDurationMs) > 0;
+    }
+
+    function revealPreviewValue(state, phase) {
+      if (state) return state.progress;
+      return phase === 'in' ? 1 : 1;
     }
 
     function animatedPropertyPreviewValue(key, playbackOptions, frameState) {

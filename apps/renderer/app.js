@@ -247,6 +247,7 @@
     applyProtectedCapitalizations,
     applyTextCapitalization,
     animationFadeAlpha,
+    animationFadeRevealState,
     animatableStyleProperties,
     blockForTitleRepeat,
     boolSelectValue,
@@ -719,6 +720,7 @@
     previewDependencies: {
       applyTextCapitalization,
       animationFadeAlpha,
+      animationFadeRevealState,
       applyTypography,
       cartelaBlockGap,
       cartelaBlockTitleGap,
@@ -1352,6 +1354,7 @@
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
     animationFadeAlpha,
+    animationFadeRevealState,
     buildPhysicalPages,
     cartelaWithResolvedRowAnimation,
     currentMovieFps,
