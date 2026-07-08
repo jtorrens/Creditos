@@ -8,15 +8,13 @@
     function create(options = {}) {
       const value = options.value || {};
       const base = options.base || {};
-      const row = documentRef.createElement('div');
-      row.className = options.className || 'typography-row block-typography-row';
-      if (options.override) row.classList.add('override-field');
+      const group = documentRef.createElement('div');
+      group.className = normalizeGroupClassName(options.className);
+      if (options.override) group.classList.add('override-field');
 
-      if (options.label) {
-        const labelEl = documentRef.createElement('label');
-        labelEl.textContent = options.label;
-        row.appendChild(labelEl);
-      }
+      const fontRow = typographyRow(options.label || 'Tipografía');
+      const fontControls = documentRef.createElement('div');
+      fontControls.className = 'typography-font-controls';
 
       const sizeInput = fieldControlRegistry.create('number', {
         value: value.font_size,
@@ -26,7 +24,6 @@
         onInput: (fontSize) => onChange(options, { font_size: fontSize }, 'font_size'),
       });
       if (base.font_size !== undefined) sizeInput.placeholder = String(base.font_size);
-      row.appendChild(wrapMiniField('Tamaño', sizeInput));
 
       const letterSpacingInput = fieldControlRegistry.create('number', {
         value: value.letter_spacing,
@@ -37,7 +34,6 @@
       letterSpacingInput.title = 'Espaciado entre caracteres';
       letterSpacingInput.setAttribute('aria-label', 'Espaciado entre caracteres');
       if (base.letter_spacing !== undefined) letterSpacingInput.placeholder = String(base.letter_spacing);
-      row.appendChild(wrapMiniField('Caracteres', letterSpacingInput));
 
       let styleSelect = null;
       const familySelect = fieldControlRegistry.create('select', {
@@ -54,7 +50,7 @@
           }, 'font_family');
         },
       });
-      row.appendChild(familySelect);
+      fontControls.appendChild(familySelect);
 
       styleSelect = fieldControlRegistry.create('select', {
         value: value.font_style,
@@ -67,13 +63,13 @@
           }, 'font_style');
         },
       });
-      row.appendChild(styleSelect);
+      fontControls.appendChild(styleSelect);
 
       const colorInput = fieldControlRegistry.create('color', {
         value: normalizeColor(options, value.color),
         onInput: (color) => onChange(options, { color }, 'color'),
       });
-      row.appendChild(colorInput);
+      fontControls.appendChild(colorInput);
 
       if (options.override && options.onReset) {
         const resetButton = documentRef.createElement('button');
@@ -83,10 +79,14 @@
         resetButton.title = 'Restablecer';
         resetButton.setAttribute('aria-label', 'Restablecer');
         resetButton.addEventListener('click', options.onReset);
-        row.appendChild(resetButton);
+        fontControls.appendChild(resetButton);
       }
 
-      return row;
+      fontRow.appendChild(fontControls);
+      group.appendChild(fontRow);
+      group.appendChild(typographyNumberRow('Tamaño', sizeInput, metaForField(options, 'font_size', value.font_size)));
+      group.appendChild(typographyNumberRow('Spacing', letterSpacingInput, metaForField(options, 'letter_spacing', value.letter_spacing)));
+      return group;
     }
 
     function fontFamilyOptions(fontCatalog = {}, value) {
@@ -138,14 +138,43 @@
       (options.onInput || options.onChange || (() => {}))(fields, { field });
     }
 
-    function wrapMiniField(label, control) {
-      const wrap = documentRef.createElement('label');
-      wrap.className = 'typography-mini-field';
+    function normalizeGroupClassName(className) {
+      if (!className) return 'typography-control-group block-typography-control-group';
+      return String(className)
+        .replace(/\btypography-row\b/g, 'typography-control-group')
+        .replace(/\bblock-typography-row\b/g, 'block-typography-control-group')
+        .trim();
+    }
+
+    function typographyRow(label) {
+      const row = documentRef.createElement('div');
+      row.className = 'field-grid typography-sub-row';
       const labelEl = documentRef.createElement('span');
+      labelEl.className = 'typography-sub-label';
       labelEl.textContent = label;
-      wrap.appendChild(labelEl);
+      row.appendChild(labelEl);
+      return row;
+    }
+
+    function typographyNumberRow(label, control, meta = {}) {
+      const row = typographyRow(label);
+      row.appendChild(wrapNumberControl(control, meta));
+      return row;
+    }
+
+    function wrapNumberControl(control, meta = {}) {
+      if (!meta.beforeControl && !meta.afterControl) return control;
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'field-control-inline';
+      if (meta.beforeControl) wrap.appendChild(meta.beforeControl);
       wrap.appendChild(control);
+      if (meta.afterControl) wrap.appendChild(meta.afterControl);
       return wrap;
+    }
+
+    function metaForField(options, field, value) {
+      if (typeof options.animationMetaForField !== 'function') return {};
+      return options.animationMetaForField(field, value) || {};
     }
 
     return { create };

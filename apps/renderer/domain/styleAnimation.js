@@ -23,6 +23,12 @@
       'scale',
       'translate_x',
       'translate_y',
+      'typography.block_title.font_size',
+      'typography.block_title.letter_spacing',
+      'typography.role.font_size',
+      'typography.role.letter_spacing',
+      'typography.name.font_size',
+      'typography.name.letter_spacing',
     ];
 
     const defaultStyleAnimation = Object.freeze({
@@ -133,6 +139,8 @@
       if (key === 'opacity') return Math.max(0, Math.min(1, numeric));
       if (key === 'scale') return Math.max(0, numeric);
       if (key === 'line_spacing') return Math.max(0.1, numeric);
+      if (key.endsWith('.font_size')) return Math.max(1, numeric);
+      if (key.endsWith('.letter_spacing')) return numeric;
       if (key.endsWith('_gap') || key.endsWith('_margin')) return Math.max(0, numeric);
       return numeric;
     }
@@ -141,6 +149,8 @@
       if (key === 'opacity') return 0;
       if (key === 'scale') return 1;
       if (key === 'line_spacing') return 1.12;
+      if (key.endsWith('.font_size')) return 1;
+      if (key.endsWith('.letter_spacing')) return 0;
       return 0;
     }
 

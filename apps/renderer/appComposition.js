@@ -114,6 +114,7 @@
       normalizeSettings: settingsDomain.normalizeSettings,
       normalizeStyleAnimation: styleAnimationDomain.normalizeStyleAnimation,
       cartelaWithResolvedRowAnimation: styleAnimationFrameDomain.cartelaWithResolvedRowAnimation,
+      typographyWithResolvedRowAnimation: styleAnimationFrameDomain.typographyWithResolvedRowAnimation,
       normalizeSource: sourceDomain.normalizeSource,
       normalizeText: commonDomain.normalizeText,
       normalizeTextCapitalization: settingsDomain.normalizeTextCapitalization,
@@ -216,6 +217,7 @@
       scrollOffsetForFrame: dependencies.scrollOffsetForFrame,
       unitGapBefore: dependencies.unitGapBefore,
       unitRenderOptions: dependencies.unitRenderOptions,
+      typographyWithResolvedRowAnimation: dependencies.typographyWithResolvedRowAnimation,
       verticalOffset: dependencies.verticalOffset,
     });
     const referenceVideoPreview = root.CreditosPreviewReferenceVideo.createReferenceVideoPreview({

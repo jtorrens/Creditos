@@ -29,6 +29,7 @@
       unitRenderOptions = () => ({}),
       verticalOffset = () => 0,
       textVerticalBleedRatio = 0.35,
+      typographyWithResolvedRowAnimation = (_cartela, typography) => typography,
     } = dependencies;
 
     const canvasImageCache = new Map();
@@ -65,8 +66,13 @@
         rowCount: rowPlan.rowCount,
         rowIndex,
       });
+      const rowTypography = (rowIndex, typography) => typographyWithResolvedRowAnimation(rowCartela(rowIndex), typography, renderOptions.animationFrame, {
+        rowCount: rowPlan.rowCount,
+        rowIndex,
+      });
       const heights = blocks.map((block, index) => measureCanvasBlock(ctx, block, page.cartela, effectiveLayout, width, {
         rowCartela,
+        rowTypography,
         startRowIndex: rowPlan.blockStartRows[index],
       }));
       const titleText = page && page.cartela_physical_index === 0 ? String(page.title || '').trim() : '';
@@ -88,6 +94,7 @@
       blocks.forEach((block, index) => {
         drawCanvasBlock(ctx, block, page.cartela, effectiveLayout, x, cursorY, width, {
           rowCartela,
+          rowTypography,
           startRowIndex: rowPlan.blockStartRows[index],
         });
         cursorY += heights[index] + blockGap;
@@ -222,9 +229,11 @@
       const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
       const titleRows = title ? 1 : 0;
       if (title) {
-        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(rowContext.startRowIndex || 0) : cartela;
+        const titleRowIndex = rowContext.startRowIndex || 0;
+        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(titleRowIndex) : cartela;
         const titleLayout = layoutForCartela(layout, titleCartela);
-        const titleMetrics = canvasTextMetrics('block_title', titleCartela, titleLayout, block.typography);
+        const titleTypography = rowContext.rowTypography ? rowContext.rowTypography(titleRowIndex, block.typography) : block.typography;
+        const titleMetrics = canvasTextMetrics('block_title', titleCartela, titleLayout, titleTypography);
         height += canvasTextHeight(title, titleMetrics, width);
         if (units.length) height += cartelaBlockTitleGap(titleCartela, titleLayout);
       }
@@ -234,10 +243,12 @@
       units.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
+        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
-        const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options);
+        const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography);
         rowHeights[row] = Math.max(rowHeights[row] || 0, unitHeight);
         previousCreditSourceId = creditSourceId(unit);
       });
@@ -252,9 +263,11 @@
       const units = block.pages && block.pages[0] ? block.pages[0].items || [] : [];
       const titleRows = title ? 1 : 0;
       if (title) {
-        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(rowContext.startRowIndex || 0) : cartela;
+        const titleRowIndex = rowContext.startRowIndex || 0;
+        const titleCartela = rowContext.rowCartela ? rowContext.rowCartela(titleRowIndex) : cartela;
         const titleLayout = layoutForCartela(layout, titleCartela);
-        const metrics = canvasTextMetrics('block_title', titleCartela, titleLayout, block.typography);
+        const titleTypography = rowContext.rowTypography ? rowContext.rowTypography(titleRowIndex, block.typography) : block.typography;
+        const metrics = canvasTextMetrics('block_title', titleCartela, titleLayout, titleTypography);
         drawCanvasText(ctx, title, x, cursorY, width, metrics, 'center');
         cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(titleCartela, titleLayout) : 0);
       }
@@ -265,24 +278,28 @@
         const row = Math.floor(index / columns);
         const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
         const options = unitRenderOptions(unit, previousSourceId, cartela, index > 0, units[index - 1]);
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
+        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
-        rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options));
+        rowHeights[row] = Math.max(rowHeights[row] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography));
       });
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
         const row = Math.floor(index / columns);
         const col = index % columns;
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela((rowContext.startRowIndex || 0) + titleRows + row) : cartela;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + row;
+        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
         const rowLayout = layoutForCartela(layout, rowCartela);
+        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
         const unitX = x + col * (columnWidth + rowLayout.column_gap);
         const unitY = cursorY +
           rowHeights.slice(0, row).reduce((total, value) => total + value, 0) +
           rowGaps.slice(0, row).reduce((total, value) => total + value, 0);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options);
+        drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options, rowTypography);
         previousCreditSourceId = creditSourceId(unit);
       });
     }
@@ -302,15 +319,15 @@
       return gaps;
     }
 
-    function measureCanvasUnit(unit, block, cartela, layout, width, options = {}) {
+    function measureCanvasUnit(unit, block, cartela, layout, width, options = {}, typography = block.typography) {
       if (block.type === 'music_licenses' && unit.lines) {
         return (unit.lines || []).reduce((total, line, index) => {
-          const metrics = canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, block.typography);
+          const metrics = canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, typography);
           return total + canvasTextHeight(line.value, metrics, width);
         }, 0);
       }
       if (options.repeatedNameRow) {
-        const metrics = canvasTextMetrics('name', cartela, layout, block.typography);
+        const metrics = canvasTextMetrics('name', cartela, layout, typography);
         return canvasTextHeight(unit.name, metrics, width);
       }
       if (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast') {
@@ -321,41 +338,41 @@
           ? Math.max(1, (width - layout.role_name_gap) / 2)
           : width;
         const roleHeight = String(role || '').length
-          ? canvasTextHeight(role, canvasTextMetrics('role', cartela, layout, block.typography), textWidth)
+          ? canvasTextHeight(role, canvasTextMetrics('role', cartela, layout, typography), textWidth)
           : 0;
         const nameHeight = String(name || '').length
-          ? canvasTextHeight(name, canvasTextMetrics('name', cartela, layout, block.typography), textWidth)
+          ? canvasTextHeight(name, canvasTextMetrics('name', cartela, layout, typography), textWidth)
           : 0;
         return orientation === 'vertical'
           ? roleHeight + (roleHeight && nameHeight ? roleNameGapForOrientation(layout, orientation) : 0) + nameHeight
-          : Math.max(roleHeight, nameHeight, canvasTextMetrics('name', cartela, layout, block.typography).lineHeight);
+          : Math.max(roleHeight, nameHeight, canvasTextMetrics('name', cartela, layout, typography).lineHeight);
       }
-      const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, block.typography);
+      const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, typography);
       if (unit.text_already_transformed) metrics.textCapitalization = 'source';
       return canvasTextHeight(unit.title !== undefined ? unit.title : unit.value, metrics, width);
     }
 
-    function drawCanvasUnit(ctx, unit, block, cartela, layout, x, y, width, options = {}) {
+    function drawCanvasUnit(ctx, unit, block, cartela, layout, x, y, width, options = {}, typography = block.typography) {
       const orientation = cartela.orientation || 'horizontal';
       const alignment = block.alignment || {};
       if (block.type === 'music_licenses' && unit.lines) {
         let cursorY = y;
         (unit.lines || []).forEach((line, index) => {
-          const metrics = canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, block.typography);
+          const metrics = canvasTextMetrics(index === 0 ? 'role' : 'name', cartela, layout, typography);
           drawCanvasText(ctx, line.value || '', x, cursorY, width, metrics, alignment.text || 'center');
           cursorY += canvasTextHeight(line.value, metrics, width);
         });
         return;
       }
       if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-        drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation, block.typography);
+        drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation, typography);
         return;
       }
       if (unit.kind === 'cast') {
-        drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation, block.typography);
+        drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation, typography);
         return;
       }
-      const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, block.typography);
+      const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, typography);
       if (unit.text_already_transformed) metrics.textCapitalization = 'source';
       drawCanvasText(ctx, unit.title || unit.value || '', x, y, width, metrics, alignment.text || (orientation === 'vertical' ? 'center' : 'left'));
     }

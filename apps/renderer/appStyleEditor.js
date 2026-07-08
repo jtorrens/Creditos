@@ -113,6 +113,7 @@
           getFontStyles: options.getFontStyles,
           label,
           normalizeColor: options.normalizeColor,
+          animationMetaForField: (field, currentValue) => animationMetaForTypographyField(style, key, field, currentValue),
           onInput: (fields) => options.updateEditableStyleTypography(style, key, fields),
           onReset: () => options.resetEditableStyleTypographyOverride(style, key),
           override: isOverride,
@@ -125,6 +126,18 @@
 
     function animationMeta(style, key, meta = {}) {
       return options.styleAnimationRowMeta ? options.styleAnimationRowMeta(style, key, meta) : meta;
+    }
+
+    function animationMetaForTypographyField(style, typographyKey, field, currentValue) {
+      const key = typographyAnimationKey(typographyKey, field);
+      if (!key) return {};
+      return animationMeta(style, key, { animationDefaultValue: currentValue });
+    }
+
+    function typographyAnimationKey(typographyKey, field) {
+      if (field !== 'font_size' && field !== 'letter_spacing') return '';
+      if (typographyKey !== 'block_title' && typographyKey !== 'role' && typographyKey !== 'name') return '';
+      return `typography.${typographyKey}.${field}`;
     }
 
     function renderStyleTitleTypographyControls(style, controlOptions = {}) {

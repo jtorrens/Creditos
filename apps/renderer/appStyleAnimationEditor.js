@@ -36,6 +36,12 @@
       scale: 'Escala',
       translate_x: 'Desplazamiento X',
       translate_y: 'Desplazamiento Y',
+      'typography.block_title.font_size': 'Título bloque tamaño',
+      'typography.block_title.letter_spacing': 'Título bloque spacing',
+      'typography.role.font_size': 'Cargo tamaño',
+      'typography.role.letter_spacing': 'Cargo spacing',
+      'typography.name.font_size': 'Nombre tamaño',
+      'typography.name.letter_spacing': 'Nombre spacing',
     };
 
     function renderStyleAnimationControls(style, controlOptions = {}) {
@@ -138,12 +144,12 @@
       const property = animation.properties && animation.properties[key] ? animation.properties[key] : {};
       return {
         ...meta,
-        beforeControl: renderKeyframeToggle(subject, animation, key, property, updateAnimation),
-        afterControl: property.animate ? renderInlinePropertyValues(subject, animation, key, property, updateAnimation) : null,
+        beforeControl: renderKeyframeToggle(subject, animation, key, property, updateAnimation, meta),
+        afterControl: property.animate ? renderInlinePropertyValues(subject, animation, key, property, updateAnimation, meta) : null,
       };
     }
 
-    function renderKeyframeToggle(subject, animation, key, property, updateAnimation) {
+    function renderKeyframeToggle(subject, animation, key, property, updateAnimation, meta = {}) {
       const toggle = documentRef.createElement('button');
       toggle.type = 'button';
       toggle.className = 'keyframe-toggle' + (property.animate ? ' active' : '');
@@ -154,16 +160,16 @@
       toggle.addEventListener('click', () => {
         updateProperty(subject, animation, key, {
           animate: !property.animate,
-        }, updateAnimation);
+        }, updateAnimation, meta);
       });
       return toggle;
     }
 
-    function renderInlinePropertyValues(subject, animation, key, property, updateAnimation) {
+    function renderInlinePropertyValues(subject, animation, key, property, updateAnimation, meta = {}) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-inline-values';
-      wrap.appendChild(renderInlineNumber('In', property.inValue, (value) => updateProperty(subject, animation, key, { inValue: value }, updateAnimation), stepForProperty(key)));
-      wrap.appendChild(renderInlineNumber('Out', property.outValue, (value) => updateProperty(subject, animation, key, { outValue: value }, updateAnimation), stepForProperty(key)));
+      wrap.appendChild(renderInlineNumber('In', property.inValue, (value) => updateProperty(subject, animation, key, { inValue: value }, updateAnimation, meta), stepForProperty(key)));
+      wrap.appendChild(renderInlineNumber('Out', property.outValue, (value) => updateProperty(subject, animation, key, { outValue: value }, updateAnimation, meta), stepForProperty(key)));
       return wrap;
     }
 
@@ -194,7 +200,7 @@
       });
     }
 
-    function updateProperty(subject, animation, key, fields, updateAnimation) {
+    function updateProperty(subject, animation, key, fields, updateAnimation, meta = {}) {
       const current = options.normalizeStyleAnimation(animation || subject.animation || {});
       const properties = { ...(current.properties || {}) };
       if (fields && fields.animate === false) {
@@ -210,7 +216,7 @@
         ...(fields || {}),
       };
       if (fields && fields.animate === true) {
-        const defaultValue = defaultValueForProperty(subject, key);
+        const defaultValue = defaultValueForProperty(subject, key, meta);
         if (nextProperty.inValue === undefined) nextProperty.inValue = defaultValue;
         if (nextProperty.outValue === undefined) nextProperty.outValue = defaultValue;
       }
@@ -224,10 +230,12 @@
     function stepForProperty(key) {
       if (key === 'opacity') return 0.01;
       if (key === 'scale' || key === 'line_spacing') return 0.01;
+      if (String(key || '').endsWith('.letter_spacing')) return 0.1;
       return 1;
     }
 
-    function defaultValueForProperty(subject, key) {
+    function defaultValueForProperty(subject, key, meta = {}) {
+      if (meta && meta.animationDefaultValue !== undefined) return meta.animationDefaultValue;
       if (subject && subject.cartela && subject.cartela[key] !== undefined) return subject.cartela[key];
       if (subject && subject[key] !== undefined) return subject[key];
       if (key === 'opacity') return 0;

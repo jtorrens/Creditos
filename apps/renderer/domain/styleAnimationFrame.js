@@ -17,6 +17,7 @@
       'page_left_margin',
       'page_right_margin',
     ]);
+    const typographyFields = new Set(['font_size', 'letter_spacing']);
 
     function cartelaWithResolvedRowAnimation(cartela, frameState = {}, rowState = {}) {
       if (!cartela) return cartela;
@@ -45,6 +46,40 @@
         changed = true;
       });
       return changed ? output : cartela;
+    }
+
+    function typographyWithResolvedRowAnimation(cartela, typography = {}, frameState = {}, rowState = {}) {
+      if (!cartela || !typography) return typography;
+      const animation = normalizeStyleAnimation(cartela.animation || {});
+      if (!animation.enabled) return typography;
+      const localFrame = Math.max(0, Math.round(Number(frameState.localFrame) || 0));
+      const frameCount = Math.max(1, Math.round(Number(frameState.frameCount) || 1));
+      const fps = Math.max(1, Math.round(Number(frameState.fps) || 25));
+      const phase = animationPhase(animation, localFrame, frameCount, fps, rowState);
+      if (!phase) return typography;
+
+      const properties = animation.properties || {};
+      let changed = false;
+      const output = { ...typography };
+      Object.keys(properties).forEach((key) => {
+        const typographyKey = parseTypographyPropertyKey(key);
+        if (!typographyKey) return;
+        const property = properties[key];
+        if (!property || !property.animate) return;
+        const stable = Number(typography[typographyKey.styleKey] && typography[typographyKey.styleKey][typographyKey.field]);
+        if (!Number.isFinite(stable)) return;
+        const edgeValue = Number(phase.name === 'in' ? property.inValue : property.outValue);
+        if (!Number.isFinite(edgeValue)) return;
+        const nextValue = phase.name === 'in'
+          ? interpolate(edgeValue, stable, phase.progress)
+          : interpolate(stable, edgeValue, phase.progress);
+        output[typographyKey.styleKey] = {
+          ...(output[typographyKey.styleKey] || {}),
+          [typographyKey.field]: normalizeTypographyPropertyValue(typographyKey.field, nextValue),
+        };
+        changed = true;
+      });
+      return changed ? output : typography;
     }
 
     function animationPhase(animation, localFrame, frameCount, fps, rowState = {}) {
@@ -140,8 +175,25 @@
       return numeric;
     }
 
+    function parseTypographyPropertyKey(key) {
+      const match = String(key || '').match(/^typography\.(block_title|role|name)\.(font_size|letter_spacing)$/);
+      if (!match || !typographyFields.has(match[2])) return null;
+      return {
+        field: match[2],
+        styleKey: match[1],
+      };
+    }
+
+    function normalizeTypographyPropertyValue(field, value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return field === 'font_size' ? 1 : 0;
+      if (field === 'font_size') return Math.max(1, numeric);
+      return numeric;
+    }
+
     return {
       cartelaWithResolvedRowAnimation,
+      typographyWithResolvedRowAnimation,
     };
   }
 

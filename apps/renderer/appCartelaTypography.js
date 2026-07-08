@@ -23,6 +23,7 @@
           getFontStyles: options.getFontStyles,
           label,
           normalizeColor: options.normalizeColor,
+          animationMetaForField: (field, currentValue) => animationMetaForTypographyField(cartela, key, field, currentValue),
           onInput: (fields, meta) => options.updateSelectedCartelaBlockTypography(key, fields, { rerenderEditor: meta.field === 'font_family' }),
           onReset: () => options.resetSelectedCartelaBlockTypographyOverride(key),
           override: isOverride,
@@ -62,6 +63,18 @@
 
       wrap.appendChild(row);
       return wrap;
+    }
+
+    function animationMetaForTypographyField(cartela, typographyKey, field, currentValue) {
+      const key = typographyAnimationKey(typographyKey, field);
+      if (!key || typeof options.cartelaAnimationRowMeta !== 'function') return {};
+      return options.cartelaAnimationRowMeta(cartela, key, { animationDefaultValue: currentValue });
+    }
+
+    function typographyAnimationKey(typographyKey, field) {
+      if (field !== 'font_size' && field !== 'letter_spacing') return '';
+      if (typographyKey !== 'block_title' && typographyKey !== 'role' && typographyKey !== 'name') return '';
+      return `typography.${typographyKey}.${field}`;
     }
 
     return {
