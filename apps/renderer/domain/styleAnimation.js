@@ -7,7 +7,7 @@
     const transitionModes = ['together', 'cascade', 'relativeCascade'];
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
     const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
-    const fadeModes = ['fullFrame', 'cascadeUp', 'cascadeDown'];
+    const fadeModes = ['fullFrame', 'cascade'];
     const animatableProperties = [
       'line_spacing',
       'column_gap',
@@ -43,6 +43,7 @@
         featherPx: 80,
         fadeDurationMs: 0,
         fadeMode: 'fullFrame',
+        fadeDirection: 'topToBottom',
       }),
       out: Object.freeze({
         durationMs: 500,
@@ -53,6 +54,7 @@
         featherPx: 80,
         fadeDurationMs: 0,
         fadeMode: 'fullFrame',
+        fadeDirection: 'topToBottom',
       }),
       properties: Object.freeze({}),
     });
@@ -119,6 +121,7 @@
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
         fadeDurationMs: normalizeFadeDurationMs(input, defaults),
         fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
+        fadeDirection: normalizeFadeDirection(input.fadeDirection, input, defaults),
       };
     }
 
@@ -130,12 +133,22 @@
     }
 
     function normalizeFadeMode(value, input = {}, defaults = {}) {
+      if (value === 'cascadeUp' || value === 'cascadeDown') return 'cascade';
       if (fadeModes.includes(value)) return value;
       if (input.fade !== undefined && input.mode === 'cascade') {
-        return input.direction === 'bottomToTop' || input.direction === 'rightToLeft' ? 'cascadeUp' : 'cascadeDown';
+        return 'cascade';
       }
       if (fadeModes.includes(defaults.fadeMode)) return defaults.fadeMode;
       return 'fullFrame';
+    }
+
+    function normalizeFadeDirection(value, input = {}, defaults = {}) {
+      if (transitionDirections.includes(value)) return value;
+      if (input.fadeMode === 'cascadeUp') return 'bottomToTop';
+      if (input.fadeMode === 'cascadeDown') return 'topToBottom';
+      if (input.fade !== undefined && input.mode === 'cascade' && transitionDirections.includes(input.direction)) return input.direction;
+      if (transitionDirections.includes(defaults.fadeDirection)) return defaults.fadeDirection;
+      return 'topToBottom';
     }
 
     function normalizeAnimatedProperties(properties = {}) {

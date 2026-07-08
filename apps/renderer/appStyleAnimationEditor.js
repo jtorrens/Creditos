@@ -10,8 +10,7 @@
     ];
     const fadeModeOptions = [
       ['fullFrame', 'Full Frame'],
-      ['cascadeUp', 'Cascada arriba'],
-      ['cascadeDown', 'Cascada abajo'],
+      ['cascade', 'Cascada'],
     ];
     const directionOptions = [
       ['topToBottom', 'Arriba abajo'],
@@ -121,6 +120,7 @@
       wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} fade ms`, phaseValue.fadeDurationMs, 0, null, (value) => updatePhase(subject, animation, phase, { fadeDurationMs: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade modo`, phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)));
+      wrap.appendChild(options.localSelectRow(`${label} fade direccion`, phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)));
       return wrap;
     }
 

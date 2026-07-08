@@ -173,9 +173,9 @@
       if (fadeDurationFrames <= 0 || !fadeScopeMatches(phase.fadeMode, rowState.fadeScope)) return null;
       const fadePhase = {
         delayMs: phase.delayMs,
-        direction: fadeDirection(phase.fadeMode),
+        direction: phase.fadeDirection || 'topToBottom',
         easing: phase.easing,
-        mode: phase.fadeMode === 'fullFrame' ? 'together' : 'cascade',
+        mode: phase.fadeMode === 'cascade' ? 'cascade' : 'together',
       };
       const window = rowPhaseWindow(fadePhase, {
         delayFrames: msToFrames(phase.delayMs, fps),
@@ -193,12 +193,8 @@
 
     function fadeScopeMatches(fadeMode, fadeScope) {
       if (fadeMode === 'fullFrame') return fadeScope === 'fullFrame';
-      if (fadeMode === 'cascadeUp' || fadeMode === 'cascadeDown') return fadeScope === 'row';
+      if (fadeMode === 'cascade') return fadeScope === 'row';
       return false;
-    }
-
-    function fadeDirection(fadeMode) {
-      return fadeMode === 'cascadeUp' ? 'bottomToTop' : 'topToBottom';
     }
 
     function phaseProgress(localFrame, window, easing) {

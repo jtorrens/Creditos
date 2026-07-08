@@ -9,9 +9,13 @@
     let stylePreviewPairCount = 3;
     const stylePreviewPlayback = {
       frame: 0,
+      lastTickTime: 0,
       playing: false,
       raf: null,
+      realTime: true,
       renderId: 0,
+      startFrame: 0,
+      startedAt: 0,
       styleId: null,
       time: 0,
     };
@@ -40,6 +44,8 @@
         return;
       }
       const zoom = options.previewZoomForContainer(els.stylePreview, layout);
+      const stack = documentRef.createElement('div');
+      stack.className = 'style-preview-stack';
       const frame = documentRef.createElement('div');
       frame.className = 'png-preview-frame';
       frame.style.width = `${layout.page_width * zoom}px`;
@@ -51,24 +57,31 @@
       canvas.style.width = `${canvas.width}px`;
       canvas.style.height = `${canvas.height}px`;
       frame.appendChild(canvas);
+      const realtimeDot = documentRef.createElement('span');
+      realtimeDot.className = 'style-preview-realtime-dot ok';
+      frame.appendChild(realtimeDot);
       if (state.showPanelMarginOverlay) {
         frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
       }
       const renderId = ++stylePreviewRenderId;
       const frameState = panelAnimationFrame(page);
       const rowState = previewAnimatedRowState(page);
-      const controls = renderStylePreviewPlaybackControls({
+      const playbackOptions = {
         canvas,
         frameState,
         layout,
         page,
+        realtimeDot,
         renderId,
         rowState,
         style,
         zoom,
-      });
-      frame.appendChild(controls);
-      els.stylePreview.appendChild(frame);
+      };
+      const controls = renderStylePreviewPlaybackControls(playbackOptions);
+      playbackOptions.controls = controls;
+      stack.appendChild(frame);
+      stack.appendChild(controls);
+      els.stylePreview.appendChild(stack);
       options.updatePanelMarginButtons();
       if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId !== style.id) {
         stopStylePreviewPlayback();
@@ -80,15 +93,9 @@
       drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
         if (renderId === stylePreviewRenderId) console.warn(error);
       });
-      updateStylePreviewPlaybackUi(
-        controls.querySelector('button'),
-        controls.querySelector('span'),
-        localFrameState,
-        page,
-        rowState
-      );
+      updateStylePreviewPlaybackUi(playbackOptions, localFrameState);
       if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id) {
-        startStylePreviewPlayback({ canvas, frameState, layout, page, renderId, rowState, style, zoom });
+        startStylePreviewPlayback(playbackOptions);
       }
     }
 
@@ -107,12 +114,18 @@
       const animation = page && page.cartela && page.cartela.animation ? page.cartela.animation : {};
       const inMs = animation.in && animation.in.durationMs !== undefined ? animation.in.durationMs : 600;
       const outMs = animation.out && animation.out.durationMs !== undefined ? animation.out.durationMs : 500;
-      const frameCount = msToFrames(inMs, fps) + msToFrames(3000, fps) + msToFrames(outMs, fps);
+      const inFrames = msToFrames(inMs, fps);
+      const holdFrames = msToFrames(3000, fps);
+      const outFrames = msToFrames(outMs, fps);
+      const frameCount = inFrames + holdFrames + outFrames;
       return {
+        holdFrames,
+        inFrames,
         page,
         localFrame: 0,
         frameCount: Math.max(1, frameCount),
         fps,
+        outFrames,
       };
     }
 
@@ -140,24 +153,41 @@
     function renderStylePreviewPlaybackControls(playbackOptions) {
       const controls = documentRef.createElement('div');
       controls.className = 'style-preview-playback';
+      const topRow = documentRef.createElement('div');
+      topRow.className = 'style-preview-playback-row';
       const pairInput = renderStylePreviewPairCountInput(playbackOptions.style);
+      const buttons = documentRef.createElement('div');
+      buttons.className = 'style-preview-transport';
+      const status = documentRef.createElement('span');
+      status.className = 'style-preview-frame-status';
+      topRow.appendChild(pairInput);
+      buttons.appendChild(transportButton('⏮', 'Inicio', () => setStylePreviewFrame(playbackOptions, 0)));
+      buttons.appendChild(transportButton('‹', 'Frame anterior', () => setStylePreviewFrame(playbackOptions, stylePreviewDisplayFrame(playbackOptions.frameState) - 1)));
+      buttons.appendChild(transportButton('|‹', 'Inicio neutro', () => setStylePreviewFrame(playbackOptions, neutralStartFrame(playbackOptions.frameState))));
+      buttons.appendChild(transportButton('▶', 'Play', () => toggleStylePreviewPlayback(playbackOptions), 'play'));
+      buttons.appendChild(transportButton('›|', 'Fin neutro', () => setStylePreviewFrame(playbackOptions, neutralEndFrame(playbackOptions.frameState))));
+      buttons.appendChild(transportButton('›', 'Frame siguiente', () => setStylePreviewFrame(playbackOptions, stylePreviewDisplayFrame(playbackOptions.frameState) + 1)));
+      buttons.appendChild(transportButton('⏭', 'Fin', () => setStylePreviewFrame(playbackOptions, playbackOptions.frameState.frameCount - 1)));
+      topRow.appendChild(buttons);
+      topRow.appendChild(status);
+      const values = documentRef.createElement('div');
+      values.className = 'style-preview-values';
+      controls.appendChild(topRow);
+      controls.appendChild(values);
+      updateStylePreviewPlaybackUi(playbackOptions, playbackOptions.frameState);
+      return controls;
+    }
+
+    function transportButton(text, title, onClick, role) {
       const button = documentRef.createElement('button');
       button.type = 'button';
-      const status = documentRef.createElement('span');
-      controls.appendChild(pairInput);
-      controls.appendChild(button);
-      controls.appendChild(status);
-      button.addEventListener('click', () => {
-        if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === playbackOptions.style.id) {
-          stopStylePreviewPlayback();
-          updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
-          return;
-        }
-        stylePreviewPlayback.frame = 0;
-        startStylePreviewPlayback(playbackOptions);
-      });
-      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState, playbackOptions.page, playbackOptions.rowState);
-      return controls;
+      button.className = 'style-preview-transport-button';
+      if (role) button.dataset.role = role;
+      button.textContent = text;
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.addEventListener('click', onClick);
+      return button;
     }
 
     function renderStylePreviewPairCountInput(style) {
@@ -190,32 +220,62 @@
       stylePreviewPlayback.playing = true;
       stylePreviewPlayback.renderId = playbackOptions.renderId;
       stylePreviewPlayback.styleId = playbackOptions.style.id;
-      stylePreviewPlayback.time = 0;
-      const controls = playbackOptions.canvas.parentElement && playbackOptions.canvas.parentElement.querySelector('.style-preview-playback');
-      const button = controls && controls.querySelector('button');
-      const status = controls && controls.querySelector('span');
+      stylePreviewPlayback.lastTickTime = 0;
+      stylePreviewPlayback.realTime = true;
+      stylePreviewPlayback.startFrame = stylePreviewDisplayFrame(playbackOptions.frameState);
+      stylePreviewPlayback.startedAt = 0;
       const tick = (time) => {
         if (!stylePreviewPlayback.playing || stylePreviewPlayback.renderId !== playbackOptions.renderId || stylePreviewRenderId !== playbackOptions.renderId) return;
         const frameCount = stylePreviewLoopFrameCount(playbackOptions.frameState);
-        if (!stylePreviewPlayback.time) stylePreviewPlayback.time = time;
-        const elapsedMs = Math.max(0, time - stylePreviewPlayback.time);
-        const elapsedFrames = Math.max(1, Math.floor((elapsedMs / 1000) * playbackOptions.frameState.fps));
-        stylePreviewPlayback.time = time;
-        stylePreviewPlayback.frame = (stylePreviewPlayback.frame + elapsedFrames) % frameCount;
+        const frameMs = 1000 / Math.max(1, Number(playbackOptions.frameState.fps) || 25);
+        if (!stylePreviewPlayback.startedAt) stylePreviewPlayback.startedAt = time;
+        const tickDelta = stylePreviewPlayback.lastTickTime ? time - stylePreviewPlayback.lastTickTime : frameMs;
+        stylePreviewPlayback.realTime = tickDelta <= frameMs * 1.5;
+        stylePreviewPlayback.lastTickTime = time;
+        const elapsedFrames = Math.floor(Math.max(0, time - stylePreviewPlayback.startedAt) / frameMs);
+        stylePreviewPlayback.frame = (stylePreviewPlayback.startFrame + elapsedFrames) % frameCount;
         drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, {
           ...playbackOptions.frameState,
           localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
         }).catch((error) => {
           if (stylePreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
         });
-        updateStylePreviewPlaybackUi(button, status, {
+        updateStylePreviewPlaybackUi(playbackOptions, {
           ...playbackOptions.frameState,
           localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
-        }, playbackOptions.page, playbackOptions.rowState);
+        });
         stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
       };
-      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState, playbackOptions.page, playbackOptions.rowState);
+      updateStylePreviewPlaybackUi(playbackOptions, playbackOptions.frameState);
       stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
+    }
+
+    function toggleStylePreviewPlayback(playbackOptions) {
+      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === playbackOptions.style.id) {
+        stopStylePreviewPlayback({ keepFrame: true });
+        updateStylePreviewPlaybackUi(playbackOptions, {
+          ...playbackOptions.frameState,
+          localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
+        });
+        return;
+      }
+      startStylePreviewPlayback(playbackOptions);
+    }
+
+    function setStylePreviewFrame(playbackOptions, frame) {
+      stopStylePreviewPlayback({ keepFrame: true });
+      const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
+      stylePreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
+      drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, {
+        ...playbackOptions.frameState,
+        localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
+      }).catch((error) => {
+        if (stylePreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
+      });
+      updateStylePreviewPlaybackUi(playbackOptions, {
+        ...playbackOptions.frameState,
+        localFrame: stylePreviewDisplayFrame(playbackOptions.frameState),
+      });
     }
 
     function stopStylePreviewPlayback(options = {}) {
@@ -223,6 +283,9 @@
       stylePreviewPlayback.raf = null;
       stylePreviewPlayback.playing = false;
       stylePreviewPlayback.renderId = 0;
+      stylePreviewPlayback.lastTickTime = 0;
+      stylePreviewPlayback.realTime = true;
+      stylePreviewPlayback.startedAt = 0;
       stylePreviewPlayback.time = 0;
       if (!options.keepFrame) {
         stylePreviewPlayback.frame = 0;
@@ -230,13 +293,26 @@
       }
     }
 
-    function updateStylePreviewPlaybackUi(button, status, frameState, page, rowState) {
-      if (button) button.textContent = stylePreviewPlayback.playing ? 'Pausa' : 'Play';
+    function updateStylePreviewPlaybackUi(playbackOptions, frameState) {
+      const controls = playbackOptions && playbackOptions.controls;
+      const button = controls && controls.querySelector('[data-role="play"]');
+      const status = controls && controls.querySelector('.style-preview-frame-status');
+      const values = controls && controls.querySelector('.style-preview-values');
+      if (button) {
+        button.textContent = stylePreviewPlayback.playing ? '⏸' : '▶';
+        button.title = stylePreviewPlayback.playing ? 'Pausa' : 'Play';
+        button.setAttribute('aria-label', button.title);
+      }
       if (status) {
         const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
-        const localFrame = Math.max(0, Math.min(frameCount - 1, Number(frameState && frameState.localFrame) || stylePreviewPlayback.frame));
-        status.textContent = `${localFrame}/${frameCount - 1} · sep ${formatPreviewGap(page, frameState, rowState)}`;
+        const rawFrame = frameState && frameState.localFrame !== undefined ? Number(frameState.localFrame) : stylePreviewPlayback.frame;
+        const localFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
+        status.textContent = `${localFrame}/${frameCount - 1}`;
       }
+      if (playbackOptions && playbackOptions.realtimeDot) {
+        playbackOptions.realtimeDot.className = 'style-preview-realtime-dot ' + (stylePreviewPlayback.realTime ? 'ok' : 'late');
+      }
+      if (values) renderStylePreviewAnimatedValues(values, playbackOptions, frameState);
     }
 
     function stylePreviewLoopFrameCount(frameState) {
@@ -250,12 +326,114 @@
       return Math.min(frameCount - 1, Math.max(0, Math.round(Number(stylePreviewPlayback.frame) || 0)));
     }
 
-    function formatPreviewGap(page, frameState, rowState) {
-      const resolver = options.cartelaWithResolvedRowAnimation || ((cartela) => cartela);
-      const cartela = resolver(page && page.cartela, frameState, rowState);
-      const value = Number(cartela && cartela.role_name_gap);
-      if (!Number.isFinite(value)) return '-';
-      return value.toFixed(1).replace(/\.0$/, '');
+    function neutralStartFrame(frameState) {
+      return Math.max(0, Math.min(Math.max(1, frameState.frameCount) - 1, Number(frameState.inFrames) || 0));
+    }
+
+    function neutralEndFrame(frameState) {
+      const frameCount = Math.max(1, Number(frameState && frameState.frameCount) || 1);
+      const outFrames = Math.max(0, Number(frameState && frameState.outFrames) || 0);
+      return Math.max(0, Math.min(frameCount - 1, frameCount - outFrames - 1));
+    }
+
+    function renderStylePreviewAnimatedValues(container, playbackOptions, frameState) {
+      container.innerHTML = '';
+      const rows = stylePreviewAnimatedValueRows(playbackOptions, frameState);
+      if (!rows.length) {
+        const empty = documentRef.createElement('div');
+        empty.className = 'style-preview-values-empty';
+        empty.textContent = 'Sin propiedades animadas';
+        container.appendChild(empty);
+        return;
+      }
+      rows.forEach((row) => {
+        const item = documentRef.createElement('div');
+        item.className = 'style-preview-value-row';
+        const label = documentRef.createElement('span');
+        label.textContent = row.label;
+        const value = documentRef.createElement('strong');
+        value.textContent = row.value;
+        item.appendChild(label);
+        item.appendChild(value);
+        container.appendChild(item);
+      });
+    }
+
+    function stylePreviewAnimatedValueRows(playbackOptions, frameState) {
+      const page = playbackOptions && playbackOptions.page;
+      const cartela = page && page.cartela;
+      const animation = cartela && cartela.animation ? cartela.animation : {};
+      const properties = animation.properties || {};
+      const rows = [];
+      Object.keys(properties).forEach((key) => {
+        const property = properties[key];
+        if (!property || !property.animate) return;
+        const value = animatedPropertyPreviewValue(key, playbackOptions, frameState);
+        if (value === null || value === undefined) return;
+        rows.push({
+          label: animatedPropertyLabel(key),
+          value: formatAnimatedValue(value),
+        });
+      });
+      ['in', 'out'].forEach((phase) => {
+        if (!animation[phase] || !(Number(animation[phase].fadeDurationMs) > 0)) return;
+        const alpha = options.animationFadeAlpha
+          ? options.animationFadeAlpha(cartela, frameState, {
+            fadeScope: animation[phase].fadeMode === 'cascade' ? 'row' : 'fullFrame',
+            rowCount: playbackOptions.rowState.rowCount,
+            rowIndex: playbackOptions.rowState.rowIndex,
+          })
+          : 1;
+        rows.push({
+          label: `Fade ${phase === 'in' ? 'entrada' : 'salida'}`,
+          value: formatAnimatedValue(alpha),
+        });
+      });
+      return rows;
+    }
+
+    function animatedPropertyPreviewValue(key, playbackOptions, frameState) {
+      const page = playbackOptions && playbackOptions.page;
+      const block = page && page.blocks && page.blocks[0];
+      if (key.startsWith('typography.')) {
+        if (!options.typographyWithResolvedRowAnimation || !block) return null;
+        const typography = options.typographyWithResolvedRowAnimation(page.cartela, block.typography, frameState, playbackOptions.rowState);
+        const match = key.match(/^typography\.(block_title|role|name)\.(font_size|letter_spacing)$/);
+        return match && typography && typography[match[1]] ? typography[match[1]][match[2]] : null;
+      }
+      const cartela = options.cartelaWithResolvedRowAnimation
+        ? options.cartelaWithResolvedRowAnimation(page && page.cartela, frameState, playbackOptions.rowState)
+        : page && page.cartela;
+      return cartela ? cartela[key] : null;
+    }
+
+    function animatedPropertyLabel(key) {
+      const labels = {
+        line_spacing: 'Interlineado',
+        column_gap: 'Columnas',
+        role_name_gap: 'Cargo/nombre',
+        source_group_gap: 'Grupos',
+        block_gap: 'Bloques',
+        block_title_gap: 'Título/fila',
+        vertical_offset: 'Vertical',
+        page_top_margin: 'Margen sup.',
+        page_bottom_margin: 'Margen inf.',
+        page_left_margin: 'Margen izq.',
+        page_right_margin: 'Margen der.',
+        'typography.block_title.font_size': 'Título tamaño',
+        'typography.block_title.letter_spacing': 'Título spacing',
+        'typography.role.font_size': 'Cargo tamaño',
+        'typography.role.letter_spacing': 'Cargo spacing',
+        'typography.name.font_size': 'Nombre tamaño',
+        'typography.name.letter_spacing': 'Nombre spacing',
+      };
+      return labels[key] || key;
+    }
+
+    function formatAnimatedValue(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return String(value);
+      return numeric.toFixed(Math.abs(numeric) < 10 ? 2 : 1).replace(/\.0+$/, '').replace(/(\.\d)0$/, '$1');
     }
 
     function renderStylesPane() {

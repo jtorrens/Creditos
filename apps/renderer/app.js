@@ -1350,6 +1350,7 @@
     updatePngZoomStatus,
   });
   const stylesPanel = globalThis.CreditosStylesPanel.createStylesPanel({
+    animationFadeAlpha,
     buildPhysicalPages,
     cartelaWithResolvedRowAnimation,
     currentMovieFps,
@@ -1368,6 +1369,7 @@
     renderStyleEditor,
     selectedProduction,
     state,
+    typographyWithResolvedRowAnimation,
     updatePanelMarginButtons,
     updateStyleName,
   });
