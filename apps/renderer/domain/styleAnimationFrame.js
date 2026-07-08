@@ -34,7 +34,7 @@
         if (!property || !property.animate) return;
         const stable = Number(cartela[key]);
         if (!Number.isFinite(stable)) return;
-        const edgeValue = Number(phase.name === 'in' ? property.inValue : property.outValue);
+        const edgeValue = resolvedEdgeValue(property, phase, stable);
         if (!Number.isFinite(edgeValue)) return;
         const nextValue = phase.name === 'in'
           ? interpolate(edgeValue, stable, phase.progress)
@@ -62,7 +62,7 @@
         if (!property || !property.animate) return;
         const stable = Number(typography[typographyKey.styleKey] && typography[typographyKey.styleKey][typographyKey.field]);
         if (!Number.isFinite(stable)) return;
-        const edgeValue = Number(phase.name === 'in' ? property.inValue : property.outValue);
+        const edgeValue = resolvedEdgeValue(property, phase, stable);
         if (!Number.isFinite(edgeValue)) return;
         const nextValue = phase.name === 'in'
           ? interpolate(edgeValue, stable, phase.progress)
@@ -102,6 +102,8 @@
           name: 'out',
           progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing),
           mode: animation.out && animation.out.mode,
+          direction: animation.out && animation.out.direction,
+          relativeFactor: relativeCascadeFactor(rowState, animation.out && animation.out.direction),
           fade: !!(animation.out && animation.out.fade),
           featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
@@ -111,6 +113,8 @@
           name: 'out',
           progress: 1,
           mode: animation.out && animation.out.mode,
+          direction: animation.out && animation.out.direction,
+          relativeFactor: relativeCascadeFactor(rowState, animation.out && animation.out.direction),
           fade: !!(animation.out && animation.out.fade),
           featherPx: Math.max(0, Number(animation.out && animation.out.featherPx) || 0),
         };
@@ -123,6 +127,8 @@
           name: 'in',
           progress: 0,
           mode: animation.in && animation.in.mode,
+          direction: animation.in && animation.in.direction,
+          relativeFactor: relativeCascadeFactor(rowState, animation.in && animation.in.direction),
           fade: !!(animation.in && animation.in.fade),
           featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
         };
@@ -132,6 +138,8 @@
           name: 'in',
           progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing),
           mode: animation.in && animation.in.mode,
+          direction: animation.in && animation.in.direction,
+          relativeFactor: relativeCascadeFactor(rowState, animation.in && animation.in.direction),
           fade: !!(animation.in && animation.in.fade),
           featherPx: Math.max(0, Number(animation.in && animation.in.featherPx) || 0),
         };
@@ -192,6 +200,25 @@
 
     function interpolate(from, to, progress) {
       return from + ((to - from) * Math.max(0, Math.min(1, Number(progress) || 0)));
+    }
+
+    function resolvedEdgeValue(property, phase, stable) {
+      const edgeValue = Number(phase.name === 'in' ? property.inValue : property.outValue);
+      if (!Number.isFinite(edgeValue)) return edgeValue;
+      if (phase.mode !== 'relativeCascade') return edgeValue;
+      return stable + ((edgeValue - stable) * relativeFactor(phase.relativeFactor));
+    }
+
+    function relativeCascadeFactor(rowState = {}, direction) {
+      const rowCount = Math.max(1, Math.round(Number(rowState.rowCount) || 1));
+      const orderedIndex = orderedRowIndex(rowState.rowIndex, rowCount, direction);
+      return (rowCount - orderedIndex) / rowCount;
+    }
+
+    function relativeFactor(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) return 1;
+      return Math.max(0, Math.min(1, numeric));
     }
 
     function normalizeCartelaPropertyValue(key, value) {

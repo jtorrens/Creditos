@@ -6,6 +6,7 @@
     const modeOptions = [
       ['together', 'Full Frame'],
       ['cascade', 'En cascada'],
+      ['relativeCascade', 'Cascada relativa'],
     ];
     const directionOptions = [
       ['topToBottom', 'Arriba abajo'],

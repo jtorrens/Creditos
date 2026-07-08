@@ -4,7 +4,7 @@
       normalizeBoolean = (value, fallback) => value === undefined ? fallback : Boolean(value),
     } = dependencies;
 
-    const transitionModes = ['together', 'cascade'];
+    const transitionModes = ['together', 'cascade', 'relativeCascade'];
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
     const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
     const animatableProperties = [
