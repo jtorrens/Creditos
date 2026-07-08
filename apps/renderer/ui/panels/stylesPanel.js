@@ -5,6 +5,14 @@
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
     let stylePreviewRenderId = 0;
+    const stylePreviewPlayback = {
+      frame: 0,
+      playing: false,
+      raf: null,
+      renderId: 0,
+      styleId: null,
+      time: 0,
+    };
 
     function renderStylePreview(style) {
       if (!els.stylePreview) return;
@@ -42,12 +50,32 @@
       if (state.showPanelMarginOverlay) {
         frame.appendChild(options.makeMarginOverlay(options.layoutForCartela(layout, page.cartela), zoom));
       }
+      const renderId = ++stylePreviewRenderId;
+      const frameState = panelAnimationFrame(page);
+      const controls = renderStylePreviewPlaybackControls({
+        canvas,
+        frameState,
+        layout,
+        page,
+        renderId,
+        style,
+        zoom,
+      });
+      frame.appendChild(controls);
       els.stylePreview.appendChild(frame);
       options.updatePanelMarginButtons();
-      const renderId = ++stylePreviewRenderId;
-      drawPanelPage(canvas, page, layout, zoom, panelAnimationFrame(page)).catch((error) => {
+      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId !== style.id) {
+        stopStylePreviewPlayback();
+      }
+      const localFrame = stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id
+        ? stylePreviewPlayback.frame % frameState.frameCount
+        : 0;
+      drawPanelPage(canvas, page, layout, zoom, { ...frameState, localFrame }).catch((error) => {
         if (renderId === stylePreviewRenderId) console.warn(error);
       });
+      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id) {
+        startStylePreviewPlayback({ canvas, frameState, layout, page, renderId, style, zoom });
+      }
     }
 
     async function drawPanelPage(canvas, page, layout, zoom, animationFrame) {
@@ -69,6 +97,77 @@
         frameCount: Math.max(1, Math.round(duration * fps)),
         fps,
       };
+    }
+
+    function renderStylePreviewPlaybackControls(playbackOptions) {
+      const controls = documentRef.createElement('div');
+      controls.className = 'style-preview-playback';
+      const button = documentRef.createElement('button');
+      button.type = 'button';
+      const status = documentRef.createElement('span');
+      controls.appendChild(button);
+      controls.appendChild(status);
+      button.addEventListener('click', () => {
+        if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === playbackOptions.style.id) {
+          stopStylePreviewPlayback();
+          updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+          return;
+        }
+        stylePreviewPlayback.frame = 0;
+        startStylePreviewPlayback(playbackOptions);
+      });
+      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+      return controls;
+    }
+
+    function startStylePreviewPlayback(playbackOptions) {
+      stopStylePreviewPlayback({ keepFrame: true });
+      stylePreviewPlayback.playing = true;
+      stylePreviewPlayback.renderId = playbackOptions.renderId;
+      stylePreviewPlayback.styleId = playbackOptions.style.id;
+      stylePreviewPlayback.time = 0;
+      const controls = playbackOptions.canvas.parentElement && playbackOptions.canvas.parentElement.querySelector('.style-preview-playback');
+      const button = controls && controls.querySelector('button');
+      const status = controls && controls.querySelector('span');
+      const tick = (time) => {
+        if (!stylePreviewPlayback.playing || stylePreviewPlayback.renderId !== playbackOptions.renderId || stylePreviewRenderId !== playbackOptions.renderId) return;
+        const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
+        if (!stylePreviewPlayback.time) stylePreviewPlayback.time = time;
+        const elapsedMs = Math.max(0, time - stylePreviewPlayback.time);
+        const elapsedFrames = Math.max(1, Math.floor((elapsedMs / 1000) * playbackOptions.frameState.fps));
+        stylePreviewPlayback.time = time;
+        stylePreviewPlayback.frame = (stylePreviewPlayback.frame + elapsedFrames) % frameCount;
+        drawPanelPage(playbackOptions.canvas, playbackOptions.page, playbackOptions.layout, playbackOptions.zoom, {
+          ...playbackOptions.frameState,
+          localFrame: stylePreviewPlayback.frame,
+        }).catch((error) => {
+          if (stylePreviewPlayback.renderId === playbackOptions.renderId) console.warn(error);
+        });
+        updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+        stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
+      };
+      updateStylePreviewPlaybackUi(button, status, playbackOptions.frameState);
+      stylePreviewPlayback.raf = root.requestAnimationFrame(tick);
+    }
+
+    function stopStylePreviewPlayback(options = {}) {
+      if (stylePreviewPlayback.raf) root.cancelAnimationFrame(stylePreviewPlayback.raf);
+      stylePreviewPlayback.raf = null;
+      stylePreviewPlayback.playing = false;
+      stylePreviewPlayback.renderId = 0;
+      stylePreviewPlayback.time = 0;
+      if (!options.keepFrame) {
+        stylePreviewPlayback.frame = 0;
+        stylePreviewPlayback.styleId = null;
+      }
+    }
+
+    function updateStylePreviewPlaybackUi(button, status, frameState) {
+      if (button) button.textContent = stylePreviewPlayback.playing ? 'Pausa' : 'Play';
+      if (status) {
+        const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
+        status.textContent = `${Math.min(frameCount - 1, stylePreviewPlayback.frame)}/${frameCount - 1}`;
+      }
     }
 
     function renderStylesPane() {
