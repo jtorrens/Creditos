@@ -95,6 +95,7 @@
       movieDurationFrameSummary: timecodeDomain.movieDurationFrameSummary,
       movieGroupFrameCounts: timecodeDomain.movieGroupFrameCounts,
       moviePageItems: timecodeDomain.moviePageItems,
+      mergeStyleAnimation: styleAnimationDomain.mergeStyleAnimation,
       normalizeBoolean: commonDomain.normalizeBoolean,
       normalizeColor: commonDomain.normalizeColor,
       normalizeDurationInputValueInDomain: timecodeDomain.normalizeDurationInputValue,

@@ -62,6 +62,29 @@
       return animation;
     }
 
+    function mergeStyleAnimation(base = {}, override = {}) {
+      const normalizedBase = normalizeStyleAnimation(base || {});
+      const input = override && typeof override === 'object' ? override : {};
+      if (!Object.keys(input).length) return normalizedBase;
+      return {
+        enabled: Object.prototype.hasOwnProperty.call(input, 'enabled')
+          ? normalizeBoolean(input.enabled, normalizedBase.enabled)
+          : normalizedBase.enabled,
+        in: input.in
+          ? normalizeAnimationPhase({ ...normalizedBase.in, ...input.in }, normalizedBase.in)
+          : normalizedBase.in,
+        out: input.out
+          ? normalizeAnimationPhase({ ...normalizedBase.out, ...input.out }, normalizedBase.out)
+          : normalizedBase.out,
+        properties: input.properties
+          ? normalizeAnimatedProperties({
+            ...(normalizedBase.properties || {}),
+            ...(input.properties || {}),
+          })
+          : normalizedBase.properties,
+      };
+    }
+
     function hasStyleAnimation(value) {
       if (!value || typeof value !== 'object') return false;
       const properties = value.properties && typeof value.properties === 'object' ? value.properties : {};
@@ -135,6 +158,7 @@
       animatableProperties,
       defaultStyleAnimation,
       hasStyleAnimation,
+      mergeStyleAnimation,
       normalizeAnimationPhase,
       normalizeAnimatedProperties,
       normalizeStyleAnimation,

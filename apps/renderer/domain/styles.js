@@ -10,6 +10,7 @@
       getCartelaRefs = () => [],
       getCartelaStyleBlock = () => null,
       getStyleById = () => null,
+      mergeStyleAnimation = (base) => base || {},
       normalizeBoolean,
       normalizeColor,
       normalizeStyleAnimation = (value) => value || {},
@@ -134,6 +135,17 @@
           ...(overrides.page_header || {}),
         },
       };
+    }
+
+    function getEffectiveStyleAnimation(style) {
+      return normalizeStyleAnimation(style && style.animation ? style.animation : {});
+    }
+
+    function getEffectiveCartelaAnimation(cartela) {
+      const style = getStyleById(cartela && cartela.style_id);
+      const styleAnimation = getEffectiveStyleAnimation(style);
+      if (!cartela || !Object.prototype.hasOwnProperty.call(cartela, 'animation')) return styleAnimation;
+      return mergeStyleAnimation(styleAnimation, cartela.animation || {});
     }
 
     function baseStyleCartelaFromSettings(settings) {
@@ -282,6 +294,12 @@
         target.title_typography = explicitTitleTypography;
       } else {
         delete target.title_typography;
+      }
+
+      if (sourceRaw && Object.prototype.hasOwnProperty.call(sourceRaw, 'animation')) {
+        target.animation = clonePlainValue(sourceRaw.animation);
+      } else {
+        delete target.animation;
       }
 
       applyExplicitSourceRefSettings(target, source, sourceRaw);
@@ -672,10 +690,16 @@
       );
     }
 
+    function hasCartelaAnimationOverride(cartela) {
+      return !!(cartela && cartela.style_id && Object.prototype.hasOwnProperty.call(cartela, 'animation'));
+    }
+
     function hasCartelaStyleOverrides(cartela) {
       if (!cartela || !cartela.style_id) return false;
       if (styleCartelaFields.some((key) => cartela[key] !== undefined)) return true;
-      return hasCartelaTitleTypographyOverride(cartela) || !!(cartela.block_style && Object.keys(cartela.block_style).length);
+      return hasCartelaTitleTypographyOverride(cartela)
+        || hasCartelaAnimationOverride(cartela)
+        || !!(cartela.block_style && Object.keys(cartela.block_style).length);
     }
 
     function clearCartelaStyleOverrides(cartela) {
@@ -685,6 +709,7 @@
       });
       delete cartela.title_typography;
       delete cartela.block_style;
+      delete cartela.animation;
       return true;
     }
 
@@ -859,6 +884,10 @@
           if (sameStyleValue(cartela[key], styleCartela[key])) delete cartela[key];
         });
 
+        if (cartela.animation && sameStyleValue(getEffectiveCartelaAnimation(cartela), getEffectiveStyleAnimation(style))) {
+          delete cartela.animation;
+        }
+
         if (!cartela.block_style) return;
         const styleBlock = effectiveStyleBlockForStyle(style);
         if (sameStyleValue(cartela.block_style.columns, styleBlock.columns)) delete cartela.block_style.columns;
@@ -952,7 +981,9 @@
       ensureCartelaSourceRefSettings,
       getEffectiveCartelaTitleTypography,
       getEffectiveCartelaBlockStyle,
+      getEffectiveCartelaAnimation,
       getEffectiveStyleBlock,
+      getEffectiveStyleAnimation,
       getEffectiveStyleCartela,
       getEffectiveStyleTitleTypography,
       getSourceRefAlignment,
@@ -962,6 +993,7 @@
       hasCartelaBlockAlignmentOverride,
       hasCartelaBlockTypographyOverride,
       hasCartelaOverride,
+      hasCartelaAnimationOverride,
       hasCartelaStyleOverrides,
       hasCartelaTitleTypographyOverride,
       hasStyleBlockAlignmentOverride,
