@@ -31,65 +31,104 @@
     };
 
     function renderStyleAnimationControls(style) {
+      return renderAnimationControls({
+        subject: style,
+        title: 'Animacion',
+        animation: options.normalizeStyleAnimation(style.animation || {}),
+        updateAnimation: (animation) => options.updateEditableStyleAnimation(style, animation),
+      });
+    }
+
+    function renderCartelaAnimationControls(cartela) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-settings';
       wrap.appendChild(options.sectionLabel('Animacion'));
+      const hasOverride = options.hasCartelaAnimationOverride && options.hasCartelaAnimationOverride(cartela);
+      const effective = options.getEffectiveCartelaAnimation
+        ? options.getEffectiveCartelaAnimation(cartela)
+        : options.normalizeStyleAnimation(cartela.animation || {});
+      wrap.appendChild(options.localSelectRow('Override animacion', options.boolSelectValue(hasOverride), options.yesNoOptions, (value) => {
+        const enabled = options.normalizeBoolean(value, false);
+        if (enabled) {
+          options.updateSelectedCartelaAnimation(effective);
+        } else {
+          options.resetSelectedCartelaAnimationOverride();
+        }
+      }, {
+        override: hasOverride,
+        reset: options.resetSelectedCartelaAnimationOverride,
+      }));
 
-      const animation = options.normalizeStyleAnimation(style.animation || {});
+      if (!hasOverride) return wrap;
+      wrap.appendChild(renderAnimationControls({
+        subject: cartela,
+        title: '',
+        animation: effective,
+        updateAnimation: (animation) => options.updateSelectedCartelaAnimation(animation),
+        includeTitle: false,
+      }));
+      return wrap;
+    }
+
+    function renderAnimationControls({ subject, title, animation, updateAnimation, includeTitle = true }) {
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'style-animation-settings';
+      if (includeTitle && title) wrap.appendChild(options.sectionLabel(title));
+
       wrap.appendChild(options.localSelectRow('Activar animacion', options.boolSelectValue(animation.enabled), options.yesNoOptions, (value) => {
-        updateStyleAnimation(style, {
+        updateAnimation({
           ...animation,
           enabled: options.normalizeBoolean(value, false),
         });
       }));
 
-      wrap.appendChild(renderPhaseControls(style, animation, 'in', 'Entrada'));
-      wrap.appendChild(renderPhaseControls(style, animation, 'out', 'Salida'));
-      wrap.appendChild(renderPropertyControls(style, animation));
+      wrap.appendChild(renderPhaseControls(subject, animation, 'in', 'Entrada', updateAnimation));
+      wrap.appendChild(renderPhaseControls(subject, animation, 'out', 'Salida', updateAnimation));
+      wrap.appendChild(renderPropertyControls(subject, animation, updateAnimation));
       return wrap;
     }
 
-    function renderPhaseControls(style, animation, phase, label) {
+    function renderPhaseControls(subject, animation, phase, label, updateAnimation) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-phase';
       wrap.appendChild(options.sectionLabel(label));
       const phaseValue = animation[phase] || {};
-      wrap.appendChild(options.localNumberRow(`${label} duracion ms`, phaseValue.durationMs, 0, null, (value) => updatePhase(style, phase, { durationMs: value })));
-      wrap.appendChild(options.localNumberRow(`${label} delay ms`, phaseValue.delayMs, 0, null, (value) => updatePhase(style, phase, { delayMs: value })));
-      wrap.appendChild(options.localInputRow(`${label} curva`, phaseValue.easing, (value) => updatePhase(style, phase, { easing: value }), { commitOnChange: true }));
-      wrap.appendChild(options.localSelectRow(`${label} modo`, phaseValue.mode, modeOptions, (value) => updatePhase(style, phase, { mode: value })));
-      wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(style, phase, { direction: value })));
-      wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(style, phase, { featherPx: value })));
+      wrap.appendChild(options.localNumberRow(`${label} duracion ms`, phaseValue.durationMs, 0, null, (value) => updatePhase(subject, animation, phase, { durationMs: value }, updateAnimation)));
+      wrap.appendChild(options.localNumberRow(`${label} delay ms`, phaseValue.delayMs, 0, null, (value) => updatePhase(subject, animation, phase, { delayMs: value }, updateAnimation)));
+      wrap.appendChild(options.localInputRow(`${label} curva`, phaseValue.easing, (value) => updatePhase(subject, animation, phase, { easing: value }, updateAnimation), { commitOnChange: true }));
+      wrap.appendChild(options.localSelectRow(`${label} modo`, phaseValue.mode, modeOptions, (value) => updatePhase(subject, animation, phase, { mode: value }, updateAnimation)));
+      wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)));
+      wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
       return wrap;
     }
 
-    function renderPropertyControls(style, animation) {
+    function renderPropertyControls(subject, animation, updateAnimation) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-properties';
       wrap.appendChild(options.sectionLabel('Propiedades animables'));
       (options.animatableStyleProperties || []).forEach((key) => {
-        wrap.appendChild(renderPropertyControl(style, animation, key));
+        wrap.appendChild(renderPropertyControl(subject, animation, key, updateAnimation));
       });
       return wrap;
     }
 
-    function renderPropertyControl(style, animation, key) {
+    function renderPropertyControl(subject, animation, key, updateAnimation) {
       const property = animation.properties && animation.properties[key] ? animation.properties[key] : {};
       const block = documentRef.createElement('div');
       block.className = 'style-animation-property';
       block.appendChild(options.localSelectRow(propertyLabels[key] || key, options.boolSelectValue(!!property.animate), options.yesNoOptions, (value) => {
-        updateProperty(style, key, { animate: options.normalizeBoolean(value, false) });
+        updateProperty(subject, animation, key, { animate: options.normalizeBoolean(value, false) }, updateAnimation);
       }));
       if (property.animate) {
-        block.appendChild(options.localNumberRow('Valor entrada', property.inValue, null, null, (value) => updateProperty(style, key, { inValue: value }), stepForProperty(key)));
-        block.appendChild(options.localNumberRow('Valor salida', property.outValue, null, null, (value) => updateProperty(style, key, { outValue: value }), stepForProperty(key)));
+        block.appendChild(options.localNumberRow('Valor entrada', property.inValue, null, null, (value) => updateProperty(subject, animation, key, { inValue: value }, updateAnimation), stepForProperty(key)));
+        block.appendChild(options.localNumberRow('Valor salida', property.outValue, null, null, (value) => updateProperty(subject, animation, key, { outValue: value }, updateAnimation), stepForProperty(key)));
       }
       return block;
     }
 
-    function updatePhase(style, phase, fields) {
-      const current = options.normalizeStyleAnimation(style.animation || {});
-      updateStyleAnimation(style, {
+    function updatePhase(subject, animation, phase, fields, updateAnimation) {
+      const current = options.normalizeStyleAnimation(animation || subject.animation || {});
+      updateAnimation({
         ...current,
         [phase]: {
           ...(current[phase] || {}),
@@ -98,9 +137,9 @@
       });
     }
 
-    function updateProperty(style, key, fields) {
-      const current = options.normalizeStyleAnimation(style.animation || {});
-      updateStyleAnimation(style, {
+    function updateProperty(subject, animation, key, fields, updateAnimation) {
+      const current = options.normalizeStyleAnimation(animation || subject.animation || {});
+      updateAnimation({
         ...current,
         properties: {
           ...(current.properties || {}),
@@ -112,10 +151,6 @@
       });
     }
 
-    function updateStyleAnimation(style, animation) {
-      options.updateEditableStyleAnimation(style, animation);
-    }
-
     function stepForProperty(key) {
       if (key === 'opacity') return 0.01;
       if (key === 'scale' || key === 'line_spacing') return 0.01;
@@ -123,6 +158,7 @@
     }
 
     return {
+      renderCartelaAnimationControls,
       renderStyleAnimationControls,
     };
   }

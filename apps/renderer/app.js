@@ -1177,13 +1177,17 @@
     animatableStyleProperties,
     boolSelectValue,
     documentRef: document,
+    getEffectiveCartelaAnimation,
+    hasCartelaAnimationOverride,
     localInputRow,
     localNumberRow,
     localSelectRow,
     normalizeBoolean,
     normalizeStyleAnimation,
+    resetSelectedCartelaAnimationOverride,
     sectionLabel,
     updateEditableStyleAnimation,
+    updateSelectedCartelaAnimation,
     yesNoOptions: YES_NO_OPTIONS,
   });
   const appStyleEditor = globalThis.CreditosAppStyleEditor.createAppStyleEditor({
@@ -1276,6 +1280,7 @@
     rebuild,
     refreshPdfIfActive,
     renderCartelaBlockTypographyControls,
+    renderCartelaAnimationControls: appStyleAnimationEditor.renderCartelaAnimationControls,
     renderCartelaImageControls,
     renderCartelaList,
     renderCartelaTitleTypographyControls,
@@ -1763,6 +1768,14 @@
 
   function updateSelectedCartelaTitleTypography(fields, options = {}) {
     return appCommands.updateSelectedCartelaTitleTypography(fields, options);
+  }
+
+  function updateSelectedCartelaAnimation(animation) {
+    return appCommands.updateSelectedCartelaAnimation(animation);
+  }
+
+  function resetSelectedCartelaAnimationOverride() {
+    return appCommands.resetSelectedCartelaAnimationOverride();
   }
 
   function pruneCurrentRedundantStyleOverrides() {

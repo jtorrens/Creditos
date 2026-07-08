@@ -242,6 +242,28 @@
       if (commandOptions.rerenderEditor) options.renderEditor();
     }
 
+    function updateSelectedCartelaAnimation(animation) {
+      const cartela = options.getSelectedCartela();
+      if (!cartela) return;
+      cartela.animation = options.normalizeStyleAnimation(animation || {});
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.renderEditor();
+      options.renderPreview();
+      options.renderCartelaPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetSelectedCartelaAnimationOverride() {
+      const cartela = options.getSelectedCartela();
+      if (!cartela || !Object.prototype.hasOwnProperty.call(cartela, 'animation')) return;
+      delete cartela.animation;
+      state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.renderEditor();
+      options.renderPreview();
+      options.renderCartelaPreview();
+      options.refreshPdfIfActive();
+    }
+
     function updateStyleAfterOverrideChange(style) {
       options.pruneCurrentRedundantStyleDefaults();
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
@@ -693,6 +715,7 @@
       resetSelectedCartelaBlockAlignmentOverride,
       resetSelectedCartelaBlockOverride,
       resetSelectedCartelaBlockTypographyOverride,
+      resetSelectedCartelaAnimationOverride,
       resetSelectedCartelaTitleTypographyOverride,
       resetSelectedCartelaOverride,
       updateEditableStyleBlock,
@@ -711,6 +734,7 @@
       updateSelectedCartelaBlockAlignment,
       updateSelectedCartelaBlockStyle,
       updateSelectedCartelaBlockTypography,
+      updateSelectedCartelaAnimation,
       updateSelectedCartelaTitleTypography,
       updateLayoutSetting,
       updateSelectedCartela,

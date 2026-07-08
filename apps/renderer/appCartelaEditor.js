@@ -37,6 +37,7 @@
       wrap.appendChild(options.localSelectRow('Ajuste automático de texto', options.boolSelectValue(effectiveCartela.auto_text_wrap), options.yesNoOptions, (value) => options.updateSelectedCartela({ auto_text_wrap: options.normalizeBoolean(value, false) }), { override: options.hasCartelaOverride(cartela, 'auto_text_wrap'), reset: () => options.resetSelectedCartelaOverride('auto_text_wrap') }));
       wrap.appendChild(options.localSelectRow('Capitalización', effectiveCartela.text_capitalization || 'source', options.textCapitalizationOptions, (value) => options.updateSelectedCartela({ text_capitalization: value }), { override: options.hasCartelaOverride(cartela, 'text_capitalization'), reset: () => options.resetSelectedCartelaOverride('text_capitalization') }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(effectiveCartela.use_protected_capitalization), options.yesNoOptions, (value) => options.updateSelectedCartela({ use_protected_capitalization: options.normalizeBoolean(value, true) }), { override: options.hasCartelaOverride(cartela, 'use_protected_capitalization'), reset: () => options.resetSelectedCartelaOverride('use_protected_capitalization') }));
+      if (options.renderCartelaAnimationControls) wrap.appendChild(options.renderCartelaAnimationControls(cartela));
       wrap.appendChild(options.renderCartelaImageControls(cartela));
       wrap.appendChild(options.renderCartelaTitleTypographyControls(cartela));
       wrap.appendChild(renderCartelaBlockStyleControls(cartela));
