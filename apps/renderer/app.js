@@ -1033,6 +1033,7 @@
     getEffectiveCartela,
     getStyleById,
     getVisualCartelas,
+    hasCartelaStyleOverrides,
     moveSelectedCartelaVisualOrder,
     selectCartela: (cartelaId) => {
       state.selectedCartelaId = cartelaId;

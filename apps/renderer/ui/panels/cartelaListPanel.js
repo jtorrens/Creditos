@@ -14,8 +14,11 @@
         const refs = options.getCartelaRefs(cartela);
         const effectiveCartela = options.getEffectiveCartela(cartela);
         const style = options.getStyleById(cartela.style_id);
+        const hasOverrides = typeof options.hasCartelaStyleOverrides === 'function' && options.hasCartelaStyleOverrides(cartela);
         const button = documentRef.createElement('div');
-        button.className = 'block-button' + (cartela.id === state.selectedCartelaId ? ' active' : '');
+        button.className = 'block-button'
+          + (cartela.id === state.selectedCartelaId ? ' active' : '')
+          + (hasOverrides ? ' has-overrides' : '');
         button.addEventListener('click', () => options.selectCartela(cartela.id));
 
         button.innerHTML = `
