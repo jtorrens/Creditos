@@ -805,6 +805,11 @@ button.primary:hover {
   gap: 8px;
 }
 
+.cartela-editor-heading-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .compact-check {
   font-size: 12px;
   min-height: 28px;
@@ -1823,6 +1828,17 @@ textarea.visual-input {
   font-size: 12px;
   min-height: 28px;
   padding: 0 8px;
+}
+
+.cartela-filter-card-content {
+  display: grid;
+  gap: 0;
+}
+
+.empty-inline-state {
+  color: var(--muted);
+  font-size: 12px;
+  padding: 8px 0;
 }
 
 .chip {

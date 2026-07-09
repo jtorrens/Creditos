@@ -40,6 +40,11 @@
         },
       ];
 
+      if (state.cartelaQuickFilterEnabled) {
+        wrap.appendChild(renderFilteredCartelaCards(cartela, cards));
+        return wrap;
+      }
+
       if (options.renderAccordionGroup) {
         wrap.appendChild(options.renderAccordionGroup(`cartela-editor:${cartela.id || 'selected'}`, cards, { initialOpenId: 'cartela' }));
         return wrap;
@@ -50,6 +55,55 @@
         card.render(wrap);
       });
       return wrap;
+    }
+
+    function renderFilteredCartelaCards(cartela, cards) {
+      const includeAnimation = typeof options.previewAnimationEnabled === 'function' ? options.previewAnimationEnabled() : true;
+      const selectedRows = [];
+      cards.forEach((card) => {
+        const panel = documentRef.createElement('div');
+        card.render(panel);
+        matchingFilterRows(panel, includeAnimation).forEach((row) => selectedRows.push(row));
+      });
+
+      const content = documentRef.createElement('div');
+      content.className = 'cartela-filter-card-content';
+      if (!selectedRows.length) {
+        const empty = documentRef.createElement('div');
+        empty.className = 'empty-inline-state';
+        empty.textContent = includeAnimation
+          ? 'Sin overrides ni propiedades animadas.'
+          : 'Sin overrides.';
+        content.appendChild(empty);
+      } else {
+        selectedRows.forEach((row) => content.appendChild(row));
+      }
+
+      const filteredCard = {
+        id: 'cartela-filtered-changes',
+        title: includeAnimation ? 'Overrides / animación' : 'Overrides',
+        render: (panel) => panel.appendChild(content),
+      };
+      if (options.renderAccordionGroup) {
+        return options.renderAccordionGroup(`cartela-editor-filter:${cartela.id || 'selected'}`, [filteredCard], { initialOpenId: filteredCard.id });
+      }
+      const fallback = documentRef.createElement('div');
+      fallback.appendChild(options.sectionLabel(filteredCard.title));
+      fallback.appendChild(content);
+      return fallback;
+    }
+
+    function matchingFilterRows(panel, includeAnimation) {
+      const candidates = Array.from(panel.querySelectorAll('.field-grid, .typography-control-group'));
+      return candidates.filter((candidate) => {
+        if (!rowMatchesFilter(candidate, includeAnimation)) return false;
+        return !candidates.some((other) => other !== candidate && other.contains(candidate) && rowMatchesFilter(other, includeAnimation));
+      });
+    }
+
+    function rowMatchesFilter(row, includeAnimation) {
+      if (row.classList.contains('override-field') || row.querySelector('.override-control')) return true;
+      return !!(includeAnimation && row.classList.contains('field-grid') && row.querySelector('.keyframe-toggle.active'));
     }
 
     function renderCartelaBaseControls(cartela) {

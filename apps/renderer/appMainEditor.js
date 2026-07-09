@@ -8,6 +8,7 @@
       if (!state.source || !state.selectedCartelaId) {
         els.editorTitle.textContent = 'Sin cartela seleccionada';
         els.editorKind.textContent = '';
+        els.editorKind.className = '';
         els.editorBody.className = 'editor-body empty-state';
         els.editorBody.textContent = 'Asocia un archivo de créditos y selecciona una cartela.';
         options.renderCartelaPreview();
@@ -18,7 +19,7 @@
       if (!cartela) return;
 
       els.editorTitle.textContent = options.getCartelaDisplayName(cartela, state.materials);
-      els.editorKind.innerHTML = `<span class="tag cards">${options.escapeHtml(cartela.type || 'cartela')}</span>`;
+      renderEditorHeaderActions(cartela);
       els.editorBody.className = 'editor-body preview-mode';
       els.editorBody.innerHTML = '';
       els.editorBody.appendChild(options.renderCartelaFields(cartela));
@@ -34,6 +35,32 @@
       });
       els.editorBody.appendChild(materialsGrid);
       options.renderCartelaPreview();
+    }
+
+    function renderEditorHeaderActions(cartela) {
+      els.editorKind.innerHTML = '';
+      els.editorKind.className = 'panel-heading-actions cartela-editor-heading-actions';
+
+      const type = documentRef.createElement('span');
+      type.className = 'tag cards';
+      type.textContent = cartela.type || 'cartela';
+      els.editorKind.appendChild(type);
+
+      const filter = documentRef.createElement('label');
+      filter.className = 'switch-row compact-switch';
+      filter.title = 'Mostrar solo propiedades con override o animación activa';
+      const input = documentRef.createElement('input');
+      input.type = 'checkbox';
+      input.checked = !!state.cartelaQuickFilterEnabled;
+      input.addEventListener('change', () => {
+        state.cartelaQuickFilterEnabled = !!input.checked;
+        renderEditor();
+      });
+      const label = documentRef.createElement('span');
+      label.textContent = 'Cambios';
+      filter.appendChild(input);
+      filter.appendChild(label);
+      els.editorKind.appendChild(filter);
     }
 
     return {
