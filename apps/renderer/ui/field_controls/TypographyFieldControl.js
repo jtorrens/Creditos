@@ -132,7 +132,7 @@
       const numeric = Number(value);
       const hasValue = value !== undefined && value !== null && value !== '';
       const fallbackNumeric = Number.isFinite(Number(fallback)) ? Number(fallback) : fontWeightFromStyle(fallback);
-      const valueWeight = hasValue ? fontWeightFromStyle(value) : NaN;
+      const valueWeight = hasValue && !(Number.isFinite(numeric) && numeric > 0) ? fontWeightFromStyle(value) : NaN;
       const resolved = Number.isFinite(numeric) && numeric > 0 ? numeric : (Number.isFinite(valueWeight) ? valueWeight : fallbackNumeric);
       return [200, 300, 400, 500, 600, 700, 800, 900].reduce((closest, option) => (
         Math.abs(option - resolved) < Math.abs(closest - resolved) ? option : closest
