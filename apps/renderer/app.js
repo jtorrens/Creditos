@@ -255,6 +255,7 @@
     applyProductionFields,
     applyProtectedCapitalizations,
     applyTextCapitalization,
+    applyTextSubstitutions,
     animationFadeAlpha,
     animationFadeRevealState,
     animatableStyleProperties,
@@ -321,6 +322,7 @@
     normalizePreviewSettings,
     normalizeProtectedCapitalizationTerms,
     normalizeProtectedCapitalizationText,
+    normalizeTextSubstitutions,
     normalizeReferenceVideo,
     normalizeRenderCodec,
     normalizeRenderProfile,
@@ -677,6 +679,7 @@
   } = paginationDomain;
   const renderDomain = globalThis.CreditosDomainRender.createRenderDomain({
     applyTextCapitalization,
+    applyTextSubstitutions,
     buildPhysicalPages,
     canvasTextMetrics,
     canvasWrappedTextLines,
@@ -734,6 +737,7 @@
     },
     previewDependencies: {
       applyTextCapitalization,
+      applyTextSubstitutions,
       animationFadeAlpha,
       animationFadeRevealState,
       applyTypography,
@@ -890,6 +894,7 @@
     normalizeBoolean,
     normalizeColor,
     normalizeProtectedCapitalizationText,
+    normalizeTextSubstitutions,
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     typographyFields: TYPOGRAPHY_FIELDS,

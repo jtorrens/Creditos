@@ -48,6 +48,7 @@
       applyProductionFields: projectsDomain.applyProductionFields,
       applyProtectedCapitalizations: settingsDomain.applyProtectedCapitalizations,
       applyTextCapitalization: settingsDomain.applyTextCapitalization,
+      applyTextSubstitutions: settingsDomain.applyTextSubstitutions,
       animationFadeAlpha: styleAnimationFrameDomain.animationFadeAlpha,
       animationFadeRevealState: styleAnimationFrameDomain.animationFadeRevealState,
       animatableStyleProperties: styleAnimationDomain.animatableProperties,
@@ -113,6 +114,7 @@
       normalizePreviewSettings: previewSettingsDomain.normalizePreviewSettings,
       normalizeProtectedCapitalizationTerms: settingsDomain.normalizeProtectedCapitalizationTerms,
       normalizeProtectedCapitalizationText: settingsDomain.normalizeProtectedCapitalizationText,
+      normalizeTextSubstitutions: settingsDomain.normalizeTextSubstitutions,
       normalizeReferenceVideo: previewSettingsDomain.normalizeReferenceVideo,
       normalizeRenderCodec: previewSettingsDomain.normalizeRenderCodec,
       normalizeRenderProfile: previewSettingsDomain.normalizeRenderProfile,
@@ -201,6 +203,7 @@
     });
     const canvasPreview = root.CreditosPreviewCanvas.createCanvasPreview({
       applyTextCapitalization: dependencies.applyTextCapitalization,
+      applyTextSubstitutions: dependencies.applyTextSubstitutions,
       animationFadeAlpha: dependencies.animationFadeAlpha,
       animationFadeRevealState: dependencies.animationFadeRevealState,
       cartelaBlockGap: dependencies.cartelaBlockGap,

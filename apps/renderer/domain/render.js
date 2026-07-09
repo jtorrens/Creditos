@@ -2,6 +2,7 @@
   function createRenderDomain(dependencies = {}) {
     const {
       applyTextCapitalization = (text) => text,
+      applyTextSubstitutions = (text) => text,
       buildPhysicalPages = () => [],
       canvasTextMetrics = () => ({}),
       canvasWrappedTextLines = (text) => [String(text || '')],
@@ -45,6 +46,7 @@
           language: productionSettings.language,
           text_capitalization: productionSettings.text_capitalization,
           protected_capitalizations: productionSettings.protected_capitalizations,
+          text_substitutions: productionSettings.text_substitutions,
           use_protected_capitalization: productionSettings.use_protected_capitalization,
           typography: productionSettings.typography,
           layout: settingsWithProductionLayout(productionSettings, productionLayout).layout,
@@ -130,8 +132,9 @@
       if (!values.length) return block;
       const sourceText = values.join(' ');
       const normalizedSettings = normalizeSettings(settings || {});
+      const substitutedText = applyTextSubstitutions(sourceText, normalizedSettings.text_substitutions || []);
       const transformedText = applyTextCapitalization(
-        sourceText,
+        substitutedText,
         cartela && cartela.text_capitalization,
         normalizedSettings.language,
         normalizedSettings.protected_capitalizations,

@@ -2,6 +2,7 @@
   function createCanvasPreview(dependencies = {}) {
     const {
       applyTextCapitalization = (text) => text,
+      applyTextSubstitutions = (text) => text,
       animationFadeAlpha = () => 1,
       animationFadeRevealState = () => null,
       cartelaBlockGap = () => 0,
@@ -455,6 +456,7 @@
         textCapitalization: normalizeTextCapitalization(cartela && cartela.text_capitalization !== undefined ? cartela.text_capitalization : settings.text_capitalization),
         language: normalizeLanguage(settings.language),
         protectedCapitalizations: settings.protected_capitalizations,
+        textSubstitutions: settings.text_substitutions || [],
         useProtectedCapitalization: cartela && cartela.use_protected_capitalization !== undefined
           ? normalizeBoolean(cartela.use_protected_capitalization, true)
           : settings.use_protected_capitalization,
@@ -467,8 +469,9 @@
     }
 
     function canvasWrappedTextLines(text, metrics, width = Infinity) {
+      const substituted = applyTextSubstitutions(text, metrics.textSubstitutions || []);
       const transformed = applyTextCapitalization(
-        text,
+        substituted,
         metrics.textCapitalization,
         metrics.language,
         metrics.protectedCapitalizations,

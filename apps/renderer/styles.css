@@ -1577,6 +1577,49 @@ textarea.visual-input {
   margin-top: 14px;
 }
 
+.text-substitutions {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 16px;
+}
+
+.text-substitution-table {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(0, 1fr) 34px;
+}
+
+.text-substitution-table > div:nth-child(-n + 4) {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.text-substitution-check {
+  align-items: center;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+}
+
+.text-substitution-remove {
+  align-items: center;
+  background: var(--button);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
+.text-substitution-remove:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
 .typography-row {
   align-items: center;
   display: grid;

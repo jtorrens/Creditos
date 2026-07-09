@@ -22,6 +22,7 @@
         text_capitalization: 'source',
         protected_capitalizations: '',
         use_protected_capitalization: true,
+        text_substitutions: defaultTextSubstitutions(),
         typography: {
           page_header: { font_size: 12, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#58616a' },
           block_title: { font_size: 16, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#24545f' },
@@ -104,6 +105,7 @@
       normalized.layout.scroll_fade_down = Math.max(0, Number.isFinite(Number(normalized.layout.scroll_fade_down)) ? Number(normalized.layout.scroll_fade_down) : defaults.layout.scroll_fade_down);
       normalized.layout.repeat_block_titles = normalizeBoolean(normalized.layout.repeat_block_titles, defaults.layout.repeat_block_titles);
       normalized.layout.auto_text_wrap = normalizeBoolean(normalized.layout.auto_text_wrap, defaults.layout.auto_text_wrap);
+      normalized.text_substitutions = normalizeTextSubstitutions(normalized.text_substitutions);
       normalized.language = normalizeLanguage(normalized.language);
       normalized.text_capitalization = normalizeTextCapitalization(normalized.text_capitalization);
       normalized.protected_capitalizations = normalizeProtectedCapitalizationText(normalized.protected_capitalizations);
@@ -142,13 +144,14 @@
 
     function transformCartelaText(text, cartela, settings) {
       const normalizedSettings = normalizeSettings(settings || {});
+      const substituted = applyTextSubstitutions(text, normalizedSettings.text_substitutions);
       const capitalization = normalizeTextCapitalization(
         cartela && cartela.text_capitalization !== undefined
           ? cartela.text_capitalization
           : normalizedSettings.text_capitalization
       );
       return applyTextCapitalization(
-        text,
+        substituted,
         capitalization,
         normalizedSettings.language,
         normalizedSettings.protected_capitalizations,
@@ -156,6 +159,57 @@
           ? cartela.use_protected_capitalization
           : normalizedSettings.use_protected_capitalization
       );
+    }
+
+    function defaultTextSubstitutions() {
+      return [
+        { id: 'ayudante_ayte', from: 'Ayudante', to: 'Ayte', enabled: false },
+        { id: 'coordinador_coord', from: 'Coordinador', to: 'Coord', enabled: false },
+      ];
+    }
+
+    function normalizeTextSubstitutions(value) {
+      const source = Array.isArray(value) ? value : defaultTextSubstitutions();
+      const seen = new Set();
+      return source
+        .map((rule, index) => normalizeTextSubstitution(rule, index))
+        .filter((rule) => {
+          const key = rule.id || `${rule.from}\u0001${rule.to}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    }
+
+    function normalizeTextSubstitution(rule = {}, index = 0) {
+      const from = String(rule.from || '').trim();
+      const to = String(rule.to || '').trim();
+      return {
+        id: String(rule.id || substitutionId(from, to, index)),
+        from,
+        to,
+        enabled: normalizeBoolean(rule.enabled, false),
+      };
+    }
+
+    function substitutionId(from, to, index) {
+      const slug = `${from}_${to}`
+        .toLocaleLowerCase('es-ES')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      return slug || `substitution_${index + 1}`;
+    }
+
+    function applyTextSubstitutions(text, substitutions = []) {
+      return normalizeTextSubstitutions(substitutions)
+        .filter((rule) => rule.enabled && rule.from)
+        .reduce((output, rule) => {
+          const escaped = rule.from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'gu');
+          return output.replace(pattern, rule.to);
+        }, String(text || ''));
     }
 
     function normalizeLanguage(value) {
@@ -232,12 +286,15 @@
     return {
       applyProtectedCapitalizations,
       applyTextCapitalization,
+      applyTextSubstitutions,
       defaultSettings,
+      defaultTextSubstitutions,
       localeForLanguage,
       normalizeLanguage,
       normalizeProtectedCapitalizationTerms,
       normalizeProtectedCapitalizationText,
       normalizeSettings,
+      normalizeTextSubstitutions,
       selectedProductionHasStoredSettings,
       normalizeTextCapitalization,
       settingsWithProductionLayout,

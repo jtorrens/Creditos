@@ -46,6 +46,7 @@
       wrap.appendChild(options.localSelectRow('Capitalización', settings.text_capitalization, options.textCapitalizationOptions, (value) => options.updateSettings({ text_capitalization: value })));
       wrap.appendChild(options.localInputRow('Capitalización protegida', settings.protected_capitalizations, (value) => options.updateSettings({ protected_capitalizations: options.normalizeProtectedCapitalizationText(value) }), { multiline: true, commitOnChange: true }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(settings.use_protected_capitalization), options.yesNoOptions, (value) => options.updateSettings({ use_protected_capitalization: options.normalizeBoolean(value, true) })));
+      wrap.appendChild(renderTextSubstitutions(settings));
       wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => options.updateLayoutSetting({ line_spacing: value })));
       wrap.appendChild(settingsNumberRow('Separación entre columnas', settings.layout.column_gap, 0, null, 1, (value) => options.updateLayoutSetting({ column_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => options.updateLayoutSetting({ role_name_gap: value })));
@@ -64,6 +65,74 @@
       wrap.appendChild(settingsNumberRow('Fade superior', settings.layout.scroll_fade_up, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_fade_up: value })));
       wrap.appendChild(settingsNumberRow('Fade inferior', settings.layout.scroll_fade_down, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_fade_down: value })));
       els.typographySettings.after(wrap);
+    }
+
+    function renderTextSubstitutions(settings) {
+      const section = documentRef.createElement('div');
+      section.className = 'text-substitutions';
+      section.appendChild(options.sectionLabel('Sustituciones de texto'));
+
+      const rules = options.normalizeTextSubstitutions(settings.text_substitutions);
+      const table = documentRef.createElement('div');
+      table.className = 'text-substitution-table';
+      table.innerHTML = '<div>Activo</div><div>Buscar</div><div>Reemplazar por</div><div></div>';
+      rules.forEach((rule, index) => {
+        const enabled = fieldControlRegistry.create('checkbox', {
+          activeLabel: '',
+          className: 'text-substitution-check',
+          inactiveLabel: '',
+          value: rule.enabled,
+          onInput: (value) => updateTextSubstitution(rules, index, { enabled: value }),
+        });
+        table.appendChild(enabled);
+        table.appendChild(textSubstitutionInput(rule.from, 'Buscar', (value) => updateTextSubstitution(rules, index, { from: value })));
+        table.appendChild(textSubstitutionInput(rule.to, 'Reemplazar por', (value) => updateTextSubstitution(rules, index, { to: value })));
+        const remove = documentRef.createElement('button');
+        remove.type = 'button';
+        remove.className = 'text-substitution-remove';
+        remove.textContent = 'x';
+        remove.title = 'Eliminar sustitución';
+        remove.setAttribute('aria-label', 'Eliminar sustitución');
+        remove.addEventListener('click', () => {
+          options.updateSettings({ text_substitutions: rules.filter((_, ruleIndex) => ruleIndex !== index) });
+        });
+        table.appendChild(remove);
+      });
+      section.appendChild(table);
+
+      const add = documentRef.createElement('button');
+      add.type = 'button';
+      add.className = 'wide-action';
+      add.textContent = '+ Sustitución';
+      add.addEventListener('click', () => {
+        options.updateSettings({
+          text_substitutions: rules.concat({
+            id: `custom_${Date.now()}`,
+            from: '',
+            to: '',
+            enabled: true,
+          }),
+        });
+      });
+      section.appendChild(add);
+      return section;
+    }
+
+    function textSubstitutionInput(value, label, onInput) {
+      return fieldControlRegistry.create('text', {
+        ariaLabel: label,
+        commitOnChange: true,
+        value,
+        onInput,
+      });
+    }
+
+    function updateTextSubstitution(rules, index, fields) {
+      options.updateSettings({
+        text_substitutions: rules.map((rule, ruleIndex) => (
+          ruleIndex === index ? { ...rule, ...fields } : rule
+        )),
+      });
     }
 
     function settingsNumberRow(label, value, min, max, step, onInput) {
