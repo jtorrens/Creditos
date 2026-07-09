@@ -13,8 +13,8 @@
       const status = documentRef.createTextNode('');
       const updateStatus = () => {
         status.textContent = input.checked
-          ? (options.activeLabel || 'Activa')
-          : (options.inactiveLabel || 'Excluida');
+          ? (options.activeLabel !== undefined ? options.activeLabel : 'Activa')
+          : (options.inactiveLabel !== undefined ? options.inactiveLabel : 'Excluida');
       };
       input.addEventListener('change', () => {
         updateStatus();
