@@ -83,6 +83,7 @@
       const autoWrap = normalizeBoolean(cartela && cartela.auto_text_wrap, false);
       element.style.whiteSpace = autoWrap ? 'pre-wrap' : 'pre';
       element.style.overflowWrap = autoWrap ? 'break-word' : 'normal';
+      element.style.wordBreak = autoWrap ? 'normal' : 'normal';
     }
 
     function makePdfText(text, styleKey, options) {

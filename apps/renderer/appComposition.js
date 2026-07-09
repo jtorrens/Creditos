@@ -213,6 +213,7 @@
       explicitTextLines: dependencies.explicitTextLines,
       fontStyleFromStyle: dependencies.fontStyleFromStyle,
       fontWeightFromStyle: dependencies.fontWeightFromStyle,
+      fontWeightFromTypography: dependencies.fontWeightFromTypography,
       getProductionSettings: dependencies.getProductionSettings,
       layoutForCartela: dependencies.layoutForCartela,
       normalizeBoolean: dependencies.normalizeBoolean,

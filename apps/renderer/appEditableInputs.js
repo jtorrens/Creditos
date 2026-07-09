@@ -58,6 +58,7 @@
       input.wrap = autoWrap ? 'soft' : 'off';
       input.style.whiteSpace = autoWrap ? 'pre-wrap' : 'pre';
       input.style.overflowWrap = autoWrap ? 'break-word' : 'normal';
+      input.style.wordBreak = 'normal';
     }
 
     function resizeMultilineInput(input) {

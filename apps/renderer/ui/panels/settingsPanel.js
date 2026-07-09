@@ -57,7 +57,7 @@
       wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_left_margin: value })));
       wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_right_margin: value })));
       wrap.appendChild(options.localSelectRow('Repetir nombre de bloque', options.boolSelectValue(settings.layout.repeat_block_titles), options.yesNoOptions, (value) => options.updateLayoutSetting({ repeat_block_titles: options.normalizeBoolean(value, true) })));
-      wrap.appendChild(options.localSelectRow('Ajuste automático de texto', options.boolSelectValue(settings.layout.auto_text_wrap), options.yesNoOptions, (value) => options.updateLayoutSetting({ auto_text_wrap: options.normalizeBoolean(value, false) })));
+      wrap.appendChild(options.localSelectRow('Wrap automático de texto', options.boolSelectValue(settings.layout.auto_text_wrap), options.yesNoOptions, (value) => options.updateLayoutSetting({ auto_text_wrap: options.normalizeBoolean(value, false) })));
       wrap.appendChild(options.sectionLabel('Scroll'));
       wrap.appendChild(settingsNumberRow('Separación entre cartelas', settings.layout.scroll_page_gap, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_page_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación antes de última cartela', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_last_page_gap: value })));
