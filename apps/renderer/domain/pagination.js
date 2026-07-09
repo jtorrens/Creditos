@@ -185,7 +185,7 @@
         ? sourceBlankRowCounts(items, columns).reduce((total, value) => total + value, 0)
         : 0;
       const titleLines = String(block.title || '').trim()
-        ? canvasWrappedTextLines(block.title, canvasTextMetrics('block_title', cartela, layout, block.typography), contentWidth).length
+        ? paginationTextLines(block.title, canvasTextMetrics('block_title', cartela, layout, block.typography), contentWidth).length
         : 0;
       return titleLines + rowHeights.reduce((total, value) => total + value, 0) + sourceGapLines;
     }
@@ -194,7 +194,7 @@
       if (!unit) return 1;
       const layout = options.layout || layoutForCartela(getRenderLayout(), cartela);
       const width = Math.max(1, Number(options.wrapWidth) || 1);
-      const lineCount = (value, styleKey) => canvasWrappedTextLines(
+      const lineCount = (value, styleKey) => paginationTextLines(
         value,
         unit.text_already_transformed
           ? { ...canvasTextMetrics(styleKey, cartela, layout, block.typography), textCapitalization: 'source' }
@@ -209,7 +209,7 @@
         const pairWidth = cartela && cartela.orientation === 'horizontal'
           ? Math.max(1, (width - layout.role_name_gap) / 2)
           : width;
-        const pairLineCount = (value, styleKey) => canvasWrappedTextLines(
+        const pairLineCount = (value, styleKey) => paginationTextLines(
           value,
           canvasTextMetrics(styleKey, cartela, layout, block.typography),
           pairWidth
@@ -221,6 +221,10 @@
           : Math.max(1, roleLines, nameLines);
       }
       return lineCount(unit.title !== undefined ? unit.title : unit.value, unit.title !== undefined ? 'block_title' : 'name');
+    }
+
+    function paginationTextLines(value, metrics, width) {
+      return canvasWrappedTextLines(value, { ...metrics, autoWrap: false }, width);
     }
 
     function unitGapBefore(options, layout) {
