@@ -250,7 +250,7 @@
       const blockStartRows = [];
       (blocks || []).forEach((block) => {
         blockStartRows.push(nextRow);
-        nextRow += canvasBlockRowCount(block);
+        nextRow += canvasBlockRowCount(block, page && page.cartela);
       });
       return {
         blockStartRows,
@@ -258,9 +258,70 @@
       };
     }
 
-    function canvasBlockRowCount(block) {
+    function canvasBlockRowCount(block, cartela) {
       const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
-      return (String(block && block.title || '').trim() ? 1 : 0) + units.length;
+      return (String(block && block.title || '').trim() ? 1 : 0) + canvasBlockCascadeRows(block, cartela).rowCount;
+    }
+
+    function canvasBlockCascadeRows(block, cartela) {
+      const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      const columns = Math.max(1, Number(block && block.columns) || 1);
+      const rowCount = Math.ceil(units.length / columns);
+      const rowStarts = [];
+      let nextRow = 0;
+      for (let row = 0; row < rowCount; row += 1) {
+        rowStarts[row] = nextRow;
+        let span = 1;
+        for (let col = 0; col < columns; col += 1) {
+          const index = row * columns + col;
+          if (index >= units.length) break;
+          const previousUnit = index > 0 ? units[index - 1] : null;
+          const options = unitRenderOptions(units[index], creditSourceId(previousUnit), cartela, index > 0, previousUnit);
+          span = Math.max(span, canvasUnitCascadeSpan(units[index], cartela, options));
+        }
+        nextRow += span;
+      }
+      return {
+        rowCount: nextRow,
+        rowStarts,
+      };
+    }
+
+    function canvasUnitCascadeSpan(unit, cartela, options = {}) {
+      if (!unit || !cartela || cartela.orientation !== 'vertical') return 1;
+      if (options.repeatedNameRow) return 1;
+      if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
+        const role = options.hideRole ? '' : unit.role;
+        return String(role || '').trim() && String(unit.name || '').trim() ? 2 : 1;
+      }
+      if (unit.kind === 'cast') {
+        return String(unit.actor || '').trim() && String(unit.character || '').trim() ? 2 : 1;
+      }
+      return 1;
+    }
+
+    function canvasUnitNameCascadeOffset(unit, cartela, options = {}) {
+      return canvasUnitCascadeSpan(unit, cartela, options) > 1 ? 1 : 0;
+    }
+
+    function canvasUnitRowAnimation(rowContext, cartela, layout, typography, unit, options, rowIndex) {
+      const nameRowIndex = rowIndex + canvasUnitNameCascadeOffset(unit, cartela, options);
+      const roleCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
+      const nameCartela = rowContext.rowCartela ? rowContext.rowCartela(nameRowIndex) : roleCartela;
+      return {
+        roleAlpha: rowContext.rowFadeAlpha ? rowContext.rowFadeAlpha(rowIndex) : 1,
+        nameAlpha: rowContext.rowFadeAlpha ? rowContext.rowFadeAlpha(nameRowIndex) : 1,
+        roleCartela,
+        nameCartela,
+        roleLayout: layoutForCartela(layout, roleCartela),
+        nameLayout: layoutForCartela(layout, nameCartela),
+        roleTypography: rowContext.rowTypography ? rowContext.rowTypography(rowIndex, typography) : typography,
+        nameTypography: rowContext.rowTypography ? rowContext.rowTypography(nameRowIndex, typography) : typography,
+      };
+    }
+
+    function canvasUnitHasPair(unit) {
+      return unit && (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast');
     }
 
     function measureCanvasBlock(ctx, block, cartela, layout, width, rowContext = {}) {
@@ -278,17 +339,22 @@
         if (units.length) height += cartelaBlockTitleGap(titleCartela, titleLayout);
       }
       const columns = Math.max(1, Number(block.columns) || 1);
+      const cascadeRows = canvasBlockCascadeRows(block, cartela);
       const rowHeights = [];
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
         const layoutRow = Math.floor(index / columns);
         const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
-        const rowLayout = layoutForCartela(layout, rowCartela);
-        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + (cascadeRows.rowStarts[layoutRow] || 0);
+        const rowAnimation = canvasUnitRowAnimation(rowContext, cartela, layout, block.typography, unit, options, rowIndex);
+        const rowCartela = rowAnimation.roleCartela;
+        const rowLayout = rowAnimation.roleLayout;
+        const rowTypography = rowAnimation.roleTypography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
-        const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography);
+        const unitHeight = measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, {
+          ...options,
+          rowAnimation,
+        }, rowTypography);
         rowHeights[layoutRow] = Math.max(rowHeights[layoutRow] || 0, unitHeight);
         previousCreditSourceId = creditSourceId(unit);
       });
@@ -312,36 +378,50 @@
         cursorY += canvasTextHeight(title, metrics, width) + (units.length ? cartelaBlockTitleGap(titleCartela, titleLayout) : 0);
       }
       const columns = Math.max(1, Number(block.columns) || 1);
+      const cascadeRows = canvasBlockCascadeRows(block, cartela);
       const rowHeights = [];
       const rowGaps = canvasRowGaps(units, cartela, layout, columns);
       units.forEach((unit, index) => {
         const layoutRow = Math.floor(index / columns);
         const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
         const options = unitRenderOptions(unit, previousSourceId, cartela, index > 0, units[index - 1]);
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
-        const rowLayout = layoutForCartela(layout, rowCartela);
-        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + (cascadeRows.rowStarts[layoutRow] || 0);
+        const rowAnimation = canvasUnitRowAnimation(rowContext, cartela, layout, block.typography, unit, options, rowIndex);
+        const rowCartela = rowAnimation.roleCartela;
+        const rowLayout = rowAnimation.roleLayout;
+        const rowTypography = rowAnimation.roleTypography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
-        rowHeights[layoutRow] = Math.max(rowHeights[layoutRow] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, options, rowTypography));
+        rowHeights[layoutRow] = Math.max(rowHeights[layoutRow] || 0, measureCanvasUnit(unit, block, rowCartela, rowLayout, columnWidth, {
+          ...options,
+          rowAnimation,
+        }, rowTypography));
       });
       let previousCreditSourceId = null;
       units.forEach((unit, index) => {
         const layoutRow = Math.floor(index / columns);
         const col = index % columns;
-        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + index;
-        const rowCartela = rowContext.rowCartela ? rowContext.rowCartela(rowIndex) : cartela;
-        const rowLayout = layoutForCartela(layout, rowCartela);
-        const rowTypography = rowContext.rowTypography ? rowContext.rowTypography(rowIndex, block.typography) : block.typography;
+        const rowIndex = (rowContext.startRowIndex || 0) + titleRows + (cascadeRows.rowStarts[layoutRow] || 0);
+        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
+        const rowAnimation = canvasUnitRowAnimation(rowContext, cartela, layout, block.typography, unit, options, rowIndex);
+        const rowCartela = rowAnimation.roleCartela;
+        const rowLayout = rowAnimation.roleLayout;
+        const rowTypography = rowAnimation.roleTypography;
         const columnWidth = (width - rowLayout.column_gap * (columns - 1)) / columns;
         const unitX = x + col * (columnWidth + rowLayout.column_gap);
         const unitY = cursorY +
           rowHeights.slice(0, layoutRow).reduce((total, value) => total + value, 0) +
           rowGaps.slice(0, layoutRow).reduce((total, value) => total + value, 0);
-        const options = unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-        drawWithAlpha(ctx, rowContext.rowFadeAlpha ? rowContext.rowFadeAlpha(rowIndex) : 1, () => {
-          drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, options, rowTypography);
-        });
+        const unitOptions = {
+          ...options,
+          rowAnimation,
+        };
+        if (canvasUnitHasPair(unit)) {
+          drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, unitOptions, rowTypography);
+        } else {
+          drawWithAlpha(ctx, rowAnimation.roleAlpha, () => {
+            drawCanvasUnit(ctx, unit, block, rowCartela, rowLayout, unitX, unitY, columnWidth, unitOptions, rowTypography);
+          });
+        }
         previousCreditSourceId = creditSourceId(unit);
       });
     }
@@ -376,18 +456,25 @@
         const orientation = cartela.orientation || 'horizontal';
         const role = unit.kind === 'cast' ? unit.actor : unit.role;
         const name = unit.kind === 'cast' ? unit.character : unit.name;
+        const rowAnimation = options.rowAnimation || null;
+        const roleCartela = rowAnimation && rowAnimation.roleCartela ? rowAnimation.roleCartela : cartela;
+        const nameCartela = rowAnimation && rowAnimation.nameCartela ? rowAnimation.nameCartela : roleCartela;
+        const roleLayout = rowAnimation && rowAnimation.roleLayout ? rowAnimation.roleLayout : layout;
+        const nameLayout = rowAnimation && rowAnimation.nameLayout ? rowAnimation.nameLayout : roleLayout;
+        const roleTypography = rowAnimation && rowAnimation.roleTypography ? rowAnimation.roleTypography : typography;
+        const nameTypography = rowAnimation && rowAnimation.nameTypography ? rowAnimation.nameTypography : roleTypography;
         const textWidth = orientation === 'horizontal'
-          ? Math.max(1, (width - layout.role_name_gap) / 2)
+          ? Math.max(1, (width - roleLayout.role_name_gap) / 2)
           : width;
         const roleHeight = String(role || '').length
-          ? canvasTextHeight(role, canvasTextMetrics('role', cartela, layout, typography), textWidth)
+          ? canvasTextHeight(role, canvasTextMetrics('role', roleCartela, roleLayout, roleTypography), textWidth)
           : 0;
         const nameHeight = String(name || '').length
-          ? canvasTextHeight(name, canvasTextMetrics('name', cartela, layout, typography), textWidth)
+          ? canvasTextHeight(name, canvasTextMetrics('name', nameCartela, nameLayout, nameTypography), textWidth)
           : 0;
         return orientation === 'vertical'
-          ? roleHeight + (roleHeight && nameHeight ? roleNameGapForOrientation(layout, orientation) : 0) + nameHeight
-          : Math.max(roleHeight, nameHeight, canvasTextMetrics('name', cartela, layout, typography).lineHeight);
+          ? roleHeight + (roleHeight && nameHeight ? roleNameGapForOrientation(nameLayout, orientation) : 0) + nameHeight
+          : Math.max(roleHeight, nameHeight, canvasTextMetrics('name', nameCartela, nameLayout, nameTypography).lineHeight);
       }
       const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, typography);
       if (unit.text_already_transformed) metrics.textCapitalization = 'source';
@@ -407,11 +494,11 @@
         return;
       }
       if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
-        drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation, typography);
+        drawCanvasPair(ctx, options.hideRole ? '' : unit.role || '', unit.name || '', cartela, layout, x, y, width, alignment, orientation, typography, options.rowAnimation);
         return;
       }
       if (unit.kind === 'cast') {
-        drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation, typography);
+        drawCanvasPair(ctx, unit.actor || '', unit.character || '', cartela, layout, x, y, width, alignment, orientation, typography, options.rowAnimation);
         return;
       }
       const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, typography);
@@ -419,24 +506,32 @@
       drawCanvasText(ctx, unit.title || unit.value || '', x, y, width, metrics, alignment.text || (orientation === 'vertical' ? 'center' : 'left'));
     }
 
-    function drawCanvasPair(ctx, role, name, cartela, layout, x, y, width, alignment, orientation, typography) {
-      const roleMetrics = canvasTextMetrics('role', cartela, layout, typography);
-      const nameMetrics = canvasTextMetrics('name', cartela, layout, typography);
+    function drawCanvasPair(ctx, role, name, cartela, layout, x, y, width, alignment, orientation, typography, rowAnimation = null) {
+      const roleCartela = rowAnimation && rowAnimation.roleCartela ? rowAnimation.roleCartela : cartela;
+      const nameCartela = rowAnimation && rowAnimation.nameCartela ? rowAnimation.nameCartela : roleCartela;
+      const roleLayout = rowAnimation && rowAnimation.roleLayout ? rowAnimation.roleLayout : layout;
+      const nameLayout = rowAnimation && rowAnimation.nameLayout ? rowAnimation.nameLayout : roleLayout;
+      const roleTypography = rowAnimation && rowAnimation.roleTypography ? rowAnimation.roleTypography : typography;
+      const nameTypography = rowAnimation && rowAnimation.nameTypography ? rowAnimation.nameTypography : roleTypography;
+      const roleAlpha = rowAnimation ? rowAnimation.roleAlpha : 1;
+      const nameAlpha = rowAnimation ? rowAnimation.nameAlpha : 1;
+      const roleMetrics = canvasTextMetrics('role', roleCartela, roleLayout, roleTypography);
+      const nameMetrics = canvasTextMetrics('name', nameCartela, nameLayout, nameTypography);
       if (orientation === 'vertical') {
         if (!role) {
-          drawCanvasText(ctx, name, x, y, width, nameMetrics, alignment.name || 'center');
+          drawWithAlpha(ctx, nameAlpha, () => drawCanvasText(ctx, name, x, y, width, nameMetrics, alignment.name || 'center'));
           return;
         }
-        drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center');
-        drawCanvasText(ctx, name, x, y + canvasTextHeight(role, roleMetrics, width) + roleNameGapForOrientation(layout, orientation), width, nameMetrics, alignment.name || 'center');
+        drawWithAlpha(ctx, roleAlpha, () => drawCanvasText(ctx, role, x, y, width, roleMetrics, alignment.role || 'center'));
+        drawWithAlpha(ctx, nameAlpha, () => drawCanvasText(ctx, name, x, y + canvasTextHeight(role, roleMetrics, width) + roleNameGapForOrientation(nameLayout, orientation), width, nameMetrics, alignment.name || 'center'));
         return;
       }
-      const halfWidth = (width - layout.role_name_gap) / 2;
+      const halfWidth = (width - roleLayout.role_name_gap) / 2;
       const roleHeight = canvasTextHeight(role, roleMetrics, halfWidth);
       const nameHeight = canvasTextHeight(name, nameMetrics, halfWidth);
       const nameY = y + Math.max(0, roleHeight - nameHeight);
-      drawCanvasText(ctx, role, x, y, halfWidth, roleMetrics, alignment.role || 'right');
-      drawCanvasText(ctx, name, x + halfWidth + layout.role_name_gap, nameY, halfWidth, nameMetrics, alignment.name || 'left');
+      drawWithAlpha(ctx, roleAlpha, () => drawCanvasText(ctx, role, x, y, halfWidth, roleMetrics, alignment.role || 'right'));
+      drawWithAlpha(ctx, nameAlpha, () => drawCanvasText(ctx, name, x + halfWidth + roleLayout.role_name_gap, nameY, halfWidth, nameMetrics, alignment.name || 'left'));
     }
 
     function canvasTextMetrics(styleKey, cartela, layout, typographyOverrides = {}) {

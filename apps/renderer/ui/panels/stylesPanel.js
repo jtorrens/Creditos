@@ -152,15 +152,42 @@
       let nextRow = titleRows;
       let firstUnitRow = titleRows;
       blocks.forEach((block, index) => {
-        const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
         const blockTitleRows = String(block && block.title || '').trim() ? 1 : 0;
         if (index === 0) firstUnitRow = nextRow + blockTitleRows;
-        nextRow += blockTitleRows + units.length;
+        nextRow += blockTitleRows + previewCascadeBlockRowCount(block, page && page.cartela);
       });
       return {
         rowCount: Math.max(1, nextRow),
         rowIndex: Math.max(0, Math.min(Math.max(1, nextRow) - 1, firstUnitRow)),
       };
+    }
+
+    function previewCascadeBlockRowCount(block, cartela) {
+      const units = block && block.pages && block.pages[0] ? block.pages[0].items || [] : [];
+      const columns = Math.max(1, Number(block && block.columns) || 1);
+      const visualRows = Math.ceil(units.length / columns);
+      let total = 0;
+      for (let row = 0; row < visualRows; row += 1) {
+        let span = 1;
+        for (let col = 0; col < columns; col += 1) {
+          const unit = units[row * columns + col];
+          if (!unit) break;
+          span = Math.max(span, previewCascadeUnitSpan(unit, cartela));
+        }
+        total += span;
+      }
+      return total;
+    }
+
+    function previewCascadeUnitSpan(unit, cartela) {
+      if (!unit || !cartela || cartela.orientation !== 'vertical') return 1;
+      if (unit.kind === 'credit' || unit.kind === 'crew_credit') {
+        return String(unit.role || '').trim() && String(unit.name || '').trim() ? 2 : 1;
+      }
+      if (unit.kind === 'cast') {
+        return String(unit.actor || '').trim() && String(unit.character || '').trim() ? 2 : 1;
+      }
+      return 1;
     }
 
     function renderStylePreviewPlaybackControls(playbackOptions) {
