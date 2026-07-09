@@ -431,8 +431,11 @@
         return;
       }
       const halfWidth = (width - layout.role_name_gap) / 2;
+      const roleHeight = canvasTextHeight(role, roleMetrics, halfWidth);
+      const nameHeight = canvasTextHeight(name, nameMetrics, halfWidth);
+      const nameY = y + Math.max(0, roleHeight - nameHeight);
       drawCanvasText(ctx, role, x, y, halfWidth, roleMetrics, alignment.role || 'right');
-      drawCanvasText(ctx, name, x + halfWidth + layout.role_name_gap, y, halfWidth, nameMetrics, alignment.name || 'left');
+      drawCanvasText(ctx, name, x + halfWidth + layout.role_name_gap, nameY, halfWidth, nameMetrics, alignment.name || 'left');
     }
 
     function canvasTextMetrics(styleKey, cartela, layout, typographyOverrides = {}) {
