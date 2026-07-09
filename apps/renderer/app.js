@@ -24,11 +24,13 @@
     pngPreviewZoomMode: 'auto',
     showMarginOverlay: false,
     showPanelMarginOverlay: false,
+    previewAnimationEnabled: true,
     showPreviewReferenceVideo: false,
     showCartelaReferenceVideo: false,
     exportIncludeBackground: false,
     exportIncludeVideo: false,
     exportIncludeMargins: false,
+    exportIncludeAnimation: true,
     movExportProgress: null,
     isLoadingEpisode: false,
     autosaveTimer: null,
@@ -135,12 +137,16 @@
     previewPlayBtn: document.getElementById('previewPlayBtn'),
     previewFrameInput: document.getElementById('previewFrameInput'),
     previewFrameStatus: document.getElementById('previewFrameStatus'),
+    previewAnimationInput: document.getElementById('previewAnimationInput'),
+    stylePreviewAnimationInput: document.getElementById('stylePreviewAnimationInput'),
+    cartelaPreviewAnimationInput: document.getElementById('cartelaPreviewAnimationInput'),
     toggleMarginsBtn: document.getElementById('toggleMarginsBtn'),
     showPreviewReferenceVideoInput: document.getElementById('showPreviewReferenceVideoInput'),
     showCartelaReferenceVideoInput: document.getElementById('showCartelaReferenceVideoInput'),
     exportIncludeBackgroundInput: document.getElementById('exportIncludeBackgroundInput'),
     exportIncludeVideoInput: document.getElementById('exportIncludeVideoInput'),
     exportIncludeMarginsInput: document.getElementById('exportIncludeMarginsInput'),
+    exportIncludeAnimationInput: document.getElementById('exportIncludeAnimationInput'),
     exportCurrentPdfBtn: document.getElementById('exportCurrentPdfBtn'),
     exportAllPdfBtn: document.getElementById('exportAllPdfBtn'),
     exportMovBtn: document.getElementById('exportMovBtn'),
@@ -450,6 +456,7 @@
     ensureBackgroundForEncodingProfile,
     renderMovieEncodingProfiles,
     savePreviewSettingsFromUi,
+    syncPreviewAnimationInputs,
     selectedRenderCodec,
     selectedRenderProfile,
   } = appPreviewSettings;
@@ -1048,6 +1055,7 @@
     makeMarginOverlay,
     makePdfSheetElement,
     makeReferenceVideoElement,
+    previewAnimationEnabled,
     previewZoomForContainer,
     state,
     updatePanelMarginButtons,
@@ -1145,6 +1153,7 @@
     pageForAnimationFrame,
     pageFrameStateForAnimationFrame,
     pageIndexForAnimationFrame,
+    previewAnimationEnabled,
     readMovieSegmentSettings,
     state,
     updatePdfToolbar,
@@ -1175,6 +1184,7 @@
     getSelectedMoviePages,
     getSelectedScrollCartelaGroups,
     getSelectedScrollSourceFrames,
+    includeExportAnimation: () => state.exportIncludeAnimation !== false,
     joinPath,
     layoutForCartela,
     movieTargetDurationFrames,
@@ -1380,6 +1390,7 @@
     makeMarginOverlay,
     makePdfSheetElement,
     makeSampleStyleRender,
+    previewAnimationEnabled,
     previewZoomForContainer,
     renderStyleEditor,
     selectedProduction,
@@ -1463,6 +1474,7 @@
       seekPreviewAnimation,
       selectEpisodeFromUi,
       selectProductionFromUi,
+      setPreviewAnimationEnabled,
       setActiveTab,
       setPreview,
       syncDatabaseManually,
@@ -1562,6 +1574,19 @@
 
   function renderVisiblePanelPreviews() {
     return appLifecycle.renderVisiblePanelPreviews();
+  }
+
+  function previewAnimationEnabled() {
+    return state.previewAnimationEnabled !== false;
+  }
+
+  function setPreviewAnimationEnabled(enabled) {
+    state.previewAnimationEnabled = !!enabled;
+    syncPreviewAnimationInputs();
+    if (!state.previewAnimationEnabled) stopPreviewAnimation();
+    renderVisiblePanelPreviews();
+    if (state.activeTab === 'pdf') renderPdfPreview();
+    savePreviewSettingsFromUi();
   }
 
   function createStructureFromSource(source, materials, previousStructure) {

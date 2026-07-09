@@ -22,7 +22,9 @@
         include_background: false,
         include_video: false,
         include_margins: false,
+        include_animation: true,
         show_margins: false,
+        preview_animation: true,
       };
     }
 
@@ -47,7 +49,9 @@
         include_background: !!value.include_background,
         include_video: !!value.include_video,
         include_margins: !!value.include_margins,
+        include_animation: value.include_animation !== false,
         show_margins: !!value.show_margins,
+        preview_animation: value.preview_animation !== false,
       };
     }
 
@@ -89,6 +93,7 @@
         includeBackground: !!(options.includeBackground || includeVideo),
         includeVideo,
         includeMargins: !!options.includeMargins,
+        includeAnimation: options.includeAnimation !== false,
       };
     }
 

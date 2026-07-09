@@ -85,6 +85,10 @@
         els.exportIncludeMarginsInput.disabled = total === 0;
         els.exportIncludeMarginsInput.checked = !!state.exportIncludeMargins;
       }
+      if (els.exportIncludeAnimationInput) {
+        els.exportIncludeAnimationInput.disabled = total === 0;
+        els.exportIncludeAnimationInput.checked = state.exportIncludeAnimation !== false;
+      }
       if (els.movieModeSelect) els.movieModeSelect.disabled = total === 0;
       if (els.movieCodecSelect) els.movieCodecSelect.disabled = total === 0;
       if (els.movieEncodingProfileSelect) els.movieEncodingProfileSelect.disabled = total === 0;

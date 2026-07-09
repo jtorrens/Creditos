@@ -125,7 +125,13 @@
           <aside class="style-preview-panel">
             <div class="panel-heading">
               <h2>Preview estilo</h2>
-              <button id="toggleStyleMarginsBtn" type="button">Márgenes</button>
+              <div class="panel-heading-actions">
+                <label class="switch-row compact-switch">
+                  <input id="stylePreviewAnimationInput" type="checkbox">
+                  <span>Animación</span>
+                </label>
+                <button id="toggleStyleMarginsBtn" type="button">Márgenes</button>
+              </div>
             </div>
             <div id="stylePreview" class="style-preview empty-state">Sin estilo seleccionado.</div>
           </aside>
@@ -175,6 +181,10 @@
                   <input id="showCartelaReferenceVideoInput" type="checkbox">
                   <span>Mostrar vídeo</span>
                 </label>
+                <label class="switch-row compact-switch">
+                  <input id="cartelaPreviewAnimationInput" type="checkbox">
+                  <span>Animación</span>
+                </label>
                 <button id="toggleCartelaMarginsBtn" type="button">Márgenes</button>
               </div>
             </div>
@@ -219,6 +229,10 @@
                   <input id="previewFrameInput" class="preview-frame-input" type="range" min="0" max="0" step="1" value="0">
                   <span id="previewFrameStatus">0/0</span>
                 </div>
+                <label class="switch-row">
+                  <input id="previewAnimationInput" type="checkbox">
+                  <span>Animación preview</span>
+                </label>
                 <label class="check-row">
                   <input id="showPreviewReferenceVideoInput" type="checkbox">
                   <span>Mostrar vídeo</span>
@@ -300,6 +314,10 @@
                   <label class="check-row">
                     <input id="exportIncludeMarginsInput" type="checkbox">
                     <span>Incluir márgenes</span>
+                  </label>
+                  <label class="switch-row">
+                    <input id="exportIncludeAnimationInput" type="checkbox">
+                    <span>Incluir animación</span>
                   </label>
                 </div>
                 <div class="export-actions">

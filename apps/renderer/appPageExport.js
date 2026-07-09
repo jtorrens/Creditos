@@ -181,7 +181,7 @@
             await options.wait(0);
             const duration = Math.max(0, Number(item.page.cartela && item.page.cartela.duration) || 0);
             const frameCount = exportFrameCounts[index] || Math.max(1, Math.round(duration * fps));
-            if (renderOptions.includeVideo || pageHasActiveAnimation(item.page)) {
+            if (renderOptions.includeVideo || (renderOptions.includeAnimation && pageHasActiveAnimation(item.page))) {
               const startFrame = renderedFrames;
               await options.writeAnimatedFrames({
                 frameCount,
@@ -190,15 +190,18 @@
                   options.updateMovExportProgress(renderedFrames, totalExportFrames);
                 },
                 renderFrameBytes: async (frame) => {
-                  const blob = await renderPageToPngBlob(item.page, layout, {
-                    ...renderOptions,
-                    animationFrame: {
+                  const animationFrame = renderOptions.includeAnimation
+                    ? {
                       index,
                       page: item.page,
                       localFrame: frame,
                       frameCount,
                       fps,
-                    },
+                    }
+                    : null;
+                  const blob = await renderPageToPngBlob(item.page, layout, {
+                    ...renderOptions,
+                    animationFrame,
                     videoTime: startFrame + frame >= moviePlan.videoStartFrame ? (startFrame + frame - moviePlan.videoStartFrame) / fps : null,
                   });
                   return options.blobToBytes(blob);
@@ -249,6 +252,7 @@
         includeBackground: state.exportIncludeBackground,
         includeVideo: state.exportIncludeVideo,
         includeMargins: state.exportIncludeMargins,
+        includeAnimation: state.exportIncludeAnimation,
       }, state.referenceVideo);
     }
 

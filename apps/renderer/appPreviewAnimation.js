@@ -64,6 +64,7 @@
 
     async function renderPreviewAnimationFrame() {
       if (!els.pdfPreview || !state.render || !state.structure) return;
+      const previewEnabled = previewAnimationEnabled();
       const plan = getPreviewAnimationPlan();
       if (!plan || !plan.totalFrames) {
         updatePreviewPlaybackControls(null);
@@ -99,7 +100,15 @@
         ctx.fillRect(0, 0, plan.layout.page_width, plan.layout.page_height);
       }
 
-      if (plan.mode === 'scroll') {
+      if (!previewEnabled) {
+        const page = options.getCurrentPhysicalPages()[state.pdfPageIndex];
+        if (page) {
+          await options.drawCanvasPage(ctx, page, plan.layout, {});
+          if (state.showMarginOverlay) {
+            options.drawCanvasMarginOverlay(ctx, options.layoutForCartela(plan.layout, page.cartela), zoom);
+          }
+        }
+      } else if (plan.mode === 'scroll') {
         await options.drawCanvasScrollFrame(ctx, plan.scrollPlan, state.previewAnimation.frame, plan.layout);
         syncPdfPageToAnimationFrame(plan, state.previewAnimation.frame);
         if (state.showMarginOverlay) options.drawCanvasMarginOverlay(ctx, plan.layout, zoom);
@@ -130,7 +139,7 @@
 
     function updatePreviewPlaybackControls(plan) {
       const totalFrames = plan && plan.totalFrames ? Math.max(1, plan.totalFrames) : 0;
-      const disabled = !totalFrames;
+      const disabled = !totalFrames || !previewAnimationEnabled();
       if (els.previewStartBtn) els.previewStartBtn.disabled = disabled;
       if (els.previewPlayBtn) {
         els.previewPlayBtn.disabled = disabled;
@@ -142,6 +151,10 @@
         els.previewFrameInput.value = String(Math.max(0, Math.min(totalFrames - 1, state.previewAnimation.frame)));
       }
       if (els.previewFrameStatus) {
+        if (!previewAnimationEnabled()) {
+          els.previewFrameStatus.textContent = 'Animación desactivada';
+          return;
+        }
         const speedText = plan && plan.mode === 'scroll' && plan.scrollPlan
           ? ` · ${options.formatScrollSpeed(plan.scrollPlan.bodySpeed)} px/frame`
           : '';
@@ -152,6 +165,7 @@
     }
 
     function togglePreviewAnimation() {
+      if (!previewAnimationEnabled()) return;
       if (state.previewAnimation.playing) {
         stopPreviewAnimation();
         renderPreviewAnimationFrame();
@@ -203,9 +217,14 @@
     }
 
     function seekPreviewAnimation(frame) {
+      if (!previewAnimationEnabled()) return;
       stopPreviewAnimation();
       state.previewAnimation.frame = Math.max(0, Math.round(Number(frame) || 0));
       renderPreviewAnimationFrame();
+    }
+
+    function previewAnimationEnabled() {
+      return typeof options.previewAnimationEnabled === 'function' ? options.previewAnimationEnabled() : true;
     }
 
     return {

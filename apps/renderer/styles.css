@@ -1775,6 +1775,56 @@ textarea.visual-input {
   margin: 0;
 }
 
+.switch-row {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  width: fit-content;
+}
+
+.switch-row input {
+  appearance: none;
+  accent-color: var(--accent);
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  height: 16px;
+  margin: 0;
+  position: relative;
+  width: 30px;
+}
+
+.switch-row input::before {
+  background: var(--muted);
+  border-radius: 50%;
+  content: "";
+  height: 10px;
+  left: 2px;
+  position: absolute;
+  top: 2px;
+  transition: transform 120ms ease, background 120ms ease;
+  width: 10px;
+}
+
+.switch-row input:checked {
+  border-color: var(--accent);
+}
+
+.switch-row input:checked::before {
+  background: var(--accent);
+  transform: translateX(14px);
+}
+
+.compact-switch {
+  font-size: 12px;
+  min-height: 28px;
+  padding: 0 8px;
+}
+
 .chip {
   background: var(--panel-2);
   border: 1px solid var(--line);

@@ -99,6 +99,9 @@
     if (els.previewStartBtn) els.previewStartBtn.addEventListener('click', () => actions.seekPreviewAnimation(0));
     if (els.previewPlayBtn) els.previewPlayBtn.addEventListener('click', actions.togglePreviewAnimation);
     if (els.previewFrameInput) els.previewFrameInput.addEventListener('input', () => actions.seekPreviewAnimation(Number(els.previewFrameInput.value) || 0));
+    [els.previewAnimationInput, els.stylePreviewAnimationInput, els.cartelaPreviewAnimationInput]
+      .filter(Boolean)
+      .forEach((input) => input.addEventListener('change', () => actions.setPreviewAnimationEnabled(!!input.checked)));
     if (els.showPreviewReferenceVideoInput) els.showPreviewReferenceVideoInput.addEventListener('change', () => {
       state.showPreviewReferenceVideo = !!els.showPreviewReferenceVideoInput.checked;
       actions.renderPdfPreview();
@@ -122,6 +125,10 @@
     });
     if (els.exportIncludeMarginsInput) els.exportIncludeMarginsInput.addEventListener('change', () => {
       state.exportIncludeMargins = !!els.exportIncludeMarginsInput.checked;
+      actions.savePreviewSettingsFromUi();
+    });
+    if (els.exportIncludeAnimationInput) els.exportIncludeAnimationInput.addEventListener('change', () => {
+      state.exportIncludeAnimation = !!els.exportIncludeAnimationInput.checked;
       actions.savePreviewSettingsFromUi();
     });
     els.toggleMarginsBtn.addEventListener('click', actions.toggleMarginOverlay);

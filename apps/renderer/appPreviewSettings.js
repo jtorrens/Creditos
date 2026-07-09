@@ -34,7 +34,9 @@
         include_background: !!state.exportIncludeBackground,
         include_video: !!state.exportIncludeVideo,
         include_margins: !!state.exportIncludeMargins,
+        include_animation: !!state.exportIncludeAnimation,
         show_margins: !!state.showMarginOverlay,
+        preview_animation: !!state.previewAnimationEnabled,
       });
     }
 
@@ -69,11 +71,15 @@
       state.exportIncludeBackground = !!settings.include_background;
       state.exportIncludeVideo = !!settings.include_video;
       state.exportIncludeMargins = !!settings.include_margins;
+      state.exportIncludeAnimation = settings.include_animation !== false;
       state.showMarginOverlay = !!settings.show_margins;
+      state.previewAnimationEnabled = settings.preview_animation !== false;
       if (els.showPreviewReferenceVideoInput) els.showPreviewReferenceVideoInput.checked = state.showPreviewReferenceVideo;
       if (els.exportIncludeBackgroundInput) els.exportIncludeBackgroundInput.checked = state.exportIncludeBackground;
       if (els.exportIncludeVideoInput) els.exportIncludeVideoInput.checked = state.exportIncludeVideo;
       if (els.exportIncludeMarginsInput) els.exportIncludeMarginsInput.checked = state.exportIncludeMargins;
+      if (els.exportIncludeAnimationInput) els.exportIncludeAnimationInput.checked = state.exportIncludeAnimation;
+      syncPreviewAnimationInputs();
       ensureBackgroundForEncodingProfile();
       if (els.toggleMarginsBtn) {
         els.toggleMarginsBtn.classList.toggle('active-toggle', state.showMarginOverlay);
@@ -101,12 +107,21 @@
       if (els.exportIncludeBackgroundInput) els.exportIncludeBackgroundInput.checked = true;
     }
 
+    function syncPreviewAnimationInputs() {
+      [els.previewAnimationInput, els.stylePreviewAnimationInput, els.cartelaPreviewAnimationInput]
+        .filter(Boolean)
+        .forEach((input) => {
+          input.checked = state.previewAnimationEnabled !== false;
+        });
+    }
+
     return {
       applyPreviewSettingsToUi,
       currentPreviewSettingsFromUi,
       ensureBackgroundForEncodingProfile,
       renderMovieEncodingProfiles,
       savePreviewSettingsFromUi,
+      syncPreviewAnimationInputs,
       selectedRenderCodec,
       selectedRenderProfile,
     };
