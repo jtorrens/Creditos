@@ -100,15 +100,7 @@
         ctx.fillRect(0, 0, plan.layout.page_width, plan.layout.page_height);
       }
 
-      if (!previewEnabled) {
-        const page = options.getCurrentPhysicalPages()[state.pdfPageIndex];
-        if (page) {
-          await options.drawCanvasPage(ctx, page, plan.layout, {});
-          if (state.showMarginOverlay) {
-            options.drawCanvasMarginOverlay(ctx, options.layoutForCartela(plan.layout, page.cartela), zoom);
-          }
-        }
-      } else if (plan.mode === 'scroll') {
+      if (plan.mode === 'scroll') {
         await options.drawCanvasScrollFrame(ctx, plan.scrollPlan, state.previewAnimation.frame, plan.layout);
         syncPdfPageToAnimationFrame(plan, state.previewAnimation.frame);
         if (state.showMarginOverlay) options.drawCanvasMarginOverlay(ctx, plan.layout, zoom);
@@ -119,7 +111,7 @@
         const page = pageState && pageState.page;
         if (page) {
           syncPdfPageToAnimationFrame(plan, state.previewAnimation.frame);
-          await options.drawCanvasPage(ctx, page, plan.layout, { animationFrame: pageState });
+          await options.drawCanvasPage(ctx, page, plan.layout, { animationFrame: previewEnabled ? pageState : null });
           if (state.showMarginOverlay) {
             options.drawCanvasMarginOverlay(ctx, options.layoutForCartela(plan.layout, page.cartela), zoom);
           }
@@ -139,7 +131,7 @@
 
     function updatePreviewPlaybackControls(plan) {
       const totalFrames = plan && plan.totalFrames ? Math.max(1, plan.totalFrames) : 0;
-      const disabled = !totalFrames || !previewAnimationEnabled();
+      const disabled = !totalFrames;
       if (els.previewStartBtn) els.previewStartBtn.disabled = disabled;
       if (els.previewPlayBtn) {
         els.previewPlayBtn.disabled = disabled;
@@ -151,21 +143,17 @@
         els.previewFrameInput.value = String(Math.max(0, Math.min(totalFrames - 1, state.previewAnimation.frame)));
       }
       if (els.previewFrameStatus) {
-        if (!previewAnimationEnabled()) {
-          els.previewFrameStatus.textContent = 'Animación desactivada';
-          return;
-        }
         const speedText = plan && plan.mode === 'scroll' && plan.scrollPlan
           ? ` · ${options.formatScrollSpeed(plan.scrollPlan.bodySpeed)} px/frame`
           : '';
+        const animationText = previewAnimationEnabled() ? '' : 'Animación off · ';
         els.previewFrameStatus.textContent = totalFrames
-          ? `${options.formatFrameDuration(state.previewAnimation.frame, plan.fps)} / ${options.formatFrameDuration(totalFrames, plan.fps)}${speedText}`
+          ? `${animationText}${options.formatFrameDuration(state.previewAnimation.frame, plan.fps)} / ${options.formatFrameDuration(totalFrames, plan.fps)}${speedText}`
           : '0/0';
       }
     }
 
     function togglePreviewAnimation() {
-      if (!previewAnimationEnabled()) return;
       if (state.previewAnimation.playing) {
         stopPreviewAnimation();
         renderPreviewAnimationFrame();
@@ -217,7 +205,6 @@
     }
 
     function seekPreviewAnimation(frame) {
-      if (!previewAnimationEnabled()) return;
       stopPreviewAnimation();
       state.previewAnimation.frame = Math.max(0, Math.round(Number(frame) || 0));
       renderPreviewAnimationFrame();

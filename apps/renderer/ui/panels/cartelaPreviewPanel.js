@@ -90,7 +90,7 @@
         if (renderId === cartelaPreviewRenderId) console.warn(error);
       });
       updateCartelaPreviewPlaybackUi(playbackOptions, localFrameState);
-      if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === cartela.id && previewAnimationEnabled()) {
+      if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === cartela.id) {
         startCartelaPreviewPlayback(playbackOptions);
       }
     }
@@ -194,7 +194,6 @@
     }
 
     function startCartelaPreviewPlayback(playbackOptions) {
-      if (!previewAnimationEnabled()) return;
       stopCartelaPreviewPlayback({ keepFrame: true });
       cartelaPreviewPlayback.playing = true;
       cartelaPreviewPlayback.renderId = playbackOptions.renderId;
@@ -225,7 +224,6 @@
     }
 
     function toggleCartelaPreviewPlayback(playbackOptions) {
-      if (!previewAnimationEnabled()) return;
       if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === playbackOptions.cartela.id) {
         stopCartelaPreviewPlayback({ keepFrame: true });
         updateCartelaPreviewPlaybackUi(playbackOptions, cartelaPreviewRenderFrameState(playbackOptions.frameState));
@@ -235,7 +233,6 @@
     }
 
     function setCartelaPreviewFrame(playbackOptions, frame) {
-      if (!previewAnimationEnabled()) return;
       stopCartelaPreviewPlayback({ keepFrame: true });
       const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
       cartelaPreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
@@ -266,27 +263,24 @@
       const button = controls && controls.querySelector('[data-role="play"]');
       const status = controls && controls.querySelector('.style-preview-frame-status');
       if (button) {
-        button.disabled = !previewAnimationEnabled();
+        button.disabled = false;
         button.textContent = cartelaPreviewPlayback.playing ? '⏸' : '▶';
         button.title = cartelaPreviewPlayback.playing ? 'Pausa' : 'Play';
         button.setAttribute('aria-label', button.title);
       }
       controls && controls.querySelectorAll('.style-preview-transport-button').forEach((control) => {
-        control.disabled = !previewAnimationEnabled();
+        control.disabled = false;
       });
       if (status) {
-        if (!previewAnimationEnabled()) {
-          status.textContent = 'Animación desactivada';
-        } else {
-          const frameCount = Math.max(1, frameState && (frameState.totalFrameCount || frameState.frameCount) || 1);
-          const rawFrame = frameState && frameState.absoluteFrame !== undefined ? Number(frameState.absoluteFrame) : cartelaPreviewPlayback.frame;
-          const absoluteFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
-          const pageCount = Math.max(1, Number(frameState && frameState.pageCount) || 1);
-          const pageIndex = Math.max(0, Math.min(pageCount - 1, Math.round(Number(frameState && frameState.pageIndex) || 0)));
-          status.textContent = pageCount > 1
-            ? `Pág ${pageIndex + 1}/${pageCount} · ${absoluteFrame}/${frameCount - 1}`
-            : `${absoluteFrame}/${frameCount - 1}`;
-        }
+        const frameCount = Math.max(1, frameState && (frameState.totalFrameCount || frameState.frameCount) || 1);
+        const rawFrame = frameState && frameState.absoluteFrame !== undefined ? Number(frameState.absoluteFrame) : cartelaPreviewPlayback.frame;
+        const absoluteFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
+        const pageCount = Math.max(1, Number(frameState && frameState.pageCount) || 1);
+        const pageIndex = Math.max(0, Math.min(pageCount - 1, Math.round(Number(frameState && frameState.pageIndex) || 0)));
+        const animationText = previewAnimationEnabled() ? '' : 'Animación off · ';
+        status.textContent = pageCount > 1
+          ? `${animationText}Pág ${pageIndex + 1}/${pageCount} · ${absoluteFrame}/${frameCount - 1}`
+          : `${animationText}${absoluteFrame}/${frameCount - 1}`;
       }
       if (playbackOptions && playbackOptions.realtimeDot) {
         playbackOptions.realtimeDot.className = 'style-preview-realtime-dot ' + (cartelaPreviewPlayback.realTime ? 'ok' : 'late');

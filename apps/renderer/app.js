@@ -1586,7 +1586,6 @@
   function setPreviewAnimationEnabled(enabled) {
     state.previewAnimationEnabled = !!enabled;
     syncPreviewAnimationInputs();
-    if (!state.previewAnimationEnabled) stopPreviewAnimation();
     renderVisiblePanelPreviews();
     if (state.activeTab === 'pdf') renderPdfPreview();
     savePreviewSettingsFromUi();

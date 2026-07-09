@@ -96,7 +96,7 @@
         if (renderId === stylePreviewRenderId) console.warn(error);
       });
       updateStylePreviewPlaybackUi(playbackOptions, localFrameState);
-      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id && previewAnimationEnabled()) {
+      if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id) {
         startStylePreviewPlayback(playbackOptions);
       }
     }
@@ -265,7 +265,6 @@
     }
 
     function startStylePreviewPlayback(playbackOptions) {
-      if (!previewAnimationEnabled()) return;
       stopStylePreviewPlayback({ keepFrame: true });
       stylePreviewPlayback.playing = true;
       stylePreviewPlayback.renderId = playbackOptions.renderId;
@@ -296,7 +295,6 @@
     }
 
     function toggleStylePreviewPlayback(playbackOptions) {
-      if (!previewAnimationEnabled()) return;
       if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === playbackOptions.style.id) {
         stopStylePreviewPlayback({ keepFrame: true });
         updateStylePreviewPlaybackUi(playbackOptions, stylePreviewRenderFrameState(playbackOptions.frameState));
@@ -306,7 +304,6 @@
     }
 
     function setStylePreviewFrame(playbackOptions, frame) {
-      if (!previewAnimationEnabled()) return;
       stopStylePreviewPlayback({ keepFrame: true });
       const frameCount = Math.max(1, playbackOptions.frameState.frameCount);
       stylePreviewPlayback.frame = Math.max(0, Math.min(frameCount - 1, Math.round(Number(frame) || 0)));
@@ -339,28 +336,25 @@
       const status = controls && controls.querySelector('.style-preview-frame-status');
       const values = controls && controls.querySelector('.style-preview-values');
       if (button) {
-        button.disabled = !previewAnimationEnabled();
+        button.disabled = false;
         button.textContent = stylePreviewPlayback.playing ? '⏸' : '▶';
         button.title = stylePreviewPlayback.playing ? 'Pausa' : 'Play';
         button.setAttribute('aria-label', button.title);
       }
       controls && controls.querySelectorAll('.style-preview-transport-button').forEach((button) => {
-        button.disabled = !previewAnimationEnabled();
+        button.disabled = false;
       });
       if (status) {
-        if (!previewAnimationEnabled()) {
-          status.textContent = 'Animación desactivada';
+        const animationText = previewAnimationEnabled() ? '' : 'Animación off · ';
+        const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
+        if (frameState && frameState.blackFrame) {
+          const blackFrame = Math.max(1, Math.round(Number(frameState.blackFrameIndex) || 1));
+          const blackTotal = Math.max(1, Math.round(Number(frameState.blackFrameCount) || 1));
+          status.textContent = `${animationText}Negro ${blackFrame}/${blackTotal}`;
         } else {
-          const frameCount = Math.max(1, frameState && frameState.frameCount || 1);
-          if (frameState && frameState.blackFrame) {
-            const blackFrame = Math.max(1, Math.round(Number(frameState.blackFrameIndex) || 1));
-            const blackTotal = Math.max(1, Math.round(Number(frameState.blackFrameCount) || 1));
-            status.textContent = `Negro ${blackFrame}/${blackTotal}`;
-          } else {
-            const rawFrame = frameState && frameState.localFrame !== undefined ? Number(frameState.localFrame) : stylePreviewPlayback.frame;
-            const localFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
-            status.textContent = `${localFrame}/${frameCount - 1}`;
-          }
+          const rawFrame = frameState && frameState.localFrame !== undefined ? Number(frameState.localFrame) : stylePreviewPlayback.frame;
+          const localFrame = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrame) ? rawFrame : 0));
+          status.textContent = `${animationText}${localFrame}/${frameCount - 1}`;
         }
       }
       if (playbackOptions && playbackOptions.realtimeDot) {
