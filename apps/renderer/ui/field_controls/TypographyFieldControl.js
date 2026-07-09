@@ -35,16 +35,16 @@
       letterSpacingInput.setAttribute('aria-label', 'Espaciado entre caracteres');
       if (base.letter_spacing !== undefined) letterSpacingInput.placeholder = String(base.letter_spacing);
 
-      let styleSelect = null;
+      const currentWeight = normalizeFontWeight(value.font_weight, value.font_style);
       const familySelect = fieldControlRegistry.create('select', {
         value: value.font_family,
         className: 'text-input font-family-select',
         options: fontFamilyOptions(options.fontCatalog, value.font_family),
         onInput: (fontFamily) => {
-          const nextStyle = firstFontStyle(options, fontFamily);
-          populateStyleSelect(styleSelect, options, fontFamily, nextStyle.style, nextStyle.postscript_name);
+          const nextStyle = closestFontStyle(options, fontFamily, currentWeight, value.font_style);
           onChange(options, {
             font_family: fontFamily,
+            font_weight: currentWeight,
             font_style: nextStyle.style,
             font_postscript_name: nextStyle.postscript_name,
           }, 'font_family');
@@ -52,18 +52,21 @@
       });
       fontControls.appendChild(familySelect);
 
-      styleSelect = fieldControlRegistry.create('select', {
-        value: value.font_style,
-        options: fontStyleOptions(options, value.font_family, value.font_style, value.font_postscript_name),
-        onInput: (_fontStyle, select) => {
-          const selected = select.selectedOptions[0];
+      const weightSelect = fieldControlRegistry.create('select', {
+        value: currentWeight,
+        className: 'text-input compact-select font-weight-select',
+        options: fontWeightOptions(value.font_weight),
+        onInput: (fontWeight) => {
+          const resolvedWeight = normalizeFontWeight(fontWeight, value.font_style);
+          const nextStyle = closestFontStyle(options, value.font_family, resolvedWeight, value.font_style);
           onChange(options, {
-            font_style: select.value,
-            font_postscript_name: selected ? selected.dataset.postscriptName || '' : '',
-          }, 'font_style');
+            font_weight: resolvedWeight,
+            font_style: nextStyle.style,
+            font_postscript_name: nextStyle.postscript_name,
+          }, 'font_weight');
         },
       });
-      fontControls.appendChild(styleSelect);
+      fontControls.appendChild(weightSelect);
 
       const colorInput = fieldControlRegistry.create('color', {
         value: normalizeColor(options, value.color),
@@ -96,38 +99,58 @@
       return controlOptions;
     }
 
-    function fontStyleOptions(options, fontFamily, value, postscriptName) {
-      const styles = getFontStyles(options, fontFamily);
-      const controlOptions = styles.map((fontStyle) => [
-        fontStyle.style,
-        fontStyle.style,
-        { postscriptName: fontStyle.postscript_name || '' },
-      ]);
-      if (value && !styles.some((fontStyle) => fontStyle.style === value)) {
-        controlOptions.push([value, value, { postscriptName: postscriptName || '' }]);
-      }
+    function fontWeightOptions(value) {
+      const weights = [200, 300, 400, 500, 600, 700, 800, 900];
+      const normalizedValue = normalizeFontWeight(value, 400);
+      const controlOptions = weights.map((weight) => [weight, String(weight)]);
+      if (!weights.includes(normalizedValue)) controlOptions.push([normalizedValue, String(normalizedValue)]);
       return controlOptions;
     }
 
-    function populateStyleSelect(select, options, fontFamily, value, postscriptName) {
-      if (!select) return;
-      select.innerHTML = '';
-      fontStyleOptions(options, fontFamily, value, postscriptName).forEach(([optionValue, optionLabel, optionMeta = {}]) => {
-        const option = documentRef.createElement('option');
-        option.value = optionValue;
-        option.textContent = optionLabel;
-        if (optionMeta.postscriptName !== undefined) option.dataset.postscriptName = optionMeta.postscriptName || '';
-        select.appendChild(option);
-      });
-      select.value = value;
-    }
-
-    function firstFontStyle(options, fontFamily) {
-      return getFontStyles(options, fontFamily)[0] || { style: 'Regular', postscript_name: '' };
+    function closestFontStyle(options, fontFamily, weight, currentStyle) {
+      const styles = getFontStyles(options, fontFamily);
+      const targetWeight = normalizeFontWeight(weight, currentStyle);
+      const targetItalic = /italic|oblique/i.test(currentStyle || '');
+      const samePosture = styles.filter((fontStyle) => /italic|oblique/i.test(fontStyle.style || '') === targetItalic);
+      const candidates = samePosture.length ? samePosture : styles;
+      return candidates
+        .slice()
+        .sort((a, b) => {
+          const weightScore = Math.abs(fontWeightFromStyle(a.style) - targetWeight) - Math.abs(fontWeightFromStyle(b.style) - targetWeight);
+          if (weightScore !== 0) return weightScore;
+          const aRegular = /regular|book|normal/i.test(a.style || '') ? 0 : 1;
+          const bRegular = /regular|book|normal/i.test(b.style || '') ? 0 : 1;
+          return aRegular - bRegular;
+        })[0] || { style: 'Regular', postscript_name: '' };
     }
 
     function getFontStyles(options, fontFamily) {
       return typeof options.getFontStyles === 'function' ? options.getFontStyles(fontFamily) : [];
+    }
+
+    function normalizeFontWeight(value, fallback = 400) {
+      const numeric = Number(value);
+      const hasValue = value !== undefined && value !== null && value !== '';
+      const fallbackNumeric = Number.isFinite(Number(fallback)) ? Number(fallback) : fontWeightFromStyle(fallback);
+      const valueWeight = hasValue ? fontWeightFromStyle(value) : NaN;
+      const resolved = Number.isFinite(numeric) && numeric > 0 ? numeric : (Number.isFinite(valueWeight) ? valueWeight : fallbackNumeric);
+      return [200, 300, 400, 500, 600, 700, 800, 900].reduce((closest, option) => (
+        Math.abs(option - resolved) < Math.abs(closest - resolved) ? option : closest
+      ), 200);
+    }
+
+    function fontWeightFromStyle(style) {
+      const numeric = Number(style);
+      if (Number.isFinite(numeric) && numeric > 0) return normalizeFontWeight(numeric);
+      const value = String(style || '');
+      if (/thin|extra\s*light|ultra\s*light/i.test(value)) return 200;
+      if (/light/i.test(value)) return 300;
+      if (/medium/i.test(value)) return 500;
+      if (/semi\s*bold|demi\s*bold/i.test(value)) return 600;
+      if (/extra\s*bold|ultra\s*bold/i.test(value)) return 800;
+      if (/black|heavy/i.test(value)) return 900;
+      if (/bold/i.test(value)) return 700;
+      return 400;
     }
 
     function normalizeColor(options, value) {

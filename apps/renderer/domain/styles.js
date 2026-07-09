@@ -13,6 +13,7 @@
       mergeStyleAnimation = (base) => base || {},
       normalizeBoolean,
       normalizeColor,
+      normalizeFontWeight = (value, fallback = 400) => Number(value) || Number(fallback) || 400,
       normalizeStyleAnimation = (value) => value || {},
       normalizeTextCapitalization,
       safeStyleId,
@@ -343,6 +344,7 @@
         if (value.letter_spacing !== undefined && value.letter_spacing !== '') item.letter_spacing = Number(value.letter_spacing) || 0;
         if (value.font_family) item.font_family = value.font_family;
         if (value.font_style) item.font_style = value.font_style;
+        if (value.font_weight !== undefined && value.font_weight !== '') item.font_weight = normalizeFontWeight(value.font_weight, value.font_style);
         if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
         if (value.color) item.color = normalizeColor(value.color);
         if (Object.keys(item).length) normalized[key] = item;
@@ -359,6 +361,7 @@
       if (value.letter_spacing !== undefined && value.letter_spacing !== '') item.letter_spacing = Number(value.letter_spacing) || 0;
       if (value.font_family) item.font_family = value.font_family;
       if (value.font_style) item.font_style = value.font_style;
+      if (value.font_weight !== undefined && value.font_weight !== '') item.font_weight = normalizeFontWeight(value.font_weight, value.font_style);
       if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
       if (value.color) item.color = normalizeColor(value.color);
       if (Object.keys(item).length) normalized.page_header = item;

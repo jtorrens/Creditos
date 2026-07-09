@@ -14,6 +14,7 @@
       explicitTextLines = (text) => String(text || '').split(/\r?\n/),
       fontStyleFromStyle = () => 'normal',
       fontWeightFromStyle = () => '400',
+      fontWeightFromTypography = null,
       getProductionSettings = () => ({ layout: {}, typography: {} }),
       imageCtor = root.Image,
       layoutForCartela = (layout) => layout,
@@ -443,7 +444,7 @@
       const letterSpacing = Number(typography.letter_spacing) || 0;
       return {
         color: typography.color,
-        font: `${fontStyleFromStyle(typography.font_style)} ${fontWeightFromStyle(typography.font_style)} ${fontSize}px ${quoteFontFamily(typography.font_family)}`,
+        font: `${fontStyleFromStyle(typography.font_style)} ${typeof fontWeightFromTypography === 'function' ? fontWeightFromTypography(typography) : fontWeightFromStyle(typography.font_style)} ${fontSize}px ${quoteFontFamily(typography.font_family)}`,
         fontSize,
         letterSpacing,
         lineHeight: fontSize * Math.max(0.1, Number(layout.line_spacing) || settings.layout.line_spacing) * (Number(cartela.line_spacing_multiplier) || 1),

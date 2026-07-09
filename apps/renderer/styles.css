@@ -1609,6 +1609,10 @@ textarea.visual-input {
   width: min(100%, 25ch);
 }
 
+.typography-font-controls .font-weight-select {
+  min-width: 72px;
+}
+
 .typography-font-controls .override-reset-button {
   color: var(--override);
   font-size: 16px;
