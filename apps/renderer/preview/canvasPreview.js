@@ -57,6 +57,7 @@
     }
 
     async function drawCanvasPage(ctx, page, layout, renderOptions = {}) {
+      const animationFrame = renderOptions && renderOptions.animationFrame ? renderOptions.animationFrame : null;
       const effectiveLayout = layoutForCartela(layout, page && page.cartela);
       const blockGap = cartelaBlockGap(page.cartela, effectiveLayout);
       const x = Math.max(0, Number(effectiveLayout.page_left_margin) || 0);
@@ -65,19 +66,19 @@
       const height = effectiveLayout.page_height - effectiveLayout.page_top_margin - effectiveLayout.page_bottom_margin;
       const blocks = page.blocks.filter((block) => !block.missing_source);
       const rowPlan = canvasPageRowPlan(page, blocks);
-      const rowCartela = (rowIndex) => cartelaWithResolvedRowAnimation(page.cartela, renderOptions.animationFrame, {
+      const rowCartela = (rowIndex) => animationFrame ? cartelaWithResolvedRowAnimation(page.cartela, animationFrame, {
         rowCount: rowPlan.rowCount,
         rowIndex,
-      });
-      const rowTypography = (rowIndex, typography) => typographyWithResolvedRowAnimation(rowCartela(rowIndex), typography, renderOptions.animationFrame, {
+      }) : page.cartela;
+      const rowTypography = (rowIndex, typography) => animationFrame ? typographyWithResolvedRowAnimation(rowCartela(rowIndex), typography, animationFrame, {
         rowCount: rowPlan.rowCount,
         rowIndex,
-      });
-      const rowFadeAlpha = (rowIndex) => animationFadeAlpha(rowCartela(rowIndex), renderOptions.animationFrame, {
+      }) : typography;
+      const rowFadeAlpha = (rowIndex) => animationFrame ? animationFadeAlpha(rowCartela(rowIndex), animationFrame, {
         fadeScope: 'row',
         rowCount: rowPlan.rowCount,
         rowIndex,
-      });
+      }) : 1;
       const heights = blocks.map((block, index) => measureCanvasBlock(ctx, block, page.cartela, effectiveLayout, width, {
         rowFadeAlpha,
         rowCartela,
@@ -93,16 +94,16 @@
       const totalHeight = titleHeight + (titleHeight && blocks.length ? blockGap : 0) + totalBlocksHeight + gaps;
       let cursorY = y + verticalOffset(height, totalHeight, pdfPageVerticalJustify(page)) + (Number(page.cartela.vertical_offset) || 0);
 
-      const fullFrameFadeAlpha = animationFadeAlpha(page.cartela, renderOptions.animationFrame, {
+      const fullFrameFadeAlpha = animationFrame ? animationFadeAlpha(page.cartela, animationFrame, {
         fadeScope: 'fullFrame',
         rowCount: 1,
         rowIndex: 0,
-      });
-      const frameReveal = animationFadeRevealState(page.cartela, renderOptions.animationFrame, {
+      }) : 1;
+      const frameReveal = animationFrame ? animationFadeRevealState(page.cartela, animationFrame, {
         fadeScope: 'frame',
         rowCount: 1,
         rowIndex: 0,
-      });
+      }) : null;
       const target = frameReveal && clampAlpha(frameReveal.progress) < 1
         ? createCanvasLayer(effectiveLayout.page_width, effectiveLayout.page_height)
         : null;
