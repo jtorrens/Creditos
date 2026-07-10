@@ -13,8 +13,11 @@
 
       options.blockTypographyFields.forEach(([key, label]) => {
         const base = settings.typography[key];
-        const override = overrides[key] || {};
-        const value = { ...base, ...override };
+        const effectiveValue = overrides[key] || {};
+        const override = cartela && cartela.block_style && cartela.block_style.typography && cartela.block_style.typography[key]
+          ? cartela.block_style.typography[key]
+          : {};
+        const value = { ...base, ...effectiveValue };
         const isOverride = options.hasCartelaBlockTypographyOverride(cartela, key);
         const row = fieldControlRegistry.create('typography', {
           base,

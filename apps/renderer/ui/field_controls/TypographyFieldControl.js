@@ -168,12 +168,14 @@
 
     function typographyNumberRow(label, control, meta = {}) {
       const row = typographyRow(label);
+      if (meta.hasFieldOverride) row.classList.add('has-field-override');
       row.appendChild(wrapNumberControl(control, meta));
       return row;
     }
 
     function typographyControlRow(label, control, options, field) {
       const row = typographyRow(label);
+      if (fieldHasOverride(options, field)) row.classList.add('has-field-override');
       const wrap = documentRef.createElement('div');
       wrap.className = 'field-control-inline typography-control-inline';
       wrap.appendChild(control);
@@ -195,10 +197,12 @@
 
     function metaWithReset(options, field, value) {
       const meta = metaForField(options, field, value);
+      const hasFieldOverride = fieldHasOverride(options, field);
       const resetButton = resetButtonForField(options, field);
-      if (!resetButton) return meta;
+      if (!resetButton) return { ...meta, hasFieldOverride };
       return {
         ...meta,
+        hasFieldOverride,
         afterControl: appendInlineControl(meta.afterControl, resetButton),
       };
     }

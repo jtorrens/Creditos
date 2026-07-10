@@ -182,7 +182,7 @@
 
       options.blockTypographyFields.forEach(([key, label]) => {
         const base = settings.typography[key];
-        const override = (typography && typography[key]) || {};
+        const override = style && style.block && style.block.typography && style.block.typography[key] ? style.block.typography[key] : {};
         const value = { ...base, ...((typography && typography[key]) || {}) };
         const isOverride = options.hasStyleTypographyOverride(style, key);
         const row = fieldControlRegistry.create('typography', {

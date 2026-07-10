@@ -1800,7 +1800,7 @@ textarea.visual-input {
   padding-top: 10px;
 }
 
-.block-typography-control-group.override-field .typography-sub-label {
+.typography-sub-row.has-field-override .typography-sub-label {
   color: var(--override);
 }
 
