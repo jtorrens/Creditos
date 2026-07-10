@@ -896,6 +896,7 @@
     normalizeColor,
     normalizeProtectedCapitalizationText,
     normalizeTextSubstitutions,
+    renderAccordionGroup: appAccordion.renderAccordionGroup,
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     typographyFields: TYPOGRAPHY_FIELDS,

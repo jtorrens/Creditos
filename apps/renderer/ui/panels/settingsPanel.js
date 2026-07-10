@@ -9,16 +9,57 @@
       els.defaultDurationInput.value = options.formatSecondsAsFrameDuration(settings.default_cartela_duration, options.currentMovieFps());
       els.defaultAutoLinesInput.value = String(settings.default_auto_page_lines);
       els.movieFpsInput.value = String(settings.movie_fps);
-      renderTypographySettings(settings);
-      renderLayoutSettings(settings);
+      renderSettingsCards(settings);
+    }
+
+    function renderSettingsCards(settings) {
+      els.typographySettings.innerHTML = '';
+      const existing = documentRef.getElementById('layoutSettings');
+      if (existing) existing.remove();
+      const cards = [
+        {
+          id: 'texto',
+          title: 'Texto',
+          render: (panel) => panel.appendChild(renderTextSettings(settings)),
+        },
+        {
+          id: 'pagina',
+          title: 'Página',
+          render: (panel) => panel.appendChild(renderPageSettings(settings)),
+        },
+        {
+          id: 'espaciado',
+          title: 'Espaciado',
+          render: (panel) => panel.appendChild(renderSpacingSettings(settings)),
+        },
+        {
+          id: 'tipografia',
+          title: 'Tipografía',
+          render: (panel) => panel.appendChild(renderTypographySettings(settings)),
+        },
+        {
+          id: 'scroll',
+          title: 'Scroll',
+          render: (panel) => panel.appendChild(renderScrollSettings(settings)),
+        },
+      ];
+
+      if (options.renderAccordionGroup) {
+        els.typographySettings.appendChild(options.renderAccordionGroup('production-settings', cards, { initialOpenId: 'texto' }));
+        return;
+      }
+
+      cards.forEach((card) => {
+        els.typographySettings.appendChild(options.sectionLabel(card.title));
+        card.render(els.typographySettings);
+      });
     }
 
     function renderTypographySettings(settings) {
-      els.typographySettings.innerHTML = '';
-      els.typographySettings.appendChild(options.sectionLabel('Tipografia base'));
+      const wrap = documentRef.createElement('div');
       const fontCatalog = options.getFontCatalog();
       const baseFamily = productionBaseTypographyFamily(settings);
-      els.typographySettings.appendChild(options.localSelectRow('Familia base', baseFamily, baseFontFamilyOptions(fontCatalog, settings, baseFamily), (value) => {
+      wrap.appendChild(options.localSelectRow('Familia base', baseFamily, baseFontFamilyOptions(fontCatalog, settings, baseFamily), (value) => {
         if (value === '__mixed__') return;
         options.updateBaseTypographyFamily(value);
       }));
@@ -35,8 +76,9 @@
           onInput: (fields) => options.updateTypographySetting(key, fields),
           value,
         });
-        els.typographySettings.appendChild(row);
+        wrap.appendChild(row);
       });
+      return wrap;
     }
 
     function productionBaseTypographyFamily(settings) {
@@ -60,37 +102,45 @@
       return controlOptions;
     }
 
-    function renderLayoutSettings(settings) {
-      const existing = documentRef.getElementById('layoutSettings');
-      if (existing) existing.remove();
-
+    function renderTextSettings(settings) {
       const wrap = documentRef.createElement('div');
-      wrap.id = 'layoutSettings';
-      wrap.className = 'layout-settings';
-      wrap.appendChild(options.sectionLabel('Composición base'));
       wrap.appendChild(options.localSelectRow('Idioma', settings.language, options.languageOptions, (value) => options.updateSettings({ language: value })));
       wrap.appendChild(options.localSelectRow('Capitalización', settings.text_capitalization, options.textCapitalizationOptions, (value) => options.updateSettings({ text_capitalization: value })));
       wrap.appendChild(options.localInputRow('Capitalización protegida', settings.protected_capitalizations, (value) => options.updateSettings({ protected_capitalizations: options.normalizeProtectedCapitalizationText(value) }), { multiline: true, commitOnChange: true }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(settings.use_protected_capitalization), options.yesNoOptions, (value) => options.updateSettings({ use_protected_capitalization: options.normalizeBoolean(value, true) })));
       wrap.appendChild(renderTextSubstitutions(settings));
+      return wrap;
+    }
+
+    function renderPageSettings(settings) {
+      const wrap = documentRef.createElement('div');
+      wrap.appendChild(settingsNumberRow('Margen superior de página', settings.layout.page_top_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_top_margin: value })));
+      wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_bottom_margin: value })));
+      wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_left_margin: value })));
+      wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_right_margin: value })));
+      return wrap;
+    }
+
+    function renderSpacingSettings(settings) {
+      const wrap = documentRef.createElement('div');
       wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => options.updateLayoutSetting({ line_spacing: value })));
       wrap.appendChild(settingsNumberRow('Separación entre columnas', settings.layout.column_gap, 0, null, 1, (value) => options.updateLayoutSetting({ column_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => options.updateLayoutSetting({ role_name_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación de grupos del origen', settings.layout.source_group_gap, 0, null, 1, (value) => options.updateLayoutSetting({ source_group_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación entre bloques', settings.layout.block_gap, 0, null, 1, (value) => options.updateLayoutSetting({ block_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación título/primera fila', settings.layout.block_title_gap, 0, null, 1, (value) => options.updateLayoutSetting({ block_title_gap: value })));
-      wrap.appendChild(settingsNumberRow('Margen superior de página', settings.layout.page_top_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_top_margin: value })));
-      wrap.appendChild(settingsNumberRow('Margen inferior de página', settings.layout.page_bottom_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_bottom_margin: value })));
-      wrap.appendChild(settingsNumberRow('Margen izquierdo de página', settings.layout.page_left_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_left_margin: value })));
-      wrap.appendChild(settingsNumberRow('Margen derecho de página', settings.layout.page_right_margin, 0, null, 1, (value) => options.updateLayoutSetting({ page_right_margin: value })));
       wrap.appendChild(options.localSelectRow('Repetir nombre de bloque', options.boolSelectValue(settings.layout.repeat_block_titles), options.yesNoOptions, (value) => options.updateLayoutSetting({ repeat_block_titles: options.normalizeBoolean(value, true) })));
       wrap.appendChild(options.localSelectRow('Wrap automático de texto', options.boolSelectValue(settings.layout.auto_text_wrap), options.yesNoOptions, (value) => options.updateLayoutSetting({ auto_text_wrap: options.normalizeBoolean(value, false) })));
-      wrap.appendChild(options.sectionLabel('Scroll'));
+      return wrap;
+    }
+
+    function renderScrollSettings(settings) {
+      const wrap = documentRef.createElement('div');
       wrap.appendChild(settingsNumberRow('Separación entre cartelas', settings.layout.scroll_page_gap, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_page_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación antes de última cartela', settings.layout.scroll_last_page_gap, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_last_page_gap: value })));
       wrap.appendChild(settingsNumberRow('Fade superior', settings.layout.scroll_fade_up, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_fade_up: value })));
       wrap.appendChild(settingsNumberRow('Fade inferior', settings.layout.scroll_fade_down, 0, null, 1, (value) => options.updateLayoutSetting({ scroll_fade_down: value })));
-      els.typographySettings.after(wrap);
+      return wrap;
     }
 
     function renderTextSubstitutions(settings) {
