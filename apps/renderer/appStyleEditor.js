@@ -9,6 +9,7 @@
         {
           id: 'general',
           title: 'General',
+          summary: 'Orientación, columnas y duración',
           icon: 'G',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['duration']),
@@ -18,6 +19,7 @@
         {
           id: 'pagina',
           title: 'Página',
+          summary: 'Márgenes y posición de la cartela',
           icon: '□',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
@@ -28,6 +30,7 @@
         {
           id: 'texto',
           title: 'Párrafo',
+          summary: 'Interlineado, wrap y capitalización',
           icon: '¶',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
@@ -38,6 +41,7 @@
         {
           id: 'espaciado',
           title: 'Espaciado',
+          summary: 'Separaciones entre columnas, filas y bloques',
           icon: '↔',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
@@ -48,6 +52,7 @@
         {
           id: 'bloque',
           title: 'Bloque',
+          summary: 'Columnas, concatenación y alineaciones',
           icon: '▦',
           status: () => cardStatus({
             override: hasAnyStyleBlockOverride(style, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
@@ -58,6 +63,7 @@
         {
           id: 'cabecera',
           title: 'Cabecera',
+          summary: 'Tipografía del título de cartela',
           icon: 'H',
           status: () => cardStatus({
             override: options.hasStyleTitleTypographyOverride(style),
@@ -67,6 +73,7 @@
         {
           id: 'tipografia',
           title: 'Tipografía de bloque',
+          summary: 'Título de bloque, cargo y nombre',
           icon: 'Aa',
           status: () => cardStatus({
             override: options.blockTypographyFields.some(([key]) => options.hasStyleTypographyOverride(style, key)),
@@ -77,6 +84,7 @@
         {
           id: 'animacion',
           title: 'Animación',
+          summary: 'Entrada, salida, movimiento y fade',
           icon: '▶',
           status: () => cardStatus({
             animation: hasAnimationSettings(style.animation),

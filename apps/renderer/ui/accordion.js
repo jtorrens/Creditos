@@ -32,21 +32,25 @@
         icon.textContent = item.icon || '';
         header.appendChild(icon);
 
+        const copy = documentRef.createElement('span');
+        copy.className = 'accordion-card-copy';
+
         const title = documentRef.createElement('span');
         title.className = 'accordion-card-title';
         title.textContent = item.title;
-        header.appendChild(title);
+        copy.appendChild(title);
 
         if (item.summary) {
           const summary = documentRef.createElement('span');
           summary.className = 'accordion-card-summary';
           summary.textContent = item.summary;
-          header.appendChild(summary);
+          copy.appendChild(summary);
         }
+        header.appendChild(copy);
 
         const marker = documentRef.createElement('span');
         marker.className = 'accordion-card-marker';
-        marker.textContent = 'v';
+        marker.textContent = '>';
 
         const panel = documentRef.createElement('div');
         panel.className = 'accordion-card-panel';
@@ -77,7 +81,7 @@
           card.classList.toggle('open', isOpen);
           header.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
           panel.hidden = !isOpen;
-          marker.textContent = isOpen ? '^' : 'v';
+          marker.textContent = isOpen ? 'v' : '>';
         });
       }
 
