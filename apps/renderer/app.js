@@ -852,6 +852,9 @@
     localSelectRow,
     sectionLabel,
   } = appFormRows;
+  const appAccordion = globalThis.CreditosUiAccordion.createAccordion({
+    documentRef: document,
+  });
   const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
     buildPhysicalPages,
     els,
@@ -1246,9 +1249,6 @@
     updateEditableStyleAnimation,
     updateSelectedCartelaAnimation,
     yesNoOptions: YES_NO_OPTIONS,
-  });
-  const appAccordion = globalThis.CreditosUiAccordion.createAccordion({
-    documentRef: document,
   });
   const appStyleEditor = globalThis.CreditosAppStyleEditor.createAppStyleEditor({
     blockTypographyFields: BLOCK_TYPOGRAPHY_FIELDS,
