@@ -120,24 +120,45 @@
 
     function renderPhaseControls(subject, animation, phase, label, updateAnimation) {
       const wrap = documentRef.createElement('div');
-      wrap.className = 'style-animation-phase';
-      wrap.appendChild(options.sectionLabel(label));
+      wrap.className = 'style-animation-phase-card';
+      const title = documentRef.createElement('div');
+      title.className = 'style-animation-phase-title';
+      title.textContent = label;
+      wrap.appendChild(title);
       const phaseValue = animation[phase] || {};
-      wrap.appendChild(options.localNumberRow(`${label} duracion frames`, phaseFrames(phaseValue, 'duration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'duration', value, updateAnimation)));
-      wrap.appendChild(options.localNumberRow(`${label} delay frames`, phaseFrames(phaseValue, 'delay'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'delay', value, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} curva`, phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { easing: value }, updateAnimation)));
+      const elementRows = [
+        options.localNumberRow('Duración frames', phaseFrames(phaseValue, 'duration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'duration', value, updateAnimation)),
+        options.localNumberRow('Delay frames', phaseFrames(phaseValue, 'delay'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'delay', value, updateAnimation)),
+        options.localSelectRow('Curva', phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { easing: value }, updateAnimation)),
+      ];
       if (phaseUsesEasingIntensity(phaseValue.easing)) {
-        wrap.appendChild(options.localNumberRow(`${label} intensidad curva`, phaseValue.easingIntensity, 0, 3, (value) => updatePhase(subject, animation, phase, { easingIntensity: value }, updateAnimation), 0.1));
+        elementRows.push(options.localNumberRow('Intensidad curva', phaseValue.easingIntensity, 0, 3, (value) => updatePhase(subject, animation, phase, { easingIntensity: value }, updateAnimation), 0.1));
       }
-      wrap.appendChild(options.localSelectRow(`${label} modo`, phaseValue.mode, modeOptions, (value) => updatePhase(subject, animation, phase, { mode: value }, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)));
-      wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
-      wrap.appendChild(options.localNumberRow(`${label} fade frames`, phaseFrames(phaseValue, 'fadeDuration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'fadeDuration', value, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} fade curva`, phaseValue.fadeEasing || phaseValue.easing, fadeEasingOptions, (value) => updatePhase(subject, animation, phase, { fadeEasing: value }, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} fade modo`, phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} fade direccion`, phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} fade alcance`, phaseValue.fadeBounds, fadeBoundsOptions, (value) => updatePhase(subject, animation, phase, { fadeBounds: value }, updateAnimation)));
+      elementRows.push(
+        options.localSelectRow('Modo', phaseValue.mode, modeOptions, (value) => updatePhase(subject, animation, phase, { mode: value }, updateAnimation)),
+        options.localSelectRow('Dirección', phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)),
+      );
+      wrap.appendChild(renderAnimationGroup('Elementos de cartela', elementRows));
+      wrap.appendChild(renderAnimationGroup('Fade / reveal', [
+        options.localNumberRow('Feather px', phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)),
+        options.localNumberRow('Fade frames', phaseFrames(phaseValue, 'fadeDuration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'fadeDuration', value, updateAnimation)),
+        options.localSelectRow('Fade curva', phaseValue.fadeEasing || phaseValue.easing, fadeEasingOptions, (value) => updatePhase(subject, animation, phase, { fadeEasing: value }, updateAnimation)),
+        options.localSelectRow('Fade modo', phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)),
+        options.localSelectRow('Fade dirección', phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)),
+        options.localSelectRow('Fade alcance', phaseValue.fadeBounds, fadeBoundsOptions, (value) => updatePhase(subject, animation, phase, { fadeBounds: value }, updateAnimation)),
+      ]));
       return wrap;
+    }
+
+    function renderAnimationGroup(title, rows) {
+      const group = documentRef.createElement('div');
+      group.className = 'style-animation-control-group';
+      const heading = documentRef.createElement('div');
+      heading.className = 'style-animation-control-group-title';
+      heading.textContent = title;
+      group.appendChild(heading);
+      rows.forEach((row) => group.appendChild(row));
+      return group;
     }
 
     function phaseUsesEasingIntensity(easing) {

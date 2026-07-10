@@ -9,6 +9,7 @@
         {
           id: 'general',
           title: 'General',
+          icon: 'G',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['duration']),
           }),
@@ -17,6 +18,7 @@
         {
           id: 'pagina',
           title: 'Página',
+          icon: '□',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
             animation: hasAnyAnimatedProperty(style, ['vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
@@ -25,7 +27,8 @@
         },
         {
           id: 'texto',
-          title: 'Texto',
+          title: 'Párrafo',
+          icon: '¶',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
             animation: hasAnyAnimatedProperty(style, ['line_spacing']),
@@ -35,6 +38,7 @@
         {
           id: 'espaciado',
           title: 'Espaciado',
+          icon: '↔',
           status: () => cardStatus({
             override: hasAnyStyleCartelaOverride(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
             animation: hasAnyAnimatedProperty(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
@@ -44,6 +48,7 @@
         {
           id: 'bloque',
           title: 'Bloque',
+          icon: '▦',
           status: () => cardStatus({
             override: hasAnyStyleBlockOverride(style, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
               || hasAnyStyleBlockAlignmentOverride(style, ['role', 'name', 'text']),
@@ -53,6 +58,7 @@
         {
           id: 'cabecera',
           title: 'Cabecera',
+          icon: 'H',
           status: () => cardStatus({
             override: options.hasStyleTitleTypographyOverride(style),
           }),
@@ -61,6 +67,7 @@
         {
           id: 'tipografia',
           title: 'Tipografía de bloque',
+          icon: 'Aa',
           status: () => cardStatus({
             override: options.blockTypographyFields.some(([key]) => options.hasStyleTypographyOverride(style, key)),
             animation: hasAnyAnimatedProperty(style, typographyAnimationKeys()),
@@ -70,6 +77,7 @@
         {
           id: 'animacion',
           title: 'Animación',
+          icon: '▶',
           status: () => cardStatus({
             animation: hasAnimationSettings(style.animation),
           }),

@@ -11,6 +11,7 @@
         {
           id: 'general',
           title: 'General',
+          icon: 'G',
           status: () => cardStatus({
             override: options.hasCartelaOverride(cartela, 'duration'),
           }),
@@ -19,6 +20,7 @@
         {
           id: 'pagina',
           title: 'Página',
+          icon: '□',
           status: () => cardStatus({
             override: hasAnyCartelaOverride(cartela, ['orientation', 'columns', 'vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
             animation: hasAnyAnimatedProperty(cartela, ['vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
@@ -27,7 +29,8 @@
         },
         {
           id: 'texto',
-          title: 'Texto',
+          title: 'Párrafo',
+          icon: '¶',
           status: () => cardStatus({
             override: hasAnyCartelaOverride(cartela, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
             animation: hasAnyAnimatedProperty(cartela, ['line_spacing']),
@@ -37,6 +40,7 @@
         {
           id: 'espaciado',
           title: 'Espaciado',
+          icon: '↔',
           status: () => cardStatus({
             override: hasAnyCartelaOverride(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
             animation: hasAnyAnimatedProperty(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
@@ -46,6 +50,7 @@
         {
           id: 'bloque',
           title: 'Bloque',
+          icon: '▦',
           status: () => cardStatus({
             override: hasAnyCartelaBlockOverride(cartela, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
               || hasAnyCartelaBlockAlignmentOverride(cartela, ['role', 'name', 'text']),
@@ -55,6 +60,7 @@
         {
           id: 'cabecera',
           title: 'Cabecera',
+          icon: 'H',
           status: () => cardStatus({
             override: options.hasCartelaTitleTypographyOverride && options.hasCartelaTitleTypographyOverride(cartela),
           }),
@@ -63,6 +69,7 @@
         {
           id: 'tipografia',
           title: 'Tipografía de bloque',
+          icon: 'Aa',
           status: () => cardStatus({
             override: hasCartelaTypographyOverride(cartela),
             animation: hasAnyAnimatedProperty(cartela, typographyAnimationKeys()),
@@ -75,11 +82,13 @@
         {
           id: 'imagenes',
           title: 'Imágenes',
+          icon: '▧',
           render: (panel) => panel.appendChild(options.renderCartelaImageControls(cartela)),
         },
         {
           id: 'animacion',
           title: 'Animación',
+          icon: '▶',
           status: () => cardStatus({
             override: options.hasCartelaAnimationOverride && options.hasCartelaAnimationOverride(cartela),
             animation: hasAnimationSettings(cartela.animation),
@@ -91,6 +100,7 @@
         {
           id: 'notas',
           title: 'Notas',
+          icon: 'N',
           render: (panel) => panel.appendChild(renderCartelaNotesControls(cartela)),
         },
       ];
@@ -137,6 +147,7 @@
       const filteredCard = {
         id: 'cartela-filtered-changes',
         title: includeAnimation ? 'Overrides / animación' : 'Overrides',
+        icon: includeAnimation ? '●' : 'O',
         render: (panel) => panel.appendChild(content),
       };
       if (options.renderAccordionGroup) {

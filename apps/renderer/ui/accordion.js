@@ -26,6 +26,12 @@
         header.className = 'accordion-card-header';
         header.setAttribute('aria-expanded', 'false');
 
+        const icon = documentRef.createElement('span');
+        icon.className = 'accordion-card-icon' + (item.icon ? '' : ' empty');
+        icon.setAttribute('aria-hidden', 'true');
+        icon.textContent = item.icon || '';
+        header.appendChild(icon);
+
         const title = documentRef.createElement('span');
         title.className = 'accordion-card-title';
         title.textContent = item.title;

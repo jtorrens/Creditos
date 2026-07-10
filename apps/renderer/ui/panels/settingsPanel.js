@@ -19,27 +19,32 @@
       const cards = [
         {
           id: 'texto',
-          title: 'Texto',
+          title: 'Párrafo',
+          icon: '¶',
           render: (panel) => panel.appendChild(renderTextSettings(settings)),
         },
         {
           id: 'pagina',
           title: 'Página',
+          icon: '□',
           render: (panel) => panel.appendChild(renderPageSettings(settings)),
         },
         {
           id: 'espaciado',
           title: 'Espaciado',
+          icon: '↔',
           render: (panel) => panel.appendChild(renderSpacingSettings(settings)),
         },
         {
           id: 'tipografia',
           title: 'Tipografía',
+          icon: 'Aa',
           render: (panel) => panel.appendChild(renderTypographySettings(settings)),
         },
         {
           id: 'scroll',
           title: 'Scroll',
+          icon: '⇅',
           render: (panel) => panel.appendChild(renderScrollSettings(settings)),
         },
       ];

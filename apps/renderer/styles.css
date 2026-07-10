@@ -1291,6 +1291,45 @@ button.primary:hover {
   font-size: 11px;
 }
 
+.style-animation-settings {
+  display: grid;
+  gap: 10px;
+}
+
+.style-animation-phase-card {
+  background: #101720;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.style-animation-phase-title {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.style-animation-control-group {
+  border-left: 2px solid #2e3d49;
+  display: grid;
+  gap: 0;
+  padding-left: 10px;
+}
+
+.style-animation-control-group + .style-animation-control-group {
+  margin-top: 2px;
+}
+
+.style-animation-control-group-title {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
 .accordion-group {
   display: grid;
   gap: 8px;
@@ -1314,20 +1353,37 @@ button.primary:hover {
   cursor: pointer;
   display: grid;
   gap: 8px;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
   min-height: 42px;
   padding: 10px 12px;
   text-align: left;
   width: 100%;
 }
 
+.accordion-card:not(.open) .accordion-card-header {
+  min-height: 63px;
+}
+
 .accordion-card-header:hover {
   background: #18222b;
 }
 
+.accordion-card-icon {
+  align-items: center;
+  color: var(--text);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 650;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
 .accordion-card-title {
   color: var(--text);
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   overflow-wrap: anywhere;
 }
 
