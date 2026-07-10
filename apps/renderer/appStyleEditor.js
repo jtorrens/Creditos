@@ -9,41 +9,70 @@
         {
           id: 'general',
           title: 'General',
+          status: () => cardStatus({
+            override: hasAnyStyleCartelaOverride(style, ['duration']),
+          }),
           render: (panel) => panel.appendChild(renderStyleGeneralControls(style)),
         },
         {
           id: 'pagina',
           title: 'Página',
+          status: () => cardStatus({
+            override: hasAnyStyleCartelaOverride(style, ['page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
+            animation: hasAnyAnimatedProperty(style, ['vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
+          }),
           render: (panel) => panel.appendChild(renderStylePageControls(style)),
         },
         {
           id: 'texto',
           title: 'Texto',
+          status: () => cardStatus({
+            override: hasAnyStyleCartelaOverride(style, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
+            animation: hasAnyAnimatedProperty(style, ['line_spacing']),
+          }),
           render: (panel) => panel.appendChild(renderStyleTextControls(style)),
         },
         {
           id: 'espaciado',
           title: 'Espaciado',
+          status: () => cardStatus({
+            override: hasAnyStyleCartelaOverride(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+            animation: hasAnyAnimatedProperty(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+          }),
           render: (panel) => panel.appendChild(renderStyleSpacingControls(style)),
         },
         {
           id: 'bloque',
           title: 'Bloque',
+          status: () => cardStatus({
+            override: hasAnyStyleBlockOverride(style, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
+              || hasAnyStyleBlockAlignmentOverride(style, ['role', 'name', 'text']),
+          }),
           render: (panel) => panel.appendChild(renderStyleBlockControls(style)),
         },
         {
           id: 'cabecera',
           title: 'Cabecera',
+          status: () => cardStatus({
+            override: options.hasStyleTitleTypographyOverride(style),
+          }),
           render: (panel) => panel.appendChild(renderStyleTitleTypographyControls(style, { includeTitle: false })),
         },
         {
           id: 'tipografia',
           title: 'Tipografía de bloque',
+          status: () => cardStatus({
+            override: options.blockTypographyFields.some(([key]) => options.hasStyleTypographyOverride(style, key)),
+            animation: hasAnyAnimatedProperty(style, typographyAnimationKeys()),
+          }),
           render: (panel) => panel.appendChild(renderStyleTypographyControls(style, { includeTitle: false })),
         },
         {
           id: 'animacion',
           title: 'Animación',
+          status: () => cardStatus({
+            animation: hasAnimationSettings(style.animation),
+          }),
           render: (panel) => {
             if (options.renderStyleAnimationControls) panel.appendChild(options.renderStyleAnimationControls(style, { includeTitle: false }));
           },
@@ -171,6 +200,50 @@
       if (field !== 'font_size' && field !== 'letter_spacing') return '';
       if (typographyKey !== 'block_title' && typographyKey !== 'role' && typographyKey !== 'name') return '';
       return `typography.${typographyKey}.${field}`;
+    }
+
+    function typographyAnimationKeys() {
+      return ['block_title', 'role', 'name'].flatMap((typographyKey) => [
+        typographyAnimationKey(typographyKey, 'font_size'),
+        typographyAnimationKey(typographyKey, 'letter_spacing'),
+      ]);
+    }
+
+    function cardStatus(status = {}) {
+      return {
+        override: !!status.override,
+        animation: !!status.animation,
+      };
+    }
+
+    function hasAnyStyleCartelaOverride(style, keys) {
+      return keys.some((key) => options.hasStyleCartelaOverride(style, key));
+    }
+
+    function hasAnyStyleBlockOverride(style, keys) {
+      return keys.some((key) => !!(style && style.block && Object.prototype.hasOwnProperty.call(style.block, key)));
+    }
+
+    function hasAnyStyleBlockAlignmentOverride(style, keys) {
+      return keys.some((key) => !!(style && style.block && style.block.alignment && Object.prototype.hasOwnProperty.call(style.block.alignment, key)));
+    }
+
+    function hasAnyAnimatedProperty(subject, keys) {
+      const properties = subject && subject.animation && subject.animation.properties ? subject.animation.properties : {};
+      return keys.some((key) => properties[key] && properties[key].animate);
+    }
+
+    function hasAnimationSettings(animation) {
+      const normalized = options.normalizeStyleAnimation ? options.normalizeStyleAnimation(animation || {}) : (animation || {});
+      if (!normalized || typeof normalized !== 'object') return false;
+      if (normalized.enabled) return true;
+      const properties = normalized.properties && typeof normalized.properties === 'object' ? normalized.properties : {};
+      if (Object.keys(properties).some((key) => properties[key] && properties[key].animate)) return true;
+      return phaseHasFade(normalized.in) || phaseHasFade(normalized.out);
+    }
+
+    function phaseHasFade(phase = {}) {
+      return Number(phase.fadeDurationFrames) > 0 || Number(phase.fadeDurationMs) > 0;
     }
 
     function renderStyleTitleTypographyControls(style, controlOptions = {}) {

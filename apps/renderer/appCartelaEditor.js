@@ -11,36 +11,62 @@
         {
           id: 'general',
           title: 'General',
+          status: () => cardStatus({
+            override: options.hasCartelaOverride(cartela, 'duration'),
+          }),
           render: (panel) => panel.appendChild(renderCartelaGeneralControls(cartela)),
         },
         {
           id: 'pagina',
           title: 'Página',
+          status: () => cardStatus({
+            override: hasAnyCartelaOverride(cartela, ['orientation', 'columns', 'vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
+            animation: hasAnyAnimatedProperty(cartela, ['vertical_offset', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin']),
+          }),
           render: (panel) => panel.appendChild(renderCartelaPageControls(cartela)),
         },
         {
           id: 'texto',
           title: 'Texto',
+          status: () => cardStatus({
+            override: hasAnyCartelaOverride(cartela, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
+            animation: hasAnyAnimatedProperty(cartela, ['line_spacing']),
+          }),
           render: (panel) => panel.appendChild(renderCartelaTextControls(cartela)),
         },
         {
           id: 'espaciado',
           title: 'Espaciado',
+          status: () => cardStatus({
+            override: hasAnyCartelaOverride(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+            animation: hasAnyAnimatedProperty(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+          }),
           render: (panel) => panel.appendChild(renderCartelaSpacingControls(cartela)),
         },
         {
           id: 'bloque',
           title: 'Bloque',
+          status: () => cardStatus({
+            override: hasAnyCartelaBlockOverride(cartela, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
+              || hasAnyCartelaBlockAlignmentOverride(cartela, ['role', 'name', 'text']),
+          }),
           render: (panel) => panel.appendChild(renderCartelaBlockStyleControls(cartela, { includeTypography: false })),
         },
         {
           id: 'cabecera',
           title: 'Cabecera',
+          status: () => cardStatus({
+            override: options.hasCartelaTitleTypographyOverride && options.hasCartelaTitleTypographyOverride(cartela),
+          }),
           render: (panel) => panel.appendChild(options.renderCartelaTitleTypographyControls(cartela, { includeTitle: false })),
         },
         {
           id: 'tipografia',
           title: 'Tipografía de bloque',
+          status: () => cardStatus({
+            override: hasCartelaTypographyOverride(cartela),
+            animation: hasAnyAnimatedProperty(cartela, typographyAnimationKeys()),
+          }),
           render: (panel) => {
             const value = options.getEffectiveCartelaBlockStyle(cartela);
             panel.appendChild(options.renderCartelaBlockTypographyControls(cartela, value.typography || {}, { includeTitle: false }));
@@ -54,6 +80,10 @@
         {
           id: 'animacion',
           title: 'Animación',
+          status: () => cardStatus({
+            override: options.hasCartelaAnimationOverride && options.hasCartelaAnimationOverride(cartela),
+            animation: hasAnimationSettings(cartela.animation),
+          }),
           render: (panel) => {
             if (options.renderCartelaAnimationControls) panel.appendChild(options.renderCartelaAnimationControls(cartela, { includeTitle: false }));
           },
@@ -208,6 +238,60 @@
 
     function animationMeta(cartela, key, meta = {}) {
       return options.cartelaAnimationRowMeta ? options.cartelaAnimationRowMeta(cartela, key, meta) : meta;
+    }
+
+    function cardStatus(status = {}) {
+      return {
+        override: !!status.override,
+        animation: !!status.animation,
+      };
+    }
+
+    function hasAnyCartelaOverride(cartela, keys) {
+      return keys.some((key) => options.hasCartelaOverride(cartela, key));
+    }
+
+    function hasAnyCartelaBlockOverride(cartela, keys) {
+      return keys.some((key) => !!(cartela && cartela.block_style && Object.prototype.hasOwnProperty.call(cartela.block_style, key)));
+    }
+
+    function hasAnyCartelaBlockAlignmentOverride(cartela, keys) {
+      return keys.some((key) => options.hasCartelaBlockAlignmentOverride && options.hasCartelaBlockAlignmentOverride(cartela, key));
+    }
+
+    function hasCartelaTypographyOverride(cartela) {
+      return !!(options.blockTypographyFields || []).some(([key]) => (
+        options.hasCartelaBlockTypographyOverride && options.hasCartelaBlockTypographyOverride(cartela, key)
+      ));
+    }
+
+    function typographyAnimationKeys() {
+      return ['block_title', 'role', 'name'].flatMap((typographyKey) => [
+        typographyAnimationKey(typographyKey, 'font_size'),
+        typographyAnimationKey(typographyKey, 'letter_spacing'),
+      ]);
+    }
+
+    function typographyAnimationKey(typographyKey, field) {
+      return `typography.${typographyKey}.${field}`;
+    }
+
+    function hasAnyAnimatedProperty(cartela, keys) {
+      const properties = cartela && cartela.animation && cartela.animation.properties ? cartela.animation.properties : {};
+      return keys.some((key) => properties[key] && properties[key].animate);
+    }
+
+    function hasAnimationSettings(animation) {
+      const normalized = options.normalizeStyleAnimation ? options.normalizeStyleAnimation(animation || {}) : (animation || {});
+      if (!normalized || typeof normalized !== 'object') return false;
+      if (normalized.enabled) return true;
+      const properties = normalized.properties && typeof normalized.properties === 'object' ? normalized.properties : {};
+      if (Object.keys(properties).some((key) => properties[key] && properties[key].animate)) return true;
+      return phaseHasFade(normalized.in) || phaseHasFade(normalized.out);
+    }
+
+    function phaseHasFade(phase = {}) {
+      return Number(phase.fadeDurationFrames) > 0 || Number(phase.fadeDurationMs) > 0;
     }
 
     function renderCartelaStyleControls(cartela) {

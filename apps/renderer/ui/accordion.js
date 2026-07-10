@@ -49,7 +49,7 @@
         const status = documentRef.createElement('span');
         status.className = 'accordion-card-status';
         status.setAttribute('aria-hidden', 'true');
-        updateStatusDots(status, panel);
+        updateStatusDots(status, panel, item.status);
         header.appendChild(status);
         header.appendChild(marker);
 
@@ -79,12 +79,15 @@
       return group;
     }
 
-    function updateStatusDots(status, panel) {
+    function updateStatusDots(status, panel, explicitStatus = null) {
+      const resolvedStatus = typeof explicitStatus === 'function' ? explicitStatus() : (explicitStatus || {});
+      const hasOverride = !!resolvedStatus.override || panel.querySelector('.override-field, .override-control');
+      const hasAnimation = !!resolvedStatus.animation || panel.querySelector('.keyframe-toggle.active');
       status.innerHTML = '';
-      if (panel.querySelector('.override-field, .override-control')) {
+      if (hasOverride) {
         status.appendChild(statusDot('override'));
       }
-      if (panel.querySelector('.keyframe-toggle.active')) {
+      if (hasAnimation) {
         status.appendChild(statusDot('animation'));
       }
     }
