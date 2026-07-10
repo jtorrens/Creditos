@@ -124,6 +124,7 @@
       wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} fade frames`, phaseFrames(phaseValue, 'fadeDuration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'fadeDuration', value, updateAnimation)));
+      wrap.appendChild(options.localSelectRow(`${label} fade curva`, phaseValue.fadeEasing || phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { fadeEasing: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade modo`, phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade direccion`, phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade alcance`, phaseValue.fadeBounds, fadeBoundsOptions, (value) => updatePhase(subject, animation, phase, { fadeBounds: value }, updateAnimation)));

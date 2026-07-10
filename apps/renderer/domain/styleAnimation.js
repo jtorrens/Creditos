@@ -43,6 +43,7 @@
         direction: 'topToBottom',
         featherPx: 80,
         fadeDurationMs: 0,
+        fadeEasing: 'easeOut',
         fadeMode: 'fullFrame',
         fadeDirection: 'topToBottom',
         fadeBounds: 'screen',
@@ -55,6 +56,7 @@
         direction: 'topToBottom',
         featherPx: 80,
         fadeDurationMs: 0,
+        fadeEasing: 'easeIn',
         fadeMode: 'fullFrame',
         fadeDirection: 'topToBottom',
         fadeBounds: 'screen',
@@ -119,17 +121,19 @@
 
     function normalizeAnimationPhase(value = {}, defaults = defaultStyleAnimation.in) {
       const input = value && typeof value === 'object' ? value : {};
+      const easing = normalizeEasing(input.easing, defaults.easing);
       return {
         durationMs: normalizeMs(input.durationMs, defaults.durationMs),
         delayMs: normalizeMs(input.delayMs, defaults.delayMs),
         durationFrames: normalizeOptionalFrames(input.durationFrames, defaults.durationFrames),
         delayFrames: normalizeOptionalFrames(input.delayFrames, defaults.delayFrames),
-        easing: normalizeEasing(input.easing, defaults.easing),
+        easing,
         mode: transitionModes.includes(input.mode) ? input.mode : defaults.mode,
         direction: transitionDirections.includes(input.direction) ? input.direction : defaults.direction,
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
         fadeDurationMs: normalizeFadeDurationMs(input, defaults),
         fadeDurationFrames: normalizeOptionalFrames(input.fadeDurationFrames, defaults.fadeDurationFrames),
+        fadeEasing: normalizeEasing(input.fadeEasing !== undefined ? input.fadeEasing : easing, defaults.fadeEasing || easing),
         fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
         fadeDirection: normalizeFadeDirection(input.fadeDirection, input, defaults),
         fadeBounds: normalizeFadeBounds(input.fadeBounds, defaults),

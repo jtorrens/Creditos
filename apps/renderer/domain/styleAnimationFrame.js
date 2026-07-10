@@ -186,7 +186,7 @@
       const fadePhase = {
         delayMs: phase.delayMs,
         direction: phase.fadeDirection || 'topToBottom',
-        easing: phase.easing,
+        easing: phase.fadeEasing || phase.easing,
         mode: phase.fadeMode === 'cascade' ? 'cascade' : 'together',
       };
       const window = rowPhaseWindow(fadePhase, {
@@ -196,10 +196,10 @@
       let visibleProgress = null;
       if (phaseName === 'out') {
         if (localFrame < window.startFrame) return null;
-        visibleProgress = localFrame < window.endFrame ? 1 - phaseProgress(localFrame, window, phase.easing) : 0;
+        visibleProgress = localFrame < window.endFrame ? 1 - phaseProgress(localFrame, window, fadePhase.easing) : 0;
       } else {
         if (localFrame < window.startFrame) visibleProgress = 0;
-        else if (localFrame < window.endFrame) visibleProgress = phaseProgress(localFrame, window, phase.easing);
+        else if (localFrame < window.endFrame) visibleProgress = phaseProgress(localFrame, window, fadePhase.easing);
         else return null;
       }
       const progress = Math.max(0, Math.min(1, Number(visibleProgress) || 0));
