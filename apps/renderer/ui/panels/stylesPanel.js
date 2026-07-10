@@ -5,8 +5,8 @@
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
     let stylePreviewRenderId = 0;
-    let stylePreviewHoldFrames = 75;
-    let stylePreviewLoopBlackFrames = 75;
+    let stylePreviewHoldFrames = 25;
+    let stylePreviewLoopBlackFrames = 25;
     let stylePreviewPairCount = 3;
     const stylePreviewPlayback = {
       frame: 0,
@@ -275,7 +275,7 @@
         min: 0,
         max: 1000,
         step: 1,
-        fallbackValue: 75,
+        fallbackValue: 25,
         onInput: (nextValue) => {
           onChange(Math.max(0, Math.min(1000, Math.round(Number(nextValue) || 0))));
         },
