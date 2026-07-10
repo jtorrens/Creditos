@@ -6,7 +6,8 @@
 
     const transitionModes = ['together', 'cascade', 'relativeCascade', 'symmetricCascade'];
     const transitionDirections = ['topToBottom', 'bottomToTop', 'leftToRight', 'rightToLeft'];
-    const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
+    const transitionEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized', 'spring', 'bounce'];
+    const fadeEasings = ['linear', 'easeIn', 'easeOut', 'easeInOut', 'emphasized'];
     const fadeModes = ['fullFrame', 'cascade'];
     const fadeBounds = ['screen', 'visibleFrame'];
     const animatableProperties = [
@@ -39,6 +40,7 @@
         durationMs: 600,
         delayMs: 0,
         easing: 'easeOut',
+        easingIntensity: 1,
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
@@ -52,6 +54,7 @@
         durationMs: 500,
         delayMs: 0,
         easing: 'easeIn',
+        easingIntensity: 1,
         mode: 'cascade',
         direction: 'topToBottom',
         featherPx: 80,
@@ -128,12 +131,13 @@
         durationFrames: normalizeOptionalFrames(input.durationFrames, defaults.durationFrames),
         delayFrames: normalizeOptionalFrames(input.delayFrames, defaults.delayFrames),
         easing,
+        easingIntensity: normalizeEasingIntensity(input.easingIntensity, defaults.easingIntensity),
         mode: transitionModes.includes(input.mode) ? input.mode : defaults.mode,
         direction: transitionDirections.includes(input.direction) ? input.direction : defaults.direction,
         featherPx: Math.max(0, Number(input.featherPx !== undefined ? input.featherPx : defaults.featherPx) || 0),
         fadeDurationMs: normalizeFadeDurationMs(input, defaults),
         fadeDurationFrames: normalizeOptionalFrames(input.fadeDurationFrames, defaults.fadeDurationFrames),
-        fadeEasing: normalizeEasing(input.fadeEasing !== undefined ? input.fadeEasing : easing, defaults.fadeEasing || easing),
+        fadeEasing: normalizeFadeEasing(input.fadeEasing !== undefined ? input.fadeEasing : easing, defaults.fadeEasing || easing),
         fadeMode: normalizeFadeMode(input.fadeMode, input, defaults),
         fadeDirection: normalizeFadeDirection(input.fadeDirection, input, defaults),
         fadeBounds: normalizeFadeBounds(input.fadeBounds, defaults),
@@ -242,6 +246,17 @@
       return transitionEasings.includes(normalized) ? normalized : fallback;
     }
 
+    function normalizeFadeEasing(value, fallback) {
+      const normalized = normalizeEasing(value, fallback);
+      return fadeEasings.includes(normalized) ? normalized : (fadeEasings.includes(fallback) ? fallback : 'linear');
+    }
+
+    function normalizeEasingIntensity(value, fallback = 1) {
+      const numeric = Number(value !== undefined ? value : fallback);
+      if (!Number.isFinite(numeric)) return 1;
+      return Math.max(0, Math.min(3, numeric));
+    }
+
     return {
       animatableProperties,
       defaultStyleAnimation,
@@ -251,6 +266,7 @@
       normalizeAnimatedProperties,
       normalizeStyleAnimation,
       serializeStyleAnimation,
+      fadeEasings,
       fadeBounds,
       fadeModes,
       transitionDirections,

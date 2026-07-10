@@ -152,6 +152,7 @@
       stripProductionLayoutFromSettings: settingsDomain.stripProductionLayoutFromSettings,
       styleNameFromFileName: commonDomain.styleNameFromFileName,
       styleFadeBounds: styleAnimationDomain.fadeBounds,
+      styleFadeEasings: styleAnimationDomain.fadeEasings,
       styleTransitionEasings: styleAnimationDomain.transitionEasings,
       transformCartelaText: settingsDomain.transformCartelaText,
       unitRenderOptions: paginationUnitsDomain.unitRenderOptions,

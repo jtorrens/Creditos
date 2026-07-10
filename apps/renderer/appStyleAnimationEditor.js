@@ -23,13 +23,19 @@
       ['leftToRight', 'Izquierda derecha'],
       ['rightToLeft', 'Derecha izquierda'],
     ];
-    const easingOptions = [
+    const baseEasingOptions = [
       ['linear', 'Lineal'],
       ['easeIn', 'Ease in'],
       ['easeOut', 'Ease out'],
       ['easeInOut', 'Ease in/out'],
       ['emphasized', 'Enfática'],
+    ];
+    const easingOptions = [
+      ...baseEasingOptions,
+      ['spring', 'Spring'],
+      ['bounce', 'Bounce'],
     ].filter(([key]) => !options.styleTransitionEasings || options.styleTransitionEasings.includes(key));
+    const fadeEasingOptions = baseEasingOptions.filter(([key]) => !options.styleFadeEasings || options.styleFadeEasings.includes(key));
     const propertyLabels = {
       line_spacing: 'Interlineado',
       column_gap: 'Separacion entre columnas',
@@ -120,15 +126,22 @@
       wrap.appendChild(options.localNumberRow(`${label} duracion frames`, phaseFrames(phaseValue, 'duration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'duration', value, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} delay frames`, phaseFrames(phaseValue, 'delay'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'delay', value, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} curva`, phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { easing: value }, updateAnimation)));
+      if (phaseUsesEasingIntensity(phaseValue.easing)) {
+        wrap.appendChild(options.localNumberRow(`${label} intensidad curva`, phaseValue.easingIntensity, 0, 3, (value) => updatePhase(subject, animation, phase, { easingIntensity: value }, updateAnimation), 0.1));
+      }
       wrap.appendChild(options.localSelectRow(`${label} modo`, phaseValue.mode, modeOptions, (value) => updatePhase(subject, animation, phase, { mode: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} direccion`, phaseValue.direction, directionOptions, (value) => updatePhase(subject, animation, phase, { direction: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} feather px`, phaseValue.featherPx, 0, null, (value) => updatePhase(subject, animation, phase, { featherPx: value }, updateAnimation)));
       wrap.appendChild(options.localNumberRow(`${label} fade frames`, phaseFrames(phaseValue, 'fadeDuration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'fadeDuration', value, updateAnimation)));
-      wrap.appendChild(options.localSelectRow(`${label} fade curva`, phaseValue.fadeEasing || phaseValue.easing, easingOptions, (value) => updatePhase(subject, animation, phase, { fadeEasing: value }, updateAnimation)));
+      wrap.appendChild(options.localSelectRow(`${label} fade curva`, phaseValue.fadeEasing || phaseValue.easing, fadeEasingOptions, (value) => updatePhase(subject, animation, phase, { fadeEasing: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade modo`, phaseValue.fadeMode, fadeModeOptions, (value) => updatePhase(subject, animation, phase, { fadeMode: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade direccion`, phaseValue.fadeDirection, directionOptions, (value) => updatePhase(subject, animation, phase, { fadeDirection: value }, updateAnimation)));
       wrap.appendChild(options.localSelectRow(`${label} fade alcance`, phaseValue.fadeBounds, fadeBoundsOptions, (value) => updatePhase(subject, animation, phase, { fadeBounds: value }, updateAnimation)));
       return wrap;
+    }
+
+    function phaseUsesEasingIntensity(easing) {
+      return easing === 'spring' || easing === 'bounce';
     }
 
     function styleAnimationRowMeta(style, key, meta = {}) {

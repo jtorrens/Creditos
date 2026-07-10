@@ -114,7 +114,7 @@
       if (localFrame >= outRow.startFrame && localFrame < outRow.endFrame) {
         return {
           name: 'out',
-          progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing),
+          progress: phaseProgress(localFrame, outRow, animation.out && animation.out.easing, animation.out && animation.out.easingIntensity),
           mode: animation.out && animation.out.mode,
           direction: animation.out && animation.out.direction,
           relativeFactor: animationFactor(rowState, animation.out),
@@ -150,7 +150,7 @@
       if (localFrame >= inRow.startFrame && localFrame < inRow.endFrame) {
         return {
           name: 'in',
-          progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing),
+          progress: phaseProgress(localFrame, inRow, animation.in && animation.in.easing, animation.in && animation.in.easingIntensity),
           mode: animation.in && animation.in.mode,
           direction: animation.in && animation.in.direction,
           relativeFactor: animationFactor(rowState, animation.in),
@@ -219,10 +219,10 @@
       return false;
     }
 
-    function phaseProgress(localFrame, window, easing) {
+    function phaseProgress(localFrame, window, easing, intensity = 1) {
       const duration = Math.max(0.0001, Number(window && window.durationFrames) || 1);
       const denominator = Math.max(0.0001, duration - 1);
-      return easeProgress((localFrame - window.startFrame) / denominator, easing);
+      return easeProgress((localFrame - window.startFrame) / denominator, easing, intensity);
     }
 
     function orderedRowIndex(rowIndex, rowCount, direction) {
@@ -248,17 +248,52 @@
       return Math.max(0, Math.round((Math.max(0, Number(ms) || 0) / 1000) * fps));
     }
 
-    function easeProgress(progress, easing) {
+    function easeProgress(progress, easing, intensity = 1) {
       const t = Math.max(0, Math.min(1, Number(progress) || 0));
       if (easing === 'easeIn') return t * t * t;
       if (easing === 'easeOut') return 1 - ((1 - t) * (1 - t) * (1 - t));
       if (easing === 'easeInOut') return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       if (easing === 'emphasized') return 1 - Math.pow(1 - t, 4);
+      if (easing === 'spring') return springProgress(t, intensity);
+      if (easing === 'bounce') return bounceProgress(t, intensity);
       return t;
     }
 
+    function springProgress(t, intensity = 1) {
+      const amount = Math.max(0, Math.min(3, Number(intensity) || 0));
+      if (amount <= 0) return t;
+      if (t <= 0 || t >= 1) return t;
+      const oscillations = 1.5 + amount;
+      const damping = 4 / Math.max(0.25, amount);
+      return 1 - (Math.exp(-damping * t) * Math.cos(oscillations * 2 * Math.PI * t));
+    }
+
+    function bounceProgress(t, intensity = 1) {
+      const amount = Math.max(0, Math.min(3, Number(intensity) || 0));
+      if (amount <= 0) return t;
+      const bounced = easeOutBounce(t);
+      return t + ((bounced - t) * amount);
+    }
+
+    function easeOutBounce(t) {
+      const n1 = 7.5625;
+      const d1 = 2.75;
+      if (t < 1 / d1) return n1 * t * t;
+      if (t < 2 / d1) {
+        const adjusted = t - (1.5 / d1);
+        return (n1 * adjusted * adjusted) + 0.75;
+      }
+      if (t < 2.5 / d1) {
+        const adjusted = t - (2.25 / d1);
+        return (n1 * adjusted * adjusted) + 0.9375;
+      }
+      const adjusted = t - (2.625 / d1);
+      return (n1 * adjusted * adjusted) + 0.984375;
+    }
+
     function interpolate(from, to, progress) {
-      return from + ((to - from) * Math.max(0, Math.min(1, Number(progress) || 0)));
+      const amount = Number(progress);
+      return from + ((to - from) * (Number.isFinite(amount) ? amount : 0));
     }
 
     function resolvedEdgeValue(property, phase, stable) {
