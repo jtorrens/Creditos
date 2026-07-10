@@ -534,12 +534,16 @@
     pruneRedundantStyleOverrides: pruneRedundantStyleOverridesInDomain,
     resetCartelaBlockAlignmentOverride: resetCartelaBlockAlignmentOverrideInDomain,
     resetCartelaBlockOverride: resetCartelaBlockOverrideInDomain,
+    resetCartelaBlockTypographyFieldOverride: resetCartelaBlockTypographyFieldOverrideInDomain,
     resetCartelaBlockTypographyOverride: resetCartelaBlockTypographyOverrideInDomain,
+    resetCartelaTitleTypographyFieldOverride: resetCartelaTitleTypographyFieldOverrideInDomain,
     resetCartelaTitleTypographyOverride: resetCartelaTitleTypographyOverrideInDomain,
     resetStyleBlockAlignmentOverride: resetStyleBlockAlignmentOverrideInDomain,
     resetStyleBlockOverride: resetStyleBlockOverrideInDomain,
     resetStyleCartelaOverride: resetStyleCartelaOverrideInDomain,
+    resetStyleTitleTypographyFieldOverride: resetStyleTitleTypographyFieldOverrideInDomain,
     resetStyleTitleTypographyOverride: resetStyleTitleTypographyOverrideInDomain,
+    resetStyleTypographyFieldOverride: resetStyleTypographyFieldOverrideInDomain,
     resetStyleTypographyOverride: resetStyleTypographyOverrideInDomain,
     sanitizeStyleCartelaOverrides,
     sanitizeStyleBlockOverrides,
@@ -949,13 +953,17 @@
     renderStylesPane,
     resetCartelaBlockAlignmentOverrideInDomain,
     resetCartelaBlockOverrideInDomain,
+    resetCartelaBlockTypographyFieldOverrideInDomain,
     resetCartelaBlockTypographyOverrideInDomain,
     resetCartelaOverrideInStructure,
+    resetCartelaTitleTypographyFieldOverrideInDomain,
     resetCartelaTitleTypographyOverrideInDomain,
     resetStyleBlockAlignmentOverrideInDomain,
     resetStyleBlockOverrideInDomain,
     resetStyleCartelaOverrideInDomain,
+    resetStyleTitleTypographyFieldOverrideInDomain,
     resetStyleTitleTypographyOverrideInDomain,
+    resetStyleTypographyFieldOverrideInDomain,
     resetStyleTypographyOverrideInDomain,
     normalizeColor,
     normalizeStyleAnimation,
@@ -1274,7 +1282,9 @@
     normalizeStyleAnimation,
     resetEditableStyleBlockOverride,
     resetEditableStyleCartelaOverride,
+    resetEditableStyleTitleTypographyFieldOverride,
     resetEditableStyleTitleTypographyOverride,
+    resetEditableStyleTypographyFieldOverride,
     resetEditableStyleTypographyOverride,
     renderStyleAnimationControls: appStyleAnimationEditor.renderStyleAnimationControls,
     renderAccordionGroup: appAccordion.renderAccordionGroup,
@@ -1301,7 +1311,9 @@
     hasCartelaTitleTypographyOverride,
     normalizeColor,
     resetSelectedCartelaBlockTypographyOverride,
+    resetSelectedCartelaBlockTypographyFieldOverride,
     resetSelectedCartelaTitleTypographyOverride,
+    resetSelectedCartelaTitleTypographyFieldOverride,
     sectionLabel,
     updateSelectedCartelaBlockTypography,
     updateSelectedCartelaTitleTypography,
@@ -1768,12 +1780,20 @@
     return appCommands.resetEditableStyleTitleTypographyOverride(style);
   }
 
+  function resetEditableStyleTitleTypographyFieldOverride(style, fields) {
+    return appCommands.resetEditableStyleTitleTypographyFieldOverride(style, fields);
+  }
+
   function updateEditableStyleTypography(style, key, fields) {
     return appCommands.updateEditableStyleTypography(style, key, fields);
   }
 
   function resetEditableStyleTypographyOverride(style, key) {
     return appCommands.resetEditableStyleTypographyOverride(style, key);
+  }
+
+  function resetEditableStyleTypographyFieldOverride(style, key, fields) {
+    return appCommands.resetEditableStyleTypographyFieldOverride(style, key, fields);
   }
 
   async function createStyleFromUi() {
@@ -1856,12 +1876,20 @@
     return appCommands.resetSelectedCartelaBlockTypographyOverride(key);
   }
 
+  function resetSelectedCartelaBlockTypographyFieldOverride(key, fields) {
+    return appCommands.resetSelectedCartelaBlockTypographyFieldOverride(key, fields);
+  }
+
   function updateSelectedCartelaBlockTypography(key, fields, options = {}) {
     return appCommands.updateSelectedCartelaBlockTypography(key, fields, options);
   }
 
   function resetSelectedCartelaTitleTypographyOverride() {
     return appCommands.resetSelectedCartelaTitleTypographyOverride();
+  }
+
+  function resetSelectedCartelaTitleTypographyFieldOverride(fields) {
+    return appCommands.resetSelectedCartelaTitleTypographyFieldOverride(fields);
   }
 
   function updateSelectedCartelaTitleTypography(fields, options = {}) {

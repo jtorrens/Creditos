@@ -261,6 +261,15 @@
       options.refreshPdfIfActive();
     }
 
+    function resetSelectedCartelaBlockTypographyFieldOverride(key, fields) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaBlockTypographyFieldOverrideInDomain(cartela, key, fields)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
     function updateSelectedCartelaBlockTypography(key, fields, commandOptions = {}) {
       const cartela = options.getSelectedCartela();
       if (!options.updateCartelaBlockTypographyInDomain(cartela, key, fields)) return;
@@ -274,6 +283,16 @@
     function resetSelectedCartelaTitleTypographyOverride() {
       const cartela = options.getSelectedCartela();
       if (!options.resetCartelaTitleTypographyOverrideInDomain(cartela)) return;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderEditor();
+      options.renderPreview();
+      options.renderCartelaPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function resetSelectedCartelaTitleTypographyFieldOverride(fields) {
+      const cartela = options.getSelectedCartela();
+      if (!options.resetCartelaTitleTypographyFieldOverrideInDomain(cartela, fields)) return;
       state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
       options.renderEditor();
       options.renderPreview();
@@ -385,6 +404,11 @@
       updateStyleAfterOverrideChange(style);
     }
 
+    function resetEditableStyleTitleTypographyFieldOverride(style, fields) {
+      if (!options.resetStyleTitleTypographyFieldOverrideInDomain(style, fields)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
     function updateEditableStyleTypography(style, key, fields) {
       if (!options.updateStyleTypographyInDomain(style, key, fields)) return;
       options.pruneCurrentRedundantStyleDefaults();
@@ -409,6 +433,11 @@
 
     function resetEditableStyleTypographyOverride(style, key) {
       if (!options.resetStyleTypographyOverrideInDomain(style, key)) return;
+      updateStyleAfterOverrideChange(style);
+    }
+
+    function resetEditableStyleTypographyFieldOverride(style, key, fields) {
+      if (!options.resetStyleTypographyFieldOverrideInDomain(style, key, fields)) return;
       updateStyleAfterOverrideChange(style);
     }
 
@@ -763,12 +792,16 @@
       resetEditableStyleBlockAlignmentOverride,
       resetEditableStyleBlockOverride,
       resetEditableStyleCartelaOverride,
+      resetEditableStyleTitleTypographyFieldOverride,
       resetEditableStyleTitleTypographyOverride,
+      resetEditableStyleTypographyFieldOverride,
       resetEditableStyleTypographyOverride,
       resetSelectedCartelaBlockAlignmentOverride,
       resetSelectedCartelaBlockOverride,
+      resetSelectedCartelaBlockTypographyFieldOverride,
       resetSelectedCartelaBlockTypographyOverride,
       resetSelectedCartelaAnimationOverride,
+      resetSelectedCartelaTitleTypographyFieldOverride,
       resetSelectedCartelaTitleTypographyOverride,
       resetSelectedCartelaOverride,
       updateEditableStyleBlock,

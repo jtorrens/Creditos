@@ -1727,14 +1727,35 @@ textarea.visual-input {
 }
 
 .typography-control-group {
+  border-top: 1px solid var(--line);
   display: grid;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 14px;
   min-width: 0;
+  padding-top: 12px;
+}
+
+.typography-control-group:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.block-typography-settings > .typography-control-group:first-child,
+.block-typography-settings > .section-title + .typography-control-group {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.typography-group-heading {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .typography-sub-row {
   align-items: center;
+  grid-template-columns: minmax(120px, 150px) minmax(0, 1fr);
   margin-bottom: 0;
 }
 
@@ -1743,24 +1764,16 @@ textarea.visual-input {
   font-size: 12px;
 }
 
-.typography-font-controls {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.typography-font-controls .font-family-select {
-  min-width: 0;
+.typography-control-inline .font-family-select {
   width: min(100%, 25ch);
 }
 
-.typography-font-controls .font-weight-select {
-  min-width: 72px;
+.typography-control-inline .font-weight-select {
+  min-width: 88px;
+  width: 88px;
 }
 
-.typography-font-controls .override-reset-button {
+.typography-control-group .override-reset-button {
   color: var(--override);
   font-size: 16px;
   height: 32px;
@@ -1787,32 +1800,16 @@ textarea.visual-input {
   padding-top: 10px;
 }
 
-.block-typography-row {
-  grid-template-columns: minmax(72px, 100px) 58px 58px minmax(0, 25ch) minmax(86px, 120px) 44px;
-}
-
-.block-typography-row.override-field {
-  grid-template-columns: minmax(72px, 96px) 54px 54px minmax(0, 25ch) minmax(82px, 112px) 42px 36px;
-}
-
 .block-typography-control-group.override-field .typography-sub-label {
   color: var(--override);
-}
-
-.block-typography-row.override-field button {
-  color: var(--override);
-  font-size: 16px;
-  height: 32px;
-  padding: 0;
-  white-space: nowrap;
-  width: 36px;
 }
 
 .styles-workspace .typography-row,
 .cartelas-workspace .typography-row,
 .styles-workspace .typography-control-group,
 .cartelas-workspace .typography-control-group {
-  width: max-content;
+  max-width: min(100%, 520px);
+  width: 100%;
 }
 
 .color-input {

@@ -12,9 +12,10 @@
       group.className = normalizeGroupClassName(options.className);
       if (options.override) group.classList.add('override-field');
 
-      const fontRow = typographyRow(options.label || 'Tipografía');
-      const fontControls = documentRef.createElement('div');
-      fontControls.className = 'typography-font-controls';
+      const heading = documentRef.createElement('div');
+      heading.className = 'typography-group-heading';
+      heading.textContent = options.label || 'Tipografía';
+      group.appendChild(heading);
 
       const sizeInput = fieldControlRegistry.create('number', {
         value: value.font_size,
@@ -50,7 +51,7 @@
           }, 'font_family');
         },
       });
-      fontControls.appendChild(familySelect);
+      group.appendChild(typographyControlRow('Familia', familySelect, options, 'font_family'));
 
       const weightSelect = fieldControlRegistry.create('select', {
         value: currentWeight,
@@ -66,29 +67,15 @@
           }, 'font_weight');
         },
       });
-      fontControls.appendChild(weightSelect);
+      group.appendChild(typographyControlRow('Peso', weightSelect, options, 'font_weight'));
 
       const colorInput = fieldControlRegistry.create('color', {
         value: normalizeColor(options, value.color),
         onInput: (color) => onChange(options, { color }, 'color'),
       });
-      fontControls.appendChild(colorInput);
-
-      if (options.override && options.onReset) {
-        const resetButton = documentRef.createElement('button');
-        resetButton.type = 'button';
-        resetButton.className = 'override-reset-button';
-        resetButton.textContent = '↻';
-        resetButton.title = 'Restablecer';
-        resetButton.setAttribute('aria-label', 'Restablecer');
-        resetButton.addEventListener('click', options.onReset);
-        fontControls.appendChild(resetButton);
-      }
-
-      fontRow.appendChild(fontControls);
-      group.appendChild(fontRow);
-      group.appendChild(typographyNumberRow('Tamaño', sizeInput, metaForField(options, 'font_size', value.font_size)));
-      group.appendChild(typographyNumberRow('Spacing', letterSpacingInput, metaForField(options, 'letter_spacing', value.letter_spacing)));
+      group.appendChild(typographyControlRow('Color', colorInput, options, 'color'));
+      group.appendChild(typographyNumberRow('Tamaño', sizeInput, metaWithReset(options, 'font_size', value.font_size)));
+      group.appendChild(typographyNumberRow('Spacing', letterSpacingInput, metaWithReset(options, 'letter_spacing', value.letter_spacing)));
       return group;
     }
 
@@ -185,6 +172,17 @@
       return row;
     }
 
+    function typographyControlRow(label, control, options, field) {
+      const row = typographyRow(label);
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'field-control-inline typography-control-inline';
+      wrap.appendChild(control);
+      const resetButton = resetButtonForField(options, field);
+      if (resetButton) wrap.appendChild(resetButton);
+      row.appendChild(wrap);
+      return row;
+    }
+
     function wrapNumberControl(control, meta = {}) {
       if (!meta.beforeControl && !meta.afterControl) return control;
       const wrap = documentRef.createElement('div');
@@ -195,9 +193,51 @@
       return wrap;
     }
 
+    function metaWithReset(options, field, value) {
+      const meta = metaForField(options, field, value);
+      const resetButton = resetButtonForField(options, field);
+      if (!resetButton) return meta;
+      return {
+        ...meta,
+        afterControl: appendInlineControl(meta.afterControl, resetButton),
+      };
+    }
+
+    function appendInlineControl(current, next) {
+      if (!current) return next;
+      const wrap = documentRef.createElement('div');
+      wrap.className = 'field-control-inline';
+      wrap.appendChild(current);
+      wrap.appendChild(next);
+      return wrap;
+    }
+
     function metaForField(options, field, value) {
       if (typeof options.animationMetaForField !== 'function') return {};
       return options.animationMetaForField(field, value) || {};
+    }
+
+    function resetButtonForField(options, field) {
+      if (!options.onResetField || !fieldHasOverride(options, field)) return null;
+      const resetButton = documentRef.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'override-reset-button';
+      resetButton.textContent = '↻';
+      resetButton.title = 'Restablecer';
+      resetButton.setAttribute('aria-label', 'Restablecer');
+      resetButton.addEventListener('click', () => options.onResetField(fieldsForReset(field), field));
+      return resetButton;
+    }
+
+    function fieldHasOverride(options, field) {
+      if (typeof options.hasOverrideForField === 'function') return !!options.hasOverrideForField(field);
+      return !!options.override;
+    }
+
+    function fieldsForReset(field) {
+      if (field === 'font_family') return ['font_family', 'font_style', 'font_postscript_name'];
+      if (field === 'font_weight') return ['font_weight', 'font_style', 'font_postscript_name'];
+      return [field];
     }
 
     return { create };

@@ -764,9 +764,26 @@
       return true;
     }
 
+    function resetCartelaBlockTypographyFieldOverride(cartela, key, fields = []) {
+      if (!cartela || !cartela.block_style || !cartela.block_style.typography || !cartela.block_style.typography[key]) return false;
+      fields.forEach((field) => delete cartela.block_style.typography[key][field]);
+      if (!Object.keys(cartela.block_style.typography[key]).length) delete cartela.block_style.typography[key];
+      if (!Object.keys(cartela.block_style.typography).length) delete cartela.block_style.typography;
+      pruneEmptyCartelaBlockStyle(cartela);
+      return true;
+    }
+
     function resetCartelaTitleTypographyOverride(cartela) {
       if (!cartela || !cartela.title_typography) return false;
       delete cartela.title_typography.page_header;
+      if (!Object.keys(cartela.title_typography).length) delete cartela.title_typography;
+      return true;
+    }
+
+    function resetCartelaTitleTypographyFieldOverride(cartela, fields = []) {
+      if (!cartela || !cartela.title_typography || !cartela.title_typography.page_header) return false;
+      fields.forEach((field) => delete cartela.title_typography.page_header[field]);
+      if (!Object.keys(cartela.title_typography.page_header).length) delete cartela.title_typography.page_header;
       if (!Object.keys(cartela.title_typography).length) delete cartela.title_typography;
       return true;
     }
@@ -866,6 +883,14 @@
       return true;
     }
 
+    function resetStyleTitleTypographyFieldOverride(style, fields = []) {
+      if (!style || !style.title_typography || !style.title_typography.page_header) return false;
+      fields.forEach((field) => delete style.title_typography.page_header[field]);
+      if (!Object.keys(style.title_typography.page_header).length) delete style.title_typography.page_header;
+      style.title_typography = style.title_typography.page_header && Object.keys(style.title_typography.page_header).length ? style.title_typography : {};
+      return true;
+    }
+
     function updateStyleTypography(style, key, fields) {
       if (!style) return false;
       const block = sanitizeStyleBlockOverrides(style.block || {});
@@ -882,6 +907,15 @@
     function resetStyleTypographyOverride(style, key) {
       if (!style || !style.block || !style.block.typography) return false;
       delete style.block.typography[key];
+      if (!Object.keys(style.block.typography).length) delete style.block.typography;
+      if (!Object.keys(style.block).length) style.block = {};
+      return true;
+    }
+
+    function resetStyleTypographyFieldOverride(style, key, fields = []) {
+      if (!style || !style.block || !style.block.typography || !style.block.typography[key]) return false;
+      fields.forEach((field) => delete style.block.typography[key][field]);
+      if (!Object.keys(style.block.typography[key]).length) delete style.block.typography[key];
       if (!Object.keys(style.block.typography).length) delete style.block.typography;
       if (!Object.keys(style.block).length) style.block = {};
       return true;
@@ -1039,13 +1073,17 @@
       pruneRedundantStyleOverrides,
       resetCartelaBlockAlignmentOverride,
       resetCartelaBlockOverride,
+      resetCartelaBlockTypographyFieldOverride,
       resetCartelaBlockTypographyOverride,
+      resetCartelaTitleTypographyFieldOverride,
       resetCartelaTitleTypographyOverride,
       resetSourceRefTypography,
       resetStyleBlockAlignmentOverride,
       resetStyleBlockOverride,
       resetStyleCartelaOverride,
+      resetStyleTitleTypographyFieldOverride,
       resetStyleTitleTypographyOverride,
+      resetStyleTypographyFieldOverride,
       resetStyleTypographyOverride,
       sanitizeStyleCartelaOverrides,
       sanitizeStyleBlockOverrides,

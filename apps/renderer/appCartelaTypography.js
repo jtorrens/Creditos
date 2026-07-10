@@ -24,7 +24,9 @@
           label,
           normalizeColor: options.normalizeColor,
           animationMetaForField: (field, currentValue) => animationMetaForTypographyField(cartela, key, field, currentValue),
+          hasOverrideForField: (field) => typographyFieldHasOverride(override, field),
           onInput: (fields, meta) => options.updateSelectedCartelaBlockTypography(key, fields, { rerenderEditor: meta.field === 'font_family' }),
+          onResetField: (fields) => options.resetSelectedCartelaBlockTypographyFieldOverride(key, fields),
           onReset: () => options.resetSelectedCartelaBlockTypographyOverride(key),
           override: isOverride,
           value,
@@ -55,7 +57,9 @@
         getFontStyles: options.getFontStyles,
         label,
         normalizeColor: options.normalizeColor,
+        hasOverrideForField: (field) => typographyFieldHasOverride(override, field),
         onInput: (fields, meta) => options.updateSelectedCartelaTitleTypography(fields, { rerenderEditor: meta.field === 'font_family' }),
+        onResetField: (fields) => options.resetSelectedCartelaTitleTypographyFieldOverride(fields),
         onReset: options.resetSelectedCartelaTitleTypographyOverride,
         override: isOverride,
         value,
@@ -75,6 +79,16 @@
       if (field !== 'font_size' && field !== 'letter_spacing') return '';
       if (typographyKey !== 'block_title' && typographyKey !== 'role' && typographyKey !== 'name') return '';
       return `typography.${typographyKey}.${field}`;
+    }
+
+    function typographyFieldHasOverride(override = {}, field) {
+      return fieldsForTypographyField(field).some((key) => Object.prototype.hasOwnProperty.call(override, key));
+    }
+
+    function fieldsForTypographyField(field) {
+      if (field === 'font_family') return ['font_family', 'font_style', 'font_postscript_name'];
+      if (field === 'font_weight') return ['font_weight', 'font_style', 'font_postscript_name'];
+      return [field];
     }
 
     return {

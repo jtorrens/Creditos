@@ -182,6 +182,7 @@
 
       options.blockTypographyFields.forEach(([key, label]) => {
         const base = settings.typography[key];
+        const override = (typography && typography[key]) || {};
         const value = { ...base, ...((typography && typography[key]) || {}) };
         const isOverride = options.hasStyleTypographyOverride(style, key);
         const row = fieldControlRegistry.create('typography', {
@@ -192,7 +193,9 @@
           label,
           normalizeColor: options.normalizeColor,
           animationMetaForField: (field, currentValue) => animationMetaForTypographyField(style, key, field, currentValue),
+          hasOverrideForField: (field) => typographyFieldHasOverride(override, field),
           onInput: (fields) => options.updateEditableStyleTypography(style, key, fields),
+          onResetField: (fields) => options.resetEditableStyleTypographyFieldOverride(style, key, fields),
           onReset: () => options.resetEditableStyleTypographyOverride(style, key),
           override: isOverride,
           value,
@@ -267,6 +270,7 @@
       wrap.className = 'block-typography-settings';
       if (controlOptions.includeTitle !== false) wrap.appendChild(options.sectionLabel('Tipografía del título de cartela'));
       const base = options.getProductionSettings().typography.page_header;
+      const override = style && style.title_typography && style.title_typography.page_header ? style.title_typography.page_header : {};
       const value = options.getEffectiveStyleTitleTypography(style).page_header;
       const fontCatalog = options.getFontCatalog();
       const row = fieldControlRegistry.create('typography', {
@@ -276,13 +280,25 @@
         getFontStyles: options.getFontStyles,
         label: 'Cabecera',
         normalizeColor: options.normalizeColor,
+        hasOverrideForField: (field) => typographyFieldHasOverride(override, field),
         onInput: (fields) => options.updateEditableStyleTitleTypography(style, fields),
+        onResetField: (fields) => options.resetEditableStyleTitleTypographyFieldOverride(style, fields),
         onReset: () => options.resetEditableStyleTitleTypographyOverride(style),
         override: options.hasStyleTitleTypographyOverride(style),
         value,
       });
       wrap.appendChild(row);
       return wrap;
+    }
+
+    function typographyFieldHasOverride(override = {}, field) {
+      return fieldsForTypographyField(field).some((key) => Object.prototype.hasOwnProperty.call(override, key));
+    }
+
+    function fieldsForTypographyField(field) {
+      if (field === 'font_family') return ['font_family', 'font_style', 'font_postscript_name'];
+      if (field === 'font_weight') return ['font_weight', 'font_style', 'font_postscript_name'];
+      return [field];
     }
 
     return {
