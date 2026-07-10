@@ -1,21 +1,21 @@
 :root {
-  --bg: #0d1116;
-  --panel: #151b21;
-  --panel-2: #1b232b;
-  --panel-3: #242e38;
-  --ink: #eef4f8;
-  --muted: #9aa8b4;
-  --line: #2c3640;
-  --accent: #2f9fc2;
-  --accent-strong: #83d7ef;
+  --bg: #1f2227;
+  --panel: #262a30;
+  --panel-2: #2b2f35;
+  --panel-3: #323740;
+  --ink: #f4f4f5;
+  --muted: #b7bbc2;
+  --line: #3a3f47;
+  --accent: #6f93ff;
+  --accent-strong: #dfe6ff;
   --warn: #d7a842;
   --override: #d7a842;
   --override-soft: rgba(215, 168, 66, 0.12);
-  --soft: #202832;
+  --soft: #2b2f35;
   --green: #52b788;
-  --input: #11171d;
-  --input-hover: #182129;
-  --shadow: rgba(0, 0, 0, 0.38);
+  --input: #202329;
+  --input-hover: #2f343c;
+  --shadow: rgba(0, 0, 0, 0.34);
 }
 
 * {
@@ -34,10 +34,10 @@ body {
 
 .app-version {
   align-items: center;
-  background: #eef4f8;
-  border: 1px solid #ffffff;
+  background: var(--panel-3);
+  border: 1px solid #4a505a;
   border-radius: 999px;
-  color: #11171d;
+  color: var(--ink);
   display: inline-flex;
   font-size: 12px;
   font-weight: 800;
@@ -77,21 +77,21 @@ button,
 button:hover,
 .button:hover {
   background: var(--panel-3);
-  border-color: #4b5a66;
+  border-color: #535961;
 }
 
 button:focus-visible,
 .button:focus-visible,
 .text-input:focus-visible {
-  outline: 2px solid rgba(131, 215, 239, 0.42);
+  outline: 2px solid rgba(244, 244, 245, 0.28);
   outline-offset: 2px;
 }
 
 button:disabled,
 button:disabled:hover {
-  background: #151b21;
-  border-color: #26313a;
-  color: #5f6f7a;
+  background: #24282e;
+  border-color: #343941;
+  color: #727780;
   cursor: default;
 }
 
@@ -103,16 +103,16 @@ button.active-toggle {
 
 .button.primary,
 button.primary {
-  background: #8de4f8;
-  border-color: #8de4f8;
-  box-shadow: 0 8px 22px rgba(47, 159, 194, 0.18);
-  color: #071217;
+  background: #f2f2f3;
+  border-color: #f2f2f3;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  color: #1f2227;
 }
 
 .button.primary:hover,
 button.primary:hover {
-  background: #b5eefb;
-  border-color: #b5eefb;
+  background: #ffffff;
+  border-color: #ffffff;
 }
 
 .button input {
@@ -121,7 +121,7 @@ button.primary:hover {
 
 .app-header {
   align-items: center;
-  background: #0f141a;
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   display: flex;
   gap: 16px;
@@ -323,7 +323,7 @@ button.primary:hover {
 }
 
 .pdf-sidepanels {
-  background: #12181e;
+  background: var(--bg);
   border-right: 1px solid var(--line);
   display: grid;
   align-content: start;
@@ -429,7 +429,7 @@ button.primary:hover {
 }
 
 .app-tabs {
-  background: #0f141a;
+  background: var(--bg);
   border-bottom: 1px solid var(--line);
   display: flex;
   gap: 6px;
@@ -445,8 +445,8 @@ button.primary:hover {
 }
 
 .app-tabs button.active {
-  background: #202a33;
-  border-color: #35434e;
+  background: var(--panel-2);
+  border-color: var(--line);
   color: var(--ink);
   font-weight: 700;
 }
@@ -528,7 +528,7 @@ button.primary:hover {
 
 .structure-file-panel {
   align-items: center;
-  background: #11171d;
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   display: flex;
@@ -639,7 +639,7 @@ button.primary:hover {
 }
 
 .production-list-button.active {
-  background: #202a33;
+  background: var(--panel-3);
   border-color: var(--accent);
 }
 
@@ -688,7 +688,7 @@ button.primary:hover {
 }
 
 .data-table tr.selected td {
-  background: #202a33;
+  background: var(--panel-3);
 }
 
 .table-input {
@@ -916,7 +916,7 @@ button.primary:hover {
 }
 
 .style-list-button.active {
-  background: #202a33;
+  background: var(--panel-3);
   border-color: var(--accent);
 }
 
@@ -1018,7 +1018,7 @@ button.primary:hover {
 }
 
 .style-preview-playback {
-  background: #121820;
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
@@ -1157,7 +1157,7 @@ button.primary:hover {
 
 .block-button {
   align-items: start;
-  background: #121820;
+  background: var(--panel-2);
   border: 1px solid transparent;
   border-radius: 6px;
   cursor: pointer;
@@ -1170,13 +1170,13 @@ button.primary:hover {
 }
 
 .block-button:hover {
-  background: #1a232c;
-  border-color: #33414d;
+  background: var(--panel-3);
+  border-color: #4a505a;
 }
 
 .block-button.active {
-  background: #163242;
-  border-color: #3990ad;
+  background: #303541;
+  border-color: var(--accent);
 }
 
 .block-button.has-overrides .block-group {
@@ -1187,10 +1187,10 @@ button.primary:hover {
 
 .block-group {
   align-items: center;
-  background: #22303a;
-  border: 1px solid #364753;
+  background: #30343a;
+  border: 1px solid #484e57;
   border-radius: 6px;
-  color: var(--accent-strong);
+  color: var(--ink);
   display: flex;
   font-weight: 700;
   height: 28px;
@@ -1297,7 +1297,7 @@ button.primary:hover {
 }
 
 .style-animation-phase-card {
-  background: #101720;
+  background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
@@ -1312,7 +1312,7 @@ button.primary:hover {
 }
 
 .style-animation-control-group {
-  border-left: 2px solid #2e3d49;
+  border-left: 2px solid #4a505a;
   display: grid;
   gap: 0;
   padding-left: 10px;
@@ -1338,17 +1338,17 @@ button.primary:hover {
 .accordion-card {
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #24282e;
+  background: var(--panel);
   overflow: hidden;
 }
 
 .accordion-card.open {
-  border-color: #3a444f;
+  border-color: #4a505a;
 }
 
 .accordion-card-header {
   align-items: center;
-  background: #24282e;
+  background: var(--panel);
   border: 0;
   border-radius: 0;
   cursor: pointer;
@@ -1366,7 +1366,7 @@ button.primary:hover {
 }
 
 .accordion-card-header:hover {
-  background: #2a2f36;
+  background: var(--panel-2);
 }
 
 .accordion-card-icon {
@@ -1521,7 +1521,7 @@ textarea.text-input {
 
 .text-input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(56, 166, 199, 0.14);
+  box-shadow: 0 0 0 2px rgba(111, 147, 255, 0.16);
   outline: 0;
 }
 
@@ -1693,7 +1693,7 @@ textarea.visual-input {
 
 .text-substitution-remove {
   align-items: center;
-  background: var(--button);
+  background: var(--panel-2);
   border: 1px solid var(--line);
   border-radius: 6px;
   color: var(--muted);
@@ -1996,7 +1996,7 @@ textarea.visual-input {
 }
 
 .segmented {
-  background: #11171d;
+  background: var(--input);
   border: 1px solid var(--line);
   border-radius: 6px;
   display: flex;
@@ -2018,7 +2018,7 @@ textarea.visual-input {
 
 #jsonPreview {
   border: 0;
-  background: #0d1217;
+  background: var(--input);
   color: var(--ink);
   font-family: Menlo, Consolas, monospace;
   font-size: 12px;
@@ -2150,7 +2150,7 @@ textarea.visual-input {
 .visual-input:focus {
   background: var(--input-hover);
   border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(56, 166, 199, 0.14);
+  box-shadow: 0 0 0 2px rgba(111, 147, 255, 0.16);
   outline: 0;
 }
 
@@ -2397,7 +2397,7 @@ textarea.visual-input {
 
 .tag {
   border-radius: 999px;
-  color: #11171d;
+  color: var(--ink);
   display: inline-flex;
   font-size: 11px;
   font-weight: 700;
@@ -2406,7 +2406,7 @@ textarea.visual-input {
 }
 
 .tag.cards {
-  background: #fff;
+  background: var(--panel-3);
 }
 
 .tag.cast {
