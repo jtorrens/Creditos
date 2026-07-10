@@ -1,6 +1,6 @@
 {
   "name": "creditos-refactor-desktop",
-  "version": "0.1.54",
+  "version": "0.1.55",
   "private": true,
   "description": "Electron desktop app for Creditos Refactor.",
   "main": "main.js",

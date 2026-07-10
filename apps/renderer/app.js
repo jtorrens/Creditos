@@ -1241,6 +1241,7 @@
     normalizeBoolean,
     normalizeStyleAnimation,
     resetSelectedCartelaAnimationOverride,
+    renderAccordionGroup: appAccordion.renderAccordionGroup,
     renderEditor,
     sectionLabel,
     styleFadeBounds,

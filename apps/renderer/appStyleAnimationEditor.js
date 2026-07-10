@@ -63,6 +63,7 @@
     function renderStyleAnimationControls(style, controlOptions = {}) {
       return renderAnimationControls({
         subject: style,
+        groupId: `style-animation:${style && (style.id || style.name) || 'selected'}`,
         title: 'Animacion',
         animation: options.normalizeStyleAnimation(style.animation || {}),
         updateAnimation: (animation) => options.updateEditableStyleAnimation(style, animation),
@@ -93,6 +94,7 @@
       if (!hasOverride) return wrap;
       wrap.appendChild(renderAnimationControls({
         subject: cartela,
+        groupId: `cartela-animation:${cartela && cartela.id || 'selected'}`,
         title: '',
         animation: effective,
         updateAnimation: (animation) => options.updateSelectedCartelaAnimation(animation),
@@ -101,7 +103,7 @@
       return wrap;
     }
 
-    function renderAnimationControls({ subject, title, animation, updateAnimation, includeTitle = true }) {
+    function renderAnimationControls({ subject, groupId, title, animation, updateAnimation, includeTitle = true }) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-settings';
       if (includeTitle && title) wrap.appendChild(options.sectionLabel(title));
@@ -113,18 +115,36 @@
         });
       }));
 
-      wrap.appendChild(renderPhaseControls(subject, animation, 'in', 'Entrada', updateAnimation));
-      wrap.appendChild(renderPhaseControls(subject, animation, 'out', 'Salida', updateAnimation));
+      const phaseCards = [
+        {
+          id: 'in',
+          title: 'Entrada',
+          summary: 'Comportamiento al aparecer',
+          icon: 'I',
+          render: (panel) => panel.appendChild(renderPhaseControls(subject, animation, 'in', updateAnimation)),
+        },
+        {
+          id: 'out',
+          title: 'Salida',
+          summary: 'Comportamiento al desaparecer',
+          icon: 'O',
+          render: (panel) => panel.appendChild(renderPhaseControls(subject, animation, 'out', updateAnimation)),
+        },
+      ];
+      if (options.renderAccordionGroup) {
+        wrap.appendChild(options.renderAccordionGroup(groupId || 'style-animation-phases', phaseCards, { initialOpenId: 'in' }));
+      } else {
+        phaseCards.forEach((card) => {
+          wrap.appendChild(options.sectionLabel(card.title));
+          card.render(wrap);
+        });
+      }
       return wrap;
     }
 
-    function renderPhaseControls(subject, animation, phase, label, updateAnimation) {
+    function renderPhaseControls(subject, animation, phase, updateAnimation) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'style-animation-phase-card';
-      const title = documentRef.createElement('div');
-      title.className = 'style-animation-phase-title';
-      title.textContent = label;
-      wrap.appendChild(title);
       const phaseValue = animation[phase] || {};
       const elementRows = [
         options.localNumberRow('Duración frames', phaseFrames(phaseValue, 'duration'), 0, null, (value) => updatePhaseFrames(subject, animation, phase, 'duration', value, updateAnimation)),

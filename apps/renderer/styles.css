@@ -1297,12 +1297,12 @@ button.primary:hover {
 }
 
 .style-animation-phase-card {
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 0;
 }
 
 .style-animation-phase-title {
@@ -1312,14 +1312,17 @@ button.primary:hover {
 }
 
 .style-animation-control-group {
-  border-left: 2px solid #4a505a;
+  background: #3a3e45;
+  border: 1px solid #5a5f68;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   display: grid;
   gap: 0;
-  padding-left: 10px;
+  padding: 10px 10px 2px;
 }
 
 .style-animation-control-group + .style-animation-control-group {
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .style-animation-control-group-title {
@@ -1336,9 +1339,10 @@ button.primary:hover {
 }
 
 .accordion-card {
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: var(--panel);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
   overflow: hidden;
 }
 
