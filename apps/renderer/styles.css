@@ -1481,6 +1481,22 @@ textarea.text-input {
   font-size: 12px;
 }
 
+.row-label-override {
+  align-items: center;
+  color: var(--override);
+  display: flex;
+  gap: 6px;
+}
+
+.row-override-reset-button {
+  color: var(--override);
+  font-size: 14px;
+  height: 24px;
+  line-height: 1;
+  padding: 0;
+  width: 24px;
+}
+
 .preview-credit,
 .preview-section,
 .preview-line {
@@ -1520,6 +1536,12 @@ textarea.text-input {
   min-height: 30px;
   padding: 5px 7px;
   width: 100%;
+}
+
+.preview-input.manual-override-input,
+.visual-input.manual-override-input {
+  background: var(--override-soft);
+  border-color: var(--override);
 }
 
 textarea.preview-input,

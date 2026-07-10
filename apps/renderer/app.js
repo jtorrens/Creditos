@@ -1111,8 +1111,10 @@
     getEffectiveCartela,
     getProductionSettings,
     getSelectedCartela,
+    hasEditableOverride,
     normalizeBoolean,
     normalizeSettings,
+    renderCartelaPreview,
     renderPreview,
     resolveOverride,
     setEditableOverride,
@@ -1312,6 +1314,8 @@
     makePreviewInput,
     normalizeFrozenMaterial,
     rebuild,
+    hasEditableOverride,
+    resetEditableOverrides,
     sourceRefIsLocked,
     state,
   });
@@ -1892,8 +1896,8 @@
     return appEditableInputs.inputRow(label, refId, field, fallback, options);
   }
 
-  function makePreviewInput(refId, field, fallback, className) {
-    return appEditableInputs.makePreviewInput(refId, field, fallback, className);
+  function makePreviewInput(refId, field, fallback, className, options = {}) {
+    return appEditableInputs.makePreviewInput(refId, field, fallback, className, options);
   }
 
   function makeVisualInput(refId, field, fallback, className, options = {}) {
@@ -1910,6 +1914,27 @@
 
   function setEditableOverride(refId, field, value, fallback) {
     setOverrideInDomain(state.structure, refId, field, value, fallback);
+  }
+
+  function hasEditableOverride(refId, field) {
+    return !!(
+      state.structure &&
+      state.structure.overrides &&
+      state.structure.overrides[refId] &&
+      Object.prototype.hasOwnProperty.call(state.structure.overrides[refId], field)
+    );
+  }
+
+  function resetEditableOverrides(entries = []) {
+    if (!state.structure) return;
+    (entries || []).forEach((entry) => {
+      if (!entry || !entry.refId || !entry.field) return;
+      setOverrideInDomain(state.structure, entry.refId, entry.field, entry.fallback, entry.fallback);
+    });
+    state.render = state.source && state.structure ? buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+    renderEditor();
+    renderPreview();
+    renderCartelaPreview();
   }
 
   function setPreview(kind) {

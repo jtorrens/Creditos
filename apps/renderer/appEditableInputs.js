@@ -28,16 +28,26 @@
           const parsedValue = opts.parse ? opts.parse(rawValue) : rawValue;
           const parsedFallback = opts.fallback !== undefined ? opts.fallback : fallback;
           options.setEditableOverride(refId, field, parsedValue, parsedFallback);
+          const hasOverride = typeof options.hasEditableOverride === 'function' && options.hasEditableOverride(refId, field);
+          input.classList.toggle('manual-override-input', hasOverride);
           state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
           options.renderPreview();
+          if (typeof options.renderCartelaPreview === 'function') options.renderCartelaPreview();
+          if (typeof opts.onOverrideChange === 'function') opts.onOverrideChange(hasOverride);
         },
       });
+      if (typeof options.hasEditableOverride === 'function' && options.hasEditableOverride(refId, field)) {
+        input.classList.add('manual-override-input');
+      }
       if (opts.multiline) windowRef.requestAnimationFrame(() => resizeMultilineInput(input));
       return input;
     }
 
-    function makePreviewInput(refId, field, fallback, className) {
-      const input = makeInput(refId, field, fallback, { multiline: true });
+    function makePreviewInput(refId, field, fallback, className, previewOptions = {}) {
+      const input = makeInput(refId, field, fallback, {
+        multiline: true,
+        onOverrideChange: previewOptions.onOverrideChange,
+      });
       input.classList.add('preview-input', className);
       configureTextWrapInput(input, options.normalizeBoolean(options.getEffectiveCartela(options.getSelectedCartela() || {}).auto_text_wrap, false));
       return input;

@@ -79,10 +79,12 @@
         header.textContent = `Tema ${index + 1}`;
         themeWrap.appendChild(header);
         theme.lines.forEach((line, lineIndex) => {
+          const overrideEntries = [{ refId: line.id, field: 'value', fallback: line.value || '' }];
           const row = documentRef.createElement('div');
           row.className = 'preview-line music-line' + (lineIndex === 0 ? ' theme-title' : '');
-          row.innerHTML = `<div class="row-label">Fila ${line.row}</div>`;
-          row.appendChild(options.makePreviewInput(line.id, 'value', line.value || '', 'line-input'));
+          const rowLabel = renderRowLabel(line.row, overrideEntries);
+          row.appendChild(rowLabel);
+          row.appendChild(makeRowPreviewInput(line.id, 'value', line.value || '', 'line-input', rowLabel, line.row, overrideEntries));
           themeWrap.appendChild(row);
         });
         wrap.appendChild(themeWrap);
@@ -96,18 +98,23 @@
       const orientation = cartela && cartela.orientation ? cartela.orientation : 'horizontal';
 
       if (item.kind === 'credit' || item.kind === 'crew_credit') {
+        const overrideEntries = [
+          { refId: item.id, field: 'role', fallback: item.role || '' },
+          ...(item.names || []).map((name) => ({ refId: name.id, field: 'name', fallback: name.name || '' })),
+        ];
         row.className = `preview-credit ${orientation}`;
-        row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
+        const rowLabel = renderRowLabel(item.row, overrideEntries);
+        row.appendChild(rowLabel);
         const roleWrap = documentRef.createElement('div');
         roleWrap.className = 'preview-role';
-        roleWrap.appendChild(options.makePreviewInput(item.id, 'role', item.role || '', 'role-input'));
+        roleWrap.appendChild(makeRowPreviewInput(item.id, 'role', item.role || '', 'role-input', rowLabel, item.row, overrideEntries));
 
         const namesWrap = documentRef.createElement('div');
         namesWrap.className = 'preview-names';
         (item.names || []).forEach((name) => {
           const nameLine = documentRef.createElement('div');
           nameLine.className = 'preview-name-line';
-          nameLine.appendChild(options.makePreviewInput(name.id, 'name', name.name || '', 'name-input'));
+          nameLine.appendChild(makeRowPreviewInput(name.id, 'name', name.name || '', 'name-input', rowLabel, item.row, overrideEntries));
           namesWrap.appendChild(nameLine);
         });
 
@@ -117,36 +124,80 @@
       }
 
       if (item.kind === 'cast') {
+        const overrideEntries = [
+          { refId: item.id, field: 'actor', fallback: item.actor || '' },
+          { refId: item.id, field: 'character', fallback: item.character || '' },
+        ];
         row.className = `preview-credit ${orientation}`;
-        row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
+        const rowLabel = renderRowLabel(item.row, overrideEntries);
+        row.appendChild(rowLabel);
         const actorWrap = documentRef.createElement('div');
         actorWrap.className = 'preview-role';
-        actorWrap.appendChild(options.makePreviewInput(item.id, 'actor', item.actor || '', 'role-input'));
+        actorWrap.appendChild(makeRowPreviewInput(item.id, 'actor', item.actor || '', 'role-input', rowLabel, item.row, overrideEntries));
         const characterWrap = documentRef.createElement('div');
         characterWrap.className = 'preview-names';
-        characterWrap.appendChild(options.makePreviewInput(item.id, 'character', item.character || '', 'name-input'));
+        characterWrap.appendChild(makeRowPreviewInput(item.id, 'character', item.character || '', 'name-input', rowLabel, item.row, overrideEntries));
         row.appendChild(actorWrap);
         row.appendChild(characterWrap);
         return row;
       }
 
       if (item.kind === 'section') {
+        const overrideEntries = [{ refId: item.id, field: 'title', fallback: item.title || '' }];
         row.className = 'preview-section';
-        row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-        row.appendChild(options.makePreviewInput(item.id, 'title', item.title || '', 'section-input'));
+        const rowLabel = renderRowLabel(item.row, overrideEntries);
+        row.appendChild(rowLabel);
+        row.appendChild(makeRowPreviewInput(item.id, 'title', item.title || '', 'section-input', rowLabel, item.row, overrideEntries));
         return row;
       }
 
       if (item.kind === 'list_item' || item.kind === 'closing_line') {
+        const overrideEntries = [{ refId: item.id, field: 'value', fallback: item.value || '' }];
         row.className = 'preview-line';
-        row.innerHTML = `<div class="row-label">Fila ${item.row}</div>`;
-        row.appendChild(options.makePreviewInput(item.id, 'value', item.value || '', 'line-input'));
+        const rowLabel = renderRowLabel(item.row, overrideEntries);
+        row.appendChild(rowLabel);
+        row.appendChild(makeRowPreviewInput(item.id, 'value', item.value || '', 'line-input', rowLabel, item.row, overrideEntries));
         return row;
       }
 
       row.className = 'line-row';
       row.innerHTML = `<div class="row-label">Fila ${item.row || '-'}<br>${options.escapeHtml(item.kind || 'item')}</div><pre>${options.escapeHtml(JSON.stringify(item, null, 2))}</pre>`;
       return row;
+    }
+
+    function renderRowLabel(rowNumber, overrideEntries = []) {
+      const label = documentRef.createElement('div');
+      updateRowLabel(label, rowNumber, overrideEntries);
+      return label;
+    }
+
+    function updateRowLabel(label, rowNumber, overrideEntries = []) {
+      const hasOverride = overrideEntries.some((entry) => options.hasEditableOverride && options.hasEditableOverride(entry.refId, entry.field));
+      label.className = 'row-label' + (hasOverride ? ' row-label-override' : '');
+      label.innerHTML = '';
+      const text = documentRef.createElement('span');
+      text.textContent = `Fila ${rowNumber || '-'}`;
+      label.appendChild(text);
+      if (hasOverride) {
+        const resetButton = documentRef.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'override-reset-button row-override-reset-button';
+        resetButton.textContent = '↻';
+        resetButton.title = 'Restablecer fila';
+        resetButton.setAttribute('aria-label', resetButton.title);
+        resetButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          options.resetEditableOverrides(overrideEntries);
+        });
+        label.appendChild(resetButton);
+      }
+    }
+
+    function makeRowPreviewInput(refId, field, fallback, className, rowLabel, rowNumber, overrideEntries) {
+      return options.makePreviewInput(refId, field, fallback, className, {
+        onOverrideChange: () => updateRowLabel(rowLabel, rowNumber, overrideEntries),
+      });
     }
 
     function toggleSourceRefLock(ref) {
