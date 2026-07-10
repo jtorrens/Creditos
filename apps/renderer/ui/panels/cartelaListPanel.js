@@ -15,10 +15,13 @@
         const effectiveCartela = options.getEffectiveCartela(cartela);
         const style = options.getStyleById(cartela.style_id);
         const hasOverrides = typeof options.hasCartelaStyleOverrides === 'function' && options.hasCartelaStyleOverrides(cartela);
+        const isActive = cartela.id === state.selectedCartelaId;
+        const enabledWithoutStyle = cartela.enabled !== false && !style;
         const button = documentRef.createElement('div');
         button.className = 'block-button'
-          + (cartela.id === state.selectedCartelaId ? ' active' : '')
-          + (hasOverrides ? ' has-overrides' : '');
+          + (isActive ? ' active' : '')
+          + (hasOverrides ? ' has-overrides' : '')
+          + (enabledWithoutStyle ? ' missing-style' : '');
         button.addEventListener('click', () => options.selectCartela(cartela.id));
 
         button.innerHTML = `

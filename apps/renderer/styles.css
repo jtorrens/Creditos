@@ -1185,6 +1185,16 @@ button.primary:hover {
   color: var(--override);
 }
 
+.block-button.missing-style {
+  border-color: #ff4d5f;
+}
+
+.block-button.missing-style .block-group {
+  background: rgba(255, 77, 95, 0.12);
+  border-color: #ff4d5f;
+  color: #ff7a82;
+}
+
 .block-group {
   align-items: center;
   background: #30343a;
