@@ -224,7 +224,7 @@
     }
 
     function paginationTextLines(value, metrics, width) {
-      return canvasWrappedTextLines(value, { ...metrics, autoWrap: false }, width);
+      return canvasWrappedTextLines(value, metrics, width);
     }
 
     function unitGapBefore(options, layout) {
