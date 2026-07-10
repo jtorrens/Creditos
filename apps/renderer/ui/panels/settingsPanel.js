@@ -17,6 +17,11 @@
       els.typographySettings.innerHTML = '';
       els.typographySettings.appendChild(options.sectionLabel('Tipografia base'));
       const fontCatalog = options.getFontCatalog();
+      const baseFamily = productionBaseTypographyFamily(settings);
+      els.typographySettings.appendChild(options.localSelectRow('Familia base', baseFamily, baseFontFamilyOptions(fontCatalog, settings, baseFamily), (value) => {
+        if (value === '__mixed__') return;
+        options.updateBaseTypographyFamily(value);
+      }));
 
       options.typographyFields.forEach(([key, label]) => {
         const value = settings.typography[key];
@@ -32,6 +37,27 @@
         });
         els.typographySettings.appendChild(row);
       });
+    }
+
+    function productionBaseTypographyFamily(settings) {
+      const families = options.typographyFields
+        .map(([key]) => settings && settings.typography && settings.typography[key] && settings.typography[key].font_family)
+        .filter(Boolean);
+      if (!families.length) return '';
+      return families.every((family) => family === families[0]) ? families[0] : '__mixed__';
+    }
+
+    function baseFontFamilyOptions(fontCatalog, settings, value) {
+      const families = Array.isArray(fontCatalog && fontCatalog.families) ? fontCatalog.families : [];
+      const controlOptions = families.map((family) => [family, family]);
+      if (value === '__mixed__') controlOptions.unshift(['__mixed__', 'Varias']);
+      options.typographyFields.forEach(([key]) => {
+        const family = settings && settings.typography && settings.typography[key] && settings.typography[key].font_family;
+        if (family && family !== '__mixed__' && !controlOptions.some(([optionValue]) => optionValue === family)) {
+          controlOptions.push([family, family]);
+        }
+      });
+      return controlOptions;
     }
 
     function renderLayoutSettings(settings) {

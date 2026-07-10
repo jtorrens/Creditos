@@ -18,6 +18,58 @@
       options.refreshPdfIfActive();
     }
 
+    function updateBaseTypographyFamily(fontFamily) {
+      if (!options.selectedProduction()) return;
+      const family = String(fontFamily || '').trim();
+      if (!family) return;
+      const settings = options.getProductionSettings();
+      const typography = { ...(settings.typography || {}) };
+      (options.typographyFields || []).forEach(([key]) => {
+        const current = typography[key] || {};
+        const currentWeight = typeof options.normalizeFontWeight === 'function'
+          ? options.normalizeFontWeight(current.font_weight, current.font_style)
+          : Number(current.font_weight) || 400;
+        const nextStyle = closestFontStyle(family, currentWeight, current.font_style);
+        typography[key] = {
+          ...current,
+          font_family: family,
+          font_weight: currentWeight,
+          font_style: nextStyle.style,
+          font_postscript_name: nextStyle.postscript_name,
+        };
+      });
+      settings.typography = typography;
+      options.setSelectedProductionLocalFields({ settings: options.stripProductionLayoutFromSettings(settings) });
+      options.persistSelectedProductionFields({ settings: options.selectedProduction().settings }).catch((error) => console.warn(error));
+      state.render = state.source ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
+      options.renderSettings();
+      options.renderStylesPane();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+    }
+
+    function closestFontStyle(fontFamily, weight, currentStyle) {
+      const styles = typeof options.getFontStyles === 'function' ? options.getFontStyles(fontFamily) : [];
+      const targetWeight = typeof options.normalizeFontWeight === 'function'
+        ? options.normalizeFontWeight(weight, currentStyle)
+        : Number(weight) || 400;
+      const targetItalic = /italic|oblique/i.test(currentStyle || '');
+      const samePosture = styles.filter((fontStyle) => /italic|oblique/i.test(fontStyle.style || '') === targetItalic);
+      const candidates = samePosture.length ? samePosture : styles;
+      return candidates
+        .slice()
+        .sort((a, b) => {
+          const aWeight = typeof options.fontWeightFromStyle === 'function' ? options.fontWeightFromStyle(a.style) : 400;
+          const bWeight = typeof options.fontWeightFromStyle === 'function' ? options.fontWeightFromStyle(b.style) : 400;
+          const weightScore = Math.abs(aWeight - targetWeight) - Math.abs(bWeight - targetWeight);
+          if (weightScore !== 0) return weightScore;
+          const aRegular = /regular|book|normal/i.test(a.style || '') ? 0 : 1;
+          const bRegular = /regular|book|normal/i.test(b.style || '') ? 0 : 1;
+          return aRegular - bRegular;
+        })[0] || { style: 'Regular', postscript_name: '' };
+    }
+
     function updateLayoutSetting(fields) {
       if (!options.selectedProduction()) return;
       const settings = options.getProductionSettings();
@@ -738,6 +790,7 @@
       updateSelectedCartelaAnimation,
       updateSelectedCartelaTitleTypography,
       updateLayoutSetting,
+      updateBaseTypographyFamily,
       updateSelectedCartela,
       updateSettings,
       updateTypographySetting,

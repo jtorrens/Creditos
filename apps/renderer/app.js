@@ -899,6 +899,7 @@
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     typographyFields: TYPOGRAPHY_FIELDS,
+    updateBaseTypographyFamily,
     updateLayoutSetting,
     updateSettings,
     updateTypographySetting,
@@ -921,6 +922,7 @@
     getEffectiveStyleTitleTypography,
     getPreviewAnimationPlan,
     getSelectedCartela,
+    getFontStyles,
     getStyleById,
     getProductionSettings,
     initializeDatabase,
@@ -964,6 +966,7 @@
     showEpisodeStyleSourceModal: (episodes) => projectPanel.showEpisodeStyleSourceModal(episodes),
     state,
     stripProductionLayoutFromSettings,
+    typographyFields: TYPOGRAPHY_FIELDS,
     updateCartelaBlockAlignmentInDomain,
     updateCartelaBlockStyleInDomain,
     updateCartelaBlockTypographyInDomain,
@@ -1659,6 +1662,10 @@
 
   function updateTypographySetting(key, fields) {
     return appCommands.updateTypographySetting(key, fields);
+  }
+
+  function updateBaseTypographyFamily(fontFamily) {
+    return appCommands.updateBaseTypographyFamily(fontFamily);
   }
 
   function updateLayoutSetting(fields) {
