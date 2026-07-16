@@ -8,6 +8,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 CHECKS = [
     "check_import_models.py",
     "check_parser_golden.py",
+    "check_parser_lab.py",
     "check_domain_no_dom.py",
     "check_domain_imports.py",
     "check_renderer_app_boundaries.py",
@@ -22,6 +23,7 @@ PY_COMPILE_FILES = [
     REPO_ROOT / "apps" / "renderer" / "server.py",
     *sorted((REPO_ROOT / "apps" / "renderer" / "server_db").glob("*.py")),
     *sorted((REPO_ROOT / "apps" / "renderer" / "server_services").glob("*.py")),
+    *sorted((REPO_ROOT / "apps" / "renderer" / "parser_lab").glob("*.py")),
     *sorted((REPO_ROOT / "scripts").glob("check_*.py")),
     REPO_ROOT / "scripts" / "compare_png_outputs.py",
 ]

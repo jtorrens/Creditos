@@ -11,3 +11,10 @@ To add a new import format:
 7. Add golden fixture tests.
 
 Do not put parser rules in `server.py` or `app.js`.
+
+## Parser Lab Isolation
+
+- The parser lab may read normalized spreadsheet rows for inspection, but its candidate rules must not modify or be executed by registered production import models.
+- Do not change an existing model's parse behavior, schema, or golden output for parser-lab work unless the user explicitly authorizes that production change.
+- Keep inspection/trace data outside the stable production `source_json` contract and outside persisted editor documents.
+- Any future promotion of a candidate model must be performed as a separate, explicitly authorized change with registry entry, schema validation, fixtures, and golden tests.

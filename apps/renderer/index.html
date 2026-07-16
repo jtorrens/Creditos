@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Créditos</title>
     <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./parser_lab/parser_lab.css">
   </head>
   <body>
     <header class="app-header">
@@ -20,6 +21,7 @@
       <button type="button" data-tab="styles">Estilos</button>
       <button type="button" data-tab="structure">Cartelas</button>
       <button type="button" data-tab="pdf">Preview</button>
+      <button type="button" data-tab="parserLab">Parser Lab</button>
     </nav>
 
     <main>
@@ -333,6 +335,9 @@
           </div>
         </div>
       </section>
+      <section id="parserLabPane" class="tab-pane">
+        <div id="parserLabRoot"></div>
+      </section>
     </main>
 
     <script src="./domain/common.js"></script>
@@ -412,6 +417,7 @@
     <script src="./ui/panels/stylesPanel.js"></script>
     <script src="./appCommands.js"></script>
     <script src="./ui/bindings.js"></script>
+    <script src="./parser_lab/ui.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

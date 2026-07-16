@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID
+from parser_lab.service import inspect_uploaded_source
 from server_db.connection import db_connect
 from server_services.import_service import import_credit_source
 from server_services.document_service import load_document, save_document
@@ -103,6 +104,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/parse-xlsx":
             self.handle_import_credit_source()
             return
+        if path == "/api/parser-lab/inspect-source":
+            self.handle_parser_lab_inspection()
+            return
         if path.startswith("/api/db/"):
             self.handle_db(path)
             return
@@ -119,6 +123,21 @@ class Handler(BaseHTTPRequestHandler):
             import_model_id = fields.get("import_model_id") or DEFAULT_IMPORT_MODEL_ID
             parsed = import_credit_source(file_bytes, source_name, import_model_id)
             self.send_json(200, parsed)
+        except Exception as error:
+            self.send_json(500, {"error": str(error)})
+
+    def handle_parser_lab_inspection(self):
+        try:
+            fields, files = self.read_multipart_form()
+            uploaded = files.get("file")
+            if not uploaded:
+                raise ValueError("No se ha recibido ningún archivo.")
+            inspection = inspect_uploaded_source(
+                uploaded["content"],
+                uploaded["filename"] or "parser_lab_source",
+                fields.get("source_kind"),
+            )
+            self.send_json(200, inspection)
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 
