@@ -11,7 +11,7 @@ from import_models.common.spreadsheet_readers import (
 
 
 INSPECTION_SCHEMA = "parser_lab_inspection"
-INSPECTION_VERSION = 1
+INSPECTION_VERSION = 2
 SUPPORTED_SOURCE_KINDS = {"ods", "xlsx"}
 
 
@@ -29,6 +29,7 @@ def inspect_source_rows(file_bytes, source_name, source_kind):
 
     with zipfile.ZipFile(BytesIO(bytes(file_bytes))) as zip_file:
         sheets, sheet, rows = read_normalized_workbook(zip_file, kind)
+    rows_with_empty_divisions = expand_empty_rows(rows)
 
     document = {
         "schema": INSPECTION_SCHEMA,
@@ -41,10 +42,38 @@ def inspect_source_rows(file_bytes, source_name, source_kind):
             for item in sheets
         ],
         "columns": ["A", "B", "C", "D"],
-        "rows": copy.deepcopy(rows),
+        "rows": rows_with_empty_divisions,
     }
     validate_inspection_document(document)
     return document
+
+
+def expand_empty_rows(rows):
+    """Restore internal empty spreadsheet rows from preserved row numbers."""
+    expanded = []
+    previous_number = None
+    for source_row in rows or []:
+        number = int(source_row["row"])
+        if previous_number is not None:
+            for empty_number in range(previous_number + 1, number):
+                expanded.append(empty_row(empty_number))
+        normalized = copy.deepcopy(source_row)
+        normalized["empty"] = not any(normalized.get("values", {}).values())
+        expanded.append(normalized)
+        previous_number = number
+    return expanded
+
+
+def empty_row(number):
+    return {
+        "row": number,
+        "values": {"A": "", "B": "", "C": "", "D": ""},
+        "styles": {},
+        "bold": {},
+        "merged_b_to_d": False,
+        "empty": True,
+    }
+
 
 def normalize_source_kind(source_kind):
     kind = str(source_kind or "").lower().lstrip(".")
@@ -84,6 +113,8 @@ def validate_inspection_document(document):
             raise ValueError(f"{path}.bold must be an object.")
         if not isinstance(row.get("merged_b_to_d"), bool):
             raise ValueError(f"{path}.merged_b_to_d must be a boolean.")
+        if not isinstance(row.get("empty"), bool):
+            raise ValueError(f"{path}.empty must be a boolean.")
         for column in document["columns"]:
             if column not in row["values"] or not isinstance(row["values"][column], str):
                 raise ValueError(f"{path}.values.{column} must be a string.")

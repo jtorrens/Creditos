@@ -12,7 +12,11 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID
-from parser_lab.service import inspect_uploaded_source
+from parser_lab.service import (
+    inspect_uploaded_source,
+    load_temporary_block_model,
+    save_temporary_block_model,
+)
 from server_db.connection import db_connect
 from server_services.import_service import import_credit_source
 from server_services.document_service import load_document, save_document
@@ -35,6 +39,9 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(parsed_url.path)
         if path == "/api/reference-video":
             self.handle_reference_video(parsed_url.query)
+            return
+        if path == "/api/parser-lab/block-model":
+            self.handle_parser_lab_block_model_load()
             return
         if path == "/":
             path = "/index.html"
@@ -107,6 +114,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/parser-lab/inspect-source":
             self.handle_parser_lab_inspection()
             return
+        if path == "/api/parser-lab/block-model":
+            self.handle_parser_lab_block_model_save()
+            return
         if path.startswith("/api/db/"):
             self.handle_db(path)
             return
@@ -138,6 +148,18 @@ class Handler(BaseHTTPRequestHandler):
                 fields.get("source_kind"),
             )
             self.send_json(200, inspection)
+        except Exception as error:
+            self.send_json(500, {"error": str(error)})
+
+    def handle_parser_lab_block_model_load(self):
+        try:
+            self.send_json(200, load_temporary_block_model())
+        except Exception as error:
+            self.send_json(500, {"error": str(error)})
+
+    def handle_parser_lab_block_model_save(self):
+        try:
+            self.send_json(200, save_temporary_block_model(self.read_json_body()))
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 

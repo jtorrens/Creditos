@@ -1,6 +1,15 @@
-from pathlib import PurePath
+import json
+import os
+import tempfile
+from pathlib import Path, PurePath
 
 from .inspection import inspect_source_rows
+
+
+BLOCK_MODEL_SCHEMA = "parser_lab_block_model"
+BLOCK_MODEL_VERSION = 1
+BLOCK_MODEL_DIRECTORY = "creditos-parser-lab"
+BLOCK_MODEL_FILENAME = "block-model.json"
 
 
 def inspect_uploaded_source(file_bytes, source_name, source_kind=None):
@@ -14,3 +23,65 @@ def source_kind_from_name(source_name):
     if suffix not in {"ods", "xlsx"}:
         raise ValueError("Parser Lab solo admite archivos .ods y .xlsx.")
     return suffix
+
+
+def temporary_block_model_path():
+    configured_directory = os.environ.get("CREDITOS_PARSER_LAB_TEMP_DIR")
+    base_directory = Path(configured_directory) if configured_directory else Path(tempfile.gettempdir()) / BLOCK_MODEL_DIRECTORY
+    return base_directory / BLOCK_MODEL_FILENAME
+
+
+def empty_block_model():
+    return {
+        "schema": BLOCK_MODEL_SCHEMA,
+        "version": BLOCK_MODEL_VERSION,
+        "blocks": [],
+        "composition_rules": [],
+    }
+
+
+def load_temporary_block_model():
+    path = temporary_block_model_path()
+    if not path.exists():
+        model = empty_block_model()
+    else:
+        model = json.loads(path.read_text(encoding="utf-8"))
+        validate_block_model(model)
+    return {"model": model, "path": str(path), "temporary": True}
+
+
+def save_temporary_block_model(model):
+    validate_block_model(model)
+    path = temporary_block_model_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_path = path.with_suffix(".tmp")
+    temporary_path.write_text(
+        json.dumps(model, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary_path.replace(path)
+    return {"model": model, "path": str(path), "temporary": True}
+
+
+def validate_block_model(model):
+    if not isinstance(model, dict):
+        raise ValueError("El modelo temporal de bloques debe ser un objeto JSON.")
+    if model.get("schema") != BLOCK_MODEL_SCHEMA or model.get("version") != BLOCK_MODEL_VERSION:
+        raise ValueError("El modelo temporal de bloques no tiene un contrato válido.")
+    blocks = model.get("blocks")
+    if not isinstance(blocks, list):
+        raise ValueError("El modelo temporal de bloques necesita una lista de bloques.")
+    for index, block in enumerate(blocks):
+        if not isinstance(block, dict) or not isinstance(block.get("header"), dict):
+            raise ValueError(f"El bloque {index + 1} no tiene una cabecera válida.")
+        if not str(block.get("id") or "").strip() or not str(block.get("name") or "").strip():
+            raise ValueError(f"El bloque {index + 1} necesita identificador y nombre.")
+    composition_rules = model.get("composition_rules", [])
+    if not isinstance(composition_rules, list):
+        raise ValueError("El modelo temporal necesita una lista de reglas de composición.")
+    for index, rule in enumerate(composition_rules):
+        if not isinstance(rule, dict) or not isinstance(rule.get("match"), dict) or not isinstance(rule.get("action"), dict):
+            raise ValueError(f"La regla de composición {index + 1} no es válida.")
+        if not str(rule.get("id") or "").strip():
+            raise ValueError(f"La regla de composición {index + 1} necesita identificador.")
+    return model
