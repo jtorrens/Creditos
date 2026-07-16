@@ -38,7 +38,8 @@ npm run dist:win
 
 - Electron arranca `apps/renderer/server.py` en un puerto libre y lo cierra al salir.
 - Los diálogos de abrir/guardar/exportar son nativos.
-- La exportación MOV necesita `ffmpeg` instalado en `PATH`.
+- La aplicación empaquetada incluye `ffmpeg` para que la exportación MOV funcione al abrirla desde Finder, el Dock o el menú Inicio.
+- El panel de sincronización diferencia el código, la versión del esquema SQLite y los datos editados por el usuario.
 - Variables opcionales:
   - `CREDITOS_PYTHON`
   - `CREDITOS_FFMPEG`

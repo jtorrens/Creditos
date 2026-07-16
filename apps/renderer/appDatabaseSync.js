@@ -14,16 +14,23 @@
       const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
       const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
       const statusLabel = databaseStatusLabel(status, statusKind);
+      const codeLabel = codeStatusLabel(status);
+      const schemaLabel = databaseSchemaStatusLabel(status);
+      const userDataLabel = databaseUserDataStatusLabel(status);
       els.databaseStatus.textContent = [
         `DB: ${pathText}`,
         `Rama: ${targetText}`,
-        `Estado: ${statusLabel}`,
+        `Datos DB: ${userDataLabel}`,
+        `Esquema DB: ${schemaLabel}`,
+        `Codigo: ${codeLabel}`,
       ].join('\n');
       els.databaseStatus.classList.toggle('db-sync-error', statusKind === 'error' || statusKind === 'unavailable');
       els.databaseStatus.classList.toggle('db-sync-warning', statusKind === 'remote');
       els.databaseStatus.classList.toggle('db-sync-pending', statusKind === 'local');
       els.databaseStatus.classList.toggle('db-sync-ok', statusKind === 'synced');
-      els.databaseStatus.title = status && status.message ? status.message : pathText;
+      els.databaseStatus.title = status
+        ? [status.message, status.codeMessage].filter(Boolean).join('\n')
+        : pathText;
     }
 
     function databaseStatusKind(status) {
@@ -43,6 +50,38 @@
       if (statusKind === 'local') return 'local pendiente de subir';
       if (statusKind === 'synced') return 'sincronizada';
       return status.message || 'sin estado';
+    }
+
+    function codeStatusLabel(status) {
+      if (!status || status.error || status.available === false) return 'sin estado';
+      const behindCount = Number(status.branchBehindCount) || 0;
+      if (status.remoteCodeChanged) {
+        return `desactualizado (${behindCount} commit${behindCount === 1 ? '' : 's'} remoto${behindCount === 1 ? '' : 's'})`;
+      }
+      if (status.remoteOnlyDatabaseChanges) {
+        return `actualizado (el desfase remoto solo contiene DB)`;
+      }
+      return 'actualizado';
+    }
+
+    function databaseSchemaStatusLabel(status) {
+      if (!status || !status.databaseComparisonAvailable) return 'sin comparacion';
+      const localVersion = Number(status.localSchemaVersion) || 0;
+      const remoteVersion = Number(status.remoteSchemaVersion) || 0;
+      if (status.databaseSchemaMatches) return `v${localVersion}, sincronizado`;
+      if (status.schemaStatusKind === 'remote') return `GitHub v${remoteVersion}; local v${localVersion}`;
+      return `local v${localVersion}; GitHub v${remoteVersion}`;
+    }
+
+    function databaseUserDataStatusLabel(status) {
+      if (!status || !status.databaseComparisonAvailable) {
+        const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
+        return databaseStatusLabel(status, statusKind);
+      }
+      if (status.databaseUserDataMatches) return 'sincronizados';
+      return status.userDataStatusKind === 'remote'
+        ? 'GitHub contiene cambios pendientes de bajar'
+        : 'cambios locales pendientes de subir';
     }
 
     async function refreshDatabaseSyncStatus() {
@@ -171,15 +210,16 @@
         }
       }
       const status = state.databaseSyncStatus;
-      const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
-      const statusLabel = databaseStatusLabel(status, statusKind);
+      const codeLabel = codeStatusLabel(status);
+      const schemaLabel = databaseSchemaStatusLabel(status);
+      const userDataLabel = databaseUserDataStatusLabel(status);
       const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
       const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
       const result = await native.confirm({
         title: isDownload ? 'Bajar DB de GitHub' : 'Subir DB a GitHub',
         message: isDownload
-          ? `Esto reemplazara la base de datos local por la version de GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nEstado: ${statusLabel}`
-          : `Esto validara la DB local y la subira a GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nEstado: ${statusLabel}`,
+          ? `Esto reemplazara la base de datos local por la version de GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nDatos DB: ${userDataLabel}\nEsquema DB: ${schemaLabel}\nCodigo: ${codeLabel}`
+          : `Esto validara la DB local y la subira a GitHub.\n\nDB: ${pathText}\nRama: ${targetText}\nDatos DB: ${userDataLabel}\nEsquema DB: ${schemaLabel}\nCodigo: ${codeLabel}`,
         confirmLabel: isDownload ? 'Bajar de GitHub' : 'Subir a GitHub',
       });
       if (!result || !result.confirmed) return;

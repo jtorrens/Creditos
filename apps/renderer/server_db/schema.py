@@ -1,4 +1,12 @@
+SCHEMA_VERSION = 1
+
+
 def init_db(connection):
+    current_version = connection.execute("PRAGMA user_version").fetchone()[0]
+    if current_version > SCHEMA_VERSION:
+        raise RuntimeError(
+            f"La DB usa el esquema v{current_version}, pero esta app solo admite hasta v{SCHEMA_VERSION}."
+        )
     connection.executescript(
         """
         CREATE TABLE IF NOT EXISTS productions (
@@ -66,4 +74,5 @@ def init_db(connection):
         )
     if "settings_json" not in columns:
         connection.execute("ALTER TABLE productions ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
+    connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()

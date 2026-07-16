@@ -42,6 +42,29 @@ function createDatabaseSync({
     });
   }
 
+  function runGitBuffer(args, options = {}) {
+    return new Promise((resolve, reject) => {
+      const child = spawn('git', args, {
+        cwd: options.cwd,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      const stdout = [];
+      let stderr = '';
+      child.stdout.on('data', (chunk) => stdout.push(chunk));
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk.toString();
+      });
+      child.on('error', (error) => reject(error));
+      child.on('exit', (code) => {
+        if (code === 0) {
+          resolve(Buffer.concat(stdout));
+          return;
+        }
+        reject(new Error((stderr.trim() || `git termino con codigo ${code}`).slice(-4000)));
+      });
+    });
+  }
+
   function runPython(args, options = {}) {
     return new Promise((resolve, reject) => {
       const child = spawn(getPythonCommand(), args, {
@@ -86,6 +109,11 @@ function createDatabaseSync({
     } catch (_error) {
       return true;
     }
+  }
+
+  async function gitChangedPaths(range, cwd) {
+    const output = await gitOutput(['diff', '--name-only', '--no-renames', range, '--'], cwd);
+    return output.split('\n').map((value) => value.trim()).filter(Boolean);
   }
 
   function parseGitTimestamp(value) {
@@ -146,6 +174,76 @@ function createDatabaseSync({
       await runPython(['-c', script, dbPath]);
     } catch (error) {
       throw new Error(`La validacion SQLite de la DB fallo: ${error.message}`);
+    }
+  }
+
+  async function compareDatabaseContents(localDbPath, upstream, relativeDbPath, repoPath) {
+    const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-db-compare-'));
+    const remoteDbPath = path.join(tempRoot, 'remote.sqlite');
+    const script = [
+      'import base64, hashlib, json, sqlite3, sys',
+      '',
+      'def quote_identifier(value):',
+      '    return chr(34) + value.replace(chr(34), chr(34) * 2) + chr(34)',
+      '',
+      'def normalize(value):',
+      '    if isinstance(value, bytes):',
+      '        return {"blob": base64.b64encode(value).decode("ascii")}',
+      '    return value',
+      '',
+      'def inspect(db_path):',
+      '    connection = sqlite3.connect(db_path)',
+      '    try:',
+      '        connection.execute("PRAGMA query_only = ON")',
+      '        version = connection.execute("PRAGMA user_version").fetchone()[0]',
+      '        raw_schema_rows = connection.execute(',
+      '            "SELECT type, name, tbl_name, sql FROM sqlite_master "',
+      '            "WHERE name NOT LIKE \'sqlite_%\' ORDER BY type, name"',
+      '        ).fetchall()',
+      '        schema_rows = [',
+      '            (item_type, name, table_name, " ".join((sql or "").split()))',
+      '            for item_type, name, table_name, sql in raw_schema_rows',
+      '        ]',
+      '        schema_payload = json.dumps(schema_rows, ensure_ascii=False, separators=(",", ":"))',
+      '        schema_hash = hashlib.sha256(schema_payload.encode("utf-8")).hexdigest()',
+      '        data_hash = hashlib.sha256()',
+      '        table_names = [row[0] for row in connection.execute(',
+      '            "SELECT name FROM sqlite_master "',
+      '            "WHERE type = \'table\' AND (name NOT LIKE \'sqlite_%\' OR name = \'sqlite_sequence\') ORDER BY name"',
+      '        )]',
+      '        for table_name in table_names:',
+      '            quoted = quote_identifier(table_name)',
+      '            columns = connection.execute(f"PRAGMA table_info({quoted})").fetchall()',
+      '            primary_key = [row[1] for row in sorted(columns, key=lambda row: row[5]) if row[5]]',
+      '            order_by = ", ".join(quote_identifier(value) for value in primary_key) or "rowid"',
+      '            data_hash.update(table_name.encode("utf-8"))',
+      '            for row in connection.execute(f"SELECT * FROM {quoted} ORDER BY {order_by}"):',
+      '                payload = json.dumps([normalize(value) for value in row], ensure_ascii=False, separators=(",", ":"))',
+      '                data_hash.update(payload.encode("utf-8"))',
+      '        return {"version": version, "schemaHash": schema_hash, "dataHash": data_hash.hexdigest()}',
+      '    finally:',
+      '        connection.close()',
+      '',
+      'print(json.dumps([inspect(value) for value in sys.argv[1:]]))',
+    ].join('\n');
+    try {
+      const remoteBytes = await runGitBuffer(['show', `${upstream}:${relativeDbPath}`], { cwd: repoPath });
+      await fs.writeFile(remoteDbPath, remoteBytes);
+      const result = await runPython(['-c', script, localDbPath, remoteDbPath]);
+      const [local, remote] = JSON.parse(result.stdout);
+      const schemaMatches = local.schemaHash === remote.schemaHash && local.version === remote.version;
+      return {
+        localDataHash: local.dataHash,
+        localSchemaHash: local.schemaHash,
+        localSchemaVersion: local.version,
+        remoteDataHash: remote.dataHash,
+        remoteSchemaHash: remote.schemaHash,
+        remoteSchemaVersion: remote.version,
+        schemaMatches,
+        userDataMatches: local.dataHash === remote.dataHash,
+      };
+    } finally {
+      await fs.rm(tempRoot, { recursive: true, force: true });
     }
   }
 
@@ -263,6 +361,16 @@ function createDatabaseSync({
       } catch (_error) {
         behindCount = 0;
       }
+      let remoteChangedPaths = [];
+      try {
+        remoteChangedPaths = behindCount > 0 ? await gitChangedPaths(`HEAD..${upstream}`, repoPath) : [];
+      } catch (_error) {
+        remoteChangedPaths = [];
+      }
+      const remoteCodeChanged = remoteChangedPaths.some((changedPath) => changedPath !== relativeDbPath);
+      const remoteOnlyDatabaseChanges = behindCount > 0
+        && remoteChangedPaths.length > 0
+        && remoteChangedPaths.every((changedPath) => changedPath === relativeDbPath);
       let localAheadDbCommitCount = 0;
       try {
         localAheadDbCommitCount = Number(await gitOutput(['rev-list', '--count', `${upstream}..HEAD`, '--', relativeDbPath], repoPath)) || 0;
@@ -270,6 +378,7 @@ function createDatabaseSync({
         localAheadDbCommitCount = 0;
       }
       const workingDiffersFromUpstream = await gitHasDiff(['diff', '--quiet', upstream, '--', relativeDbPath], repoPath);
+      const indexDiffersFromUpstream = await gitHasDiff(['diff', '--cached', '--quiet', upstream, '--', relativeDbPath], repoPath);
       const localChanged = Boolean(localStatus) && workingDiffersFromUpstream;
       const upstreamHasDbChange = behindCount > 0
         ? await gitHasDiff(['diff', '--quiet', `HEAD..${upstream}`, '--', relativeDbPath], repoPath)
@@ -277,7 +386,13 @@ function createDatabaseSync({
       const remoteIsNewer = remoteTimestamp !== null && remoteTimestamp > localTimestamp + 1000;
       const localIsNewerOrEqual = remoteTimestamp === null || localTimestamp + 1000 >= remoteTimestamp;
       const remoteChanged = workingDiffersFromUpstream && remoteIsNewer;
-      const remoteDbAhead = workingDiffersFromUpstream && upstreamHasDbChange;
+      const remoteDbAhead = workingDiffersFromUpstream && upstreamHasDbChange && indexDiffersFromUpstream;
+      let databaseComparison = null;
+      try {
+        databaseComparison = await compareDatabaseContents(dbPath, upstream, relativeDbPath, repoPath);
+      } catch (_error) {
+        databaseComparison = null;
+      }
       const conflict = false;
       let message = 'DB sincronizada.';
       if (remoteChanged) {
@@ -300,6 +415,30 @@ function createDatabaseSync({
         remoteChanged,
         remoteAhead: remoteDbAhead,
         branchBehindCount: behindCount,
+        remoteChangedPaths,
+        remoteCodeChanged,
+        remoteOnlyDatabaseChanges,
+        codeStatusKind: remoteCodeChanged ? 'remote' : 'synced',
+        codeMessage: remoteCodeChanged
+          ? `El codigo local tiene ${behindCount} commit(s) remoto(s) pendiente(s).`
+          : remoteOnlyDatabaseChanges
+            ? `Codigo sincronizado: ${behindCount} commit(s) remoto(s) solo actualiza(n) la DB.`
+            : 'Codigo sincronizado.',
+        databaseComparisonAvailable: Boolean(databaseComparison),
+        localSchemaVersion: databaseComparison && databaseComparison.localSchemaVersion,
+        remoteSchemaVersion: databaseComparison && databaseComparison.remoteSchemaVersion,
+        databaseSchemaMatches: databaseComparison ? databaseComparison.schemaMatches : null,
+        databaseUserDataMatches: databaseComparison ? databaseComparison.userDataMatches : null,
+        schemaStatusKind: !databaseComparison || databaseComparison.schemaMatches
+          ? 'synced'
+          : databaseComparison.remoteSchemaVersion > databaseComparison.localSchemaVersion
+            ? 'remote'
+            : 'local',
+        userDataStatusKind: !databaseComparison || databaseComparison.userDataMatches
+          ? 'synced'
+          : remoteDbAhead || remoteChanged
+            ? 'remote'
+            : 'local',
         localAheadDbCommitCount,
         localAheadDbCommits: localAheadDbCommitCount > 0,
         upstreamHasDbChange,

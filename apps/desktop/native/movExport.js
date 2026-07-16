@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const bundledFfmpegPath = require('ffmpeg-static');
 
 const MOV_ENCODING_ARGS = {
   prores_proxy: ['-c:v', 'prores_ks', '-profile:v', '0', '-pix_fmt', 'yuv422p10le', '-vendor', 'apl0'],
@@ -23,14 +24,17 @@ function normalizeMovEncodingProfile(value) {
   return Object.prototype.hasOwnProperty.call(MOV_ENCODING_ARGS, value) ? value : 'prores_4444';
 }
 
-async function resolveExecutable(envName, executable) {
+async function resolveExecutable(envName, executable, extraCandidates = []) {
   if (process.env[envName]) return process.env[envName];
 
   const names = process.platform === 'win32'
     ? [`${executable}.exe`, executable]
     : [executable];
   const pathEntries = (process.env.PATH || '').split(path.delimiter).filter(Boolean);
-  const candidates = pathEntries.flatMap((entry) => names.map((name) => path.join(entry, name)));
+  const candidates = [
+    ...extraCandidates,
+    ...pathEntries.flatMap((entry) => names.map((name) => path.join(entry, name))),
+  ];
 
   for (const candidate of candidates) {
     try {
@@ -45,7 +49,10 @@ async function resolveExecutable(envName, executable) {
 }
 
 async function resolveFfmpegPath() {
-  return resolveExecutable('CREDITOS_FFMPEG', 'ffmpeg');
+  const executablePath = bundledFfmpegPath
+    ? bundledFfmpegPath.replace(`${path.sep}app.asar${path.sep}`, `${path.sep}app.asar.unpacked${path.sep}`)
+    : null;
+  return resolveExecutable('CREDITOS_FFMPEG', 'ffmpeg', [executablePath].filter(Boolean));
 }
 
 async function resolveFfprobePath() {
