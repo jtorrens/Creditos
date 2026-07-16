@@ -29,7 +29,6 @@
         value,
         options: selectOptions,
         onInput,
-        onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
       row.appendChild(wrapFieldControl(select, meta));
@@ -49,7 +48,6 @@
         parseFrameDuration: options.parseFrameDuration,
         alertFn: (message) => windowRef.alert(message),
         onInput,
-        onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
       row.appendChild(wrapFieldControl(input, meta));
@@ -67,7 +65,6 @@
         max,
         step,
         onInput,
-        onAfterCommit: options.renderEditor,
       });
       row.appendChild(labelEl);
       row.appendChild(wrapFieldControl(input, meta));
@@ -95,7 +92,7 @@
       reset.textContent = '↻';
       reset.title = 'Restablecer';
       reset.setAttribute('aria-label', 'Restablecer');
-      reset.addEventListener('click', meta.reset || (() => {}));
+      reset.addEventListener('click', () => runResetAction(reset, meta.reset));
       overrideWrap.appendChild(reset);
 
       if (!meta.beforeControl && !meta.afterControl) return overrideWrap;
@@ -110,6 +107,14 @@
 
     function rowHasOverride(meta) {
       return !!(meta && meta.override);
+    }
+
+    function runResetAction(trigger, action) {
+      const busyAction = root.CreditosBusyAction;
+      if (busyAction && typeof busyAction.run === 'function') {
+        return busyAction.run({ trigger, action, documentRef, windowRef });
+      }
+      return (action || (() => {}))();
     }
 
     function localCheckboxRow(label, value, onInput) {

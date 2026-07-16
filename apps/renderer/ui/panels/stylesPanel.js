@@ -22,12 +22,12 @@
     };
 
     function renderStylePreview(style) {
-      if (!els.stylePreview) return;
+      if (!els.stylePreview) return Promise.resolve();
       els.stylePreview.innerHTML = '';
       if (!style) {
         els.stylePreview.className = 'style-preview empty-state';
         els.stylePreview.textContent = 'Sin estilo seleccionado.';
-        return;
+        return Promise.resolve();
       }
       els.stylePreview.className = 'style-preview';
       const layout = options.getRenderLayout();
@@ -42,7 +42,7 @@
       if (!page) {
         els.stylePreview.className = 'style-preview empty-state';
         els.stylePreview.textContent = 'Sin contenido de preview.';
-        return;
+        return Promise.resolve();
       }
       const zoom = options.previewZoomForContainer(els.stylePreview, layout);
       const stack = documentRef.createElement('div');
@@ -92,13 +92,14 @@
       stylePreviewPlayback.frame = localFrame;
       stylePreviewPlayback.styleId = style.id;
       const localFrameState = stylePreviewRenderFrameState(frameState);
-      drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
+      const drawPromise = drawPanelPage(canvas, page, layout, zoom, localFrameState).catch((error) => {
         if (renderId === stylePreviewRenderId) console.warn(error);
       });
       updateStylePreviewPlaybackUi(playbackOptions, localFrameState);
       if (stylePreviewPlayback.playing && stylePreviewPlayback.styleId === style.id) {
         startStylePreviewPlayback(playbackOptions);
       }
+      return drawPromise;
     }
 
     async function drawPanelPage(canvas, page, layout, zoom, animationFrame) {
@@ -552,7 +553,7 @@
     }
 
     function renderStylesPane() {
-      if (!els.styleList) return;
+      if (!els.styleList) return Promise.resolve();
       els.styleList.innerHTML = '';
       els.styleCount.textContent = String(state.styles.length);
       if (!state.selectedStyleId || !options.getStyleById(state.selectedStyleId)) {
@@ -610,8 +611,7 @@
         els.styleEditorMeta.textContent = '';
         els.styleEditorBody.className = 'editor-body empty-state';
         els.styleEditorBody.textContent = options.selectedProduction() ? 'Crea o importa un estilo.' : 'Selecciona una producción.';
-        renderStylePreview(null);
-        return;
+        return renderStylePreview(null);
       }
 
       els.styleEditorTitle.textContent = style.name;
@@ -619,7 +619,7 @@
       els.styleEditorBody.className = 'editor-body';
       els.styleEditorBody.innerHTML = '';
       els.styleEditorBody.appendChild(options.renderStyleEditor(style));
-      renderStylePreview(style);
+      return renderStylePreview(style);
     }
 
     return {

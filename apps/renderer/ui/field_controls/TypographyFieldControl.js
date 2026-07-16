@@ -229,8 +229,16 @@
       resetButton.textContent = '↻';
       resetButton.title = 'Restablecer';
       resetButton.setAttribute('aria-label', 'Restablecer');
-      resetButton.addEventListener('click', () => options.onResetField(fieldsForReset(field), field));
+      resetButton.addEventListener('click', () => runResetAction(resetButton, () => options.onResetField(fieldsForReset(field), field)));
       return resetButton;
+    }
+
+    function runResetAction(trigger, action) {
+      const busyAction = root.CreditosBusyAction;
+      if (busyAction && typeof busyAction.run === 'function') {
+        return busyAction.run({ trigger, action, documentRef, windowRef: root });
+      }
+      return action();
     }
 
     function fieldHasOverride(options, field) {

@@ -1121,6 +1121,49 @@ button.primary:hover {
   color: var(--override);
 }
 
+.app-busy {
+  cursor: wait;
+}
+
+.app-busy-overlay {
+  align-items: center;
+  background: rgba(11, 14, 18, 0.58);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  position: fixed;
+  z-index: 10000;
+}
+
+.app-busy-card {
+  align-items: center;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32);
+  color: var(--ink);
+  display: flex;
+  font-size: 13px;
+  font-weight: 650;
+  gap: 12px;
+  padding: 13px 17px;
+}
+
+.app-busy-spinner {
+  animation: app-busy-spin 700ms linear infinite;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  border-top-color: var(--accent);
+  height: 17px;
+  width: 17px;
+}
+
+@keyframes app-busy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .override-control {
   align-items: center;
   background: var(--override-soft);

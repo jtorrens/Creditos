@@ -339,10 +339,10 @@
       options.pruneCurrentRedundantStyleDefaults();
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
-      options.renderStylesPane();
-      options.renderEditor();
+      const renderPromise = options.renderStylesPane();
       options.renderPreview();
       options.refreshPdfIfActive();
+      return renderPromise;
     }
 
     function updateEditableStyleCartela(style, fields) {
@@ -367,7 +367,6 @@
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
       options.renderStylesPane();
-      options.renderEditor();
       options.renderPreview();
       options.refreshPdfIfActive();
     }
@@ -378,7 +377,6 @@
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
       options.renderStylesPane();
-      options.renderEditor();
       options.renderPreview();
       options.refreshPdfIfActive();
     }
@@ -415,7 +413,6 @@
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
       options.renderStylesPane();
-      options.renderEditor();
       options.renderPreview();
       options.refreshPdfIfActive();
     }
@@ -426,7 +423,6 @@
       state.render = state.source && state.structure ? options.buildCurrentRenderJson(state.source, state.materials, state.structure) : state.render;
       options.scheduleStyleAutosave(style.id);
       options.renderStylesPane();
-      options.renderEditor();
       options.renderPreview();
       options.refreshPdfIfActive();
     }

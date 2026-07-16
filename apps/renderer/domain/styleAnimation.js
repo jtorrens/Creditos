@@ -191,6 +191,9 @@
       const hasIn = Object.prototype.hasOwnProperty.call(input, 'inValue');
       const hasOut = Object.prototype.hasOwnProperty.call(input, 'outValue');
       const animate = normalizeBoolean(input.animate, hasIn || hasOut);
+      if (Object.prototype.hasOwnProperty.call(input, 'animate') && !animate && !hasIn && !hasOut) {
+        return { animate: false };
+      }
       if (!animate && !hasIn && !hasOut) return null;
 
       const output = { animate };

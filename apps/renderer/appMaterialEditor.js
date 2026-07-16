@@ -188,7 +188,13 @@
         resetButton.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          options.resetEditableOverrides(overrideEntries);
+          const action = () => options.resetEditableOverrides(overrideEntries);
+          const busyAction = root.CreditosBusyAction;
+          if (busyAction && typeof busyAction.run === 'function') {
+            busyAction.run({ trigger: resetButton, action, documentRef, windowRef: root });
+          } else {
+            action();
+          }
         });
         label.appendChild(resetButton);
       }

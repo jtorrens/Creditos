@@ -309,7 +309,7 @@
       const current = options.normalizeStyleAnimation(animation || subject.animation || {});
       const properties = { ...(current.properties || {}) };
       if (fields && fields.animate === false) {
-        delete properties[key];
+        properties[key] = { animate: false };
         updateAnimation({
           ...current,
           properties,
