@@ -31,16 +31,16 @@ channel: refactor
 La DB runtime de Refactor es:
 
 ```text
-data/creditos-refactor.db
-```
-
-No usar como default en esta rama:
-
-```text
 data/creditos.db
 ```
 
-`data/creditos.db` pertenece al histórico deprecated; la app en `main` debe arrancar con `creditos-refactor.db`.
+No recrear el nombre transitorio anterior:
+
+```text
+data/creditos-refactor.db
+```
+
+La app en `main` debe arrancar exclusivamente con `data/creditos.db`. El histórico anterior permanece en las ramas `deprecated/*`, no como una segunda DB activa.
 
 ## Arranque Electron
 
@@ -51,7 +51,7 @@ cd apps/desktop
 npm start
 ```
 
-El proceso Electron detecta `Creditos Refactor`, fija `CREDITOS_APP_CHANNEL=refactor` para el servidor Python y resuelve la DB a `data/creditos-refactor.db`.
+El proceso Electron detecta `Creditos Refactor`, fija `CREDITOS_APP_CHANNEL=refactor` para el servidor Python y resuelve la DB a `data/creditos.db`.
 
 ## Arranque renderer solo
 
@@ -65,7 +65,7 @@ Ese script exporta:
 
 ```text
 CREDITOS_APP_CHANNEL=refactor
-CREDITOS_DB_PATH=<repo>/data/creditos-refactor.db
+CREDITOS_DB_PATH=<repo>/data/creditos.db
 ```
 
 ## Checks
@@ -98,7 +98,7 @@ La subida XLSX/ODS usa /api/parse-xlsx y no depende de cgi.FieldStorage.
 Exportar PNG/MOV:
 
 ```text
-1. Confirmar que la DB visible contiene creditos-refactor.db.
+1. Confirmar que la DB visible contiene creditos.db.
 2. Confirmar que el capítulo seleccionado es el de pruebas.
 3. Usar un directorio de salida fuera de producción.
 4. Para MOV, hacer primero una exportación corta.
@@ -116,14 +116,14 @@ Debe bloquear cualquier combinación distinta de:
 
 ```text
 canal refactor
-data/creditos-refactor.db como DB runtime
+data/creditos.db como DB runtime
 origin/main como rama Git
 ```
 
 Antes de usar los botones de DB en la app, confirmar en la pantalla de Producciones que se ve:
 
 ```text
-data/creditos-refactor.db
+data/creditos.db
 rama origin/main
 ```
 
@@ -133,7 +133,7 @@ El sync de DB es manual:
 
 ```text
 Bajar de GitHub: para el servidor Python, crea backup timestamped en data/db-backups/, baja la DB, ejecuta PRAGMA quick_check y restaura el backup si la validación falla.
-Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal Refactor con `creditos-refactor.db` y bloquea commits locales pendientes que ya afecten a la DB.
+Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal Refactor con `creditos.db` y bloquea commits locales pendientes que ya afecten a la DB.
 ```
 
 Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
@@ -141,7 +141,7 @@ Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
 ## QA manual mínima
 
 1. Abrir `Creditos Refactor`.
-2. Confirmar que la ruta de DB contiene `creditos-refactor.db`.
+2. Confirmar que la ruta de DB contiene `creditos.db`.
 3. Confirmar que la rama de sync mostrada es `origin/main`.
 4. Seleccionar producción y episodio.
 5. Importar XLSX estándar.
@@ -174,4 +174,4 @@ No trabajar en ramas `deprecated/*`.
 
 No usar sync DB contra una rama distinta de `main`.
 
-No cambiar el default de Refactor a `data/creditos.db`.
+No recrear ni usar `data/creditos-refactor.db`.

@@ -1,5 +1,13 @@
 # Créditos
 
+## Estado operativo
+
+- Rama activa: `main`.
+- Aplicación: `Creditos Refactor`.
+- DB activa: `data/creditos.db`.
+- Sync de DB: `origin/main`.
+- Las ramas `deprecated/*` son solo históricas.
+
 Documentación de funciones específicas:
 
 - [`SALO_GLYPH_ALTERNATES.md`](SALO_GLYPH_ALTERNATES.md): selección global de formas alternativas OpenType por carácter y fuente.

@@ -3,12 +3,15 @@ const path = require('path');
 
 function createAppPaths({ app, appChannel = 'production', appDir }) {
   function databaseFileName() {
-    return appChannel === 'refactor' ? 'creditos-refactor.db' : 'creditos.db';
+    return 'creditos.db';
   }
 
   function environmentDatabasePath() {
     if (!process.env.CREDITOS_DB_PATH) return null;
     const dbPath = process.env.CREDITOS_DB_PATH;
+    if (path.basename(dbPath) === 'creditos-refactor.db') {
+      return path.join(path.dirname(dbPath), databaseFileName());
+    }
     if (path.basename(dbPath) !== databaseFileName()) return null;
     return dbPath;
   }

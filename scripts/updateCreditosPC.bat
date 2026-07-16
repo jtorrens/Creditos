@@ -4,7 +4,7 @@ setlocal EnableExtensions EnableDelayedExpansion
 set "REPO=%~dp0.."
 set "DESKTOP=%REPO%\apps\desktop"
 set "DIST=%DESKTOP%\dist"
-set "DB_PATH=%REPO%\data\creditos-refactor.db"
+set "DB_PATH=%REPO%\data\creditos.db"
 set "STASH_CREATED="
 set "RESTORE_NEEDED="
 
@@ -13,6 +13,12 @@ echo.
 
 cd /d "%REPO%"
 if errorlevel 1 goto error
+
+for /f "delims=" %%B in ('git branch --show-current') do set "CURRENT_BRANCH=%%B"
+if /I not "!CURRENT_BRANCH!"=="main" (
+  echo Este actualizador solo puede ejecutarse desde la rama main. Rama actual: !CURRENT_BRANCH!
+  goto error
+)
 
 call :stash_local_changes
 if errorlevel 1 goto error

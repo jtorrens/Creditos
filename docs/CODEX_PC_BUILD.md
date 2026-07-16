@@ -61,7 +61,7 @@ El `.bat` intenta hacer el flujo completo:
 ```text
 git pull
 configurar CREDITOS_APP_CHANNEL=refactor
-configurar CREDITOS_DB_PATH a data\creditos-refactor.db del repositorio
+configurar CREDITOS_DB_PATH a data\creditos.db del repositorio
 npm install
 npm run dist:win
 ejecutar el instalador .exe mas reciente
@@ -96,25 +96,19 @@ dir dist
 
 Si se genera un `.exe`, ejecutar el instalador mas reciente desde `apps\desktop\dist`.
 
-## DB refactor
+## DB canónica
 
-La DB histórica deprecated es:
+La única DB activa en `main` debe ser:
 
 ```text
 D:\PROYECTOS\CREDITOS\data\creditos.db
-```
-
-En `main` no se usa esa DB. La DB activa debe ser:
-
-```text
-D:\PROYECTOS\CREDITOS\data\creditos-refactor.db
 ```
 
 La app instalada en Windows puede arrancar fuera del repositorio. Por eso el script `scripts\updateCreditosPC.bat` deja configurada una variable de entorno de usuario:
 
 ```text
 CREDITOS_APP_CHANNEL=refactor
-CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos-refactor.db
+CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos.db
 ```
 
 Comprobar en PowerShell:
@@ -195,7 +189,7 @@ py apps\renderer\server.py
 ## Que comprobar en la app Windows
 
 1. La app abre sin consola inutil o errores visibles.
-2. Producciones carga la DB de `data\creditos-refactor.db`.
+2. Producciones carga la DB de `data\creditos.db`.
 3. Se puede seleccionar produccion y episodio.
 4. Se ve la version de la app en la interfaz.
 5. Preview funciona en modo paginas y scroll.

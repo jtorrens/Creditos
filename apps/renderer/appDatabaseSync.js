@@ -10,7 +10,7 @@
     function updateDatabaseStatus() {
       if (!els.databaseStatus) return;
       const status = state.databaseSyncStatus;
-      const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
+      const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
       const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
       const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
       const statusLabel = databaseStatusLabel(status, statusKind);
@@ -284,7 +284,7 @@
       const schemaLabel = databaseSchemaStatusLabel(status);
       const userDataLabel = databaseUserDataStatusLabel(status);
       const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
-      const pathText = state.databasePath ? state.databasePath : 'data/creditos-refactor.db';
+      const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
       const result = await native.confirm({
         title: isDownload ? 'Bajar DB de GitHub' : 'Subir DB a GitHub',
         message: isDownload

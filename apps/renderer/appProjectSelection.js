@@ -7,7 +7,7 @@
     async function initializeDatabase(initOptions = {}) {
       try {
         const overview = await options.dbPost('/api/db/init', { db_path: null });
-        state.databasePath = overview.db_path || 'data/creditos-refactor.db';
+        state.databasePath = overview.db_path || 'data/creditos.db';
         applyDatabaseOverview(overview);
         options.updateDatabaseStatus();
       } catch (error) {

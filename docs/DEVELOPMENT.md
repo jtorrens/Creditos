@@ -69,8 +69,8 @@ Build outputs are written to `apps/desktop/dist/` and are not versioned.
 
 ## SQLite Project Storage
 
-The refactor app stores project data in a separate SQLite database at `data/creditos-refactor.db`.
-This file is intentionally separate from the production `main` database.
+The active app on `main` stores project data in `data/creditos.db`.
+The transitional `data/creditos-refactor.db` name is deprecated and must not be recreated.
 
 Hierarchy:
 
@@ -88,7 +88,7 @@ This keeps the existing render/editor logic stable while replacing external JSON
 
 Changes in the editor are autosaved to the database. The normal workflow does not require JSON import/export or explicit Save buttons.
 
-Because the database is a binary file, avoid editing it independently on Mac and Windows before syncing. Pull before working and push after a session.
+Because the database is a binary file, avoid editing it independently on Mac and Windows before syncing. Its in-app Git target is `origin/main`; use the in-app DB controls rather than copying the file manually.
 
 ## macOS Update Script
 
@@ -104,7 +104,7 @@ The script runs:
 - `npm install`
 - `npm run pack`
 
-The app will be rebuilt in `apps/desktop/dist/mac-arm64/Creditos.app`.
+The app will be rebuilt in `apps/desktop/dist/mac-arm64/Creditos Refactor.app`.
 
 ## Optional Environment Overrides
 
@@ -179,6 +179,7 @@ The installer will be in `apps/desktop/dist/`, but this PowerShell script does n
 Before working:
 
 ```bash
+git switch main
 git pull
 ```
 

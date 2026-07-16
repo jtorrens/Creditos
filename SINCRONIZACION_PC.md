@@ -4,9 +4,9 @@ Estas instrucciones son para mantener en paridad el checkout refactorizado de Cr
 
 ## Reglas del proyecto
 
-- Usar siempre la rama `codex/refactor-parallel`.
-- La base de datos de este canal es `data/creditos-refactor.db`.
-- No usar `main` para esta app: `main` esta en produccion y usa otra base de datos.
+- Usar siempre la rama `main`.
+- La base de datos canónica es `data/creditos.db`.
+- No usar ramas `deprecated/*` ni recrear `data/creditos-refactor.db`; pertenecen al histórico anterior.
 - No versionar `node_modules/`, `apps/desktop/dist/`, `.app`, `.dmg`, `.exe`, `.msi` ni otros builds generados.
 - Git se usa como transporte manual de snapshots de la DB, no como sincronizacion automatica.
 - No editar en Mac y PC a la vez. El flujo esperado es: subir snapshot desde una maquina, bajar snapshot en la otra.
@@ -20,11 +20,11 @@ git clone <URL_DEL_REPOSITORIO> CREDITOS_REFACTOR
 cd CREDITOS_REFACTOR
 ```
 
-2. Cambiar a la rama del refactor:
+2. Confirmar la rama activa:
 
 ```powershell
 git fetch origin
-git switch codex/refactor-parallel
+git switch main
 ```
 
 3. Instalar dependencias desde la app Electron:
@@ -66,8 +66,8 @@ La bajada de la DB debe hacerse desde la interfaz de la app, no con comandos man
 1. Abrir la app.
 2. Ir al panel de sincronizacion de base de datos.
 3. Confirmar que muestra:
-   - DB activa: `data/creditos-refactor.db`
-   - Rama target: `codex/refactor-parallel`
+   - DB activa: `data/creditos.db`
+   - Rama target: `origin/main`
 4. Pulsar la accion de bajar/descargar DB.
 5. Esperar el modal de proceso.
 6. Aceptar solo cuando aparezca confirmacion de exito.
@@ -79,16 +79,16 @@ La app crea backup timestamped antes de bajar la DB y valida la base con `PRAGMA
 Antes de subir:
 
 1. Cerrar cualquier uso activo de la app en el otro equipo.
-2. Verificar en la UI que la DB activa es `data/creditos-refactor.db`.
-3. Verificar que la rama target no es `main`.
+2. Verificar en la UI que la DB activa es `data/creditos.db`.
+3. Verificar que la rama target es `origin/main`.
 4. Pulsar la accion de subir/publicar DB.
 5. Esperar el modal de proceso.
 6. Confirmar que termina en estado sincronizado.
 
 La app bloquea la subida si:
 
-- El canal refactor apunta a `main`.
-- La DB activa no se llama `creditos-refactor.db`.
+- El canal no es `refactor` o la rama no es `main`.
+- La DB activa no se llama `creditos.db`.
 - La validacion SQLite falla.
 - Hay un estado Git de error.
 - Hay commits locales ahead que ya afectan a la DB.
@@ -125,7 +125,7 @@ En la maquina donde acabas de trabajar:
 git status
 git add <archivos>
 git commit -m "Mensaje descriptivo"
-git push origin codex/refactor-parallel
+git push origin main
 ```
 
 En la otra maquina:
@@ -159,13 +159,13 @@ git status
 La rama debe ser:
 
 ```text
-codex/refactor-parallel
+main
 ```
 
 La DB esperada debe existir:
 
 ```powershell
-Test-Path data\creditos-refactor.db
+Test-Path data\creditos.db
 ```
 
 La app debe arrancar desde:
@@ -179,5 +179,5 @@ npm start
 
 - Si la UI marca error de Git, no subir ni bajar DB hasta resolver `git status`.
 - Si falla una bajada de DB, revisar `data\db-backups\`; la app intenta restaurar automaticamente el backup previo.
-- Si aparece cualquier referencia a `main` en la sincronizacion de la app refactor, detenerse y corregir antes de continuar.
+- Si la sincronización muestra una rama distinta de `origin/main`, detenerse y revisar el checkout.
 - Si el build falla despues de actualizar codigo, ejecutar `npm install` de nuevo en `apps\desktop`.

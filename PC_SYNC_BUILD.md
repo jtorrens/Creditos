@@ -1,15 +1,15 @@
 # Creditos Refactor - sincronizar y compilar en PC
 
-Este documento sirve para mantener el PC en paridad con el Mac usando la rama paralela de refactor.
+Este documento sirve para mantener el PC en paridad con el Mac usando la rama canónica de Refactor.
 
 ## Reglas
 
-- Usar siempre la rama `codex/refactor-parallel`.
-- No trabajar desde `main` para esta app.
+- Usar siempre la rama `main`.
+- No trabajar desde ramas `deprecated/*`.
 - No usar carpetas sincronizadas para la DB.
 - No sustituir el sync Git por backend remoto.
-- La DB de runtime debe ser `data/creditos-refactor.db`.
-- No usar `data/creditos.db` en Creditos Refactor.
+- La DB de runtime debe ser `data/creditos.db`.
+- No recrear `data/creditos-refactor.db`; era el nombre transitorio anterior.
 - En PC no hacer refactors ni cambios funcionales salvo decision explicita.
 
 ## Primera instalacion en PC
@@ -19,21 +19,21 @@ Desde PowerShell:
 ```powershell
 git clone https://github.com/jtorrens/Creditos.git <repo>
 cd <repo>
-git switch codex/refactor-parallel
+git switch main
 ```
 
 Configurar entorno de Refactor para la sesion actual:
 
 ```powershell
 $env:CREDITOS_APP_CHANNEL = "refactor"
-$env:CREDITOS_DB_PATH = "<repo>\data\creditos-refactor.db"
+$env:CREDITOS_DB_PATH = "<repo>\data\creditos.db"
 ```
 
 Configurar entorno de Refactor como variables de usuario:
 
 ```powershell
 [Environment]::SetEnvironmentVariable("CREDITOS_APP_CHANNEL", "refactor", "User")
-[Environment]::SetEnvironmentVariable("CREDITOS_DB_PATH", "<repo>\data\creditos-refactor.db", "User")
+[Environment]::SetEnvironmentVariable("CREDITOS_DB_PATH", "<repo>\data\creditos.db", "User")
 ```
 
 Cerrar y abrir PowerShell despues de cambiar variables de usuario.
@@ -53,11 +53,11 @@ Actualizar rama:
 
 ```powershell
 git fetch origin
-git switch codex/refactor-parallel
+git switch main
 git pull --ff-only
 ```
 
-Confirmar que no estas en `main`:
+Confirmar que estás en `main`:
 
 ```powershell
 git branch --show-current
@@ -66,7 +66,7 @@ git branch --show-current
 Debe devolver:
 
 ```text
-codex/refactor-parallel
+main
 ```
 
 ## Sincronizar DB refactor
@@ -76,14 +76,14 @@ La DB refactor se trata como snapshot manual por Git.
 Ruta esperada:
 
 ```text
-<repo>\data\creditos-refactor.db
+<repo>\data\creditos.db
 ```
 
 Abrir la app y revisar en Producciones:
 
 ```text
-DB: ...\data\creditos-refactor.db
-Rama: origin/codex/refactor-parallel
+DB: ...\data\creditos.db
+Rama: origin/main
 Estado: sincronizada / local pendiente de subir / remota mas reciente / error
 ```
 
@@ -94,7 +94,7 @@ Bajar de GitHub
 Subir a GitHub
 ```
 
-No copiar manualmente `creditos.db` ni `creditos-refactor.db` entre maquinas.
+No copiar manualmente `creditos.db` entre máquinas; usar los controles de sincronización de la app.
 
 Al bajar desde GitHub, la app:
 
@@ -110,9 +110,9 @@ Al subir a GitHub, la app:
 
 ```text
 1. Ejecuta PRAGMA quick_check.
-2. Bloquea main.
-3. Bloquea DB distinta de creditos-refactor.db.
-4. Sube snapshot solo a la rama de refactor.
+2. Permite `main` únicamente para el canal Refactor con `creditos.db`.
+3. Bloquea cualquier DB distinta de `creditos.db`.
+4. Sube el snapshot a `origin/main`.
 ```
 
 Despues de subir correctamente, el estado debe quedar:
@@ -156,8 +156,8 @@ Comprobar en la app:
 
 ```text
 1. Nombre: Creditos Refactor.
-2. DB: creditos-refactor.db.
-3. Rama: origin/codex/refactor-parallel.
+2. DB: creditos.db.
+3. Rama: origin/main.
 4. Producciones y capitulos cargan.
 5. Preview funciona.
 6. Export PNG funciona.

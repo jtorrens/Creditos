@@ -5,7 +5,7 @@ Estado de esta matriz:
 ```text
 branch: main
 app: Creditos Refactor
-db esperada: data/creditos-refactor.db
+db esperada: data/creditos.db
 sync esperado: origin/main
 validacion P1: usuario reporta "aparentemente todo bien" el 2026-07-06
 ```
@@ -17,8 +17,8 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 | Flujo | Pasos | Resultado esperado | Estado | Observaciones |
 |---|---|---|---|---|
 | Arranque | Abrir Electron desde `apps/desktop` con `npm start`. | La app abre como `Creditos Refactor`. | Pendiente | Confirmar que no abre la app de producción. |
-| DB refactor | Abrir Producciones. | La ruta visible contiene `creditos-refactor.db`. | Pendiente | Si aparece `creditos.db`, detener pruebas. |
-| Rama sync | Consultar estado DB. | La rama visible es `origin/main`. | Pendiente | Debe usar exclusivamente `creditos-refactor.db`. |
+| DB activa | Abrir Producciones. | La ruta visible contiene `data/creditos.db`. | Pendiente | Si aparece `creditos-refactor.db`, detener pruebas. |
+| Rama sync | Consultar estado DB. | La rama visible es `origin/main`. | Pendiente | Debe usar exclusivamente `creditos.db`. |
 | Producción | Crear o seleccionar una producción. | La selección se conserva y carga episodios. | Pendiente | Usar DB refactor. |
 | Episodio | Crear o seleccionar episodio. | El episodio carga sin errores. | Pendiente | Revisar que no se pisa otro episodio. |
 | XLSX estándar | Importar fixture XLSX estándar. | Se generan bloques/materiales/cartelas. | Pendiente | Cubierto parcialmente por golden parser. |
@@ -32,7 +32,7 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 | PNG rango | Exportar rango de páginas. | Carpeta contiene la secuencia esperada. | Pendiente | Revisar nombres y comparar contra una exportación de referencia. |
 | MOV corto | Exportar MOV corto en páginas. | MOV se genera y se puede abrir. | Pendiente | Probar H.264 o ProRes según disponibilidad. |
 | MOV scroll | Exportar MOV corto en scroll. | MOV se genera con movimiento continuo. | Pendiente | Revisar frames inicial/final. |
-| Sync bajar | Usar solo si DB muestra `origin/main`. | Baja `creditos-refactor.db` desde `origin/main`. | Pendiente | Confirmar que crea backup local. |
+| Sync bajar | Usar solo si DB muestra `origin/main`. | Baja `creditos.db` desde `origin/main`. | Pendiente | Confirmar que crea backup local. |
 | Sync subir | Usar solo si DB muestra `origin/main`. | Sube un commit exclusivo de DB a `main`. | Pendiente | Confirmar `PRAGMA quick_check`. |
 
 ## Criterio de parada
@@ -40,8 +40,8 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 Detener QA y corregir antes de seguir si ocurre cualquiera de estos casos:
 
 ```text
-La app muestra data/creditos.db como DB runtime.
+La app muestra data/creditos-refactor.db como DB runtime.
 La app muestra una rama distinta de origin/main como rama de sync.
-El sync intenta usar una DB distinta de creditos-refactor.db.
+El sync intenta usar una DB distinta de creditos.db.
 La app arranca con nombre o bundle de producción.
 ```

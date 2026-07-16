@@ -2,7 +2,15 @@
 
 Aplicación local Electron para importar Excels de créditos, organizar cartelas, previsualizar páginas y exportar PNG/MOV.
 
-La persistencia de proyecto usa una base de datos SQLite global versionada en `data/creditos.db`: primer nivel `productions`, segundo nivel `episodes`.
+## Estado operativo
+
+- Rama activa y canónica: `main`.
+- Aplicación activa: `Creditos Refactor`.
+- Base de datos activa: `data/creditos.db`.
+- Destino de sincronización de la DB: `origin/main`.
+- Las ramas `deprecated/*` conservan el histórico anterior y no deben usarse para trabajo nuevo.
+
+La persistencia usa la base SQLite versionada `data/creditos.db`: primer nivel `productions`, segundo nivel `episodes`.
 
 ## Estructura
 

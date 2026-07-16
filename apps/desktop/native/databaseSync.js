@@ -286,8 +286,8 @@ function createDatabaseSync({
 
   function assertRefactorIsolation(dbPath, target) {
     if (appChannel() !== 'refactor') return;
-    if (path.basename(dbPath) !== 'creditos-refactor.db') {
-      throw new Error('Creditos Refactor solo puede sincronizar la DB independiente data/creditos-refactor.db.');
+    if (path.basename(dbPath) !== 'creditos.db') {
+      throw new Error('Creditos Refactor solo puede sincronizar la DB canónica data/creditos.db.');
     }
   }
 
@@ -305,12 +305,12 @@ function createDatabaseSync({
       throw new Error('No se pudo detectar el target Git de DB.');
     }
     const isRefactorDatabase = status.appChannel === 'refactor'
-      && path.basename(status.dbPath) === 'creditos-refactor.db';
+      && path.basename(status.dbPath) === 'creditos.db';
     if (status.syncTargetBranch === 'main' && !isRefactorDatabase) {
-      throw new Error('Solo Creditos Refactor con data/creditos-refactor.db puede sincronizar contra main.');
+      throw new Error('Solo Creditos Refactor con data/creditos.db puede sincronizar contra main.');
     }
     if (status.appChannel === 'refactor' && !isRefactorDatabase) {
-      throw new Error('Creditos Refactor solo puede subir data/creditos-refactor.db.');
+      throw new Error('Creditos Refactor solo puede subir data/creditos.db.');
     }
   }
 

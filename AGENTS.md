@@ -6,8 +6,16 @@ Project: Electron app "Créditos".
 
 - Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
 - All implementation, documentation, dependency, build, and verification work must be done in this canonical Refactor workspace on `main`.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the Refactor application on `main`. Its current application version is `0.1.65`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the Refactor application on `main`. Its current application version is `0.1.66`.
 - If the worktree or version does not match the refactor application, stop and ask the user before moving changes.
+
+## Active Data And Sync Target
+
+- The only active runtime database is `data/creditos.db`.
+- Database synchronization must target `origin/main`.
+- `deprecated/legacy-main` and every other `deprecated/*` branch are historical only.
+- Never reintroduce `data/creditos-refactor.db`; that transitional name is deprecated.
+- Do not commit local DB mutations as part of application or documentation changes unless the user explicitly requests a DB snapshot sync.
 
 ## Structure
 

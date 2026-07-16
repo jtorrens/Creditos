@@ -1,5 +1,19 @@
 # Handover Codex — Proyecto Créditos / Electron Mac + Windows
 
+## Estado operativo vigente — 2026-07-16
+
+```text
+Rama activa: main
+Aplicación: Creditos Refactor
+DB activa: data/creditos.db
+Sync DB: origin/main
+Versión: 0.1.66
+```
+
+Las ramas `deprecated/*` y `deprecated/legacy-main` son históricas. `data/creditos.db` es la única DB activa; el nombre transitorio `data/creditos-refactor.db` ya no debe utilizarse.
+
+Las secciones fechadas anteriores a este bloque se mantienen como historial de la migración Mac/Windows; si contradicen este estado operativo, prevalece este bloque.
+
 ## Contexto
 
 Repositorio GitHub:
@@ -28,7 +42,7 @@ El renderer / servidor está en:
 apps/renderer
 ```
 
-## Estado actual tras trabajo en Mac
+## Referencia histórica tras el primer trabajo en Mac
 
 Fecha de esta nota: 2026-06-04.
 
@@ -44,10 +58,10 @@ a92b8a6 Run Windows installer from update script
 9f44959 Prepare cross-platform development workflow
 ```
 
-La app muestra su version en la cabecera, arriba a la derecha. Ahora deberia verse:
+En aquella revisión histórica la app mostraba:
 
 ```text
-v0.1.1
+v0.1.1 (histórica; no usar como versión vigente)
 ```
 
 Esto sirve para comprobar rapidamente que Mac y Windows estan usando la misma version del codigo.

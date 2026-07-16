@@ -5,7 +5,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 DESKTOP="$REPO/apps/desktop"
-APP_PATH="$DESKTOP/dist/mac-arm64/Creditos.app"
+APP_PATH="$DESKTOP/dist/mac-arm64/Creditos Refactor.app"
 STASH_CREATED=""
 RESTORE_NEEDED=""
 
@@ -13,6 +13,12 @@ echo "=== Creditos Mac: actualizar y compilar app ==="
 echo
 
 cd "$REPO" || exit 1
+
+CURRENT_BRANCH="$(git branch --show-current)"
+if [ "$CURRENT_BRANCH" != "main" ]; then
+  echo "Este actualizador solo puede ejecutarse desde la rama main. Rama actual: $CURRENT_BRANCH"
+  exit 1
+fi
 
 stash_local_changes() {
   if [ -z "$(git status --porcelain --untracked-files=all)" ]; then
