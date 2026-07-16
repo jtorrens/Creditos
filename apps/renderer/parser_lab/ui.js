@@ -28,6 +28,10 @@
             <div id="parserLabTableEmpty" class="parser-lab-empty">Carga un archivo para inspeccionar las columnas A–D antes de aplicar reglas de modelo.</div>
             <div id="parserLabTableWrap" class="parser-lab-table-wrap" hidden>
               <table class="parser-lab-table">
+                <colgroup>
+                  <col class="parser-lab-row-column">
+                  <col span="4">
+                </colgroup>
                 <thead>
                   <tr>
                     <th scope="col">Fila</th>
@@ -35,8 +39,6 @@
                     <th scope="col">B</th>
                     <th scope="col">C</th>
                     <th scope="col">D</th>
-                    <th class="parser-lab-flag" scope="col">Negrita</th>
-                    <th class="parser-lab-flag" scope="col">B:D</th>
                   </tr>
                 </thead>
                 <tbody id="parserLabTableBody"></tbody>
@@ -48,6 +50,7 @@
               <h2>JSON de la fila</h2>
               <span id="parserLabSelectionMeta">Sin selección</span>
             </div>
+            <div id="parserLabFormatSummary" class="parser-lab-format-summary" hidden></div>
             <pre id="parserLabJson" class="parser-lab-json">Selecciona una fila para ver todos sus atributos.</pre>
           </aside>
         </div>
@@ -65,6 +68,7 @@
       tableWrap: documentRef.getElementById('parserLabTableWrap'),
       tableBody: documentRef.getElementById('parserLabTableBody'),
       selectionMeta: documentRef.getElementById('parserLabSelectionMeta'),
+      formatSummary: documentRef.getElementById('parserLabFormatSummary'),
       json: documentRef.getElementById('parserLabJson'),
     };
     const state = { inspection: null, selectedRowNumber: null, filter: '' };
@@ -134,6 +138,8 @@
         elements.tableEmpty.hidden = false;
         elements.tableWrap.hidden = true;
         elements.selectionMeta.textContent = 'Sin selección';
+        elements.formatSummary.hidden = true;
+        elements.formatSummary.replaceChildren();
         elements.json.textContent = 'Selecciona una fila para ver todos sus atributos.';
         return;
       }
@@ -167,10 +173,12 @@
       });
 
       appendCell(tr, row.row);
-      COLUMNS.forEach((column) => appendCell(tr, row.values && row.values[column] || ''));
-      const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
-      appendCell(tr, boldColumns.join(', ') || '—', 'parser-lab-flag');
-      appendCell(tr, row.merged_b_to_d ? 'Sí' : 'No', 'parser-lab-flag');
+      appendSourceCell(tr, row, 'A');
+      if (row.merged_b_to_d) {
+        appendMergedCell(tr, row);
+      } else {
+        ['B', 'C', 'D'].forEach((column) => appendSourceCell(tr, row, column));
+      }
       return tr;
     }
 
@@ -179,6 +187,43 @@
       if (className) cell.className = className;
       cell.textContent = String(value);
       rowElement.appendChild(cell);
+    }
+
+    function appendSourceCell(rowElement, row, column) {
+      const cell = documentRef.createElement('td');
+      const isBold = !!(row.bold && row.bold[column]);
+      const style = row.styles && row.styles[column];
+      cell.dataset.column = column;
+      cell.classList.toggle('parser-lab-cell-bold', isBold);
+      cell.textContent = row.values && row.values[column] || '';
+      cell.title = cellDescription(column, isBold, style);
+      rowElement.appendChild(cell);
+    }
+
+    function appendMergedCell(rowElement, row) {
+      const cell = documentRef.createElement('td');
+      const sourceColumn = ['B', 'C', 'D'].find((column) => row.values && row.values[column]) || 'B';
+      const isBold = !!(row.bold && row.bold[sourceColumn]);
+      const style = row.styles && row.styles[sourceColumn];
+      const value = row.values && row.values[sourceColumn] || '';
+      const text = documentRef.createElement('span');
+      const badge = documentRef.createElement('span');
+      cell.colSpan = 3;
+      cell.dataset.column = 'B:D';
+      cell.className = 'parser-lab-merged-cell';
+      cell.classList.toggle('parser-lab-cell-bold', isBold);
+      cell.title = `${cellDescription(sourceColumn, isBold, style)} · combinada de B a D`;
+      text.textContent = value;
+      badge.className = 'parser-lab-merged-badge';
+      badge.textContent = 'B–D combinada';
+      cell.append(text, badge);
+      rowElement.appendChild(cell);
+    }
+
+    function cellDescription(column, isBold, style) {
+      const details = [`Columna ${column}`, isBold ? 'negrita' : 'peso normal'];
+      if (style !== undefined && style !== null && style !== '') details.push(`estilo ${style}`);
+      return details.join(' · ');
     }
 
     function selectRow(rowNumber) {
@@ -195,11 +240,46 @@
       const selected = state.inspection && (state.inspection.rows || []).find((row) => row.row === state.selectedRowNumber);
       if (!selected) {
         elements.selectionMeta.textContent = 'Sin selección';
+        elements.formatSummary.hidden = true;
+        elements.formatSummary.replaceChildren();
         elements.json.textContent = 'Selecciona una fila para ver todos sus atributos.';
         return;
       }
       elements.selectionMeta.textContent = `Fila ${selected.row}`;
+      renderFormatSummary(selected);
       elements.json.textContent = JSON.stringify(selected, null, 2);
+    }
+
+    function renderFormatSummary(row) {
+      const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
+      const styledColumns = COLUMNS.filter((column) => row.styles && row.styles[column] !== undefined);
+      elements.formatSummary.hidden = false;
+      elements.formatSummary.replaceChildren(
+        formatSummaryRow('Negrita', boldColumns.length ? boldColumns : ['Ninguna']),
+        formatSummaryRow('Combinación', [row.merged_b_to_d ? 'B–D' : 'Celdas separadas']),
+        formatSummaryRow(
+          'Estilos de origen',
+          styledColumns.length ? styledColumns.map((column) => `${column} · ${row.styles[column]}`) : ['Sin estilo registrado']
+        )
+      );
+    }
+
+    function formatSummaryRow(label, values) {
+      const rowElement = documentRef.createElement('div');
+      const labelElement = documentRef.createElement('span');
+      const valuesElement = documentRef.createElement('div');
+      rowElement.className = 'parser-lab-format-row';
+      labelElement.className = 'parser-lab-format-label';
+      labelElement.textContent = label;
+      valuesElement.className = 'parser-lab-format-values';
+      values.forEach((value) => {
+        const chip = documentRef.createElement('span');
+        chip.className = 'parser-lab-format-chip';
+        chip.textContent = value;
+        valuesElement.appendChild(chip);
+      });
+      rowElement.append(labelElement, valuesElement);
+      return rowElement;
     }
 
     function clearInspection() {

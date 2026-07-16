@@ -6,8 +6,16 @@ Project: Electron app "Créditos".
 
 - Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
 - All implementation, documentation, dependency, build, and verification work must be done in this canonical Créditos workspace on `main`.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.69`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.70`.
 - If the worktree or version does not match the canonical application, stop and ask the user before moving changes.
+
+## Parallel Work
+
+- The isolated Parser Lab may be developed in its own dedicated branch/worktree based on the current `main`.
+- Parser Lab parallel work must remain inside `apps/renderer/parser_lab` and its isolated tests. It must not modify the active database or general application files.
+- All other implementation threads continue working in this canonical workspace on `main`.
+- If Parser Lab needs a shared or general application change, stop and obtain explicit authorization before crossing the isolation boundary.
+- Integrate completed Parser Lab work into `main` as a dedicated commit, then run the combined verification on `main`.
 
 ## Active Data And Sync Target
 
