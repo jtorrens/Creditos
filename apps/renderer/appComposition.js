@@ -259,6 +259,7 @@
       canvasTextHeight: canvasPreview.canvasTextHeight,
       canvasTextMetrics: canvasPreview.canvasTextMetrics,
       canvasWrappedTextLines: canvasPreview.canvasWrappedTextLines,
+      clearCanvasTextCaches: canvasPreview.clearCanvasTextCaches,
       drawCanvasMarginOverlay: canvasPreview.drawCanvasMarginOverlay,
       drawCanvasPage: canvasPreview.drawCanvasPage,
       drawCanvasScrollFrame: canvasPreview.drawCanvasScrollFrame,

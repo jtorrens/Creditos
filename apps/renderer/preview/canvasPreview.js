@@ -41,6 +41,10 @@
     let canvasMeasureContext = null;
     const canvasWrapCache = new Map();
 
+    function clearCanvasTextCaches() {
+      canvasWrapCache.clear();
+    }
+
     function drawCanvasMarginOverlay(ctx, layout, zoom = 1) {
       ctx.save();
       ctx.strokeStyle = '#ff2b2b';
@@ -804,6 +808,7 @@
       canvasTextHeight,
       canvasTextMetrics,
       canvasWrappedTextLines,
+      clearCanvasTextCaches,
       drawCanvasBlock,
       drawCanvasCartelaImages,
       drawCanvasMarginOverlay,

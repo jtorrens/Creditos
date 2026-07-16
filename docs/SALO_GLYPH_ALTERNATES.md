@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado en Créditos Refactor `0.1.61`.
+Implementado en Créditos Refactor `0.1.62`.
 
 La producción puede guardar una forma alternativa por categoría tipográfica, carácter base y fuente. El texto Unicode original no se modifica. La elección se aplica a preview, Canvas/PNG, PDF y MOV.
 
@@ -57,7 +57,7 @@ Las reglas viven en los ajustes globales de producción:
 }
 ```
 
-La regla está asociada a la categoría y a la identidad de la fuente. No afecta a las demás categorías ni familias.
+La regla está asociada a la categoría y a la familia tipográfica. No afecta a las demás categorías ni familias, pero sí se mantiene cuando un estilo de cartela usa otro peso de esa misma familia.
 
 ## Arquitectura
 
@@ -84,6 +84,8 @@ Aplicar `font-feature-settings` directamente al elemento `<canvas>` no afecta a 
 ```
 
 Esta cara se coloca antes de la fuente base en la familia efectiva. Chromium la usa solo para el carácter configurado y respeta la misma selección en DOM y Canvas.
+
+Para cada texto, la cara derivada usa el peso y estilo efectivos de la cartela. Canvas se vuelve a dibujar cuando Chromium confirma que esas caras están cargadas. Así el preview no conserva el glifo base ni pierde la alternativa por usar otro peso de la misma familia.
 
 ## Licencia
 

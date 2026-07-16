@@ -727,12 +727,17 @@
     videoTimeForPage,
   } = timelineDomain;
   const appGlyphAlternates = globalThis.CreditosAppGlyphAlternates.createAppGlyphAlternates({
+    clearCanvasTextCaches: () => clearCanvasTextCachesInPreview(),
     documentRef: document,
     fontStyleFromStyle,
     fontWeightFromStyle,
     getProductionSettings,
     nativeBridge,
     normalizeGlyphAlternates,
+    onFontFacesReady: () => {
+      renderPreview();
+      renderVisiblePanelPreviews();
+    },
     quoteFontFamily,
     updateSettings,
   });
@@ -819,6 +824,7 @@
     canvasTextHeight: canvasTextHeightInPreview,
     canvasTextMetrics: canvasTextMetricsInPreview,
     canvasWrappedTextLines: canvasWrappedTextLinesInPreview,
+    clearCanvasTextCaches: clearCanvasTextCachesInPreview,
     drawCanvasMarginOverlay: drawCanvasMarginOverlayInPreview,
     drawCanvasPage: drawCanvasPageInPreview,
     drawCanvasScrollFrame: drawCanvasScrollFrameInPreview,
