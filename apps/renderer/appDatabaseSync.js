@@ -84,20 +84,39 @@
         : 'cambios locales pendientes de subir';
     }
 
-    async function refreshDatabaseSyncStatus() {
+    async function refreshDatabaseSyncStatus(refreshOptions = {}) {
       const native = nativeBridge();
-      if (!native || !native.getDatabaseSyncStatus) return;
+      setDatabaseSyncActionsDisabled(true);
+      if (!native || !native.getDatabaseSyncStatus) {
+        if (refreshOptions.throwOnError) throw new Error('La comprobación con Git no está disponible.');
+        return null;
+      }
       try {
         state.databaseSyncStatus = await native.getDatabaseSyncStatus();
       } catch (error) {
         state.databaseSyncStatus = { message: error.message, error: error.message };
+        updateDatabaseStatus();
+        if (refreshOptions.throwOnError) throw error;
       }
       updateDatabaseStatus();
+      const statusKind = databaseStatusKind(state.databaseSyncStatus);
+      setDatabaseSyncActionsDisabled(statusKind === 'error' || statusKind === 'unavailable');
+      if (refreshOptions.throwOnError && (statusKind === 'error' || statusKind === 'unavailable')) {
+        throw new Error(state.databaseSyncStatus && (state.databaseSyncStatus.message || state.databaseSyncStatus.error) || 'No se pudo comparar la base de datos con Git.');
+      }
+      return state.databaseSyncStatus;
+    }
+
+    function setDatabaseSyncActionsDisabled(disabled) {
+      if (els.downloadDatabaseBtn) els.downloadDatabaseBtn.disabled = !!disabled;
+      if (els.uploadDatabaseBtn) els.uploadDatabaseBtn.disabled = !!disabled;
     }
 
     function openDatabaseSyncModal(title, message) {
       const overlay = documentRef.createElement('div');
       overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
       const modal = documentRef.createElement('div');
       modal.className = 'app-modal db-sync-modal';
       const titleEl = documentRef.createElement('h2');
@@ -118,36 +137,87 @@
       documentRef.body.appendChild(overlay);
 
       let resolveClosed = null;
+      let isClosed = false;
       const closed = new Promise((resolve) => {
         resolveClosed = resolve;
       });
 
-      function finish(resultTitle, resultMessage, resultKind) {
+      function close() {
+        if (isClosed) return;
+        isClosed = true;
+        overlay.remove();
+        resolveClosed();
+      }
+
+      function finish(resultTitle, resultMessage, resultKind, finishOptions = {}) {
         titleEl.textContent = resultTitle;
         messageEl.textContent = resultMessage;
         modal.classList.toggle('db-sync-modal-error', resultKind === 'error');
         modal.classList.toggle('db-sync-modal-ok', resultKind === 'ok');
+        modal.classList.toggle('db-sync-modal-warning', resultKind === 'warning');
         progress.remove();
         actions.innerHTML = '';
         const acceptButton = documentRef.createElement('button');
         acceptButton.type = 'button';
-        acceptButton.textContent = 'Aceptar';
+        acceptButton.textContent = finishOptions.acceptLabel || 'Aceptar';
         acceptButton.className = 'primary';
-        acceptButton.addEventListener('click', () => {
-          overlay.remove();
-          resolveClosed();
-        });
+        acceptButton.addEventListener('click', close);
         actions.appendChild(acceptButton);
         acceptButton.focus();
       }
 
       return {
+        close,
         closed,
         finish,
         setPhase(phaseMessage) {
           messageEl.textContent = phaseMessage;
         },
       };
+    }
+
+    async function initializeDatabaseWithSyncCheck() {
+      setDatabaseSyncActionsDisabled(true);
+      const modal = openDatabaseSyncModal(
+        'Comprobando base de datos',
+        'Abriendo la base de datos local de Créditos Refactor...'
+      );
+      try {
+        await initializeDatabase({ silent: true, throwOnError: true });
+        modal.setPhase('Comparando los datos, el esquema y el código con origin/main...');
+        const status = await refreshDatabaseSyncStatus({ throwOnError: true });
+        const statusKind = databaseStatusKind(status);
+        if (statusKind === 'remote') {
+          modal.finish(
+            'GitHub tiene una DB más reciente',
+            'Hay cambios de datos en origin/main que todavía no están en este equipo. Antes de seguir editando, usa «Bajar de GitHub» en Producciones. La base de datos local no se ha modificado.',
+            'warning',
+            { acceptLabel: 'Entendido' }
+          );
+          await modal.closed;
+          return status;
+        }
+        modal.setPhase(statusKind === 'local'
+          ? 'Base de datos lista. Hay cambios locales pendientes de subir.'
+          : 'Base de datos local y GitHub están sincronizadas.');
+        await waitForStartupResult();
+        modal.close();
+        return status;
+      } catch (error) {
+        setDatabaseSyncActionsDisabled(true);
+        modal.finish(
+          'No se pudo comprobar la base de datos',
+          `${error.message}\n\nPuedes continuar para revisar el detalle en Producciones, pero no uses las acciones de sincronización hasta resolverlo.`,
+          'error',
+          { acceptLabel: 'Continuar' }
+        );
+        await modal.closed;
+        return state.databaseSyncStatus;
+      }
+    }
+
+    function waitForStartupResult() {
+      return new Promise((resolve) => windowRef.setTimeout(resolve, 450));
     }
 
     async function applyDatabaseSyncAction(action, actionOptions = {}) {
@@ -250,6 +320,7 @@
 
     return {
       applyDatabaseSyncAction,
+      initializeDatabaseWithSyncCheck,
       refreshDatabaseSyncStatus,
       syncDatabaseManually,
       updateDatabaseStatus,

@@ -227,6 +227,7 @@
     windowRef: window,
   });
   const {
+    initializeDatabaseWithSyncCheck,
     refreshDatabaseSyncStatus,
     syncDatabaseManually,
     updateDatabaseStatus,
@@ -468,10 +469,9 @@
   const appBootstrap = globalThis.CreditosAppBootstrap.createAppBootstrap({
     appApi,
     els,
-    initializeDatabase,
+    initializeDatabaseWithSyncCheck,
     loadSystemFonts,
     nativeBridge,
-    refreshDatabaseSyncStatus,
     renderProjectSelectors,
     setupResizablePanels,
     state,

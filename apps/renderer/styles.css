@@ -869,12 +869,20 @@ button.primary:hover {
   width: 100%;
 }
 
+.db-sync-modal p {
+  white-space: pre-line;
+}
+
 .db-sync-modal-ok {
   border-color: rgba(79, 208, 122, 0.42);
 }
 
 .db-sync-modal-error {
   border-color: rgba(255, 90, 99, 0.55);
+}
+
+.db-sync-modal-warning {
+  border-color: rgba(215, 168, 66, 0.58);
 }
 
 .mov-export-counter {

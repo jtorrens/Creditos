@@ -11,7 +11,9 @@
         applyDatabaseOverview(overview);
         options.updateDatabaseStatus();
       } catch (error) {
+        if (initOptions.throwOnError) throw error;
         if (!initOptions.silent) windowRef.alert('No se pudo inicializar la base de datos: ' + error.message);
+        return null;
       }
     }
 

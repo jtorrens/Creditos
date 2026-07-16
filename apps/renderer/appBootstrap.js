@@ -31,8 +31,7 @@
     async function initializeAppPreferences() {
       await loadNativePreferences();
       options.setupResizablePanels();
-      await options.initializeDatabase();
-      await options.refreshDatabaseSyncStatus();
+      await options.initializeDatabaseWithSyncCheck();
 
       options.loadSystemFonts({ silent: true });
       options.renderProjectSelectors();
