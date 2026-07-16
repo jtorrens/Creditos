@@ -119,9 +119,13 @@
     function getEffectiveStyleTitleTypography(style, settings) {
       const base = settings.typography.page_header;
       const overrides = normalizeTitleTypographyOverrides(style && style.title_typography ? style.title_typography : {});
+      const legacyCapitalization = style && style.cartela && style.cartela.text_capitalization;
       return {
         page_header: {
           ...base,
+          ...(legacyCapitalization !== undefined && (!overrides.page_header || overrides.page_header.text_capitalization === undefined)
+            ? { text_capitalization: normalizeTextCapitalization(legacyCapitalization) }
+            : {}),
           ...(overrides.page_header || {}),
         },
       };
@@ -130,9 +134,15 @@
     function getEffectiveCartelaTitleTypography(cartela, style, settings) {
       const upper = getEffectiveStyleTitleTypography(style, settings).page_header;
       const overrides = normalizeTitleTypographyOverrides(cartela && cartela.title_typography ? cartela.title_typography : {});
+      const legacyCapitalization = cartela && Object.prototype.hasOwnProperty.call(cartela, 'text_capitalization')
+        ? cartela.text_capitalization
+        : undefined;
       return {
         page_header: {
           ...upper,
+          ...(legacyCapitalization !== undefined && (!overrides.page_header || overrides.page_header.text_capitalization === undefined)
+            ? { text_capitalization: normalizeTextCapitalization(legacyCapitalization) }
+            : {}),
           ...(overrides.page_header || {}),
         },
       };
@@ -177,6 +187,17 @@
         typography: Object.fromEntries(blockTypographyFields.map(([key]) => [key, settings.typography[key]])),
       });
       const overrides = sanitizeStyleBlockOverrides(style && style.block ? style.block : {});
+      const legacyCapitalization = style && style.cartela && style.cartela.text_capitalization;
+      const typography = mergeBlockTypography(base.typography, overrides.typography);
+      if (legacyCapitalization !== undefined) {
+        blockTypographyFields.forEach(([key]) => {
+          if (overrides.typography && overrides.typography[key] && overrides.typography[key].text_capitalization !== undefined) return;
+          typography[key] = {
+            ...(typography[key] || {}),
+            text_capitalization: normalizeTextCapitalization(legacyCapitalization),
+          };
+        });
+      }
       return normalizeStyleBlock({
         ...base,
         ...overrides,
@@ -184,7 +205,7 @@
           ...(base.alignment || {}),
           ...(overrides.alignment || {}),
         },
-        typography: mergeBlockTypography(base.typography, overrides.typography),
+        typography,
       });
     }
 
@@ -347,6 +368,7 @@
         if (value.font_weight !== undefined && value.font_weight !== '') item.font_weight = normalizeFontWeight(value.font_weight, value.font_style);
         if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
         if (value.color) item.color = normalizeColor(value.color);
+        if (value.text_capitalization !== undefined) item.text_capitalization = normalizeTextCapitalization(value.text_capitalization);
         if (Object.keys(item).length) normalized[key] = item;
       });
       return normalized;
@@ -364,6 +386,7 @@
       if (value.font_weight !== undefined && value.font_weight !== '') item.font_weight = normalizeFontWeight(value.font_weight, value.font_style);
       if (value.font_postscript_name) item.font_postscript_name = value.font_postscript_name;
       if (value.color) item.color = normalizeColor(value.color);
+      if (value.text_capitalization !== undefined) item.text_capitalization = normalizeTextCapitalization(value.text_capitalization);
       if (Object.keys(item).length) normalized.page_header = item;
       return normalized;
     }
@@ -427,7 +450,7 @@
     function getEffectiveCartelaBlockStyle(cartela) {
       const styleBlock = getCartelaStyleBlock(cartela) || {};
       if (cartela && cartela.block_style) {
-        return normalizeStyleBlock({
+        const effective = normalizeStyleBlock({
           ...styleBlock,
           ...cartela.block_style,
           alignment: {
@@ -436,14 +459,28 @@
           },
           typography: mergeBlockTypography(styleBlock.typography, cartela.block_style.typography),
         });
+        return applyLegacyCartelaCapitalization(effective, cartela);
       }
-      if (Object.keys(styleBlock).length) return normalizeStyleBlock(styleBlock);
+      if (Object.keys(styleBlock).length) return applyLegacyCartelaCapitalization(normalizeStyleBlock(styleBlock), cartela);
       const firstRef = getCartelaRefs(cartela)[0];
       const firstPage = firstRef ? findPageWithRef(cartela, firstRef) : null;
       const settings = firstPage && firstPage.source_ref_settings && firstPage.source_ref_settings[firstRef]
         ? firstPage.source_ref_settings[firstRef]
         : {};
-      return normalizeStyleBlock(settings);
+      return applyLegacyCartelaCapitalization(normalizeStyleBlock(settings), cartela);
+    }
+
+    function applyLegacyCartelaCapitalization(block, cartela) {
+      if (!cartela || !Object.prototype.hasOwnProperty.call(cartela, 'text_capitalization')) return block;
+      const explicitTypography = cartela.block_style && cartela.block_style.typography ? cartela.block_style.typography : {};
+      blockTypographyFields.forEach(([key]) => {
+        if (explicitTypography[key] && explicitTypography[key].text_capitalization !== undefined) return;
+        block.typography[key] = {
+          ...(block.typography[key] || {}),
+          text_capitalization: normalizeTextCapitalization(cartela.text_capitalization),
+        };
+      });
+      return block;
     }
 
     function sourceRefSettings(page, ref) {

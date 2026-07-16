@@ -296,6 +296,7 @@
     registry.register('typography', root.CreditosTypographyFieldControl.createTypographyFieldControl({
       documentRef,
       fieldControlRegistry: registry,
+      textCapitalizationOptions: options.textCapitalizationOptions,
     }));
     return registry;
   }
@@ -306,6 +307,7 @@
       ...createPreviewComposition(options.previewDependencies || {}),
       fieldControlRegistry: createFieldControlRegistry({
         documentRef: options.documentRef,
+        textCapitalizationOptions: options.textCapitalizationOptions,
       }),
     };
   }

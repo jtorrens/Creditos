@@ -3,6 +3,7 @@
     const {
       documentRef = root.document,
       fieldControlRegistry,
+      textCapitalizationOptions = [],
     } = dependencies;
 
     function create(options = {}) {
@@ -74,6 +75,13 @@
         onInput: (color) => onChange(options, { color }, 'color'),
       });
       group.appendChild(typographyControlRow('Color', colorInput, options, 'color'));
+      const capitalizationSelect = fieldControlRegistry.create('select', {
+        value: value.text_capitalization || base.text_capitalization || 'source',
+        className: 'text-input compact-select',
+        options: textCapitalizationOptions,
+        onInput: (textCapitalization) => onChange(options, { text_capitalization: textCapitalization }, 'text_capitalization'),
+      });
+      group.appendChild(typographyControlRow('Capitalización', capitalizationSelect, options, 'text_capitalization'));
       group.appendChild(typographyNumberRow('Tamaño', sizeInput, metaWithReset(options, 'font_size', value.font_size)));
       group.appendChild(typographyNumberRow('Spacing', letterSpacingInput, metaWithReset(options, 'letter_spacing', value.letter_spacing)));
       return group;

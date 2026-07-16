@@ -69,7 +69,7 @@
       if (!text) return null;
       const titleEl = documentRef.createElement('div');
       titleEl.className = 'pdf-page-title';
-      titleEl.textContent = transformCartelaText(text, page.cartela, options.settings);
+      titleEl.textContent = transformCartelaText(text, page.cartela, options.settings, 'page_header', page.cartela.title_typography);
       applyTypography(titleEl, 'page_header', {
         multiplier: page.cartela.font_size_multiplier,
         lineMultiplier: page.cartela.line_spacing_multiplier,
@@ -91,7 +91,7 @@
       el.className = options.className;
       el.textContent = options.textAlreadyTransformed
         ? String(text || '')
-        : transformCartelaText(text, options.cartela, options.settings);
+        : transformCartelaText(text, options.cartela, options.settings, styleKey, options.typography);
       applyTextWrapStyle(el, options.cartela);
       if (options.textAlreadyTransformed) {
         el.style.whiteSpace = 'pre';
@@ -112,7 +112,7 @@
       if (!text) return null;
       const title = documentRef.createElement('div');
       title.className = className;
-      title.textContent = transformCartelaText(text, cartela, options.settings);
+      title.textContent = transformCartelaText(text, cartela, options.settings, styleKey, typography);
       applyTextWrapStyle(title, cartela);
       applyTypography(title, styleKey, {
         multiplier: cartela.font_size_multiplier,

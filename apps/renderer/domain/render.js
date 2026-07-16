@@ -136,7 +136,9 @@
       const substitutedText = applyTextSubstitutions(sourceText, normalizedSettings.text_substitutions || []);
       const transformedText = applyTextCapitalization(
         substitutedText,
-        cartela && cartela.text_capitalization,
+        block && block.typography && block.typography.name && block.typography.name.text_capitalization !== undefined
+          ? block.typography.name.text_capitalization
+          : cartela && cartela.text_capitalization,
         normalizedSettings.language,
         normalizedSettings.protected_capitalizations,
         cartela && cartela.use_protected_capitalization !== undefined

@@ -553,7 +553,13 @@
         fontSize,
         letterSpacing,
         lineHeight: fontSize * Math.max(0.1, Number(layout.line_spacing) || settings.layout.line_spacing) * (Number(cartela.line_spacing_multiplier) || 1),
-        textCapitalization: normalizeTextCapitalization(cartela && cartela.text_capitalization !== undefined ? cartela.text_capitalization : settings.text_capitalization),
+        textCapitalization: normalizeTextCapitalization(
+          typography.text_capitalization !== undefined
+            ? typography.text_capitalization
+            : cartela && cartela.text_capitalization !== undefined
+              ? cartela.text_capitalization
+              : settings.text_capitalization
+        ),
         language: normalizeLanguage(settings.language),
         protectedCapitalizations: settings.protected_capitalizations,
         textSubstitutions: settings.text_substitutions || [],

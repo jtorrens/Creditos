@@ -30,10 +30,10 @@
         {
           id: 'texto',
           title: 'Párrafo',
-          summary: 'Interlineado, wrap y capitalización',
+          summary: 'Interlineado, wrap y protección',
           icon: '¶',
           status: () => cardStatus({
-            override: hasAnyStyleCartelaOverride(style, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization']),
+            override: hasAnyStyleCartelaOverride(style, ['line_spacing', 'repeat_block_titles', 'auto_text_wrap', 'use_protected_capitalization']),
             animation: hasAnyAnimatedProperty(style, ['line_spacing']),
           }),
           render: (panel) => panel.appendChild(renderStyleTextControls(style)),
@@ -136,7 +136,6 @@
       wrap.appendChild(options.localNumberRow('Interlineado', cartela.line_spacing, 0.1, null, (value) => options.updateEditableStyleCartela(style, { line_spacing: value }), 0.01, animationMeta(style, 'line_spacing', { override: options.hasStyleCartelaOverride(style, 'line_spacing'), reset: () => options.resetEditableStyleCartelaOverride(style, 'line_spacing') })));
       wrap.appendChild(options.localSelectRow('Repetir nombre de bloque', options.boolSelectValue(cartela.repeat_block_titles), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { repeat_block_titles: options.normalizeBoolean(value, true) }), { override: options.hasStyleCartelaOverride(style, 'repeat_block_titles'), reset: () => options.resetEditableStyleCartelaOverride(style, 'repeat_block_titles') }));
       wrap.appendChild(options.localSelectRow('Wrap automático de texto', options.boolSelectValue(cartela.auto_text_wrap), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { auto_text_wrap: options.normalizeBoolean(value, false) }), { override: options.hasStyleCartelaOverride(style, 'auto_text_wrap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'auto_text_wrap') }));
-      wrap.appendChild(options.localSelectRow('Capitalización', cartela.text_capitalization, options.textCapitalizationOptions, (value) => options.updateEditableStyleCartela(style, { text_capitalization: value }), { override: options.hasStyleCartelaOverride(style, 'text_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'text_capitalization') }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(cartela.use_protected_capitalization), options.yesNoOptions, (value) => options.updateEditableStyleCartela(style, { use_protected_capitalization: options.normalizeBoolean(value, true) }), { override: options.hasStyleCartelaOverride(style, 'use_protected_capitalization'), reset: () => options.resetEditableStyleCartelaOverride(style, 'use_protected_capitalization') }));
       return wrap;
     }

@@ -743,6 +743,7 @@
   });
   const appComposition = globalThis.CreditosAppComposition.createAppComposition({
     documentRef: document,
+    textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
     exportDependencies: {
       buildScrollPlan,
       getMovieBodyTargetFramesOrSource,

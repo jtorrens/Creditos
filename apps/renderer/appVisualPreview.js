@@ -12,7 +12,9 @@
       element.textContent = options.transformCartelaText(
         text,
         renderOptions.cartela,
-        renderOptions.settings || options.getProductionSettings()
+        renderOptions.settings || options.getProductionSettings(),
+        styleKey,
+        renderOptions.typography
       );
       options.applyTypography(element, styleKey, renderOptions);
       options.applyTextWrapStyle(element, renderOptions.cartela);

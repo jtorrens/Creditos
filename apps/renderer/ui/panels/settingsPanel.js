@@ -20,7 +20,7 @@
         {
           id: 'texto',
           title: 'Párrafo',
-          summary: 'Idioma, capitalización y sustituciones',
+          summary: 'Idioma, protección y sustituciones',
           icon: '¶',
           render: (panel) => panel.appendChild(renderTextSettings(settings)),
         },
@@ -118,7 +118,6 @@
     function renderTextSettings(settings) {
       const wrap = documentRef.createElement('div');
       wrap.appendChild(options.localSelectRow('Idioma', settings.language, options.languageOptions, (value) => options.updateSettings({ language: value })));
-      wrap.appendChild(options.localSelectRow('Capitalización', settings.text_capitalization, options.textCapitalizationOptions, (value) => options.updateSettings({ text_capitalization: value })));
       wrap.appendChild(options.localInputRow('Capitalización protegida', settings.protected_capitalizations, (value) => options.updateSettings({ protected_capitalizations: options.normalizeProtectedCapitalizationText(value) }), { multiline: true, commitOnChange: true }));
       wrap.appendChild(options.localSelectRow('Usar capitalización protegida', options.boolSelectValue(settings.use_protected_capitalization), options.yesNoOptions, (value) => options.updateSettings({ use_protected_capitalization: options.normalizeBoolean(value, true) })));
       wrap.appendChild(renderTextSubstitutions(settings));

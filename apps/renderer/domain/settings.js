@@ -25,10 +25,10 @@
         text_substitutions: defaultTextSubstitutions(),
         glyph_alternates: [],
         typography: {
-          page_header: { font_size: 12, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#58616a' },
-          block_title: { font_size: 16, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#24545f' },
-          role: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#171b1f' },
-          name: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#171b1f' },
+          page_header: { font_size: 12, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#58616a', text_capitalization: 'source' },
+          block_title: { font_size: 16, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#24545f', text_capitalization: 'source' },
+          role: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#171b1f', text_capitalization: 'source' },
+          name: { font_size: 14, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#171b1f', text_capitalization: 'source' },
         },
         layout: {
           line_spacing: 1.12,
@@ -71,9 +71,10 @@
         glyph_alternates: normalizeGlyphAlternates(settings.glyph_alternates),
       };
       typographyFields.forEach(([key]) => {
+        const storedTypography = settings.typography && settings.typography[key] ? settings.typography[key] : {};
         normalized.typography[key] = {
           ...defaults.typography[key],
-          ...(settings.typography && settings.typography[key] ? settings.typography[key] : {}),
+          ...storedTypography,
         };
         normalized.typography[key].font_size = Math.max(1, Number(normalized.typography[key].font_size) || defaults.typography[key].font_size);
         normalized.typography[key].letter_spacing = Number.isFinite(Number(normalized.typography[key].letter_spacing)) ? Number(normalized.typography[key].letter_spacing) : defaults.typography[key].letter_spacing;
@@ -85,6 +86,11 @@
         );
         normalized.typography[key].font_postscript_name = normalized.typography[key].font_postscript_name || '';
         normalized.typography[key].color = normalized.typography[key].color || defaults.typography[key].color;
+        normalized.typography[key].text_capitalization = normalizeTextCapitalization(
+          storedTypography.text_capitalization !== undefined
+            ? storedTypography.text_capitalization
+            : normalized.text_capitalization
+        );
       });
       normalized.layout.line_spacing = Math.max(0.1, Number(normalized.layout.line_spacing) || defaults.layout.line_spacing);
       normalized.layout.column_gap = Math.max(0, Number(normalized.layout.column_gap) || defaults.layout.column_gap);
@@ -178,11 +184,17 @@
       return !!(production && production.settings && Object.keys(production.settings).length);
     }
 
-    function transformCartelaText(text, cartela, settings) {
+    function transformCartelaText(text, cartela, settings, category = 'name', typographyOverrides = {}) {
       const normalizedSettings = normalizeSettings(settings || {});
       const substituted = applyTextSubstitutions(text, normalizedSettings.text_substitutions);
+      const categoryTypography = {
+        ...((normalizedSettings.typography && normalizedSettings.typography[category]) || {}),
+        ...((typographyOverrides && typographyOverrides[category]) || {}),
+      };
       const capitalization = normalizeTextCapitalization(
-        cartela && cartela.text_capitalization !== undefined
+        categoryTypography.text_capitalization !== undefined
+          ? categoryTypography.text_capitalization
+          : cartela && cartela.text_capitalization !== undefined
           ? cartela.text_capitalization
           : normalizedSettings.text_capitalization
       );
