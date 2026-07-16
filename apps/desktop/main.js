@@ -4,6 +4,7 @@ const appPackage = require('./package.json');
 const { createAppPaths } = require('./native/appPaths');
 const { createDatabaseSync } = require('./native/databaseSync');
 const { createNativeDialogs } = require('./native/dialogs');
+const { createFontAlternateAnalyzer } = require('./native/fontAlternates');
 const {
   createMovExportManager,
   ensureMovExtension,
@@ -32,6 +33,7 @@ const {
 
 let mainWindow = null;
 const movExportManager = createMovExportManager();
+const fontAlternateAnalyzer = createFontAlternateAnalyzer();
 
 const serverProcessManager = createServerProcessManager({
   getAppChannel: () => APP_CHANNEL,
@@ -60,6 +62,7 @@ const databaseSync = createDatabaseSync({
 });
 registerNativeIpcHandlers({
   databaseSync,
+  fontAlternateAnalyzer,
   getAppInfo: () => ({
     name: APP_DISPLAY_NAME,
     version: appPackage.version || app.getVersion(),

@@ -49,6 +49,7 @@
           text_substitutions: productionSettings.text_substitutions,
           use_protected_capitalization: productionSettings.use_protected_capitalization,
           typography: productionSettings.typography,
+          glyph_alternates: productionSettings.glyph_alternates,
           layout: settingsWithProductionLayout(productionSettings, productionLayout).layout,
         },
         cartelas: getVisualCartelas(safeStructure.cartelas || [])

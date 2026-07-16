@@ -1,5 +1,9 @@
 # Créditos
 
+Documentación de funciones específicas:
+
+- [`SALO_GLYPH_ALTERNATES.md`](SALO_GLYPH_ALTERNATES.md): selección global de formas alternativas OpenType por carácter y fuente.
+
 Aplicación local para importar Excels de créditos, organizar cartelas, previsualizar páginas y exportar PNG/MOV.
 
 ## Estructura

@@ -110,6 +110,7 @@
       normalizeDurationInputValueInDomain: timecodeDomain.normalizeDurationInputValue,
       normalizeEditableValue: commonDomain.normalizeEditableValue,
       normalizeLanguage: settingsDomain.normalizeLanguage,
+      normalizeGlyphAlternates: settingsDomain.normalizeGlyphAlternates,
       normalizeMovieSegmentSettings: timecodeDomain.normalizeMovieSegmentSettings,
       normalizePreviewSettings: previewSettingsDomain.normalizePreviewSettings,
       normalizeProtectedCapitalizationTerms: settingsDomain.normalizeProtectedCapitalizationTerms,
@@ -233,6 +234,7 @@
       unitGapBefore: dependencies.unitGapBefore,
       unitRenderOptions: dependencies.unitRenderOptions,
       typographyWithResolvedRowAnimation: dependencies.typographyWithResolvedRowAnimation,
+      typographyFontFamilyCss: dependencies.typographyFontFamilyCss,
       verticalOffset: dependencies.verticalOffset,
     });
     const referenceVideoPreview = root.CreditosPreviewReferenceVideo.createReferenceVideoPreview({

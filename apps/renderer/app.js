@@ -317,6 +317,7 @@
     normalizeFontWeight,
     normalizeDurationInputValueInDomain,
     normalizeEditableValue,
+    normalizeGlyphAlternates,
     normalizeLanguage,
     normalizeMovieSegmentSettings,
     normalizePreviewSettings,
@@ -725,6 +726,16 @@
     pageIndexForAnimationFrame,
     videoTimeForPage,
   } = timelineDomain;
+  const appGlyphAlternates = globalThis.CreditosAppGlyphAlternates.createAppGlyphAlternates({
+    documentRef: document,
+    fontStyleFromStyle,
+    fontWeightFromStyle,
+    getProductionSettings,
+    nativeBridge,
+    normalizeGlyphAlternates,
+    quoteFontFamily,
+    updateSettings,
+  });
   const appComposition = globalThis.CreditosAppComposition.createAppComposition({
     documentRef: document,
     exportDependencies: {
@@ -751,6 +762,7 @@
       cartelaImages,
       cartelaWithResolvedRowAnimation,
       typographyWithResolvedRowAnimation,
+      typographyFontFamilyCss: appGlyphAlternates.fontFamilyCss,
       contentAreaRect,
       creditSourceId,
       explicitTextLines,
@@ -831,6 +843,7 @@
     renderPreview,
     renderProjectSelectors,
     renderSettings,
+    setFontSources: appGlyphAlternates.setFontSources,
     state,
     windowRef: window,
   });
@@ -858,6 +871,15 @@
   } = appFormRows;
   const appAccordion = globalThis.CreditosUiAccordion.createAccordion({
     documentRef: document,
+  });
+  const glyphAlternatesTable = globalThis.CreditosGlyphAlternatesTable.createGlyphAlternatesTable({
+    analyzeInventory: appGlyphAlternates.analyzeInventory,
+    documentRef: document,
+    fontStyleFromStyle,
+    fontWeightFromTypography,
+    quoteFontFamily,
+    rulesForTypography: appGlyphAlternates.rulesForTypography,
+    saveRule: appGlyphAlternates.saveRule,
   });
   const appPreviewRender = globalThis.CreditosAppPreviewRender.createAppPreviewRender({
     buildPhysicalPages,
@@ -903,6 +925,7 @@
     normalizeColor,
     normalizeProtectedCapitalizationText,
     normalizeTextSubstitutions,
+    renderGlyphAlternates: (category, typography) => glyphAlternatesTable.render(category, typography),
     renderAccordionGroup: appAccordion.renderAccordionGroup,
     sectionLabel,
     textCapitalizationOptions: TEXT_CAPITALIZATION_OPTIONS,
@@ -1131,6 +1154,7 @@
     resolveOverride,
     setEditableOverride,
     state,
+    typographyFontFamilyCss: appGlyphAlternates.fontFamilyCss,
     windowRef: window,
   });
   const appVisualPreview = globalThis.CreditosAppVisualPreview.createAppVisualPreview({
@@ -1196,6 +1220,7 @@
     drawCanvasScrollFrame,
     drawReferenceVideoFrame,
     els,
+    ensureGlyphAlternateFontsReady: appGlyphAlternates.ensureFontsReady,
     exportMovFramesIncrementally,
     exportPageSelection,
     getCurrentPhysicalPages,

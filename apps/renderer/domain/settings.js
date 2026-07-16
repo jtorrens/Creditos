@@ -23,6 +23,7 @@
         protected_capitalizations: '',
         use_protected_capitalization: true,
         text_substitutions: defaultTextSubstitutions(),
+        glyph_alternates: [],
         typography: {
           page_header: { font_size: 12, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#58616a' },
           block_title: { font_size: 16, letter_spacing: 0, font_family: 'Arial', font_style: 'Regular', font_weight: 400, font_postscript_name: '', color: '#24545f' },
@@ -67,6 +68,7 @@
           ...defaults.layout,
           ...(settings.layout || {}),
         },
+        glyph_alternates: normalizeGlyphAlternates(settings.glyph_alternates),
       };
       typographyFields.forEach(([key]) => {
         normalized.typography[key] = {
@@ -113,6 +115,40 @@
       normalized.movie_fps = Math.max(1, Math.round(Number(normalized.movie_fps) || defaults.movie_fps));
       normalized.pdf_base_name = safeFilePart(normalized.pdf_base_name || defaults.pdf_base_name);
       return normalized;
+    }
+
+    function normalizeGlyphAlternates(value) {
+      const seen = new Set();
+      return (Array.isArray(value) ? value : []).map((entry) => {
+        const font = entry && entry.font ? entry.font : {};
+        const character = String((entry && entry.character) || '');
+        const feature = String((entry && entry.feature) || (entry && entry.selection && entry.selection.feature) || '');
+        const category = String((entry && entry.category) || '');
+        if (!typographyFields.some(([key]) => key === category)) return null;
+        if (Array.from(character).length !== 1 || !/^(?:ss\d\d|cv\d\d|salt|aalt)$/.test(feature)) return null;
+        const normalized = {
+          category,
+          font: {
+            family: String(font.family || ''),
+            style: String(font.style || 'Regular'),
+            postscript_name: String(font.postscript_name || ''),
+          },
+          character,
+          characters: Array.from(new Set([
+            character,
+            ...((entry && Array.isArray(entry.characters)) ? entry.characters : []),
+          ].filter((item) => Array.from(String(item)).length === 1).map(String))),
+          feature,
+        };
+        if (!normalized.font.family && !normalized.font.postscript_name) return null;
+        const identity = normalized.font.postscript_name
+          ? `ps:${normalized.font.postscript_name.toLowerCase()}`
+          : `family:${normalized.font.family.toLowerCase()}\u0000${normalized.font.style.toLowerCase()}`;
+        const key = `${category}\u0000${identity}\u0000${character}`;
+        if (seen.has(key)) return null;
+        seen.add(key);
+        return normalized;
+      }).filter(Boolean);
     }
 
     function settingsWithProductionLayout(settings = {}, productionLayout = {}) {
@@ -291,6 +327,7 @@
       defaultTextSubstitutions,
       localeForLanguage,
       normalizeLanguage,
+      normalizeGlyphAlternates,
       normalizeProtectedCapitalizationTerms,
       normalizeProtectedCapitalizationText,
       normalizeSettings,

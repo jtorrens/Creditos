@@ -39,6 +39,7 @@
     }
 
     async function renderScrollFrameToPngBlob(plan, frame, layout, renderOptions = {}) {
+      if (typeof options.ensureGlyphAlternateFontsReady === 'function') await options.ensureGlyphAlternateFontsReady();
       const canvas = documentRef.createElement('canvas');
       canvas.width = layout.page_width;
       canvas.height = layout.page_height;
@@ -281,6 +282,7 @@
     }
 
     async function renderPageToPngBlob(page, layout, renderOptions = {}) {
+      if (typeof options.ensureGlyphAlternateFontsReady === 'function') await options.ensureGlyphAlternateFontsReady();
       const canvas = documentRef.createElement('canvas');
       canvas.width = layout.page_width;
       canvas.height = layout.page_height;

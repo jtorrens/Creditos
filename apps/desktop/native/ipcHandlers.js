@@ -1,5 +1,6 @@
 function registerNativeIpcHandlers({
   databaseSync,
+  fontAlternateAnalyzer,
   getAppInfo,
   ipcMain,
   movExportManager,
@@ -8,6 +9,14 @@ function registerNativeIpcHandlers({
   readPreferences,
 }) {
   ipcMain.handle('creditos:get-app-info', async () => getAppInfo());
+
+  ipcMain.handle('creditos:analyze-font-alternates', async (_event, payload) => {
+    return fontAlternateAnalyzer.analyze(payload);
+  });
+
+  ipcMain.handle('creditos:analyze-font-alternate-inventory', async (_event, payload) => {
+    return fontAlternateAnalyzer.analyzeInventory(payload);
+  });
 
   ipcMain.handle('creditos:get-database-sync-status', async () => {
     return databaseSync.databaseGitStatus({ fetch: true });

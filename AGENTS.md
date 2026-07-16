@@ -2,6 +2,13 @@
 
 Project: Electron app "Créditos".
 
+## Required Workspace
+
+- Do not modify the legacy Créditos workspace or its `main` branch.
+- All implementation, documentation, dependency, build, and verification work must be done in this refactor workspace on its active refactor feature branch.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the refactor application. Its current application version is `0.1.61`.
+- If the worktree or version does not match the refactor application, stop and ask the user before moving changes.
+
 ## Structure
 
 - Electron desktop app: `apps/desktop`
@@ -19,6 +26,14 @@ npm start
 npm run pack
 npm run dist
 ```
+
+## Required Build Verification
+
+- After every change to application code, run `npm run pack` from `apps/desktop` to compile the desktop executable.
+- Launch or smoke-test the packaged executable before considering the task complete.
+- In the final handoff, always state the application version from `apps/desktop/package.json` and the path of the packaged executable that was verified.
+- The application UI must continue to display its version. Verify the visible version when testing the packaged executable.
+- Generated executables and packaged application folders are verification artifacts only and must remain outside Git.
 
 Renderer-only debugging:
 

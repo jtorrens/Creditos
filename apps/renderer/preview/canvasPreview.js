@@ -34,6 +34,7 @@
       verticalOffset = () => 0,
       textVerticalBleedRatio = 0.35,
       typographyWithResolvedRowAnimation = (_cartela, typography) => typography,
+      typographyFontFamilyCss = (_category, typography) => quoteFontFamily(typography.font_family),
     } = dependencies;
 
     const canvasImageCache = new Map();
@@ -544,7 +545,7 @@
       const letterSpacing = Number(typography.letter_spacing) || 0;
       return {
         color: typography.color,
-        font: `${fontStyleFromStyle(typography.font_style)} ${typeof fontWeightFromTypography === 'function' ? fontWeightFromTypography(typography) : fontWeightFromStyle(typography.font_style)} ${fontSize}px ${quoteFontFamily(typography.font_family)}`,
+        font: `${fontStyleFromStyle(typography.font_style)} ${typeof fontWeightFromTypography === 'function' ? fontWeightFromTypography(typography) : fontWeightFromStyle(typography.font_style)} ${fontSize}px ${typographyFontFamilyCss(styleKey, typography, settings)}`,
         fontSize,
         letterSpacing,
         lineHeight: fontSize * Math.max(0.1, Number(layout.line_spacing) || settings.layout.line_spacing) * (Number(cartela.line_spacing_multiplier) || 1),

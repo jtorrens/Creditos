@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('creditosNative', {
   chooseStyleOverrideAction: (payload) => ipcRenderer.invoke('creditos:choose-style-override-action', payload),
   confirm: (payload) => ipcRenderer.invoke('creditos:confirm', payload),
   getAppInfo: () => ipcRenderer.invoke('creditos:get-app-info'),
+  analyzeFontAlternates: (payload) => ipcRenderer.invoke('creditos:analyze-font-alternates', payload),
+  analyzeFontAlternateInventory: (payload) => ipcRenderer.invoke('creditos:analyze-font-alternate-inventory', payload),
   getDatabaseSyncStatus: () => ipcRenderer.invoke('creditos:get-database-sync-status'),
   syncDatabase: () => ipcRenderer.invoke('creditos:sync-database'),
   forceDatabaseFromGitHub: () => ipcRenderer.invoke('creditos:force-database-from-github'),

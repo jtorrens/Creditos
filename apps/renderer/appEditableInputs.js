@@ -85,7 +85,9 @@
       };
       const scale = Number(typographyOptions.multiplier) || 1;
       const lineScale = Number(typographyOptions.lineMultiplier) || 1;
-      element.style.fontFamily = typography.font_family;
+      element.style.fontFamily = typeof options.typographyFontFamilyCss === 'function'
+        ? options.typographyFontFamilyCss(key, typography, settings)
+        : typography.font_family;
       element.style.fontSize = `${Math.max(1, Number(typography.font_size) || 1) * scale}px`;
       element.style.letterSpacing = `${Number(typography.letter_spacing) || 0}px`;
       element.style.lineHeight = String(settings.layout.line_spacing * lineScale);

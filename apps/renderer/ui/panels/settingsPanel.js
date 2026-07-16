@@ -86,6 +86,9 @@
           onInput: (fields) => options.updateTypographySetting(key, fields),
           value,
         });
+        if (typeof options.renderGlyphAlternates === 'function') {
+          row.appendChild(options.renderGlyphAlternates(key, value));
+        }
         wrap.appendChild(row);
       });
       return wrap;

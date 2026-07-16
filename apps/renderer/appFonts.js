@@ -22,6 +22,7 @@
 
       try {
         const fonts = await windowRef.queryLocalFonts();
+        if (typeof options.setFontSources === 'function') options.setFontSources(fonts);
         state.fontCatalog = options.buildFontCatalog(fonts);
         options.renderProjectSelectors();
         options.renderSettings();
