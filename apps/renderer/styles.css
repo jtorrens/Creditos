@@ -756,16 +756,6 @@ button.primary:hover {
   color: #ff7a82;
 }
 
-.settings-status.db-sync-warning {
-  border-color: rgba(255, 189, 89, 0.5);
-  color: #ffbd59;
-}
-
-.settings-status.db-sync-pending {
-  border-color: rgba(255, 189, 89, 0.5);
-  color: #ffbd59;
-}
-
 .settings-status.db-sync-ok {
   border-color: rgba(79, 208, 122, 0.42);
   color: #4fd07a;
@@ -879,10 +869,6 @@ button.primary:hover {
 
 .db-sync-modal-error {
   border-color: rgba(255, 90, 99, 0.55);
-}
-
-.db-sync-modal-warning {
-  border-color: rgba(215, 168, 66, 0.58);
 }
 
 .mov-export-counter {

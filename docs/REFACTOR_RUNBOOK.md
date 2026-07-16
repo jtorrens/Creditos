@@ -138,6 +138,8 @@ Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal Re
 
 Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
 
+El color del estado resume si este equipo va por detrás: verde significa DB sincronizada o cambios locales pendientes de subir; rojo significa que GitHub contiene una DB más reciente o que la comparación ha fallado. No se utiliza un estado ámbar.
+
 ## QA manual mínima
 
 1. Abrir `Creditos Refactor`.

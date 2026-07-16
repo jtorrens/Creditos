@@ -24,10 +24,10 @@
         `Esquema DB: ${schemaLabel}`,
         `Codigo: ${codeLabel}`,
       ].join('\n');
-      els.databaseStatus.classList.toggle('db-sync-error', statusKind === 'error' || statusKind === 'unavailable');
-      els.databaseStatus.classList.toggle('db-sync-warning', statusKind === 'remote');
-      els.databaseStatus.classList.toggle('db-sync-pending', statusKind === 'local');
-      els.databaseStatus.classList.toggle('db-sync-ok', statusKind === 'synced');
+      const requiresAttention = statusKind === 'error' || statusKind === 'unavailable' || statusKind === 'remote';
+      const isUpToDate = statusKind === 'local' || statusKind === 'synced';
+      els.databaseStatus.classList.toggle('db-sync-error', requiresAttention);
+      els.databaseStatus.classList.toggle('db-sync-ok', isUpToDate);
       els.databaseStatus.title = status
         ? [status.message, status.codeMessage].filter(Boolean).join('\n')
         : pathText;
@@ -152,9 +152,8 @@
       function finish(resultTitle, resultMessage, resultKind, finishOptions = {}) {
         titleEl.textContent = resultTitle;
         messageEl.textContent = resultMessage;
-        modal.classList.toggle('db-sync-modal-error', resultKind === 'error');
+        modal.classList.toggle('db-sync-modal-error', resultKind === 'error' || resultKind === 'remote');
         modal.classList.toggle('db-sync-modal-ok', resultKind === 'ok');
-        modal.classList.toggle('db-sync-modal-warning', resultKind === 'warning');
         progress.remove();
         actions.innerHTML = '';
         const acceptButton = documentRef.createElement('button');
@@ -191,7 +190,7 @@
           modal.finish(
             'GitHub tiene una DB más reciente',
             'Hay cambios de datos en origin/main que todavía no están en este equipo. Antes de seguir editando, usa «Bajar de GitHub» en Producciones. La base de datos local no se ha modificado.',
-            'warning',
+            'remote',
             { acceptLabel: 'Entendido' }
           );
           await modal.closed;
