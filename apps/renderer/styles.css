@@ -2294,6 +2294,7 @@ textarea.visual-input {
 }
 
 .render-unit.horizontal {
+  align-items: first baseline;
   grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
 }
 
@@ -2310,10 +2311,6 @@ textarea.visual-input {
   overflow: visible;
   text-overflow: clip;
   white-space: pre-wrap;
-}
-
-.render-unit.horizontal .render-name {
-  align-self: end;
 }
 
 .visual-input {
@@ -2544,11 +2541,8 @@ textarea.visual-input {
 }
 
 .pdf-unit.horizontal {
+  align-items: first baseline;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-}
-
-.pdf-unit.horizontal .pdf-name {
-  align-self: end;
 }
 
 .pdf-unit.vertical {

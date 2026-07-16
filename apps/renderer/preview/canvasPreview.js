@@ -471,15 +471,20 @@
         const textWidth = orientation === 'horizontal'
           ? Math.max(1, (width - roleLayout.role_name_gap) / 2)
           : width;
+        const roleMetrics = canvasTextMetrics('role', roleCartela, roleLayout, roleTypography);
+        const nameMetrics = canvasTextMetrics('name', nameCartela, nameLayout, nameTypography);
         const roleHeight = String(role || '').length
-          ? canvasTextHeight(role, canvasTextMetrics('role', roleCartela, roleLayout, roleTypography), textWidth)
+          ? canvasTextHeight(role, roleMetrics, textWidth)
           : 0;
         const nameHeight = String(name || '').length
-          ? canvasTextHeight(name, canvasTextMetrics('name', nameCartela, nameLayout, nameTypography), textWidth)
+          ? canvasTextHeight(name, nameMetrics, textWidth)
           : 0;
+        const horizontalLayout = orientation === 'horizontal'
+          ? canvasHorizontalPairLayout(role, name, roleMetrics, nameMetrics, textWidth)
+          : null;
         return orientation === 'vertical'
           ? roleHeight + (roleHeight && nameHeight ? roleNameGapForOrientation(nameLayout, orientation) : 0) + nameHeight
-          : Math.max(roleHeight, nameHeight, canvasTextMetrics('name', nameCartela, nameLayout, nameTypography).lineHeight);
+          : Math.max(horizontalLayout.height, nameMetrics.lineHeight);
       }
       const metrics = canvasTextMetrics(unit.title !== undefined ? 'block_title' : 'name', cartela, layout, typography);
       if (unit.text_already_transformed) metrics.textCapitalization = 'source';
@@ -532,11 +537,45 @@
         return;
       }
       const halfWidth = (width - roleLayout.role_name_gap) / 2;
-      const roleHeight = canvasTextHeight(role, roleMetrics, halfWidth);
-      const nameHeight = canvasTextHeight(name, nameMetrics, halfWidth);
-      const nameY = y + Math.max(0, roleHeight - nameHeight);
-      drawWithAlpha(ctx, roleAlpha, () => drawCanvasText(ctx, role, x, y, halfWidth, roleMetrics, alignment.role || 'right'));
-      drawWithAlpha(ctx, nameAlpha, () => drawCanvasText(ctx, name, x + halfWidth + roleLayout.role_name_gap, nameY, halfWidth, nameMetrics, alignment.name || 'left'));
+      const pairLayout = canvasHorizontalPairLayout(role, name, roleMetrics, nameMetrics, halfWidth);
+      const baselineY = y + pairLayout.baselineOffset;
+      drawWithAlpha(ctx, roleAlpha, () => drawCanvasText(ctx, role, x, y + pairLayout.roleOffsetY, halfWidth, roleMetrics, alignment.role || 'right', baselineY));
+      drawWithAlpha(ctx, nameAlpha, () => drawCanvasText(ctx, name, x + halfWidth + roleLayout.role_name_gap, y + pairLayout.nameOffsetY, halfWidth, nameMetrics, alignment.name || 'left', baselineY));
+    }
+
+    function canvasHorizontalPairLayout(role, name, roleMetrics, nameMetrics, width) {
+      const hasRole = String(role || '').length > 0;
+      const hasName = String(name || '').length > 0;
+      const roleHeight = hasRole ? canvasTextHeight(role, roleMetrics, width) : 0;
+      const nameHeight = hasName ? canvasTextHeight(name, nameMetrics, width) : 0;
+      const roleBaseline = hasRole ? canvasTextBaselineOffset(roleMetrics) : 0;
+      const nameBaseline = hasName ? canvasTextBaselineOffset(nameMetrics) : 0;
+      const sharedBaseline = Math.max(roleBaseline, nameBaseline);
+      const roleOffsetY = hasRole ? sharedBaseline - roleBaseline : 0;
+      const nameOffsetY = hasName ? sharedBaseline - nameBaseline : 0;
+      return {
+        roleOffsetY,
+        nameOffsetY,
+        baselineOffset: sharedBaseline,
+        height: Math.max(roleOffsetY + roleHeight, nameOffsetY + nameHeight),
+      };
+    }
+
+    function canvasTextBaselineOffset(metrics) {
+      if (!canvasMeasureContext) canvasMeasureContext = documentRef.createElement('canvas').getContext('2d');
+      canvasMeasureContext.font = metrics.font;
+      const measured = canvasMeasureContext.measureText('Hg');
+      return finiteMetric(
+        measured.emHeightAscent,
+        measured.fontBoundingBoxAscent,
+        measured.actualBoundingBoxAscent,
+        metrics.fontSize * 0.8
+      );
+    }
+
+    function finiteMetric(...values) {
+      const value = values.find((candidate) => Number.isFinite(Number(candidate)) && Number(candidate) >= 0);
+      return value === undefined ? 0 : Number(value);
     }
 
     function canvasTextMetrics(styleKey, cartela, layout, typographyOverrides = {}) {
@@ -628,7 +667,7 @@
       return lines;
     }
 
-    function drawCanvasText(ctx, text, x, y, width, metrics, align) {
+    function drawCanvasText(ctx, text, x, y, width, metrics, align, firstLineBaseline = null) {
       ctx.save();
       const verticalBleed = Math.ceil(Math.max(1, Number(metrics.fontSize) || 1) * textVerticalBleedRatio);
       const lines = canvasWrappedTextLines(text, metrics, width);
@@ -638,10 +677,14 @@
       ctx.clip();
       ctx.font = metrics.font;
       ctx.fillStyle = metrics.color;
-      ctx.textBaseline = 'top';
+      const hasExplicitBaseline = firstLineBaseline !== null
+        && firstLineBaseline !== undefined
+        && Number.isFinite(Number(firstLineBaseline));
+      ctx.textBaseline = hasExplicitBaseline ? 'alphabetic' : 'top';
       ctx.textAlign = align;
       const textX = align === 'center' ? x + width / 2 : align === 'right' ? x + width : x;
-      lines.forEach((line, index) => drawCanvasTextLine(ctx, line, textX, y + index * metrics.lineHeight, metrics, align));
+      const firstLineY = hasExplicitBaseline ? Number(firstLineBaseline) : y;
+      lines.forEach((line, index) => drawCanvasTextLine(ctx, line, textX, firstLineY + index * metrics.lineHeight, metrics, align));
       ctx.restore();
     }
 
