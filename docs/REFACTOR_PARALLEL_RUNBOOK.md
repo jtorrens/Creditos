@@ -1,20 +1,20 @@
-# Creditos Refactor Parallel Runbook
+# Creditos Refactor Runbook
 
 ## Contexto
 
-`main` es producción. La rama `codex/refactor-parallel` vive en un checkout separado y no debe compartir DB runtime con producción.
+`main` es la rama canónica de Creditos Refactor. Las ramas y workspaces anteriores se conservan bajo `deprecated/*` y no deben usarse para trabajo nuevo.
 
 Checkout recomendado:
 
 ```bash
 git clone <repo-url> CREDITOS_REFACTOR
 cd CREDITOS_REFACTOR
-git checkout codex/refactor-parallel
+git switch main
 ```
 
 Usar siempre rutas relativas al repo. No documentar ni fijar rutas absolutas de una máquina concreta.
 
-Rama: `codex/refactor-parallel`
+Rama: `main`
 
 ## Identidad de la app
 
@@ -40,7 +40,7 @@ No usar como default en esta rama:
 data/creditos.db
 ```
 
-`data/creditos.db` pertenece al histórico/snapshot y a producción en `main`; la app Refactor debe arrancar con `creditos-refactor.db`.
+`data/creditos.db` pertenece al histórico deprecated; la app en `main` debe arrancar con `creditos-refactor.db`.
 
 ## Arranque Electron
 
@@ -109,31 +109,31 @@ Exportar PNG/MOV:
 La sincronización de DB en Refactor debe apuntar a:
 
 ```text
-origin/codex/refactor-parallel
+origin/main
 ```
 
-Debe bloquear:
+Debe bloquear cualquier combinación distinta de:
 
 ```text
-origin/main
-HEAD:main
-data/creditos.db como DB runtime
+canal refactor
+data/creditos-refactor.db como DB runtime
+origin/main como rama Git
 ```
 
 Antes de usar los botones de DB en la app, confirmar en la pantalla de Producciones que se ve:
 
 ```text
 data/creditos-refactor.db
-rama origin/codex/refactor-parallel
+rama origin/main
 ```
 
-Si la rama mostrada es `origin/main`, no usar botones de sincronización y parar la prueba.
+Si la rama mostrada no es `origin/main`, no usar los botones de sincronización y revisar el checkout.
 
 El sync de DB es manual:
 
 ```text
 Bajar de GitHub: para el servidor Python, crea backup timestamped en data/db-backups/, baja la DB, ejecuta PRAGMA quick_check y restaura el backup si la validación falla.
-Subir a GitHub: ejecuta PRAGMA quick_check, bloquea main, bloquea una DB que no sea creditos-refactor.db y bloquea commits locales pendientes que ya afecten a la DB.
+Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal Refactor con `creditos-refactor.db` y bloquea commits locales pendientes que ya afecten a la DB.
 ```
 
 Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
@@ -142,7 +142,7 @@ Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
 
 1. Abrir `Creditos Refactor`.
 2. Confirmar que la ruta de DB contiene `creditos-refactor.db`.
-3. Confirmar que la rama de sync mostrada no es `origin/main`.
+3. Confirmar que la rama de sync mostrada es `origin/main`.
 4. Seleccionar producción y episodio.
 5. Importar XLSX estándar.
 6. Importar ODS TRAZ si aplica.
@@ -153,7 +153,7 @@ Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
 11. Exportar MOV corto.
 12. Probar controles tipográficos: tamaño, familia, estilo, color y Restablecer si hay override.
 
-## Reportar diferencias contra main
+## Reportar diferencias contra una versión anterior
 
 Anotar:
 
@@ -161,8 +161,8 @@ Anotar:
 producción/capítulo
 archivo importado
 estilo/cartela afectada
-captura o export PNG de main
-captura o export PNG de refactor
+captura o export PNG de la versión anterior
+captura o export PNG de la versión actual
 pasos exactos para reproducir
 ```
 
@@ -170,8 +170,8 @@ No copiar la DB de producción a Refactor sin decisión explícita.
 
 ## Reglas
 
-No hacer merge automático a `main`.
+No trabajar en ramas `deprecated/*`.
 
-No usar sync DB contra `main`.
+No usar sync DB contra una rama distinta de `main`.
 
 No cambiar el default de Refactor a `data/creditos.db`.

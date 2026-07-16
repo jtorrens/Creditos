@@ -3,10 +3,10 @@
 Estado de esta matriz:
 
 ```text
-branch: codex/refactor-parallel
+branch: main
 app: Creditos Refactor
 db esperada: data/creditos-refactor.db
-sync esperado: origin/codex/refactor-parallel
+sync esperado: origin/main
 validacion P1: usuario reporta "aparentemente todo bien" el 2026-07-06
 ```
 
@@ -18,7 +18,7 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 |---|---|---|---|---|
 | Arranque | Abrir Electron desde `apps/desktop` con `npm start`. | La app abre como `Creditos Refactor`. | Pendiente | Confirmar que no abre la app de producción. |
 | DB refactor | Abrir Producciones. | La ruta visible contiene `creditos-refactor.db`. | Pendiente | Si aparece `creditos.db`, detener pruebas. |
-| Rama sync | Consultar estado DB. | La rama visible es `origin/codex/refactor-parallel`. | Pendiente | Nunca debe aparecer `origin/main`. |
+| Rama sync | Consultar estado DB. | La rama visible es `origin/main`. | Pendiente | Debe usar exclusivamente `creditos-refactor.db`. |
 | Producción | Crear o seleccionar una producción. | La selección se conserva y carga episodios. | Pendiente | Usar DB refactor. |
 | Episodio | Crear o seleccionar episodio. | El episodio carga sin errores. | Pendiente | Revisar que no se pisa otro episodio. |
 | XLSX estándar | Importar fixture XLSX estándar. | Se generan bloques/materiales/cartelas. | Pendiente | Cubierto parcialmente por golden parser. |
@@ -29,11 +29,11 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 | Preview scroll | Cambiar MOV a scroll. | La animación se ve y sincroniza página actual. | Pendiente | Probar play/seek. |
 | Video referencia | Asociar video de referencia. | Se ve en preview/export si está activado. | Pendiente | Probar limpiar video. |
 | PNG actual | Exportar PNG de página actual. | Archivo generado correctamente. | Pendiente | Comparar tamaño y contenido. |
-| PNG rango | Exportar rango de páginas. | Carpeta contiene la secuencia esperada. | Pendiente | Revisar nombres. Comparar contra main con `python3 scripts/compare_png_outputs.py <main> <refactor>`. |
+| PNG rango | Exportar rango de páginas. | Carpeta contiene la secuencia esperada. | Pendiente | Revisar nombres y comparar contra una exportación de referencia. |
 | MOV corto | Exportar MOV corto en páginas. | MOV se genera y se puede abrir. | Pendiente | Probar H.264 o ProRes según disponibilidad. |
 | MOV scroll | Exportar MOV corto en scroll. | MOV se genera con movimiento continuo. | Pendiente | Revisar frames inicial/final. |
-| Sync bajar | Usar solo si DB muestra rama refactor. | Baja desde `origin/codex/refactor-parallel`. | Pendiente | No probar si aparece main. |
-| Sync subir | Usar solo si DB muestra rama refactor. | Sube commit DB a rama refactor. | Pendiente | No probar con datos de producción. |
+| Sync bajar | Usar solo si DB muestra `origin/main`. | Baja `creditos-refactor.db` desde `origin/main`. | Pendiente | Confirmar que crea backup local. |
+| Sync subir | Usar solo si DB muestra `origin/main`. | Sube un commit exclusivo de DB a `main`. | Pendiente | Confirmar `PRAGMA quick_check`. |
 
 ## Criterio de parada
 
@@ -41,7 +41,7 @@ Detener QA y corregir antes de seguir si ocurre cualquiera de estos casos:
 
 ```text
 La app muestra data/creditos.db como DB runtime.
-La app muestra origin/main como rama de sync.
-El sync intenta hacer push a main.
+La app muestra una rama distinta de origin/main como rama de sync.
+El sync intenta usar una DB distinta de creditos-refactor.db.
 La app arranca con nombre o bundle de producción.
 ```

@@ -51,7 +51,7 @@ Desde PowerShell o Terminal:
 ```powershell
 cd D:\PROYECTOS\CREDITOS
 git status
-git switch codex/refactor-parallel
+git switch main
 git pull
 scripts\updateCreditosPC.bat
 ```
@@ -98,13 +98,13 @@ Si se genera un `.exe`, ejecutar el instalador mas reciente desde `apps\desktop\
 
 ## DB refactor
 
-En producción/main la DB histórica es:
+La DB histórica deprecated es:
 
 ```text
 D:\PROYECTOS\CREDITOS\data\creditos.db
 ```
 
-En la rama refactor no se usa esa DB. La DB refactor debe ser:
+En `main` no se usa esa DB. La DB activa debe ser:
 
 ```text
 D:\PROYECTOS\CREDITOS\data\creditos-refactor.db

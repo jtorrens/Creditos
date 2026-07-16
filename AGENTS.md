@@ -4,9 +4,9 @@ Project: Electron app "Créditos".
 
 ## Required Workspace
 
-- Do not modify the legacy Créditos workspace or its `main` branch.
-- All implementation, documentation, dependency, build, and verification work must be done in this refactor workspace on its active refactor feature branch.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the refactor application. Its current application version is `0.1.62`.
+- Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
+- All implementation, documentation, dependency, build, and verification work must be done in this canonical Refactor workspace on `main`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the Refactor application on `main`. Its current application version is `0.1.63`.
 - If the worktree or version does not match the refactor application, stop and ask the user before moving changes.
 
 ## Structure
