@@ -2,7 +2,7 @@
 
 ## Estado
 
-Implementado en Créditos Refactor `0.1.62`.
+Implementado en Créditos `0.1.62`.
 
 La producción puede guardar una forma alternativa por categoría tipográfica, carácter base y fuente. El texto Unicode original no se modifica. La elección se aplica a preview, Canvas/PNG, PDF y MOV.
 

@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-function createPreferenceStore({ getUserDataPath }) {
+function createPreferenceStore({ getLegacyUserDataPaths = () => [], getUserDataPath }) {
   let preferenceWriteQueue = Promise.resolve();
 
   function windowStatePath() {
@@ -12,22 +12,26 @@ function createPreferenceStore({ getUserDataPath }) {
     return path.join(getUserDataPath(), 'preferences.json');
   }
 
-  async function readWindowState() {
-    try {
-      const data = await fs.readFile(windowStatePath(), 'utf8');
-      return JSON.parse(data);
-    } catch (_error) {
-      return {};
+  async function readJsonWithLegacyFallback(fileName) {
+    const currentPath = path.join(getUserDataPath(), fileName);
+    const candidatePaths = [currentPath, ...getLegacyUserDataPaths().map((basePath) => path.join(basePath, fileName))];
+    for (const candidatePath of candidatePaths) {
+      try {
+        const data = await fs.readFile(candidatePath, 'utf8');
+        return JSON.parse(data);
+      } catch (_error) {
+        // Continue with the next legacy location when a file is absent or invalid.
+      }
     }
+    return {};
+  }
+
+  async function readWindowState() {
+    return readJsonWithLegacyFallback('window-state.json');
   }
 
   async function readPreferences() {
-    try {
-      const data = await fs.readFile(preferencesPath(), 'utf8');
-      return JSON.parse(data);
-    } catch (_error) {
-      return {};
-    }
+    return readJsonWithLegacyFallback('preferences.json');
   }
 
   async function writePreference(key, value) {

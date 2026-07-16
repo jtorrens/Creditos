@@ -1,14 +1,14 @@
-# Creditos Refactor Runbook
+# Créditos Runbook
 
 ## Contexto
 
-`main` es la rama canónica de Creditos Refactor. Las ramas y workspaces anteriores se conservan bajo `deprecated/*` y no deben usarse para trabajo nuevo.
+`main` es la rama canónica de Creditos. Las ramas y workspaces anteriores se conservan bajo `deprecated/*` y no deben usarse para trabajo nuevo.
 
 Checkout recomendado:
 
 ```bash
-git clone <repo-url> CREDITOS_REFACTOR
-cd CREDITOS_REFACTOR
+git clone <repo-url> CREDITOS
+cd CREDITOS
 git switch main
 ```
 
@@ -18,17 +18,17 @@ Rama: `main`
 
 ## Identidad de la app
 
-La app de esta rama mantiene identidad separada:
+La app de `main` tiene la identidad canónica:
 
 ```text
-productName: Creditos Refactor
-appId: com.jtorrens.creditos.refactor
-channel: refactor
+productName: Creditos
+appId: com.jtorrens.creditos
+channel: main
 ```
 
 ## DB
 
-La DB runtime de Refactor es:
+La DB runtime de Créditos es:
 
 ```text
 data/creditos.db
@@ -51,7 +51,7 @@ cd apps/desktop
 npm start
 ```
 
-El proceso Electron detecta `Creditos Refactor`, fija `CREDITOS_APP_CHANNEL=refactor` para el servidor Python y resuelve la DB a `data/creditos.db`.
+El proceso Electron detecta `Creditos`, fija `CREDITOS_APP_CHANNEL=main` para el servidor Python y resuelve la DB a `data/creditos.db`.
 
 ## Arranque renderer solo
 
@@ -64,7 +64,7 @@ Desde el repo:
 Ese script exporta:
 
 ```text
-CREDITOS_APP_CHANNEL=refactor
+CREDITOS_APP_CHANNEL=main
 CREDITOS_DB_PATH=<repo>/data/creditos.db
 ```
 
@@ -73,14 +73,14 @@ CREDITOS_DB_PATH=<repo>/data/creditos.db
 Comando agregado:
 
 ```bash
-python3 scripts/check_refactor_safety.py
+python3 scripts/check_creditos_safety.py
 ```
 
 Validación completa habitual:
 
 ```bash
 node --check apps/renderer/*.js apps/renderer/domain/*.js apps/renderer/preview/*.js apps/renderer/export/*.js apps/renderer/ui/field_controls/*.js apps/desktop/main.js apps/desktop/native/*.js apps/desktop/repair-electron.js apps/desktop/run-electron.js
-python3 scripts/check_refactor_safety.py
+python3 scripts/check_creditos_safety.py
 cd apps/desktop && npm run pack
 ```
 
@@ -91,7 +91,7 @@ El aviso de firma macOS en `npm run pack` es esperado si no hay certificado vál
 Importar créditos:
 
 ```text
-Usar el botón Asociar archivo dentro de Creditos Refactor.
+Usar el botón Asociar archivo dentro de Creditos.
 La subida XLSX/ODS usa /api/parse-xlsx y no depende de cgi.FieldStorage.
 ```
 
@@ -106,7 +106,7 @@ Exportar PNG/MOV:
 
 ## Sync DB
 
-La sincronización de DB en Refactor debe apuntar a:
+La sincronización de DB en Créditos debe apuntar a:
 
 ```text
 origin/main
@@ -115,7 +115,7 @@ origin/main
 Debe bloquear cualquier combinación distinta de:
 
 ```text
-canal refactor
+canal main
 data/creditos.db como DB runtime
 origin/main como rama Git
 ```
@@ -133,7 +133,7 @@ El sync de DB es manual:
 
 ```text
 Bajar de GitHub: para el servidor Python, crea backup timestamped en data/db-backups/, baja la DB, ejecuta PRAGMA quick_check y restaura el backup si la validación falla.
-Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal Refactor con `creditos.db` y bloquea commits locales pendientes que ya afecten a la DB.
+Subir a GitHub: ejecuta PRAGMA quick_check, permite `main` solo para el canal principal con `creditos.db` y bloquea commits locales pendientes que ya afecten a la DB.
 ```
 
 Si el estado Git de DB muestra error, no usar acciones de sync hasta corregirlo.
@@ -142,7 +142,7 @@ El color del estado resume si este equipo va por detrás: verde significa DB sin
 
 ## QA manual mínima
 
-1. Abrir `Creditos Refactor`.
+1. Abrir `Creditos`.
 2. Confirmar que la ruta de DB contiene `creditos.db`.
 3. Confirmar que la rama de sync mostrada es `origin/main`.
 4. Seleccionar producción y episodio.
@@ -168,7 +168,7 @@ captura o export PNG de la versión actual
 pasos exactos para reproducir
 ```
 
-No copiar la DB de producción a Refactor sin decisión explícita.
+No copiar la DB de una rama histórica a Créditos sin decisión explícita.
 
 ## Reglas
 

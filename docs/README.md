@@ -3,7 +3,7 @@
 ## Estado operativo
 
 - Rama activa: `main`.
-- Aplicación: `Creditos Refactor`.
+- Aplicación: `Creditos`.
 - DB activa: `data/creditos.db`.
 - Sync de DB: `origin/main`.
 - Las ramas `deprecated/*` son solo históricas.

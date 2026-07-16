@@ -13,11 +13,11 @@ if ($currentBranch -ne "main") {
 git pull
 
 Write-Host "=== Configurando DB compartida ==="
-$env:CREDITOS_APP_CHANNEL = "refactor"
+$env:CREDITOS_APP_CHANNEL = "main"
 $env:CREDITOS_DB_PATH = $dbPath
-[Environment]::SetEnvironmentVariable("CREDITOS_APP_CHANNEL", "refactor", "User")
+[Environment]::SetEnvironmentVariable("CREDITOS_APP_CHANNEL", "main", "User")
 [Environment]::SetEnvironmentVariable("CREDITOS_DB_PATH", $dbPath, "User")
-Write-Host "CREDITOS_APP_CHANNEL=refactor"
+Write-Host "CREDITOS_APP_CHANNEL=main"
 Write-Host "CREDITOS_DB_PATH=$dbPath"
 
 Write-Host "=== Instalando/actualizando dependencias ==="

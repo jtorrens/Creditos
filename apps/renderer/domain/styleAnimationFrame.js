@@ -189,17 +189,17 @@
         easing: phase.fadeEasing || phase.easing,
         mode: phase.fadeMode === 'cascade' ? 'cascade' : 'together',
       };
-      const window = rowPhaseWindow(fadePhase, {
+      const phaseRange = rowPhaseWindow(fadePhase, {
         delayFrames: phaseFrameCount(phase.delayFrames, phase.delayMs, fps),
         durationFrames: Math.max(1, fadeDurationFrames),
       }, frameCount, rowState, phaseName === 'in');
       let visibleProgress = null;
       if (phaseName === 'out') {
-        if (localFrame < window.startFrame) return null;
-        visibleProgress = localFrame < window.endFrame ? 1 - phaseProgress(localFrame, window, fadePhase.easing) : 0;
+        if (localFrame < phaseRange.startFrame) return null;
+        visibleProgress = localFrame < phaseRange.endFrame ? 1 - phaseProgress(localFrame, phaseRange, fadePhase.easing) : 0;
       } else {
-        if (localFrame < window.startFrame) visibleProgress = 0;
-        else if (localFrame < window.endFrame) visibleProgress = phaseProgress(localFrame, window, fadePhase.easing);
+        if (localFrame < phaseRange.startFrame) visibleProgress = 0;
+        else if (localFrame < phaseRange.endFrame) visibleProgress = phaseProgress(localFrame, phaseRange, fadePhase.easing);
         else return null;
       }
       const progress = Math.max(0, Math.min(1, Number(visibleProgress) || 0));
@@ -219,10 +219,10 @@
       return false;
     }
 
-    function phaseProgress(localFrame, window, easing, intensity = 1) {
-      const duration = Math.max(0.0001, Number(window && window.durationFrames) || 1);
+    function phaseProgress(localFrame, phaseRange, easing, intensity = 1) {
+      const duration = Math.max(0.0001, Number(phaseRange && phaseRange.durationFrames) || 1);
       const denominator = Math.max(0.0001, duration - 1);
-      return easeProgress((localFrame - window.startFrame) / denominator, easing, intensity);
+      return easeProgress((localFrame - phaseRange.startFrame) / denominator, easing, intensity);
     }
 
     function orderedRowIndex(rowIndex, rowCount, direction) {

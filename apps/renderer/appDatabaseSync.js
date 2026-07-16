@@ -179,7 +179,7 @@
       setDatabaseSyncActionsDisabled(true);
       const modal = openDatabaseSyncModal(
         'Comprobando base de datos',
-        'Abriendo la base de datos local de Créditos Refactor...'
+        'Abriendo la base de datos local de Créditos...'
       );
       try {
         await initializeDatabase({ silent: true, throwOnError: true });

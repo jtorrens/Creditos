@@ -13,14 +13,14 @@ ACTIVE_WORKFLOW_FILES = [
     REPO_ROOT / "README.md",
     REPO_ROOT / "SINCRONIZACION_PC.md",
     REPO_ROOT / "PC_SYNC_BUILD.md",
-    REPO_ROOT / "docs" / "REFACTOR_RUNBOOK.md",
-    REPO_ROOT / "docs" / "REFACTOR_QA_MATRIX.md",
+    REPO_ROOT / "docs" / "CREDITOS_RUNBOOK.md",
+    REPO_ROOT / "docs" / "CREDITOS_QA_MATRIX.md",
     REPO_ROOT / "docs" / "CODEX_PC_BUILD.md",
     REPO_ROOT / "docs" / "DEVELOPMENT.md",
     REPO_ROOT / "docs" / "README.md",
 ]
 
-REQUIRED_REFACTOR_DB_FILES = [
+REQUIRED_CANONICAL_DB_FILES = [
     REPO_ROOT / "apps" / "desktop" / "native" / "appPaths.js",
     REPO_ROOT / "apps" / "renderer" / "appProjectSelection.js",
     REPO_ROOT / "apps" / "renderer" / "server_db" / "connection.py",
@@ -40,10 +40,10 @@ def main():
     package = json.loads(PACKAGE_PATH.read_text(encoding="utf-8"))
     product_name = package.get("build", {}).get("productName", "")
     app_id = package.get("build", {}).get("appId", "")
-    if "refactor" not in product_name.lower():
-        errors.append("apps/desktop/package.json productName must contain Refactor.")
-    if ".refactor" not in app_id.lower():
-        errors.append("apps/desktop/package.json appId must contain .refactor.")
+    if product_name != "Creditos":
+        errors.append("apps/desktop/package.json productName must be Creditos.")
+    if app_id != "com.jtorrens.creditos":
+        errors.append("apps/desktop/package.json appId must be com.jtorrens.creditos.")
 
     database_sync = DATABASE_SYNC_PATH.read_text(encoding="utf-8")
     if "status.syncTargetBranch === 'main'" not in database_sync:
@@ -63,15 +63,15 @@ def main():
             if pattern in text:
                 errors.append(f"{path.relative_to(REPO_ROOT)} contains deprecated active branch {pattern!r}.")
 
-    for path in REQUIRED_REFACTOR_DB_FILES:
+    for path in REQUIRED_CANONICAL_DB_FILES:
         text = path.read_text(encoding="utf-8")
         if "creditos.db" not in text:
             errors.append(f"{path.relative_to(REPO_ROOT)} does not reference creditos.db.")
 
     for script in [REPO_ROOT / "scripts" / "updateCreditosPC.bat", REPO_ROOT / "scripts" / "update_windows_build.ps1"]:
         text = script.read_text(encoding="utf-8")
-        if "CREDITOS_APP_CHANNEL" not in text or "refactor" not in text:
-            errors.append(f"{script.relative_to(REPO_ROOT)} must set CREDITOS_APP_CHANNEL=refactor.")
+        if "CREDITOS_APP_CHANNEL" not in text or '"main"' not in text:
+            errors.append(f"{script.relative_to(REPO_ROOT)} must set CREDITOS_APP_CHANNEL=main.")
         if "creditos-refactor.db" in text:
             errors.append(f"{script.relative_to(REPO_ROOT)} contains deprecated creditos-refactor.db.")
 

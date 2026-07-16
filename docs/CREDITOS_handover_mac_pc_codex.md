@@ -4,7 +4,7 @@
 
 ```text
 Rama activa: main
-Aplicación: Creditos Refactor
+Aplicación: Creditos
 DB activa: data/creditos.db
 Sync DB: origin/main
 Versión: 0.1.66

@@ -4,7 +4,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 function createDatabaseSync({
-  getAppChannel = () => process.env.CREDITOS_APP_CHANNEL || 'production',
+  getAppChannel = () => process.env.CREDITOS_APP_CHANNEL || 'main',
   getPersistentDatabasePath,
   getRepositoryRootForDatabase,
   reloadMainWindowServer,
@@ -122,7 +122,8 @@ function createDatabaseSync({
   }
 
   function appChannel() {
-    return String(getAppChannel() || process.env.CREDITOS_APP_CHANNEL || 'production').toLowerCase();
+    const channel = String(getAppChannel() || process.env.CREDITOS_APP_CHANNEL || 'main').toLowerCase();
+    return channel === 'refactor' ? 'main' : channel;
   }
 
   function getPythonCommand() {
@@ -284,10 +285,10 @@ function createDatabaseSync({
     return splitRemoteRef(`origin/${branch}`);
   }
 
-  function assertRefactorIsolation(dbPath, target) {
-    if (appChannel() !== 'refactor') return;
+  function assertCanonicalDatabase(dbPath) {
+    if (appChannel() !== 'main') return;
     if (path.basename(dbPath) !== 'creditos.db') {
-      throw new Error('Creditos Refactor solo puede sincronizar la DB canónica data/creditos.db.');
+      throw new Error('Créditos solo puede sincronizar la DB canónica data/creditos.db.');
     }
   }
 
@@ -304,13 +305,13 @@ function createDatabaseSync({
     if (!status.syncTargetRemote || !status.syncTargetBranch) {
       throw new Error('No se pudo detectar el target Git de DB.');
     }
-    const isRefactorDatabase = status.appChannel === 'refactor'
+    const isCanonicalDatabase = status.appChannel === 'main'
       && path.basename(status.dbPath) === 'creditos.db';
-    if (status.syncTargetBranch === 'main' && !isRefactorDatabase) {
-      throw new Error('Solo Creditos Refactor con data/creditos.db puede sincronizar contra main.');
+    if (status.syncTargetBranch === 'main' && !isCanonicalDatabase) {
+      throw new Error('Solo Créditos con data/creditos.db puede sincronizar contra main.');
     }
-    if (status.appChannel === 'refactor' && !isRefactorDatabase) {
-      throw new Error('Creditos Refactor solo puede subir data/creditos.db.');
+    if (status.appChannel === 'main' && !isCanonicalDatabase) {
+      throw new Error('Créditos solo puede subir data/creditos.db.');
     }
   }
 
@@ -343,7 +344,7 @@ function createDatabaseSync({
       if (options.fetch) await runGit(['fetch', '--quiet'], { cwd: repoPath });
 
       const target = await databaseSyncTarget(repoPath);
-      assertRefactorIsolation(dbPath, target);
+      assertCanonicalDatabase(dbPath);
       const upstream = target.ref;
       const localStatus = await gitOutput(['status', '--porcelain', '--', relativeDbPath], repoPath);
       const localStat = await fs.stat(dbPath);

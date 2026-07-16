@@ -1,10 +1,10 @@
-# Creditos Refactor QA Matrix
+# Créditos QA Matrix
 
 Estado de esta matriz:
 
 ```text
 branch: main
-app: Creditos Refactor
+app: Creditos
 db esperada: data/creditos.db
 sync esperado: origin/main
 validacion P1: usuario reporta "aparentemente todo bien" el 2026-07-06
@@ -16,11 +16,11 @@ La matriz sigue siendo el checklist de regresion manual para repetir despues de 
 
 | Flujo | Pasos | Resultado esperado | Estado | Observaciones |
 |---|---|---|---|---|
-| Arranque | Abrir Electron desde `apps/desktop` con `npm start`. | La app abre como `Creditos Refactor`. | Pendiente | Confirmar que no abre la app de producción. |
+| Arranque | Abrir Electron desde `apps/desktop` con `npm start`. | La app abre como `Creditos`. | Pendiente | Confirmar nombre y versión visibles. |
 | DB activa | Abrir Producciones. | La ruta visible contiene `data/creditos.db`. | Pendiente | Si aparece `creditos-refactor.db`, detener pruebas. |
 | Rama sync | Consultar estado DB. | La rama visible es `origin/main`. | Pendiente | Debe usar exclusivamente `creditos.db`. |
 | Color estado DB | Comparar una DB sincronizada/local más reciente y otra remota más reciente. | Verde si el equipo no va por detrás; rojo si GitHub es más reciente o existe un error. | Pendiente | No existe estado ámbar. El texto distingue sincronizada de pendiente de subir. |
-| Producción | Crear o seleccionar una producción. | La selección se conserva y carga episodios. | Pendiente | Usar DB refactor. |
+| Producción | Crear o seleccionar una producción. | La selección se conserva y carga episodios. | Pendiente | Usar DB canónica. |
 | Episodio | Crear o seleccionar episodio. | El episodio carga sin errores. | Pendiente | Revisar que no se pisa otro episodio. |
 | XLSX estándar | Importar fixture XLSX estándar. | Se generan bloques/materiales/cartelas. | Pendiente | Cubierto parcialmente por golden parser. |
 | ODS TRAZ | Importar fixture ODS TRAZ. | Se genera `source_json` válido. | Pendiente | Cubierto parcialmente por golden parser. |
@@ -44,5 +44,5 @@ Detener QA y corregir antes de seguir si ocurre cualquiera de estos casos:
 La app muestra una DB runtime distinta de data/creditos.db.
 La app muestra una rama distinta de origin/main como rama de sync.
 El sync intenta usar una DB distinta de creditos.db.
-La app arranca con nombre o bundle de producción.
+La app arranca con el nombre antiguo Creditos Refactor o con otro bundle.
 ```

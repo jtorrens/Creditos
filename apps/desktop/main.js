@@ -14,15 +14,26 @@ const { registerNativeIpcHandlers } = require('./native/ipcHandlers');
 const { createPreferenceStore } = require('./native/preferences');
 const { createServerProcessManager } = require('./native/serverProcess');
 
-const APP_DISPLAY_NAME = appPackage.productName || appPackage.name || 'Créditos Refactor';
-const APP_CHANNEL = process.env.CREDITOS_APP_CHANNEL
-  || (/refactor/i.test(`${APP_DISPLAY_NAME} ${appPackage.name || ''} ${appPackage.build && appPackage.build.appId || ''}`) ? 'refactor' : 'production');
+const APP_DISPLAY_NAME = 'Creditos';
+
+function normalizedAppChannel(value) {
+  const channel = String(value || 'main').trim().toLowerCase();
+  return channel === 'refactor' ? 'main' : channel;
+}
+
+const APP_CHANNEL = normalizedAppChannel(process.env.CREDITOS_APP_CHANNEL);
 const {
   readWindowState,
   readPreferences,
   queuedWritePreference,
   writeWindowState,
-} = createPreferenceStore({ getUserDataPath: () => app.getPath('userData') });
+} = createPreferenceStore({
+  getLegacyUserDataPaths: () => [
+    path.join(app.getPath('appData'), 'Creditos Refactor'),
+    path.join(app.getPath('appData'), 'creditos-refactor-desktop'),
+  ],
+  getUserDataPath: () => app.getPath('userData'),
+});
 const {
   persistentDatabasePath,
   rendererPath,

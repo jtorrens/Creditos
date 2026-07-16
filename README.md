@@ -5,7 +5,7 @@ Aplicación local Electron para importar Excels de créditos, organizar cartelas
 ## Estado operativo
 
 - Rama activa y canónica: `main`.
-- Aplicación activa: `Creditos Refactor`.
+- Aplicación activa: `Creditos`.
 - Base de datos activa: `data/creditos.db`.
 - Destino de sincronización de la DB: `origin/main`.
 - Las ramas `deprecated/*` conservan el histórico anterior y no deben usarse para trabajo nuevo.

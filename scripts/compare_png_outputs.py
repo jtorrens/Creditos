@@ -33,50 +33,50 @@ def png_files(root):
     }
 
 
-def compare_directories(main_dir, refactor_dir, allow_hash_diff):
+def compare_directories(main_dir, comparison_dir, allow_hash_diff):
     main_files = png_files(main_dir)
-    refactor_files = png_files(refactor_dir)
+    comparison_files = png_files(comparison_dir)
     errors = []
     warnings = []
 
-    for name in sorted(set(main_files) - set(refactor_files)):
-        errors.append(f"missing in refactor: {name}")
-    for name in sorted(set(refactor_files) - set(main_files)):
-        errors.append(f"extra in refactor: {name}")
+    for name in sorted(set(main_files) - set(comparison_files)):
+        errors.append(f"missing in comparison: {name}")
+    for name in sorted(set(comparison_files) - set(main_files)):
+        errors.append(f"extra in comparison: {name}")
 
-    for name in sorted(set(main_files) & set(refactor_files)):
+    for name in sorted(set(main_files) & set(comparison_files)):
         try:
             main_info = png_info(main_files[name])
-            refactor_info = png_info(refactor_files[name])
+            comparison_info = png_info(comparison_files[name])
         except ValueError as error:
             errors.append(f"{name}: {error}")
             continue
 
-        if (main_info["width"], main_info["height"]) != (refactor_info["width"], refactor_info["height"]):
+        if (main_info["width"], main_info["height"]) != (comparison_info["width"], comparison_info["height"]):
             errors.append(
                 f"{name}: dimensions differ "
                 f"{main_info['width']}x{main_info['height']} != "
-                f"{refactor_info['width']}x{refactor_info['height']}"
+                f"{comparison_info['width']}x{comparison_info['height']}"
             )
-        if main_info["sha256"] != refactor_info["sha256"]:
+        if main_info["sha256"] != comparison_info["sha256"]:
             message = (
                 f"{name}: content hash differs "
-                f"{main_info['sha256'][:12]} != {refactor_info['sha256'][:12]}"
+                f"{main_info['sha256'][:12]} != {comparison_info['sha256'][:12]}"
             )
             if allow_hash_diff:
                 warnings.append(message)
             else:
                 errors.append(message)
 
-    return errors, warnings, len(main_files), len(refactor_files)
+    return errors, warnings, len(main_files), len(comparison_files)
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Compare PNG exports from production/main and the refactor checkout."
+        description="Compare PNG exports from two Créditos PNG export directories."
     )
     parser.add_argument("main_dir", type=pathlib.Path, help="PNG export directory from main.")
-    parser.add_argument("refactor_dir", type=pathlib.Path, help="PNG export directory from refactor.")
+    parser.add_argument("comparison_dir", type=pathlib.Path, help="second PNG export directory.")
     parser.add_argument(
         "--allow-hash-diff",
         action="store_true",
@@ -87,13 +87,13 @@ def main(argv=None):
     if not args.main_dir.is_dir():
         print(f"ERROR: {args.main_dir} is not a directory.", file=sys.stderr)
         return 2
-    if not args.refactor_dir.is_dir():
-        print(f"ERROR: {args.refactor_dir} is not a directory.", file=sys.stderr)
+    if not args.comparison_dir.is_dir():
+        print(f"ERROR: {args.comparison_dir} is not a directory.", file=sys.stderr)
         return 2
 
-    errors, warnings, main_count, refactor_count = compare_directories(
+    errors, warnings, main_count, comparison_count = compare_directories(
         args.main_dir,
-        args.refactor_dir,
+        args.comparison_dir,
         args.allow_hash_diff,
     )
 
@@ -104,7 +104,7 @@ def main(argv=None):
 
     if errors:
         return 1
-    print(f"ok compared {main_count} main PNGs with {refactor_count} refactor PNGs")
+    print(f"ok compared {main_count} reference PNGs with {comparison_count} comparison PNGs")
     return 0
 
 

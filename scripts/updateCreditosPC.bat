@@ -32,13 +32,13 @@ if errorlevel 1 goto restore_error
 
 echo.
 echo === Configurando DB compartida ===
-set "CREDITOS_APP_CHANNEL=refactor"
+set "CREDITOS_APP_CHANNEL=main"
 set "CREDITOS_DB_PATH=%DB_PATH%"
-setx CREDITOS_APP_CHANNEL "refactor" >nul
+setx CREDITOS_APP_CHANNEL "main" >nul
 if errorlevel 1 goto error
 setx CREDITOS_DB_PATH "%DB_PATH%" >nul
 if errorlevel 1 goto error
-echo CREDITOS_APP_CHANNEL=refactor
+echo CREDITOS_APP_CHANNEL=main
 echo CREDITOS_DB_PATH=%DB_PATH%
 
 echo.

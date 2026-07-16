@@ -5,7 +5,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 DESKTOP="$REPO/apps/desktop"
-APP_PATH="$DESKTOP/dist/mac-arm64/Creditos Refactor.app"
+APP_PATH="$DESKTOP/dist/mac-arm64/Creditos.app"
 STASH_CREATED=""
 RESTORE_NEEDED=""
 

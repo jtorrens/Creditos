@@ -1,6 +1,6 @@
 # Sincronizacion Mac/PC y compilacion
 
-Estas instrucciones son para mantener en paridad el checkout refactorizado de Creditos entre Mac y PC.
+Estas instrucciones son para mantener en paridad el checkout canónico de Creditos entre Mac y PC.
 
 ## Reglas del proyecto
 
@@ -16,8 +16,8 @@ Estas instrucciones son para mantener en paridad el checkout refactorizado de Cr
 1. Clonar el repositorio:
 
 ```powershell
-git clone <URL_DEL_REPOSITORIO> CREDITOS_REFACTOR
-cd CREDITOS_REFACTOR
+git clone <URL_DEL_REPOSITORIO> CREDITOS
+cd CREDITOS
 ```
 
 2. Confirmar la rama activa:
@@ -87,7 +87,7 @@ Antes de subir:
 
 La app bloquea la subida si:
 
-- El canal no es `refactor` o la rama no es `main`.
+- El canal no es `main` o la rama no es `main`.
 - La DB activa no se llama `creditos.db`.
 - La validacion SQLite falla.
 - Hay un estado Git de error.

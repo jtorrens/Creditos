@@ -104,7 +104,7 @@ The script runs:
 - `npm install`
 - `npm run pack`
 
-The app will be rebuilt in `apps/desktop/dist/mac-arm64/Creditos Refactor.app`.
+The app will be rebuilt in `apps/desktop/dist/mac-arm64/Creditos.app`.
 
 ## Optional Environment Overrides
 

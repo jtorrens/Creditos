@@ -1,6 +1,6 @@
-# Creditos Refactor - sincronizar y compilar en PC
+# Creditos - sincronizar y compilar en PC
 
-Este documento sirve para mantener el PC en paridad con el Mac usando la rama canónica de Refactor.
+Este documento sirve para mantener el PC en paridad con el Mac usando la rama canónica de Créditos.
 
 ## Reglas
 
@@ -22,17 +22,17 @@ cd <repo>
 git switch main
 ```
 
-Configurar entorno de Refactor para la sesion actual:
+Configurar entorno de Créditos para la sesion actual:
 
 ```powershell
-$env:CREDITOS_APP_CHANNEL = "refactor"
+$env:CREDITOS_APP_CHANNEL = "main"
 $env:CREDITOS_DB_PATH = "<repo>\data\creditos.db"
 ```
 
-Configurar entorno de Refactor como variables de usuario:
+Configurar entorno de Créditos como variables de usuario:
 
 ```powershell
-[Environment]::SetEnvironmentVariable("CREDITOS_APP_CHANNEL", "refactor", "User")
+[Environment]::SetEnvironmentVariable("CREDITOS_APP_CHANNEL", "main", "User")
 [Environment]::SetEnvironmentVariable("CREDITOS_DB_PATH", "<repo>\data\creditos.db", "User")
 ```
 
@@ -69,9 +69,9 @@ Debe devolver:
 main
 ```
 
-## Sincronizar DB refactor
+## Sincronizar DB canónica
 
-La DB refactor se trata como snapshot manual por Git.
+La DB canónica se trata como snapshot manual por Git.
 
 Ruta esperada:
 
@@ -110,7 +110,7 @@ Al subir a GitHub, la app:
 
 ```text
 1. Ejecuta PRAGMA quick_check.
-2. Permite `main` únicamente para el canal Refactor con `creditos.db`.
+2. Permite `main` únicamente para el canal principal con `creditos.db`.
 3. Bloquea cualquier DB distinta de `creditos.db`.
 4. Sube el snapshot a `origin/main`.
 ```
@@ -155,7 +155,7 @@ npm start
 Comprobar en la app:
 
 ```text
-1. Nombre: Creditos Refactor.
+1. Nombre: Creditos.
 2. DB: creditos.db.
 3. Rama: origin/main.
 4. Producciones y capitulos cargan.

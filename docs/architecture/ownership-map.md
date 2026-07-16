@@ -1,4 +1,4 @@
-# Refactor Ownership Map
+# Architecture Ownership Map
 
 This project is functionally stable. Refactors should preserve behavior and move only one responsibility at a time.
 
@@ -37,7 +37,7 @@ This project is functionally stable. Refactors should preserve behavior and move
 4. Add a `source_json` validator before expanding import formats.
 5. Extract pure domain modules from `app.js` only after checks exist.
 
-## Refactor Criteria
+## Change Criteria
 
 Each refactor must answer:
 

@@ -1,8 +1,8 @@
 {
-  "name": "creditos-refactor-desktop",
-  "version": "0.1.67",
+  "name": "creditos-desktop",
+  "version": "0.1.68",
   "private": true,
-  "description": "Electron desktop app for Creditos Refactor.",
+  "description": "Electron desktop app for Creditos.",
   "main": "main.js",
   "scripts": {
     "start": "node run-electron.js",
@@ -18,8 +18,8 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.jtorrens.creditos.refactor",
-    "productName": "Creditos Refactor",
+    "appId": "com.jtorrens.creditos",
+    "productName": "Creditos",
     "icon": "icon.png",
     "files": [
       "main.js",

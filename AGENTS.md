@@ -5,9 +5,9 @@ Project: Electron app "Créditos".
 ## Required Workspace
 
 - Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
-- All implementation, documentation, dependency, build, and verification work must be done in this canonical Refactor workspace on `main`.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the Refactor application on `main`. Its current application version is `0.1.67`.
-- If the worktree or version does not match the refactor application, stop and ask the user before moving changes.
+- All implementation, documentation, dependency, build, and verification work must be done in this canonical Créditos workspace on `main`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.68`.
+- If the worktree or version does not match the canonical application, stop and ask the user before moving changes.
 
 ## Active Data And Sync Target
 
@@ -55,7 +55,7 @@ On Windows:
 py apps\renderer\server.py
 ```
 
-Refactor safety checks:
+Créditos safety checks:
 
 ```bash
 python3 -m py_compile apps/renderer/server.py apps/renderer/server_db/*.py apps/renderer/server_services/*.py apps/renderer/import_models/*.py apps/renderer/import_models/common/*.py scripts/check_import_models.py scripts/check_parser_golden.py scripts/check_domain_no_dom.py scripts/check_server_boundaries.py scripts/check_native_boundaries.py scripts/check_renderer_app_boundaries.py
@@ -65,6 +65,7 @@ python3 scripts/check_domain_no_dom.py
 python3 scripts/check_renderer_app_boundaries.py
 python3 scripts/check_server_boundaries.py
 python3 scripts/check_native_boundaries.py
+python3 scripts/check_creditos_safety.py
 ```
 
 ## Cross-Platform Rules

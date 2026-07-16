@@ -60,7 +60,7 @@ El `.bat` intenta hacer el flujo completo:
 
 ```text
 git pull
-configurar CREDITOS_APP_CHANNEL=refactor
+configurar CREDITOS_APP_CHANNEL=main
 configurar CREDITOS_DB_PATH a data\creditos.db del repositorio
 npm install
 npm run dist:win
@@ -107,7 +107,7 @@ D:\PROYECTOS\CREDITOS\data\creditos.db
 La app instalada en Windows puede arrancar fuera del repositorio. Por eso el script `scripts\updateCreditosPC.bat` deja configurada una variable de entorno de usuario:
 
 ```text
-CREDITOS_APP_CHANNEL=refactor
+CREDITOS_APP_CHANNEL=main
 CREDITOS_DB_PATH=D:\PROYECTOS\CREDITOS\data\creditos.db
 ```
 
