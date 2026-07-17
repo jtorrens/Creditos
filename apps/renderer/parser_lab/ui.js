@@ -62,7 +62,7 @@
               </table>
             </div>
           </section>
-          <div class="parser-lab-splitter horizontal" data-split="left" role="separator" aria-orientation="horizontal" tabindex="0"></div>
+          <div class="parser-lab-splitter horizontal" data-split="left" role="separator" aria-label="Redimensionar filas y previo" aria-orientation="horizontal" tabindex="0"></div>
           <section class="parser-lab-preview-panel" aria-label="Previo simple del parser">
             <div class="parser-lab-panel-heading">
               <h2>Previo del parser</h2>
@@ -72,13 +72,13 @@
             <div id="parserLabPreviewContent" class="parser-lab-preview-content" hidden></div>
           </section>
           </div>
-          <div class="parser-lab-splitter vertical" data-split="workspace" role="separator" aria-orientation="vertical" tabindex="0"></div>
+          <div class="parser-lab-splitter vertical" data-split="workspace" role="separator" aria-label="Redimensionar tabla e inspector" aria-orientation="vertical" tabindex="0"></div>
           <aside class="parser-lab-right-panel" aria-label="Inspector y documentos JSON">
-            <div class="parser-lab-right-tabs" role="tablist">
-              <button class="active" type="button" role="tab" aria-selected="true" data-right-tab="inspector">Inspector</button>
-              <button type="button" role="tab" aria-selected="false" data-right-tab="jsons">JSONs</button>
+            <div class="parser-lab-right-tabs" role="tablist" aria-label="Vista lateral">
+              <button id="parserLabRightTabInspector" class="active" type="button" role="tab" aria-selected="true" aria-controls="parserLabInspectorPane" data-right-tab="inspector">Inspector</button>
+              <button id="parserLabRightTabJsons" type="button" role="tab" aria-selected="false" aria-controls="parserLabJsonsPane" data-right-tab="jsons">JSONs</button>
             </div>
-            <div id="parserLabInspectorPane" class="parser-lab-right-tab-pane active" data-right-pane="inspector">
+            <div id="parserLabInspectorPane" class="parser-lab-right-tab-pane active" role="tabpanel" aria-labelledby="parserLabRightTabInspector" data-right-pane="inspector">
               <section class="parser-lab-selection-panel" aria-label="Fila seleccionada">
                 <div class="parser-lab-panel-heading">
                   <h2>Fila seleccionada</h2>
@@ -90,7 +90,7 @@
                 </div>
                 <div id="parserLabFormatSummary" class="parser-lab-format-summary" hidden></div>
               </section>
-              <div class="parser-lab-splitter horizontal" data-split="inspector" role="separator" aria-orientation="horizontal" tabindex="0"></div>
+              <div class="parser-lab-splitter horizontal" data-split="inspector" role="separator" aria-label="Redimensionar fila seleccionada y editor" aria-orientation="horizontal" tabindex="0"></div>
           <section class="parser-lab-block-panel" aria-label="Modelo manual de bloques">
             <div class="parser-lab-panel-heading">
               <h2>Editor de bloques</h2>
@@ -101,10 +101,22 @@
                 <button id="parserLabMoveBlockUpBtn" type="button" title="Subir bloque" disabled>↑</button>
                 <button id="parserLabMoveBlockDownBtn" type="button" title="Bajar bloque" disabled>↓</button>
               </div>
-              <div id="parserLabBlockList" class="parser-lab-block-list" role="tablist" aria-orientation="vertical">
-              <div class="parser-lab-block-empty">Selecciona una fila y define la primera cabecera.</div>
+              <div class="parser-lab-block-navigation">
+                <label class="parser-lab-block-filter" for="parserLabBlockFilterInput">
+                  <span>Buscar bloque</span>
+                  <input id="parserLabBlockFilterInput" class="text-input" type="search" placeholder="Nombre o estado…">
+                </label>
+                <div id="parserLabBlockList" class="parser-lab-block-list" role="tablist" aria-label="Bloques del modelo" aria-orientation="vertical">
+                  <div class="parser-lab-block-empty">Selecciona una fila y define la primera cabecera.</div>
+                </div>
+                <label class="parser-lab-block-copy-control" for="parserLabCopyBlockTargetSelect">
+                  <span>Copiar ajustes del activo</span>
+                  <select id="parserLabCopyBlockTargetSelect" class="text-input" disabled>
+                    <option value="">Elegir destino…</option>
+                  </select>
+                </label>
               </div>
-              <div class="parser-lab-block-editor-content">
+              <div id="parserLabBlockEditorRegion" class="parser-lab-block-editor-content" role="tabpanel">
                 <div id="parserLabBlockEditorEmpty" class="parser-lab-block-empty">Selecciona una cabecera para editarla.</div>
                 <div id="parserLabCompositionEditor" hidden>
             <div class="parser-lab-composition-heading">
@@ -265,19 +277,19 @@
             </div>
           </section>
             </div>
-            <div id="parserLabJsonsPane" class="parser-lab-right-tab-pane" data-right-pane="jsons" hidden>
-              <div class="parser-lab-json-tabs" role="tablist">
-                <button class="active" type="button" role="tab" aria-selected="true" data-json-tab="row">Fila</button>
-                <button type="button" role="tab" aria-selected="false" data-json-tab="inspection">Inspección</button>
-                <button type="button" role="tab" aria-selected="false" data-json-tab="model">Modelo</button>
-                <button type="button" role="tab" aria-selected="false" data-json-tab="semantic">Semántico</button>
-                <button type="button" role="tab" aria-selected="false" data-json-tab="composed">Compuesto</button>
+            <div id="parserLabJsonsPane" class="parser-lab-right-tab-pane" role="tabpanel" aria-labelledby="parserLabRightTabJsons" data-right-pane="jsons" hidden>
+              <div class="parser-lab-json-tabs" role="tablist" aria-label="Documento JSON">
+                <button id="parserLabJsonTabRow" class="active" type="button" role="tab" aria-selected="true" aria-controls="parserLabJson" data-json-tab="row">Fila</button>
+                <button id="parserLabJsonTabInspection" type="button" role="tab" aria-selected="false" aria-controls="parserLabInspectionJson" data-json-tab="inspection">Inspección</button>
+                <button id="parserLabJsonTabModel" type="button" role="tab" aria-selected="false" aria-controls="parserLabModelJson" data-json-tab="model">Modelo</button>
+                <button id="parserLabJsonTabSemantic" type="button" role="tab" aria-selected="false" aria-controls="parserLabSemanticJson" data-json-tab="semantic">Semántico</button>
+                <button id="parserLabJsonTabComposed" type="button" role="tab" aria-selected="false" aria-controls="parserLabComposedJson" data-json-tab="composed">Compuesto</button>
               </div>
-              <pre id="parserLabJson" class="parser-lab-json-tab-document active" data-json-document="row">Selecciona una fila para ver todos sus atributos.</pre>
-              <pre id="parserLabInspectionJson" class="parser-lab-json-tab-document" data-json-document="inspection" hidden></pre>
-              <pre id="parserLabModelJson" class="parser-lab-json-tab-document" data-json-document="model" hidden></pre>
-              <pre id="parserLabSemanticJson" class="parser-lab-json-tab-document" data-json-document="semantic" hidden></pre>
-              <pre id="parserLabComposedJson" class="parser-lab-json-tab-document" data-json-document="composed" hidden></pre>
+              <pre id="parserLabJson" class="parser-lab-json-tab-document active" role="tabpanel" aria-labelledby="parserLabJsonTabRow" data-json-document="row">Selecciona una fila para ver todos sus atributos.</pre>
+              <pre id="parserLabInspectionJson" class="parser-lab-json-tab-document" role="tabpanel" aria-labelledby="parserLabJsonTabInspection" data-json-document="inspection" hidden></pre>
+              <pre id="parserLabModelJson" class="parser-lab-json-tab-document" role="tabpanel" aria-labelledby="parserLabJsonTabModel" data-json-document="model" hidden></pre>
+              <pre id="parserLabSemanticJson" class="parser-lab-json-tab-document" role="tabpanel" aria-labelledby="parserLabJsonTabSemantic" data-json-document="semantic" hidden></pre>
+              <pre id="parserLabComposedJson" class="parser-lab-json-tab-document" role="tabpanel" aria-labelledby="parserLabJsonTabComposed" data-json-document="composed" hidden></pre>
             </div>
           </aside>
         </div>
@@ -307,7 +319,10 @@
       modelPersistence: documentRef.getElementById('parserLabModelPersistence'),
       moveBlockUpButton: documentRef.getElementById('parserLabMoveBlockUpBtn'),
       moveBlockDownButton: documentRef.getElementById('parserLabMoveBlockDownBtn'),
+      blockFilterInput: documentRef.getElementById('parserLabBlockFilterInput'),
+      copyBlockTargetSelect: documentRef.getElementById('parserLabCopyBlockTargetSelect'),
       blockList: documentRef.getElementById('parserLabBlockList'),
+      blockEditorRegion: documentRef.getElementById('parserLabBlockEditorRegion'),
       blockEditorEmpty: documentRef.getElementById('parserLabBlockEditorEmpty'),
       compositionEditor: documentRef.getElementById('parserLabCompositionEditor'),
       compositionCount: documentRef.getElementById('parserLabCompositionCount'),
@@ -362,6 +377,7 @@
       inspection: null,
       selectedRowNumber: null,
       filter: '',
+      blockFilter: '',
       blockDefinitions: [],
       compositionRules: [],
       normalizedRowsView: { column_widths: {} },
@@ -379,6 +395,11 @@
     let persistenceQueue = Promise.resolve();
     let blockEditTimer = null;
     let draggedBlockId = null;
+    let rowByNumber = new Map();
+    let blockInstanceByRow = new Map();
+    let headerCandidatesByRow = new Map();
+    let searchTextByRow = new Map();
+    let rowDecisionByNumber = new Map();
 
     function termRoleOptions() {
       return `
@@ -387,7 +408,7 @@
     }
 
     function normalizedColumnHeader(column, label) {
-      return `<th scope="col" data-normalized-column="${column}"><span class="parser-lab-column-label">${label}</span><span class="parser-lab-column-resizer" data-normalized-column-resizer="${column}" role="separator" aria-label="Cambiar ancho de la columna ${label}" aria-orientation="vertical" tabindex="0"></span></th>`;
+      return `<th scope="col" data-normalized-column="${column}"><span class="parser-lab-column-label">${label}</span><span class="parser-lab-column-resizer" data-normalized-column-resizer="${column}" role="separator" aria-label="Cambiar ancho de la columna ${label}" aria-orientation="vertical" aria-valuemin="${MIN_NORMALIZED_COLUMN_WIDTH}" aria-valuemax="${MAX_NORMALIZED_COLUMN_WIDTH}" tabindex="0"></span></th>`;
     }
 
     function emptyRowPolicyFields(prefix, label) {
@@ -553,19 +574,48 @@
       const rows = state.inspection ? state.inspection.rows || [] : [];
       const query = state.filter.trim().toLocaleLowerCase('es');
       if (!query) return rows;
-      return rows.filter((row) => {
+      return rows.filter((row) => (searchTextByRow.get(row.row) || '').includes(query));
+    }
+
+    function rebuildRowIndexes() {
+      const rows = state.inspection ? state.inspection.rows || [] : [];
+      rowByNumber = new Map(rows.map((row) => [row.row, row]));
+      blockInstanceByRow = new Map();
+      headerCandidatesByRow = new Map();
+      rowDecisionByNumber = new Map(
+        ((state.semanticPreview && state.semanticPreview.row_decisions) || []).map((entry) => [entry.row, entry])
+      );
+      const matchedInstances = state.blockInstances.filter((instance) => instance.matched);
+      let instanceIndex = 0;
+      rows.forEach((row) => {
+        while (
+          matchedInstances[instanceIndex]
+          && row.row > matchedInstances[instanceIndex].end_row
+        ) instanceIndex += 1;
+        const instance = matchedInstances[instanceIndex];
+        if (instance && row.row >= instance.start_row && row.row <= instance.end_row) {
+          blockInstanceByRow.set(row.row, instance);
+        }
+      });
+      state.blockInstances.forEach((instance) => {
+        (instance.candidate_rows || []).forEach((rowNumber) => {
+          const candidates = headerCandidatesByRow.get(rowNumber) || [];
+          candidates.push(instance);
+          headerCandidatesByRow.set(rowNumber, candidates);
+        });
+      });
+      searchTextByRow = new Map(rows.map((row) => {
         const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
-        const block = blockInstanceContainingRow(row.row);
-        const searchable = [
+        const block = blockInstanceByRow.get(row.row);
+        return [row.row, [
           row.row,
           ...COLUMNS.map((column) => row.values && row.values[column]),
           block && block.name,
           row.empty ? 'fila vacía división separador' : '',
           boldColumns.length ? `negrita ${boldColumns.join(' ')}` : '',
           row.merged_b_to_d ? 'combinada b:d' : '',
-        ].join(' ').toLocaleLowerCase('es');
-        return searchable.includes(query);
-      });
+        ].join(' ').toLocaleLowerCase('es')];
+      }));
     }
 
     function render() {
@@ -580,16 +630,21 @@
         state.blockDefinitions
       );
       state.composedPreview = blockModel.composePreview(state.semanticPreview, state.compositionRules);
-      elements.inspectionJson.textContent = JSON.stringify(inspection, null, 2);
-      elements.composedJson.textContent = JSON.stringify(state.composedPreview, null, 2);
+      rebuildRowIndexes();
+      renderBlockModel();
+      renderParserPreview();
+      renderWorkflow();
+      renderActiveJsonDocument();
+      renderNormalizedRows();
+    }
+
+    function renderNormalizedRows() {
+      const inspection = state.inspection;
       const rows = filteredRows();
       elements.clearButton.disabled = !inspection;
       elements.filterInput.disabled = !inspection;
       updateHeaderAction();
       elements.tableBody.replaceChildren();
-      renderBlockModel();
-      renderParserPreview();
-      renderWorkflow();
 
       if (!inspection) {
         applyNormalizedRowsView();
@@ -616,6 +671,7 @@
       const fragment = documentRef.createDocumentFragment();
       rows.forEach((row) => fragment.appendChild(renderRow(row)));
       elements.tableBody.appendChild(fragment);
+      ensureRovingTableRow();
       applyNormalizedRowsView();
       renderSelection();
       if (state.selectedRowNumber !== null && !rows.some((row) => row.row === state.selectedRowNumber)) {
@@ -627,11 +683,9 @@
       const tr = documentRef.createElement('tr');
       const block = blockInstanceContainingRow(row.row);
       const isBlockHeader = block && block.start_row === row.row;
-      const headerCandidates = state.blockInstances.filter((instance) => (
-        (instance.candidate_rows || []).includes(row.row)
-      ));
+      const headerCandidates = headerCandidatesByRow.get(row.row) || [];
       const isAlternativeHeader = headerCandidates.some((instance) => instance.start_row !== row.row);
-      tr.tabIndex = 0;
+      tr.tabIndex = row.row === state.selectedRowNumber ? 0 : -1;
       tr.dataset.row = String(row.row);
       tr.classList.toggle('selected', row.row === state.selectedRowNumber);
       tr.classList.toggle('parser-lab-block-range-row', Boolean(block));
@@ -644,7 +698,9 @@
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault();
           selectRow(row.row);
+          return;
         }
+        navigateTableRows(row.row, event);
       });
 
       appendCell(tr, row.row);
@@ -660,6 +716,29 @@
         ['B', 'C', 'D'].forEach((column) => appendSourceCell(tr, row, column));
       }
       return tr;
+    }
+
+    function ensureRovingTableRow() {
+      if (elements.tableBody.querySelector('tr[tabindex="0"]')) return;
+      const first = elements.tableBody.querySelector('tr[data-row]');
+      if (first) first.tabIndex = 0;
+    }
+
+    function navigateTableRows(rowNumber, event) {
+      const rows = Array.from(elements.tableBody.querySelectorAll('tr[data-row]'));
+      const currentIndex = rows.findIndex((rowElement) => Number(rowElement.dataset.row) === rowNumber);
+      const offsets = { ArrowUp: -1, ArrowDown: 1, PageUp: -10, PageDown: 10 };
+      let nextIndex;
+      if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = rows.length - 1;
+      else if (Object.prototype.hasOwnProperty.call(offsets, event.key)) {
+        nextIndex = clamp(currentIndex + offsets[event.key], 0, rows.length - 1);
+      } else return;
+      event.preventDefault();
+      const next = rows[nextIndex];
+      if (!next) return;
+      selectRow(Number(next.dataset.row), true);
+      next.focus({ preventScroll: true });
     }
 
     function appendBlockCell(rowElement, block, isHeader) {
@@ -722,6 +801,14 @@
         } else {
           col.style.width = '';
           hasCompleteWidths = false;
+        }
+        const resizer = elements.normalizedTable.querySelector(`[data-normalized-column-resizer="${column}"]`);
+        if (resizer) {
+          const currentWidth = Number.isFinite(width)
+            ? width
+            : elements.normalizedTable.querySelector(`th[data-normalized-column="${column}"]`).getBoundingClientRect().width;
+          resizer.setAttribute('aria-valuenow', String(Math.round(currentWidth)));
+          resizer.setAttribute('aria-valuetext', `${Math.round(currentWidth)} píxeles`);
         }
       });
       elements.normalizedTable.style.width = hasCompleteWidths ? `${totalWidth}px` : '';
@@ -805,13 +892,11 @@
     }
 
     function selectedRow() {
-      return state.inspection && (state.inspection.rows || []).find((row) => row.row === state.selectedRowNumber);
+      return rowByNumber.get(state.selectedRowNumber) || null;
     }
 
     function blockInstanceContainingRow(rowNumber) {
-      return state.blockInstances.find((instance) => (
-        instance.matched && rowNumber >= instance.start_row && rowNumber <= instance.end_row
-      )) || null;
+      return blockInstanceByRow.get(rowNumber) || null;
     }
 
     function renderBlockModel() {
@@ -820,21 +905,27 @@
       const warnings = state.blockInstances.filter((instance) => (
         instance.match_status !== 'matched' || instance.range_status === 'warning'
       )).length;
-      elements.blockCount.textContent = `${state.blockDefinitions.length} cabeceras · ${enabled} incluidas · ${found} encontradas${warnings ? ` · ${warnings} avisos` : ''}`;
-      elements.modelJson.textContent = JSON.stringify(
-        blockModel.modelDocument(
-          state.blockDefinitions,
-          state.compositionRules,
-          state.normalizedRowsView
-        ),
-        null,
-        2
-      );
-      elements.semanticJson.textContent = JSON.stringify(state.semanticPreview, null, 2);
-      elements.composedJson.textContent = JSON.stringify(state.composedPreview, null, 2);
+      const blockQuery = state.blockFilter.trim().toLocaleLowerCase('es');
+      const visibleDefinitions = state.blockDefinitions.filter((definition) => {
+        if (!blockQuery || definition.id === state.activeEditorTab) return true;
+        const instance = state.blockInstances.find((candidate) => candidate.definition_id === definition.id);
+        return [definition.name, definition.id, blockInstanceStatus(instance, null)]
+          .join(' ')
+          .toLocaleLowerCase('es')
+          .includes(blockQuery);
+      });
+      const visibleSuffix = blockQuery ? ` · ${visibleDefinitions.length} visibles` : '';
+      elements.blockCount.textContent = `${state.blockDefinitions.length} cabeceras · ${enabled} incluidas · ${found} encontradas${warnings ? ` · ${warnings} avisos` : ''}${visibleSuffix}`;
       renderCompositionRules();
+      elements.blockEditorRegion.removeAttribute('aria-labelledby');
       elements.blockList.replaceChildren();
-      state.blockDefinitions.forEach((definition, index) => {
+      if (!visibleDefinitions.length && blockQuery) {
+        const empty = documentRef.createElement('div');
+        empty.className = 'parser-lab-block-empty';
+        empty.textContent = 'Ningún bloque coincide con la búsqueda.';
+        elements.blockList.appendChild(empty);
+      }
+      visibleDefinitions.forEach((definition, visibleIndex) => {
         const instance = state.blockInstances.find((candidate) => candidate.definition_id === definition.id);
         const interpreted = state.semanticPreview.blocks.find((candidate) => candidate.definition_id === definition.id);
         const item = documentRef.createElement('div');
@@ -842,8 +933,10 @@
         const title = documentRef.createElement('strong');
         const status = documentRef.createElement('span');
         const include = documentRef.createElement('input');
+        const active = definition.id === state.activeEditorTab;
         item.className = 'parser-lab-block-tab';
-        item.tabIndex = 0;
+        item.id = `parserLabBlockTab${visibleIndex}`;
+        item.tabIndex = active ? 0 : -1;
         item.draggable = true;
         item.dataset.blockId = definition.id;
         item.title = [
@@ -853,13 +946,15 @@
           'Arrastra esta pestaña sobre otra para copiar sus ajustes.',
         ].join(' ');
         item.setAttribute('role', 'tab');
-        item.setAttribute('aria-selected', String(definition.id === state.activeEditorTab));
+        item.setAttribute('aria-controls', 'parserLabBlockEditorRegion');
+        item.setAttribute('aria-selected', String(active));
         item.classList.toggle('missing', !instance || !instance.matched);
         item.classList.toggle('warning', Boolean(instance && (
           instance.match_status !== 'matched' || instance.range_status === 'warning'
         )));
-        item.classList.toggle('active', definition.id === state.activeEditorTab);
+        item.classList.toggle('active', active);
         item.classList.toggle('ignored', !definition.enabled);
+        if (active) elements.blockEditorRegion.setAttribute('aria-labelledby', item.id);
         content.className = 'parser-lab-block-tab-copy';
         title.textContent = definition.name;
         status.className = 'parser-lab-block-status';
@@ -867,6 +962,7 @@
         content.append(title, status);
         include.type = 'checkbox';
         include.draggable = false;
+        include.tabIndex = active ? 0 : -1;
         include.checked = definition.enabled;
         include.title = include.checked ? 'Bloque incluido en el previo' : 'Bloque ignorado; su cabecera sigue siendo una frontera';
         include.setAttribute('aria-label', `Incluir ${definition.name} en el previo`);
@@ -931,10 +1027,16 @@
       const compositionTitle = documentRef.createElement('strong');
       const compositionStatus = documentRef.createElement('span');
       compositionTab.type = 'button';
+      compositionTab.id = 'parserLabCompositionTab';
       compositionTab.className = 'parser-lab-block-tab parser-lab-composition-tab';
       compositionTab.classList.toggle('active', state.activeEditorTab === 'composition');
       compositionTab.setAttribute('role', 'tab');
+      compositionTab.setAttribute('aria-controls', 'parserLabBlockEditorRegion');
       compositionTab.setAttribute('aria-selected', String(state.activeEditorTab === 'composition'));
+      compositionTab.tabIndex = state.activeEditorTab === 'composition' ? 0 : -1;
+      if (state.activeEditorTab === 'composition') {
+        elements.blockEditorRegion.setAttribute('aria-labelledby', compositionTab.id);
+      }
       compositionCopy.className = 'parser-lab-block-tab-copy';
       compositionTitle.textContent = 'Composición';
       compositionStatus.textContent = `${state.compositionRules.length} reglas`;
@@ -942,7 +1044,26 @@
       compositionTab.append(compositionCopy);
       compositionTab.addEventListener('click', showCompositionEditor);
       elements.blockList.appendChild(compositionTab);
+      ensureRovingTabStop(elements.blockList);
+      renderCopyTargetOptions();
       updateBlockReorderControls();
+    }
+
+    function renderCopyTargetOptions() {
+      const source = state.blockDefinitions.find((definition) => definition.id === state.activeEditorTab);
+      elements.copyBlockTargetSelect.replaceChildren();
+      const prompt = documentRef.createElement('option');
+      prompt.value = '';
+      prompt.textContent = source ? 'Elegir destino…' : 'Selecciona un bloque…';
+      elements.copyBlockTargetSelect.appendChild(prompt);
+      state.blockDefinitions.forEach((definition) => {
+        if (!source || definition.id === source.id) return;
+        const option = documentRef.createElement('option');
+        option.value = definition.id;
+        option.textContent = definition.name;
+        elements.copyBlockTargetSelect.appendChild(option);
+      });
+      elements.copyBlockTargetSelect.disabled = !source || state.blockDefinitions.length < 2;
     }
 
     function blockInstanceStatus(instance, interpreted) {
@@ -1239,21 +1360,26 @@
         )) ? state.activeEditorTab : null;
       }
       const tabs = documentRef.createElement('div');
+      const horizontalTabs = root.matchMedia && root.matchMedia('(max-width: 700px)').matches;
       tabs.className = 'parser-lab-preview-tabs';
       tabs.setAttribute('role', 'tablist');
-      tabs.setAttribute('aria-orientation', 'vertical');
-      tabEntries.forEach(({ block }) => {
+      tabs.setAttribute('aria-label', 'Bloques del previo');
+      tabs.setAttribute('aria-orientation', horizontalTabs ? 'horizontal' : 'vertical');
+      tabEntries.forEach(({ block }, tabIndex) => {
         const button = documentRef.createElement('button');
         const copy = documentRef.createElement('span');
         const name = documentRef.createElement('strong');
         const status = documentRef.createElement('span');
         const active = block.definition_id === state.activePreviewBlockId;
         button.type = 'button';
+        button.id = `parserLabPreviewTab${tabIndex}`;
         button.dataset.blockId = block.definition_id;
         button.className = `parser-lab-preview-tab${active ? ' active' : ''}`;
         button.classList.toggle('ignored', !block.enabled);
         button.setAttribute('role', 'tab');
+        button.setAttribute('aria-controls', 'parserLabPreviewActivePanel');
         button.setAttribute('aria-selected', String(active));
+        button.tabIndex = active ? 0 : -1;
         copy.className = 'parser-lab-block-tab-copy';
         name.textContent = block.name;
         status.textContent = block.enabled ? `${block.items.length} ítems` : 'Ignorado';
@@ -1268,6 +1394,7 @@
         });
         tabs.appendChild(button);
       });
+      ensureRovingTabStop(tabs);
       elements.previewContent.appendChild(tabs);
 
       const activeEntry = tabEntries.find((entry) => entry.block.definition_id === state.activePreviewBlockId);
@@ -1280,6 +1407,12 @@
         return;
       }
       const container = documentRef.createElement('div');
+      container.id = 'parserLabPreviewActivePanel';
+      container.setAttribute('role', 'tabpanel');
+      container.setAttribute(
+        'aria-labelledby',
+        tabs.querySelector('[aria-selected="true"]')?.id || tabs.querySelector('[role="tab"]')?.id || ''
+      );
       container.className = `parser-lab-preview-block-group${activeEntry.group.target ? ` composed ${activeEntry.group.target}` : ''}`;
       const groupDiagnostics = activeEntry.group.diagnostics || [];
       container.classList.toggle('has-warning', groupDiagnostics.length > 0);
@@ -1293,6 +1426,8 @@
       const visibleBlocks = activeEntry.group.target ? activeEntry.group.members : [activeEntry.block];
       visibleBlocks.forEach((block) => container.appendChild(renderPreviewBlock(block)));
       elements.previewContent.appendChild(container);
+      const previewItems = Array.from(container.querySelectorAll('.parser-lab-preview-item'));
+      if (previewItems.length && !previewItems.some((item) => item.tabIndex === 0)) previewItems[0].tabIndex = 0;
       restorePreviewScrollPosition(scrollPosition);
     }
 
@@ -1400,6 +1535,7 @@
       card.dataset.blockId = blockId;
       card.dataset.itemIndex = String(index);
       card.className = `parser-lab-preview-item ${item.orientation || 'vertical'}`;
+      card.tabIndex = item.source_rows.includes(state.selectedRowNumber) ? 0 : -1;
       order.className = 'parser-lab-preview-item-order';
       order.textContent = String(index + 1).padStart(2, '0');
       termsContainer.className = 'parser-lab-preview-terms';
@@ -1427,7 +1563,22 @@
         true,
         { kind: 'preview-item', id: blockId, itemIndex: index }
       ));
+      card.addEventListener('keydown', (event) => navigatePreviewItems(card, event));
       return card;
+    }
+
+    function navigatePreviewItems(card, event) {
+      const items = Array.from(elements.previewContent.querySelectorAll('.parser-lab-preview-item'));
+      const currentIndex = items.indexOf(card);
+      let nextIndex;
+      if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = items.length - 1;
+      else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = Math.max(0, currentIndex - 1);
+      else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = Math.min(items.length - 1, currentIndex + 1);
+      else return;
+      event.preventDefault();
+      const next = items[nextIndex];
+      if (next) next.click();
     }
 
     function renderPreviewSeparator(boundary, positionLabel = '', internal = false) {
@@ -1759,6 +1910,7 @@
         const selected = Number(rowElement.dataset.row) === rowNumber;
         rowElement.classList.toggle('selected', selected);
         rowElement.setAttribute('aria-selected', selected ? 'true' : 'false');
+        rowElement.tabIndex = selected ? 0 : -1;
         if (selected && reveal) rowElement.scrollIntoView({ block: 'center' });
       });
       restoreNavigationFocus(focusRequest);
@@ -1782,7 +1934,7 @@
     }
 
     function renderSelection() {
-      const selected = state.inspection && (state.inspection.rows || []).find((row) => row.row === state.selectedRowNumber);
+      const selected = selectedRow();
       if (!selected) {
         elements.selectionMeta.textContent = 'Sin selección';
         elements.formatSummary.hidden = true;
@@ -1840,9 +1992,7 @@
     }
 
     function rowDecision(rowNumber) {
-      return state.semanticPreview && (state.semanticPreview.row_decisions || []).find((entry) => (
-        entry.row === rowNumber
-      )) || null;
+      return rowDecisionByNumber.get(rowNumber) || null;
     }
 
     function formatSummaryRow(label, values) {
@@ -1869,12 +2019,14 @@
         const active = button.dataset.rightTab === tabName;
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', String(active));
+        button.tabIndex = active ? 0 : -1;
       });
       documentRef.querySelectorAll('[data-right-pane]').forEach((pane) => {
         const active = pane.dataset.rightPane === tabName;
         pane.classList.toggle('active', active);
         pane.hidden = !active;
       });
+      if (tabName === 'jsons') renderActiveJsonDocument();
     }
 
     function setJsonTab(tabName) {
@@ -1883,41 +2035,148 @@
         const active = button.dataset.jsonTab === tabName;
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', String(active));
+        button.tabIndex = active ? 0 : -1;
       });
       documentRef.querySelectorAll('[data-json-document]').forEach((documentElement) => {
         const active = documentElement.dataset.jsonDocument === tabName;
         documentElement.classList.toggle('active', active);
         documentElement.hidden = !active;
       });
+      renderActiveJsonDocument();
+    }
+
+    function renderActiveJsonDocument() {
+      if (state.activeJsonTab === 'inspection') {
+        elements.inspectionJson.textContent = JSON.stringify(state.inspection, null, 2);
+      } else if (state.activeJsonTab === 'model') {
+        elements.modelJson.textContent = JSON.stringify(currentBlockModelDocument(), null, 2);
+      } else if (state.activeJsonTab === 'semantic') {
+        elements.semanticJson.textContent = JSON.stringify(state.semanticPreview, null, 2);
+      } else if (state.activeJsonTab === 'composed') {
+        elements.composedJson.textContent = JSON.stringify(state.composedPreview, null, 2);
+      }
+    }
+
+    function ensureRovingTabStop(container) {
+      const tabs = Array.from(container.querySelectorAll('[role="tab"]'));
+      if (!tabs.length || tabs.some((tab) => tab.tabIndex === 0)) return;
+      tabs[0].tabIndex = 0;
+    }
+
+    function navigateTablist(container, event) {
+      const tab = event.target.closest && event.target.closest('[role="tab"]');
+      if (!tab || event.target !== tab || !container.contains(tab)) return;
+      const tabs = Array.from(container.querySelectorAll('[role="tab"]')).filter((candidate) => !candidate.disabled);
+      const currentIndex = tabs.indexOf(tab);
+      let nextIndex;
+      if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = tabs.length - 1;
+      else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+      else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+      else return;
+      event.preventDefault();
+      const identity = {
+        blockId: tabs[nextIndex].dataset.blockId,
+        rightTab: tabs[nextIndex].dataset.rightTab,
+        jsonTab: tabs[nextIndex].dataset.jsonTab,
+      };
+      tabs[nextIndex].click();
+      root.requestAnimationFrame(() => {
+        const candidates = Array.from(container.querySelectorAll('[role="tab"]'));
+        const selected = candidates.find((candidate) => (
+          (identity.blockId && candidate.dataset.blockId === identity.blockId)
+          || (identity.rightTab && candidate.dataset.rightTab === identity.rightTab)
+          || (identity.jsonTab && candidate.dataset.jsonTab === identity.jsonTab)
+        )) || candidates.find((candidate) => candidate.getAttribute('aria-selected') === 'true');
+        if (selected) selected.focus({ preventScroll: true });
+      });
     }
 
     function setupSplitters() {
       documentRef.querySelectorAll('.parser-lab-splitter').forEach((splitter) => {
         splitter.addEventListener('pointerdown', (event) => beginResize(splitter, event));
+        splitter.addEventListener('keydown', (event) => resizeSplitterWithKeyboard(splitter, event));
+        const bounds = splitter.dataset.split === 'workspace' ? [38, 78] : [22, 78];
+        splitter.setAttribute('aria-valuemin', String(bounds[0]));
+        splitter.setAttribute('aria-valuemax', String(bounds[1]));
+        root.requestAnimationFrame(() => updateSplitterAria(splitter));
       });
+    }
+
+    function splitTarget(split) {
+      return split === 'workspace' ? elements.workspace : split === 'left' ? elements.leftPane : elements.inspectorPane;
+    }
+
+    function splitVariable(split) {
+      return split === 'workspace'
+        ? '--parser-lab-left-size'
+        : split === 'left'
+          ? '--parser-lab-table-size'
+          : '--parser-lab-selection-size';
+    }
+
+    function currentSplitPercentage(split) {
+      const target = splitTarget(split);
+      const inlineValue = Number.parseFloat(target.style.getPropertyValue(splitVariable(split)));
+      if (Number.isFinite(inlineValue)) return inlineValue;
+      const targetRect = target.getBoundingClientRect();
+      const firstPanel = split === 'workspace'
+        ? elements.leftPane
+        : split === 'left'
+          ? target.querySelector('.parser-lab-table-panel')
+          : target.querySelector('.parser-lab-selection-panel');
+      const panelRect = firstPanel.getBoundingClientRect();
+      const total = split === 'workspace' ? targetRect.width : targetRect.height;
+      const size = split === 'workspace' ? panelRect.width : panelRect.height;
+      return total > 0 ? (size / total) * 100 : (split === 'workspace' ? 68 : split === 'left' ? 62 : 30);
+    }
+
+    function applySplitPercentage(split, percentage, splitter) {
+      const target = splitTarget(split);
+      const minimum = split === 'workspace' ? 38 : 22;
+      const maximum = 78;
+      const value = clamp(percentage, minimum, maximum);
+      target.style.setProperty(splitVariable(split), `${value}%`);
+      updateSplitterAria(splitter, value);
+    }
+
+    function updateSplitterAria(splitter, percentage = currentSplitPercentage(splitter.dataset.split)) {
+      const rounded = Math.round(percentage);
+      splitter.setAttribute('aria-valuenow', String(rounded));
+      splitter.setAttribute('aria-valuetext', `${rounded}% para el primer panel`);
+    }
+
+    function resizeSplitterWithKeyboard(splitter, event) {
+      const split = splitter.dataset.split;
+      const decrease = split === 'workspace' ? 'ArrowLeft' : 'ArrowUp';
+      const increase = split === 'workspace' ? 'ArrowRight' : 'ArrowDown';
+      if (event.key !== decrease && event.key !== increase) return;
+      event.preventDefault();
+      const announcedValue = Number.parseFloat(splitter.getAttribute('aria-valuenow'));
+      const currentValue = Number.isFinite(announcedValue) ? announcedValue : currentSplitPercentage(split);
+      applySplitPercentage(split, currentValue + (event.key === increase ? 2 : -2), splitter);
     }
 
     function beginResize(splitter, event) {
       event.preventDefault();
       const split = splitter.dataset.split;
-      const target = split === 'workspace' ? elements.workspace : split === 'left' ? elements.leftPane : elements.inspectorPane;
+      const target = splitTarget(split);
       const rect = target.getBoundingClientRect();
       const move = (moveEvent) => {
         if (split === 'workspace') {
-          const percentage = clamp(((moveEvent.clientX - rect.left) / rect.width) * 100, 38, 78);
-          target.style.setProperty('--parser-lab-left-size', `${percentage}%`);
+          applySplitPercentage(split, ((moveEvent.clientX - rect.left) / rect.width) * 100, splitter);
         } else {
-          const percentage = clamp(((moveEvent.clientY - rect.top) / rect.height) * 100, 22, 78);
-          const variable = split === 'left' ? '--parser-lab-table-size' : '--parser-lab-selection-size';
-          target.style.setProperty(variable, `${percentage}%`);
+          applySplitPercentage(split, ((moveEvent.clientY - rect.top) / rect.height) * 100, splitter);
         }
       };
       const stop = () => {
         documentRef.removeEventListener('pointermove', move);
         documentRef.removeEventListener('pointerup', stop);
+        documentRef.removeEventListener('pointercancel', stop);
       };
       documentRef.addEventListener('pointermove', move);
       documentRef.addEventListener('pointerup', stop);
+      documentRef.addEventListener('pointercancel', stop);
     }
 
     function clamp(value, minimum, maximum) {
@@ -1977,7 +2236,17 @@
     });
     elements.filterInput.addEventListener('input', () => {
       state.filter = elements.filterInput.value;
-      render();
+      renderNormalizedRows();
+    });
+    elements.blockFilterInput.addEventListener('input', () => {
+      state.blockFilter = elements.blockFilterInput.value;
+      renderBlockModel();
+    });
+    elements.copyBlockTargetSelect.addEventListener('change', () => {
+      const targetId = elements.copyBlockTargetSelect.value;
+      const sourceId = state.activeEditorTab;
+      elements.copyBlockTargetSelect.value = '';
+      if (targetId) copyBlockSettings(sourceId, targetId);
     });
     documentRef.querySelectorAll('[data-right-tab]').forEach((button) => {
       button.addEventListener('click', () => setRightTab(button.dataset.rightTab));
@@ -1985,6 +2254,12 @@
     documentRef.querySelectorAll('[data-json-tab]').forEach((button) => {
       button.addEventListener('click', () => setJsonTab(button.dataset.jsonTab));
     });
+    [
+      elements.blockList,
+      elements.previewContent,
+      documentRef.querySelector('.parser-lab-right-tabs'),
+      documentRef.querySelector('.parser-lab-json-tabs'),
+    ].forEach((tablist) => tablist.addEventListener('keydown', (event) => navigateTablist(tablist, event)));
     documentRef.querySelectorAll('[data-normalized-column-resizer]').forEach((resizer) => {
       const column = resizer.dataset.normalizedColumnResizer;
       resizer.addEventListener('pointerdown', (event) => beginNormalizedColumnResize(column, event));
@@ -1992,6 +2267,8 @@
     });
     setupSplitters();
     root.addEventListener('pagehide', flushBlockModelOnPageHide);
+    setRightTab(state.activeRightTab);
+    setJsonTab(state.activeJsonTab);
     render();
     loadTemporaryBlockModel();
 

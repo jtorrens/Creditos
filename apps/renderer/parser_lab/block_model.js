@@ -116,27 +116,47 @@
   }
 
   function rowMatchesDefinition(row, definition) {
-    if (validateDefinition(definition).length) return false;
+    return compileDefinitionMatcher(definition)(row);
+  }
+
+  function compileDefinitionMatcher(definition, validationErrors = validateDefinition(definition)) {
+    if (validationErrors.length) return () => false;
     const header = definition.header;
-    const value = String(row && row.values && row.values[header.column] || '').trim();
-    if (!matchesValue(value, header.operator, header.value)) return false;
-    if (!matchesRequirement(Boolean(row && row.bold && row.bold[header.column]), header.bold)) return false;
-    if (!matchesRequirement(Boolean(row && row.merged_b_to_d), header.merged_b_to_d)) return false;
-    return true;
+    const expected = normalizeText(header.value);
+    const expression = header.operator === 'regex' ? new RegExp(header.value, 'iu') : null;
+    return (row) => {
+      const value = String(row && row.values && row.values[header.column] || '').trim();
+      const normalizedValue = normalizeText(value);
+      const valueMatches = header.operator === 'nonempty'
+        ? Boolean(normalizedValue)
+        : header.operator === 'equals'
+          ? normalizedValue === expected
+          : header.operator === 'contains'
+            ? normalizedValue.includes(expected)
+            : expression.test(value);
+      if (!valueMatches) return false;
+      if (!matchesRequirement(Boolean(row && row.bold && row.bold[header.column]), header.bold)) return false;
+      if (!matchesRequirement(Boolean(row && row.merged_b_to_d), header.merged_b_to_d)) return false;
+      return true;
+    };
   }
 
   function findBlockInstances(rows, definitions) {
     const sourceRows = rows || [];
     const sourceDefinitions = definitions || [];
-    const candidatesByDefinition = sourceDefinitions.map((definition) => (
+    const definitionValidationErrors = sourceDefinitions.map(validateDefinition);
+    const definitionMatchers = sourceDefinitions.map((definition, definitionIndex) => (
+      compileDefinitionMatcher(definition, definitionValidationErrors[definitionIndex])
+    ));
+    const candidatesByDefinition = sourceDefinitions.map((definition, definitionIndex) => (
       sourceRows.reduce((indexes, row, index) => {
-        if (rowMatchesDefinition(row, definition)) indexes.push(index);
+        if (definitionMatchers[definitionIndex](row)) indexes.push(index);
         return indexes;
       }, [])
     ));
     let cursor = 0;
     const instances = sourceDefinitions.map((definition, definitionIndex) => {
-      const validationErrors = validateDefinition(definition);
+      const validationErrors = definitionValidationErrors[definitionIndex];
       const candidateIndexes = candidatesByDefinition[definitionIndex];
       const orderedCandidates = candidateIndexes.filter((index) => index >= cursor);
       const precedingCandidates = candidateIndexes.filter((index) => index < cursor);

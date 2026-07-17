@@ -37,6 +37,40 @@ assert.strictEqual(crew.header.merged_b_to_d, 'required');
 assert.strictEqual(model.rowMatchesDefinition(rows[0], direction), true);
 assert.strictEqual(model.rowMatchesDefinition(rows[1], direction), false);
 
+const regexDirection = model.normalizeDefinition(direction);
+regexDirection.header.operator = 'regex';
+regexDirection.header.value = '^Dirección$';
+const NativeRegExp = globalThis.RegExp;
+let regexCompilationCount = 0;
+function CountingRegExp(pattern, flags) {
+  regexCompilationCount += 1;
+  return new NativeRegExp(pattern, flags);
+}
+Object.setPrototypeOf(CountingRegExp, NativeRegExp);
+CountingRegExp.prototype = NativeRegExp.prototype;
+globalThis.RegExp = CountingRegExp;
+try {
+  model.findBlockInstances([
+    ...Array.from({ length: 1500 }, (_, index) => row(index + 1, { C: `Fila ${index + 1}` })),
+    row(1501, { C: 'Dirección' }, { bold: { C: true } }),
+  ], [regexDirection]);
+} finally {
+  globalThis.RegExp = NativeRegExp;
+}
+assert.strictEqual(regexCompilationCount, 2, 'la expresión regular se valida y compila una vez por regla');
+
+const stressRows = Array.from({ length: 5000 }, (_, index) => row(
+  index + 1,
+  { C: index % 50 === 0 ? `Cabecera ${Math.floor(index / 50) + 1}` : `Contenido ${index + 1}` }
+));
+const stressDefinitions = Array.from({ length: 100 }, (_, index) => (
+  model.definitionFromRow(stressRows[index * 50], index)
+));
+const stressInstances = model.findBlockInstances(stressRows, stressDefinitions);
+assert.strictEqual(stressInstances.length, 100);
+assert(stressInstances.every((instance) => instance.matched));
+assert.strictEqual(stressInstances[99].start_row, 4951);
+
 const copySource = model.normalizeDefinition(cast);
 copySource.header.bold = 'forbidden';
 copySource.header.merged_b_to_d = 'required';
@@ -507,7 +541,7 @@ assert(uiSource.includes("startButton.textContent = '↑ Inicio'"));
 assert(uiSource.includes("endButton.textContent = '↓ Final'"));
 assert(uiSource.includes('selectRow(block.start_row, true)'));
 assert(uiSource.includes('selectRow(block.end_row, true)'));
-assert(uiSource.includes("tabs.setAttribute('aria-orientation', 'vertical')"));
+assert(uiSource.includes("tabs.setAttribute('aria-orientation', horizontalTabs ? 'horizontal' : 'vertical')"));
 assert(uiSource.includes('function previewScrollPosition()'));
 assert(uiSource.includes('function restorePreviewScrollPosition(position)'));
 assert(uiSource.includes('renderParserPreview({ preserveScroll: true })'));
@@ -530,6 +564,17 @@ assert(uiSource.includes("item.addEventListener('dragstart'"));
 assert(uiSource.includes('copyBlockSettings(draggedBlockId, definition.id)'));
 assert(uiSource.includes('blockModel.copyDefinitionSettings(target, source)'));
 assert(uiSource.includes('¿Copiar los ajustes de'));
+assert(uiSource.includes('parserLabBlockFilterInput'));
+assert(uiSource.includes('parserLabCopyBlockTargetSelect'));
+assert(uiSource.includes('function navigateTablist(container, event)'));
+assert(uiSource.includes('function navigateTableRows(rowNumber, event)'));
+assert(uiSource.includes('function resizeSplitterWithKeyboard(splitter, event)'));
+assert(uiSource.includes('aria-label="Redimensionar filas y previo"'));
+assert(uiSource.includes("splitter.setAttribute('aria-valuenow'"));
+assert(uiSource.includes('function rebuildRowIndexes()'));
+assert(uiSource.includes('renderNormalizedRows();'));
+assert(uiSource.includes("button.tabIndex = active ? 0 : -1"));
+assert(uiSource.includes("include.tabIndex = active ? 0 : -1"));
 assert(!uiSource.includes("icon.textContent = '▦'"));
 assert(!uiSource.includes('compositionIcon'));
 assert(!uiSource.includes('parserLabClearModelBtn'));
@@ -546,6 +591,10 @@ assert(cssSource.includes('.parser-lab-preview-tab.ignored .parser-lab-block-tab
 assert(cssSource.includes('.parser-lab-table-panel .parser-lab-table th'));
 assert(cssSource.includes('.parser-lab-column-resizer'));
 assert(cssSource.includes('.parser-lab-table.resizing-columns'));
+assert(cssSource.includes('.parser-lab-block-navigation'));
+assert(cssSource.includes('.parser-lab-block-filter'));
+assert(cssSource.includes('.parser-lab-splitter:focus-visible'));
+assert(cssSource.includes('height: auto;'));
 assert(cssSource.includes('.parser-lab-preview-warning'));
 assert(cssSource.includes('.parser-lab-preview-trace'));
 assert(cssSource.includes('--parser-lab-empty-row-count'));
