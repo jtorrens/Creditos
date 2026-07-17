@@ -14,7 +14,7 @@
       <div class="parser-lab-shell">
         <div class="parser-lab-toolbar">
           <div class="parser-lab-file-actions">
-            <button id="parserLabOpenBtn" type="button">Cargar ODS/XLSX</button>
+            <button id="parserLabOpenBtn" type="button" disabled>Cargar ODS/XLSX</button>
             <button id="parserLabClearBtn" type="button" disabled>Limpiar</button>
             <input id="parserLabFileInput" class="hidden-input" type="file" accept=".ods,.xlsx,application/vnd.oasis.opendocument.spreadsheet,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
           </div>
@@ -86,7 +86,7 @@
                 </div>
                 <div class="parser-lab-block-toolbar">
                   <button id="parserLabDefineBlockBtn" type="button" disabled>Definir fila como cabecera</button>
-                  <span id="parserLabModelPersistence" class="parser-lab-model-persistence">Cargando JSON local…</span>
+                  <span id="parserLabModelPersistence" class="parser-lab-model-persistence" role="status" aria-live="polite">Cargando JSON local…</span>
                 </div>
                 <div id="parserLabFormatSummary" class="parser-lab-format-summary" hidden></div>
               </section>
@@ -256,6 +256,7 @@
                 ${emptyRowPolicyFields('Leading', 'Cabecera → primer ítem')}
                 ${emptyRowPolicyFields('Between', 'Entre ítems')}
                 ${emptyRowPolicyFields('Trailing', 'Último ítem → siguiente bloque')}
+                <p id="parserLabBetweenPolicyNote" class="parser-lab-rule-note"></p>
               </div>
               <p class="parser-lab-rule-note">La orientación controla la colocación. «Crear ítems» decide sus fronteras. El rol del primer término es también el rol tipográfico del ítem, especialmente cuando solo contiene un valor.</p>
               <div id="parserLabBlockFormError" class="parser-lab-form-error" hidden></div>
@@ -344,6 +345,7 @@
       blockBetweenDisplaySelect: documentRef.getElementById('parserLabBlockBetweenDisplaySelect'),
       blockTrailingEffectSelect: documentRef.getElementById('parserLabBlockTrailingEffectSelect'),
       blockTrailingDisplaySelect: documentRef.getElementById('parserLabBlockTrailingDisplaySelect'),
+      betweenPolicyNote: documentRef.getElementById('parserLabBetweenPolicyNote'),
       blockFormError: documentRef.getElementById('parserLabBlockFormError'),
       modelJson: documentRef.getElementById('parserLabModelJson'),
       semanticJson: documentRef.getElementById('parserLabSemanticJson'),
@@ -372,6 +374,7 @@
       activePreviewBlockId: null,
       activeRightTab: 'inspector',
       activeJsonTab: 'row',
+      modelReady: false,
     };
     let persistenceQueue = Promise.resolve();
     let blockEditTimer = null;
@@ -450,15 +453,22 @@
         render();
       } catch (error) {
         setPersistenceStatus(`Sin persistencia local: ${error.message}`, '', true);
+      } finally {
+        state.modelReady = true;
+        elements.openButton.disabled = false;
       }
     }
 
-    function persistBlockModel() {
-      const model = blockModel.modelDocument(
+    function currentBlockModelDocument() {
+      return blockModel.modelDocument(
         state.blockDefinitions,
         state.compositionRules,
         state.normalizedRowsView
       );
+    }
+
+    function persistBlockModel({ keepalive = false } = {}) {
+      const model = currentBlockModelDocument();
       elements.modelJson.textContent = JSON.stringify(model, null, 2);
       setPersistenceStatus('Guardando JSON local…');
       persistenceQueue = persistenceQueue.catch(() => {}).then(async () => {
@@ -466,6 +476,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(model),
+          keepalive,
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'No se pudo guardar el JSON temporal.');
@@ -476,6 +487,20 @@
         return null;
       });
       return persistenceQueue;
+    }
+
+    function flushBlockModelOnPageHide() {
+      if (blockEditTimer) {
+        root.clearTimeout(blockEditTimer);
+        blockEditTimer = null;
+      }
+      const model = currentBlockModelDocument();
+      const navigatorRef = root.navigator;
+      if (navigatorRef && typeof navigatorRef.sendBeacon === 'function' && typeof root.Blob === 'function') {
+        const body = new root.Blob([JSON.stringify(model)], { type: 'application/json' });
+        if (navigatorRef.sendBeacon('/api/parser-lab/block-model', body)) return;
+      }
+      persistBlockModel({ keepalive: true });
     }
 
     function setPersistenceStatus(message, path = '', isError = false) {
@@ -492,6 +517,7 @@
     }
 
     async function inspectFile(file) {
+      flushPendingBlockEdit();
       const sourceKind = sourceKindForFile(file);
       elements.openButton.disabled = true;
       elements.summary.classList.remove('parser-lab-error');
@@ -508,9 +534,12 @@
         state.filter = '';
         elements.filterInput.value = '';
         render();
+        if (state.selectedRowNumber !== null) selectRow(state.selectedRowNumber);
       } catch (error) {
         state.inspection = null;
         state.selectedRowNumber = null;
+        state.activeEditorTab = null;
+        state.activePreviewBlockId = null;
         render();
         elements.summary.classList.add('parser-lab-error');
         elements.summary.textContent = error.message;
@@ -589,17 +618,25 @@
       elements.tableBody.appendChild(fragment);
       applyNormalizedRowsView();
       renderSelection();
+      if (state.selectedRowNumber !== null && !rows.some((row) => row.row === state.selectedRowNumber)) {
+        elements.selectionMeta.textContent = `Fila ${state.selectedRowNumber} · oculta por el filtro`;
+      }
     }
 
     function renderRow(row) {
       const tr = documentRef.createElement('tr');
       const block = blockInstanceContainingRow(row.row);
       const isBlockHeader = block && block.start_row === row.row;
+      const headerCandidates = state.blockInstances.filter((instance) => (
+        (instance.candidate_rows || []).includes(row.row)
+      ));
+      const isAlternativeHeader = headerCandidates.some((instance) => instance.start_row !== row.row);
       tr.tabIndex = 0;
       tr.dataset.row = String(row.row);
       tr.classList.toggle('selected', row.row === state.selectedRowNumber);
       tr.classList.toggle('parser-lab-block-range-row', Boolean(block));
       tr.classList.toggle('parser-lab-block-header-row', Boolean(isBlockHeader));
+      tr.classList.toggle('parser-lab-header-candidate-row', isAlternativeHeader);
       tr.classList.toggle('parser-lab-empty-source-row', Boolean(row.empty));
       tr.setAttribute('aria-selected', row.row === state.selectedRowNumber ? 'true' : 'false');
       tr.addEventListener('click', () => selectRow(row.row));
@@ -633,6 +670,11 @@
         const label = documentRef.createElement('span');
         label.className = isHeader ? 'parser-lab-block-badge' : 'parser-lab-block-continuation';
         label.textContent = isHeader ? block.name : `↳ ${block.name}`;
+        const diagnostics = [...(block.diagnostics || []), ...(block.range_diagnostics || [])];
+        if (diagnostics.length) {
+          cell.classList.add('warning');
+          label.title = diagnostics.map((entry) => entry.message).join(' ');
+        }
         cell.appendChild(label);
       }
       rowElement.appendChild(cell);
@@ -775,7 +817,10 @@
     function renderBlockModel() {
       const found = state.blockInstances.filter((instance) => instance.matched).length;
       const enabled = state.blockDefinitions.filter((definition) => definition.enabled).length;
-      elements.blockCount.textContent = `${state.blockDefinitions.length} cabeceras · ${enabled} incluidas · ${found} encontradas`;
+      const warnings = state.blockInstances.filter((instance) => (
+        instance.match_status !== 'matched' || instance.range_status === 'warning'
+      )).length;
+      elements.blockCount.textContent = `${state.blockDefinitions.length} cabeceras · ${enabled} incluidas · ${found} encontradas${warnings ? ` · ${warnings} avisos` : ''}`;
       elements.modelJson.textContent = JSON.stringify(
         blockModel.modelDocument(
           state.blockDefinitions,
@@ -801,18 +846,24 @@
         item.tabIndex = 0;
         item.draggable = true;
         item.dataset.blockId = definition.id;
-        item.title = 'Arrastra esta pestaña sobre otra para copiar sus ajustes.';
+        item.title = [
+          definition.name,
+          ...((instance && instance.diagnostics) || []).map((entry) => entry.message),
+          ...((instance && instance.range_diagnostics) || []).map((entry) => entry.message),
+          'Arrastra esta pestaña sobre otra para copiar sus ajustes.',
+        ].join(' ');
         item.setAttribute('role', 'tab');
         item.setAttribute('aria-selected', String(definition.id === state.activeEditorTab));
         item.classList.toggle('missing', !instance || !instance.matched);
+        item.classList.toggle('warning', Boolean(instance && (
+          instance.match_status !== 'matched' || instance.range_status === 'warning'
+        )));
         item.classList.toggle('active', definition.id === state.activeEditorTab);
         item.classList.toggle('ignored', !definition.enabled);
         content.className = 'parser-lab-block-tab-copy';
         title.textContent = definition.name;
         status.className = 'parser-lab-block-status';
-        status.textContent = instance && instance.matched
-          ? `Fila ${instance.start_row} · ${interpreted.items.length} ítems`
-          : 'No encontrada';
+        status.textContent = blockInstanceStatus(instance, interpreted);
         content.append(title, status);
         include.type = 'checkbox';
         include.draggable = false;
@@ -827,13 +878,17 @@
         });
         item.append(content, include);
         item.addEventListener('click', () => {
-          if (instance && instance.matched) selectRow(instance.start_row, true);
+          if (instance && instance.matched) {
+            selectRow(instance.start_row, true, { kind: 'block-tab', id: definition.id });
+          }
           else {
+            const currentDefinition = state.blockDefinitions.find((candidate) => candidate.id === definition.id) || definition;
             state.activeEditorTab = definition.id;
             state.activePreviewBlockId = null;
-            openDefinitionEditor(definition);
+            openDefinitionEditor(currentDefinition);
             renderBlockModel();
             renderParserPreview();
+            restoreNavigationFocus({ kind: 'block-tab', id: definition.id });
           }
           setRightTab('inspector');
         });
@@ -890,6 +945,20 @@
       updateBlockReorderControls();
     }
 
+    function blockInstanceStatus(instance, interpreted) {
+      if (!instance) return 'Sin diagnóstico';
+      if (instance.match_status === 'invalid') return 'Definición inválida';
+      if (instance.match_status === 'missing') return 'Cabecera ausente';
+      if (instance.match_status === 'out_of_order') {
+        return `Fuera de orden · ${instance.candidate_rows.join(', ') || 'sin fila'}`;
+      }
+      if (instance.match_status === 'ambiguous') {
+        return `Ambigua · filas ${instance.candidate_rows.join(', ')}`;
+      }
+      const suffix = instance.range_status === 'warning' ? ' · rango con aviso' : '';
+      return `Fila ${instance.start_row} · ${interpreted ? interpreted.items.length : 0} ítems${suffix}`;
+    }
+
     function updateBlockReorderControls() {
       const index = state.blockDefinitions.findIndex((definition) => definition.id === state.activeEditorTab);
       elements.moveBlockUpButton.disabled = index <= 0;
@@ -897,6 +966,7 @@
     }
 
     function copyBlockSettings(sourceId, targetId) {
+      flushPendingBlockEdit();
       draggedBlockId = null;
       if (!sourceId || !targetId || sourceId === targetId) return;
       const source = state.blockDefinitions.find((definition) => definition.id === sourceId);
@@ -919,6 +989,7 @@
     }
 
     function showCompositionEditor() {
+      flushPendingBlockEdit();
       state.activeEditorTab = 'composition';
       state.editingBlockId = null;
       elements.blockForm.hidden = true;
@@ -1163,7 +1234,9 @@
         };
       });
       if (!tabEntries.some((entry) => entry.block.definition_id === state.activePreviewBlockId)) {
-        state.activePreviewBlockId = null;
+        state.activePreviewBlockId = tabEntries.some((entry) => (
+          entry.block.definition_id === state.activeEditorTab
+        )) ? state.activeEditorTab : null;
       }
       const tabs = documentRef.createElement('div');
       tabs.className = 'parser-lab-preview-tabs';
@@ -1176,6 +1249,7 @@
         const status = documentRef.createElement('span');
         const active = block.definition_id === state.activePreviewBlockId;
         button.type = 'button';
+        button.dataset.blockId = block.definition_id;
         button.className = `parser-lab-preview-tab${active ? ' active' : ''}`;
         button.classList.toggle('ignored', !block.enabled);
         button.setAttribute('role', 'tab');
@@ -1187,7 +1261,9 @@
         button.append(copy);
         button.addEventListener('click', () => {
           const instance = state.blockInstances.find((candidate) => candidate.definition_id === block.definition_id);
-          if (instance && instance.matched) selectRow(instance.start_row, true);
+          if (instance && instance.matched) {
+            selectRow(instance.start_row, true, { kind: 'preview-tab', id: block.definition_id });
+          }
           setRightTab('inspector');
         });
         tabs.appendChild(button);
@@ -1205,13 +1281,17 @@
       }
       const container = documentRef.createElement('div');
       container.className = `parser-lab-preview-block-group${activeEntry.group.target ? ` composed ${activeEntry.group.target}` : ''}`;
+      const groupDiagnostics = activeEntry.group.diagnostics || [];
+      container.classList.toggle('has-warning', groupDiagnostics.length > 0);
       if (activeEntry.group.target) {
         const label = documentRef.createElement('div');
         label.className = 'parser-lab-preview-composition-label';
-        label.textContent = `${compositionTargetLabel(activeEntry.group.target)} · ${activeEntry.group.members.length} bloques`;
+        label.textContent = `${compositionTargetLabel(activeEntry.group.target)} · ${activeEntry.group.members.length} bloques${groupDiagnostics.length ? ' · aviso' : ''}`;
+        if (groupDiagnostics.length) label.title = groupDiagnostics.map((entry) => entry.message).join(' ');
         container.appendChild(label);
       }
-      container.appendChild(renderPreviewBlock(activeEntry.block));
+      const visibleBlocks = activeEntry.group.target ? activeEntry.group.members : [activeEntry.block];
+      visibleBlocks.forEach((block) => container.appendChild(renderPreviewBlock(block)));
       elements.previewContent.appendChild(container);
       restorePreviewScrollPosition(scrollPosition);
     }
@@ -1244,6 +1324,15 @@
       navigation.append(startButton, endButton);
       heading.append(identity, navigation);
       items.className = 'parser-lab-preview-items';
+      const detectionDiagnostics = block.detection
+        ? [...(block.detection.diagnostics || []), ...(block.detection.range_diagnostics || [])]
+        : [];
+      if (detectionDiagnostics.length) {
+        const warning = documentRef.createElement('div');
+        warning.className = 'parser-lab-preview-warning';
+        warning.textContent = detectionDiagnostics.map((entry) => entry.message).join(' ');
+        items.appendChild(warning);
+      }
       if (!block.enabled) {
         section.classList.add('ignored');
         meta.textContent = `Filas ${block.start_row}–${block.end_row} · frontera conservada`;
@@ -1273,7 +1362,7 @@
             label.textContent = `${compositionTargetLabel(group.target)} · ${group.members.length} ítems`;
             wrapper.appendChild(label);
             group.members.forEach((item) => {
-              wrapper.appendChild(renderPreviewItem(item, itemIndex));
+              wrapper.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
               if (shouldRenderEmptyBoundary(item.empty_rows_after)) {
                 wrapper.appendChild(renderPreviewSeparator(item.empty_rows_after));
               }
@@ -1283,7 +1372,7 @@
             return;
           }
           const item = group.members[0];
-          items.appendChild(renderPreviewItem(item, itemIndex));
+          items.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
           if (shouldRenderEmptyBoundary(item.empty_rows_after)) {
             items.appendChild(renderPreviewSeparator(item.empty_rows_after));
           }
@@ -1301,31 +1390,47 @@
       return { group: 'Grupo', page: 'Página', cartela: 'Cartela' }[target] || target;
     }
 
-    function renderPreviewItem(item, index) {
+    function renderPreviewItem(item, index, blockId) {
       const card = documentRef.createElement('button');
       const order = documentRef.createElement('span');
       const termsContainer = documentRef.createElement('div');
       const source = documentRef.createElement('span');
+      const trace = documentRef.createElement('span');
       card.type = 'button';
+      card.dataset.blockId = blockId;
+      card.dataset.itemIndex = String(index);
       card.className = `parser-lab-preview-item ${item.orientation || 'vertical'}`;
       order.className = 'parser-lab-preview-item-order';
       order.textContent = String(index + 1).padStart(2, '0');
       termsContainer.className = 'parser-lab-preview-terms';
       const terms = item.terms;
-      terms.forEach((term) => {
+      const internalEmptyRows = item.internal_empty_rows || [];
+      terms.forEach((term, termIndex) => {
         const entry = documentRef.createElement('span');
         entry.className = `parser-lab-preview-term ${term.role}`;
         entry.textContent = term.value;
         termsContainer.appendChild(entry);
+        internalEmptyRows.filter((boundary) => (
+          boundary.after_term_index === termIndex + 1 && shouldRenderEmptyBoundary(boundary)
+        )).forEach((boundary) => {
+          termsContainer.appendChild(renderPreviewSeparator(boundary, 'Hueco interno', true));
+        });
       });
       source.className = 'parser-lab-preview-source';
       source.textContent = sourceRowsLabel(item.source_rows);
-      card.append(order, termsContainer, source);
-      if (item.source_rows.length) card.addEventListener('click', () => selectRow(item.source_rows[0], true));
+      trace.className = 'parser-lab-preview-trace';
+      trace.textContent = item.decision_trace ? item.decision_trace.reason : '';
+      card.title = trace.textContent;
+      card.append(order, termsContainer, source, trace);
+      if (item.source_rows.length) card.addEventListener('click', () => selectRow(
+        item.source_rows[0],
+        true,
+        { kind: 'preview-item', id: blockId, itemIndex: index }
+      ));
       return card;
     }
 
-    function renderPreviewSeparator(boundary, positionLabel = '') {
+    function renderPreviewSeparator(boundary, positionLabel = '', internal = false) {
       const separator = documentRef.createElement('div');
       const labels = {
         continue: 'Continúa el mismo ítem',
@@ -1336,12 +1441,16 @@
       const displayLabels = {
         ignore: 'espacio ignorado',
         compact: '1 fila',
-        preserve: `${boundary.output_count} filas`,
+        preserve: `${boundary.output_count} ${boundary.output_count === 1 ? 'fila' : 'filas'}`,
       };
-      separator.className = `parser-lab-preview-separator ${boundary.effect} ${boundary.display}`;
+      const effectiveEffect = boundary.effective_effect || boundary.effect;
+      separator.className = `parser-lab-preview-separator ${effectiveEffect} ${boundary.display}${internal ? ' internal' : ''}`;
+      separator.style.setProperty('--parser-lab-empty-row-count', String(Math.min(12, Math.max(1, boundary.output_count || 1))));
       separator.textContent = [
         positionLabel,
-        labels[boundary.effect] || boundary.effect,
+        boundary.context === 'between_row_items'
+          ? 'Entre ítems por fila'
+          : labels[boundary.effect] || boundary.effect,
         displayLabels[boundary.display],
       ].filter(Boolean).join(' · ');
       return separator;
@@ -1397,6 +1506,7 @@
     }
 
     function openDefinitionEditor(definition) {
+      flushPendingBlockEdit();
       state.activeEditorTab = definition.id;
       state.editingBlockId = definition.id;
       populateBlockForm(definition, 'Editar cabecera');
@@ -1470,32 +1580,56 @@
       };
     }
 
-    function applyLiveBlockDefinition(event) {
-      if (event) event.preventDefault();
+    function commitBlockFormToState() {
       if (!state.editingBlockId) return;
-      if (blockEditTimer) root.clearTimeout(blockEditTimer);
-      blockEditTimer = null;
       const definition = readBlockForm();
       const errors = blockModel.validateDefinition(definition);
       if (errors.length) {
         elements.blockFormError.hidden = false;
         elements.blockFormError.textContent = errors.join(' ');
-        return;
+        return false;
       }
       const index = state.blockDefinitions.findIndex((candidate) => candidate.id === state.editingBlockId);
-      if (index < 0) return;
+      if (index < 0) return false;
       state.blockDefinitions.splice(index, 1, definition);
       elements.blockFormError.hidden = true;
+      return true;
+    }
+
+    function applyLiveBlockDefinition(event) {
+      if (event) event.preventDefault();
+      if (blockEditTimer) root.clearTimeout(blockEditTimer);
+      blockEditTimer = null;
+      if (!commitBlockFormToState()) return;
       render();
       persistBlockModel();
     }
 
     function scheduleLiveBlockDefinition() {
+      const hadPendingEdit = Boolean(blockEditTimer);
       if (blockEditTimer) root.clearTimeout(blockEditTimer);
-      blockEditTimer = root.setTimeout(applyLiveBlockDefinition, 320);
+      blockEditTimer = null;
+      if (!commitBlockFormToState()) {
+        if (hadPendingEdit) persistBlockModel();
+        return;
+      }
+      blockEditTimer = root.setTimeout(() => {
+        blockEditTimer = null;
+        render();
+        persistBlockModel();
+      }, 320);
+    }
+
+    function flushPendingBlockEdit() {
+      if (!blockEditTimer) return false;
+      root.clearTimeout(blockEditTimer);
+      blockEditTimer = null;
+      persistBlockModel();
+      return true;
     }
 
     function moveDefinition(index, offset) {
+      flushPendingBlockEdit();
       const nextIndex = index + offset;
       if (nextIndex < 0 || nextIndex >= state.blockDefinitions.length) return;
       const [definition] = state.blockDefinitions.splice(index, 1);
@@ -1516,7 +1650,16 @@
     }
 
     function updateOrientationFields() {
-      elements.blockStartColumnField.hidden = elements.blockGroupingSelect.value !== 'first_term';
+      const grouping = elements.blockGroupingSelect.value;
+      const rowGrouping = grouping === 'row';
+      const continueOption = elements.blockBetweenEffectSelect.querySelector('option[value="continue"]');
+      elements.blockStartColumnField.hidden = grouping !== 'first_term';
+      continueOption.textContent = rowGrouping
+        ? 'Sin separación adicional · siguen siendo dos ítems'
+        : 'Continuar el mismo ítem';
+      elements.betweenPolicyNote.textContent = rowGrouping
+        ? 'En «uno por fila», cada fila con contenido siempre es un ítem. Esta política solo decide el salto y el espacio entre ambos.'
+        : 'En los otros modos, «continuar» conserva las filas vacías dentro del mismo ítem.';
     }
 
     function uniqueBlockId(baseId) {
@@ -1529,7 +1672,7 @@
 
     function selectedHeaderDefinition() {
       const instance = state.blockInstances.find((candidate) => (
-        candidate.matched && candidate.start_row === state.selectedRowNumber
+        (candidate.candidate_rows || []).includes(state.selectedRowNumber)
       ));
       return instance
         ? state.blockDefinitions.find((definition) => definition.id === instance.definition_id) || null
@@ -1548,6 +1691,7 @@
     }
 
     function handleHeaderAction() {
+      flushPendingBlockEdit();
       const row = selectedRow();
       if (!row || row.empty) return;
       const existing = selectedHeaderDefinition();
@@ -1566,7 +1710,12 @@
       }
       const definition = blockModel.definitionFromRow(row, state.blockDefinitions.length);
       definition.id = uniqueBlockId(definition.id);
-      state.blockDefinitions.push(definition);
+      const insertionIndex = state.blockDefinitions.findIndex((candidate) => {
+        const instance = state.blockInstances.find((entry) => entry.definition_id === candidate.id);
+        return instance && instance.matched && instance.start_row > row.row;
+      });
+      if (insertionIndex < 0) state.blockDefinitions.push(definition);
+      else state.blockDefinitions.splice(insertionIndex, 0, definition);
       state.activeEditorTab = definition.id;
       state.activePreviewBlockId = definition.id;
       state.editingBlockId = definition.id;
@@ -1575,7 +1724,17 @@
       persistBlockModel();
     }
 
-    function selectRow(rowNumber, reveal = false) {
+    function selectRow(rowNumber, reveal = false, focusRequest = null) {
+      flushPendingBlockEdit();
+      const selectionHiddenByFilter = Boolean(
+        reveal
+        && state.filter.trim()
+        && !filteredRows().some((row) => row.row === rowNumber)
+      );
+      if (selectionHiddenByFilter) {
+        state.filter = '';
+        elements.filterInput.value = '';
+      }
       state.selectedRowNumber = rowNumber;
       const instance = blockInstanceContainingRow(rowNumber);
       if (instance) {
@@ -1589,16 +1748,37 @@
         closeBlockEditor();
         elements.compositionEditor.hidden = true;
       }
-      updateHeaderAction();
+      if (selectionHiddenByFilter) render();
+      else {
+        updateHeaderAction();
+        renderSelection();
+        renderBlockModel();
+        renderParserPreview({ preserveScroll: true });
+      }
       Array.from(elements.tableBody.rows).forEach((rowElement) => {
         const selected = Number(rowElement.dataset.row) === rowNumber;
         rowElement.classList.toggle('selected', selected);
         rowElement.setAttribute('aria-selected', selected ? 'true' : 'false');
         if (selected && reveal) rowElement.scrollIntoView({ block: 'center' });
       });
-      renderSelection();
-      renderBlockModel();
-      renderParserPreview({ preserveScroll: true });
+      restoreNavigationFocus(focusRequest);
+    }
+
+    function restoreNavigationFocus(request) {
+      if (!request) return;
+      const previewRequest = request.kind === 'preview-tab' || request.kind === 'preview-item';
+      const container = previewRequest ? elements.previewContent : elements.blockList;
+      const selector = request.kind === 'preview-item'
+        ? '.parser-lab-preview-item[data-block-id][data-item-index]'
+        : request.kind === 'preview-tab'
+          ? '.parser-lab-preview-tab[data-block-id]'
+          : '.parser-lab-block-tab[data-block-id]';
+      const candidates = Array.from(container.querySelectorAll(selector));
+      const target = candidates.find((element) => (
+        element.dataset.blockId === request.id
+        && (request.kind !== 'preview-item' || Number(element.dataset.itemIndex) === request.itemIndex)
+      ));
+      if (target) target.focus({ preventScroll: true });
     }
 
     function renderSelection() {
@@ -1612,16 +1792,41 @@
       }
       elements.selectionMeta.textContent = `Fila ${selected.row}`;
       renderFormatSummary(selected);
-      elements.json.textContent = JSON.stringify(selected, null, 2);
+      const block = blockInstanceContainingRow(selected.row);
+      const interpretedBlock = block && state.semanticPreview && state.semanticPreview.blocks.find((entry) => (
+        entry.definition_id === block.definition_id
+      ));
+      elements.json.textContent = JSON.stringify({
+        source_row: selected,
+        interpretation: rowDecision(selected.row),
+        block_detection: interpretedBlock ? interpretedBlock.detection : null,
+      }, null, 2);
     }
 
     function renderFormatSummary(row) {
       const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
       const styledColumns = COLUMNS.filter((column) => row.styles && row.styles[column] !== undefined);
       const block = blockInstanceContainingRow(row.row);
-      elements.formatSummary.hidden = false;
-      elements.formatSummary.replaceChildren(
+      const decision = rowDecision(row.row);
+      const headerCandidates = decision && decision.header_candidates || [];
+      const warnings = [
+        ...((decision && decision.warnings) || []),
+        ...((block && block.diagnostics) || []),
+        ...((block && block.range_diagnostics) || []),
+      ].filter((warning, index, entries) => entries.findIndex((candidate) => (
+        candidate.code === warning.code && candidate.message === warning.message
+      )) === index);
+      const rows = [
         formatSummaryRow('Bloque', [block ? `${block.name} · ${block.start_row}–${block.end_row}` : 'Sin bloque definido']),
+        formatSummaryRow('Interpretación', [decision ? decision.reason : 'Sin decisión registrada']),
+      ];
+      if (headerCandidates.length) {
+        rows.push(formatSummaryRow('Cabecera', headerCandidates.map((candidate) => (
+          `${candidate.block_name} · ${candidate.selected ? 'seleccionada' : 'candidata'} · ${candidate.match_status}`
+        ))));
+      }
+      if (warnings.length) rows.push(formatSummaryRow('Avisos', warnings.map((warning) => warning.message)));
+      rows.push(
         formatSummaryRow('Contenido', [row.empty ? 'Fila vacía · división interna' : 'Fila con datos']),
         formatSummaryRow('Negrita', boldColumns.length ? boldColumns : ['Ninguna']),
         formatSummaryRow('Combinación', [row.merged_b_to_d ? 'B–D' : 'Celdas separadas']),
@@ -1630,6 +1835,14 @@
           styledColumns.length ? styledColumns.map((column) => `${column} · ${row.styles[column]}`) : ['Sin estilo registrado']
         )
       );
+      elements.formatSummary.hidden = false;
+      elements.formatSummary.replaceChildren(...rows);
+    }
+
+    function rowDecision(rowNumber) {
+      return state.semanticPreview && (state.semanticPreview.row_decisions || []).find((entry) => (
+        entry.row === rowNumber
+      )) || null;
     }
 
     function formatSummaryRow(label, values) {
@@ -1712,6 +1925,7 @@
     }
 
     function clearInspection() {
+      flushPendingBlockEdit();
       state.inspection = null;
       state.selectedRowNumber = null;
       state.filter = '';
@@ -1777,6 +1991,7 @@
       resizer.addEventListener('keydown', (event) => resizeNormalizedColumnWithKeyboard(column, event));
     });
     setupSplitters();
+    root.addEventListener('pagehide', flushBlockModelOnPageHide);
     render();
     loadTemporaryBlockModel();
 

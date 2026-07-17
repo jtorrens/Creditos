@@ -86,6 +86,31 @@ const missing = { ...cast, header: { ...cast.header, value: 'No existe' } };
 const withMissing = model.findBlockInstances(rows, [direction, missing, crew]);
 assert.strictEqual(withMissing[1].matched, false);
 assert.strictEqual(withMissing[2].start_row, 9);
+assert.strictEqual(withMissing[0].range_status, 'warning');
+assert(withMissing[0].range_diagnostics.some((entry) => entry.code === 'unresolved_boundary'));
+
+const outOfOrder = model.findBlockInstances(rows, [cast, direction, crew]);
+assert.strictEqual(outOfOrder[0].start_row, 5);
+assert.strictEqual(outOfOrder[1].match_status, 'out_of_order');
+assert.deepStrictEqual(outOfOrder[1].candidate_rows, [1]);
+assert.strictEqual(outOfOrder[0].range_status, 'warning');
+
+const ambiguousRows = [
+  row(1, { C: 'Cabecera repetida' }),
+  row(2, { B: 'Contenido' }),
+  row(3, { C: 'Cabecera repetida' }),
+  row(4, { C: 'Bloque siguiente' }),
+];
+const ambiguousDefinition = model.definitionFromRow(ambiguousRows[0], 0);
+const ambiguousFollowing = model.definitionFromRow(ambiguousRows[3], 1);
+const ambiguousInstances = model.findBlockInstances(
+  ambiguousRows,
+  [ambiguousDefinition, ambiguousFollowing]
+);
+assert.strictEqual(ambiguousInstances[0].match_status, 'ambiguous');
+assert.deepStrictEqual(ambiguousInstances[0].candidate_rows, [1, 3]);
+assert.strictEqual(ambiguousInstances[0].start_row, 1);
+assert.strictEqual(ambiguousInstances[0].range_status, 'warning');
 const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
@@ -141,7 +166,7 @@ const directionPage = model.normalizeDefinition(direction);
 directionPage.interpretation.empty_rows.between_items.effect = 'page';
 const semantic = model.interpretModel(rows, instances, [directionPage, cast, crew]);
 assert.deepStrictEqual(
-  semantic.blocks[0].items,
+  semantic.blocks[0].items.map(({ decision_trace, ...item }) => item),
   [
     {
       principal: 'Dirección de Fotografía',
@@ -168,7 +193,7 @@ assert.deepStrictEqual(
 assert.deepStrictEqual(semantic.blocks[1].items[0].associated, ['Personaje']);
 assert.strictEqual(semantic.blocks[1].items[0].separator_after, null);
 assert.deepStrictEqual(semantic.blocks[1].trailing_empty_rows, {
-  effect: 'continue', display: 'ignore', source_count: 2, output_count: 0,
+  effect: 'continue', display: 'ignore', source_count: 2, output_count: 0, source_rows: [7, 8],
 });
 assert.deepStrictEqual(semantic.blocks[2].items[0].associated, []);
 assert.strictEqual(semantic.blocks[2].items[0].separator_after, null);
@@ -197,15 +222,15 @@ const boundaryBlock = model.interpretModel(
   [boundaryDefinition, followingDefinition]
 ).blocks[0];
 assert.deepStrictEqual(boundaryBlock.leading_empty_rows, {
-  effect: 'continue', display: 'ignore', source_count: 1, output_count: 0,
+  effect: 'continue', display: 'ignore', source_count: 1, output_count: 0, source_rows: [2],
 });
 assert.strictEqual(boundaryBlock.items.length, 2);
 assert.strictEqual(boundaryBlock.items[0].separator_after, 'page');
 assert.deepStrictEqual(boundaryBlock.items[0].empty_rows_after, {
-  effect: 'page', display: 'preserve', source_count: 2, output_count: 2,
+  effect: 'page', display: 'preserve', source_count: 2, output_count: 2, source_rows: [4, 5],
 });
 assert.deepStrictEqual(boundaryBlock.trailing_empty_rows, {
-  effect: 'continue', display: 'compact', source_count: 1, output_count: 1,
+  effect: 'continue', display: 'compact', source_count: 1, output_count: 1, source_rows: [7],
 });
 
 const horizontalRows = [
@@ -236,7 +261,7 @@ assert.deepStrictEqual(horizontalBlock.items[0].terms.map((term) => [term.value,
 assert.strictEqual(horizontalBlock.items[0].role, 'secondary');
 assert.strictEqual(horizontalBlock.items[0].separator_after, null);
 assert.deepStrictEqual(horizontalBlock.trailing_empty_rows, {
-  effect: 'continue', display: 'ignore', source_count: 1, output_count: 0,
+  effect: 'continue', display: 'ignore', source_count: 1, output_count: 0, source_rows: [5],
 });
 
 const groupedHorizontalRows = [
@@ -298,6 +323,102 @@ const singleValueBlock = model.interpretModel(
 assert.strictEqual(singleValueBlock.items.length, 2);
 assert.deepStrictEqual(singleValueBlock.items.map((item) => item.role), ['secondary', 'secondary']);
 assert.deepStrictEqual(singleValueBlock.items.map((item) => item.principal), ['AENA', 'MUNDICOLOR']);
+assert.deepStrictEqual(singleValueBlock.items.map((item) => item.associated), [[], []]);
+
+const anchoredRows = [
+  row(1, { C: 'Equipo con metadatos' }),
+  row(2, { A: '01', B: 'Atrecistas', D: 'Óscar Mesa' }),
+  row(3, { A: 'nota', D: 'Iván Moran' }),
+  row(4, { C: 'Bloque siguiente' }),
+];
+const anchoredDefinition = model.definitionFromRow(anchoredRows[0], 0);
+anchoredDefinition.interpretation.item_grouping = 'first_term';
+anchoredDefinition.interpretation.item_start_column = 'B';
+anchoredDefinition.interpretation.term_roles = { first: 'secondary', following: 'principal' };
+const anchoredFollowing = model.definitionFromRow(anchoredRows[3], 1);
+const anchoredInstances = model.findBlockInstances(anchoredRows, [anchoredDefinition, anchoredFollowing]);
+const anchoredBlock = model.interpretModel(
+  anchoredRows,
+  anchoredInstances,
+  [anchoredDefinition, anchoredFollowing]
+).blocks[0];
+assert.deepStrictEqual(anchoredBlock.items[0].terms.map((term) => term.value), [
+  'Atrecistas', 'Óscar Mesa', 'Iván Moran',
+]);
+assert.strictEqual(anchoredBlock.items[0].principal, 'Óscar Mesa');
+assert(!anchoredBlock.items[0].source_values.some((entry) => entry.column === 'A'));
+
+const headerFirstTermRows = [
+  row(1, { A: 'Cabecera que también es ítem' }),
+  row(2, { B: 'Cargo', D: 'Nombre' }),
+  row(3, { C: 'Bloque siguiente' }),
+];
+const headerFirstTermDefinition = model.definitionFromRow(headerFirstTermRows[0], 0);
+headerFirstTermDefinition.interpretation.content_start = 'header';
+headerFirstTermDefinition.interpretation.item_grouping = 'first_term';
+headerFirstTermDefinition.interpretation.item_start_column = 'B';
+const headerFirstTermFollowing = model.definitionFromRow(headerFirstTermRows[2], 1);
+const headerFirstTermInstances = model.findBlockInstances(
+  headerFirstTermRows,
+  [headerFirstTermDefinition, headerFirstTermFollowing]
+);
+const headerFirstTermBlock = model.interpretModel(
+  headerFirstTermRows,
+  headerFirstTermInstances,
+  [headerFirstTermDefinition, headerFirstTermFollowing]
+).blocks[0];
+assert.deepStrictEqual(headerFirstTermBlock.items.map((item) => item.principal), [
+  'Cabecera que también es ítem',
+  'Cargo',
+]);
+assert.strictEqual(headerFirstTermBlock.row_trace[0].decision, 'header_and_item');
+
+const continuedRows = [
+  row(1, { C: 'Bloque con hueco interno' }),
+  row(2, { B: 'Cargo', D: 'Nombre' }),
+  { ...row(3, {}), empty: true },
+  row(4, { D: 'Nombre dos' }),
+  row(5, { C: 'Bloque siguiente' }),
+];
+const continuedDefinition = model.definitionFromRow(continuedRows[0], 0);
+continuedDefinition.interpretation.empty_rows.between_items = { effect: 'continue', display: 'preserve' };
+const continuedFollowing = model.definitionFromRow(continuedRows[4], 1);
+const continuedInstances = model.findBlockInstances(continuedRows, [continuedDefinition, continuedFollowing]);
+const continuedSemantic = model.interpretModel(
+  continuedRows,
+  continuedInstances,
+  [continuedDefinition, continuedFollowing]
+);
+const continuedBlock = continuedSemantic.blocks[0];
+assert.strictEqual(continuedBlock.items.length, 1);
+assert.deepStrictEqual(continuedBlock.items[0].internal_empty_rows, [{
+  effect: 'continue',
+  display: 'preserve',
+  source_count: 1,
+  output_count: 1,
+  source_rows: [3],
+  after_term_index: 2,
+}]);
+assert.strictEqual(
+  continuedSemantic.row_decisions.find((entry) => entry.row === 3).decision,
+  'between_items_empty_continued'
+);
+assert.strictEqual(
+  continuedSemantic.row_decisions.find((entry) => entry.row === 4).item_index,
+  0
+);
+
+const rowGroupingDefinition = model.normalizeDefinition(continuedDefinition);
+rowGroupingDefinition.interpretation.item_grouping = 'row';
+const rowGroupingBlock = model.interpretModel(
+  continuedRows,
+  continuedInstances,
+  [rowGroupingDefinition, continuedFollowing]
+).blocks[0];
+assert.strictEqual(rowGroupingBlock.items.length, 2);
+assert.strictEqual(rowGroupingBlock.items[0].separator_after, 'item');
+assert.strictEqual(rowGroupingBlock.items[0].empty_rows_after.context, 'between_row_items');
+assert.strictEqual(rowGroupingBlock.items[0].empty_rows_after.effective_effect, 'item');
 
 const compositionRules = [
   {
@@ -331,6 +452,41 @@ assert.deepStrictEqual(
 assert.strictEqual(composed.block_groups[1].members[0].name, 'Bloque C');
 assert.strictEqual(model.modelDocument([direction], compositionRules, normalizedRowsView).composition_rules.length, 2);
 
+const conflictingRules = [
+  compositionRules[0],
+  {
+    ...compositionRules[0],
+    id: 'rule_items_conflict',
+    action: { type: 'group_next', count: 8, target: 'cartela' },
+  },
+];
+const conflictingComposed = model.composePreview({
+  blocks: [{
+    definition_id: 'block_a',
+    name: 'Bloque A',
+    matched: true,
+    enabled: true,
+    items: [{ principal: 'Cargo A' }, { principal: 'Cargo B' }],
+  }],
+}, conflictingRules);
+assert(conflictingComposed.diagnostics.some((entry) => entry.code === 'composition_conflict'));
+assert(!conflictingComposed.diagnostics.some((entry) => entry.code === 'composition_truncated'));
+assert.deepStrictEqual(
+  conflictingComposed.block_groups[0].members[0].item_groups[0].decision_trace.matching_rule_ids,
+  ['rule_items', 'rule_items_conflict']
+);
+
+const truncatedComposed = model.composePreview({
+  blocks: [{
+    definition_id: 'block_a',
+    name: 'Bloque A',
+    matched: true,
+    enabled: true,
+    items: [{ principal: 'Cargo A' }],
+  }],
+}, [conflictingRules[1]]);
+assert(truncatedComposed.diagnostics.some((entry) => entry.code === 'composition_truncated'));
+
 const uiSource = fs.readFileSync(path.resolve(__dirname, '../apps/renderer/parser_lab/ui.js'), 'utf8');
 const cssSource = fs.readFileSync(path.resolve(__dirname, '../apps/renderer/parser_lab/parser_lab.css'), 'utf8');
 assert(uiSource.includes('data-right-tab="inspector"'));
@@ -355,6 +511,15 @@ assert(uiSource.includes("tabs.setAttribute('aria-orientation', 'vertical')"));
 assert(uiSource.includes('function previewScrollPosition()'));
 assert(uiSource.includes('function restorePreviewScrollPosition(position)'));
 assert(uiSource.includes('renderParserPreview({ preserveScroll: true })'));
+assert(uiSource.includes('function commitBlockFormToState()'));
+assert(uiSource.includes('if (!commitBlockFormToState())'));
+assert(uiSource.includes('function flushPendingBlockEdit()'));
+assert(uiSource.includes("root.addEventListener('pagehide', flushBlockModelOnPageHide)"));
+assert(uiSource.includes('const selectionHiddenByFilter'));
+assert(uiSource.includes('function restoreNavigationFocus(request)'));
+assert(uiSource.includes('function rowDecision(rowNumber)'));
+assert(uiSource.includes('const insertionIndex = state.blockDefinitions.findIndex'));
+assert(uiSource.includes("renderPreviewSeparator(boundary, 'Hueco interno', true)"));
 assert(uiSource.includes('parserLabMoveBlockUpBtn'));
 assert(uiSource.includes('parser-lab-composition-tab'));
 assert(uiSource.includes("definition.enabled = include.checked"));
@@ -381,5 +546,9 @@ assert(cssSource.includes('.parser-lab-preview-tab.ignored .parser-lab-block-tab
 assert(cssSource.includes('.parser-lab-table-panel .parser-lab-table th'));
 assert(cssSource.includes('.parser-lab-column-resizer'));
 assert(cssSource.includes('.parser-lab-table.resizing-columns'));
+assert(cssSource.includes('.parser-lab-preview-warning'));
+assert(cssSource.includes('.parser-lab-preview-trace'));
+assert(cssSource.includes('--parser-lab-empty-row-count'));
+assert(cssSource.includes('grid-template-rows: minmax(700px, 82vh) minmax(720px, 86vh)'));
 
 console.log('ok parser lab manual block model');
