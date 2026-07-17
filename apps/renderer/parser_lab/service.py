@@ -6,7 +6,7 @@ from .inspection import inspect_source_rows
 
 
 BLOCK_MODEL_SCHEMA = "parser_lab_block_model"
-BLOCK_MODEL_VERSION = 4
+BLOCK_MODEL_VERSION = 5
 BLOCK_MODEL_FILENAME = "block-model.json"
 PERSISTENT_BLOCK_MODEL_DIRECTORY = Path.home() / ".creditos" / "parser-lab"
 
@@ -87,6 +87,8 @@ def validate_block_model(model):
             raise ValueError(f"El bloque {index + 1} necesita una interpretación completa.")
         if interpretation.get("orientation") not in {"vertical", "horizontal"}:
             raise ValueError(f"El bloque {index + 1} tiene una orientación inválida.")
+        if interpretation.get("content_start") not in {"after_header", "header"}:
+            raise ValueError(f"El bloque {index + 1} tiene un inicio de contenido inválido.")
         if interpretation.get("item_grouping") not in {"empty_rows", "row", "first_term"}:
             raise ValueError(f"El bloque {index + 1} tiene una agrupación inválida.")
         if "separator" in interpretation:

@@ -6,6 +6,7 @@
   const EMPTY_ROW_DISPLAYS = ['ignore', 'compact', 'preserve'];
   const ORIENTATIONS = ['vertical', 'horizontal'];
   const ITEM_GROUPINGS = ['empty_rows', 'row', 'first_term'];
+  const CONTENT_STARTS = ['after_header', 'header'];
   const TERM_ROLES = ['principal', 'secondary'];
   const COMPOSITION_SCOPES = ['item', 'block'];
   const COMPOSITION_TARGETS = ['group', 'page', 'cartela'];
@@ -14,6 +15,7 @@
     return {
       type: 'principal_with_associated_values',
       orientation: 'vertical',
+      content_start: 'after_header',
       item_grouping: 'empty_rows',
       item_start_column: 'B',
       traversal: 'row_major',
@@ -79,6 +81,9 @@
     }
     if (!ORIENTATIONS.includes(interpretation.orientation)) {
       errors.push('La orientación del bloque no es válida.');
+    }
+    if (!CONTENT_STARTS.includes(interpretation.content_start)) {
+      errors.push('El inicio del contenido del bloque no es válido.');
     }
     if (!ITEM_GROUPINGS.includes(interpretation.item_grouping)) {
       errors.push('La forma de crear los ítems no es válida.');
@@ -172,7 +177,7 @@
   function modelDocument(definitions, compositionRules, normalizedRowsView) {
     return {
       schema: 'parser_lab_block_model',
-      version: 4,
+      version: 5,
       blocks: definitions.map(normalizeDefinition),
       composition_rules: compositionRules.map(normalizeCompositionRule),
       normalized_rows_view: JSON.parse(JSON.stringify(normalizedRowsView)),
@@ -249,13 +254,16 @@
       start_row: instance && instance.start_row || null,
       end_row: instance && instance.end_row || null,
       orientation: normalized.interpretation.orientation,
+      content_start: normalized.interpretation.content_start,
       items: [],
       leading_empty_rows: null,
       trailing_empty_rows: null,
     };
     if (!instance || !instance.matched || !normalized.enabled) return result;
 
-    const bodyStart = instance.source_index + 1;
+    const bodyStart = normalized.interpretation.content_start === 'header'
+      ? instance.source_index
+      : instance.source_index + 1;
     const bodyEnd = instance.source_index + instance.row_count;
     const bodyRows = (rows || []).slice(bodyStart, bodyEnd);
     const populatedIndexes = bodyRows.reduce((indexes, row, index) => {

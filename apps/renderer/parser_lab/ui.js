@@ -209,6 +209,13 @@
                 </select>
               </label>
               <label>
+                <span>El contenido empieza</span>
+                <select id="parserLabBlockContentStartSelect" class="text-input">
+                  <option value="after_header">Después de la cabecera</option>
+                  <option value="header">En la propia fila de cabecera</option>
+                </select>
+              </label>
+              <label>
                 <span>Orientación</span>
                 <select id="parserLabBlockOrientationSelect" class="text-input">
                   <option value="vertical">Vertical · términos hacia abajo</option>
@@ -324,6 +331,7 @@
       blockValueInput: documentRef.getElementById('parserLabBlockValueInput'),
       blockBoldSelect: documentRef.getElementById('parserLabBlockBoldSelect'),
       blockMergedSelect: documentRef.getElementById('parserLabBlockMergedSelect'),
+      blockContentStartSelect: documentRef.getElementById('parserLabBlockContentStartSelect'),
       blockOrientationSelect: documentRef.getElementById('parserLabBlockOrientationSelect'),
       blockGroupingSelect: documentRef.getElementById('parserLabBlockGroupingSelect'),
       blockStartColumnField: documentRef.getElementById('parserLabBlockStartColumnField'),
@@ -1377,6 +1385,9 @@
         first_term: `ítems hasta otro primer término en ${normalized.interpretation.item_start_column}`,
       };
       parts.push(orientationLabels[normalized.interpretation.orientation]);
+      parts.push(normalized.interpretation.content_start === 'header'
+        ? 'contenido desde cabecera'
+        : 'contenido después de cabecera');
       parts.push(groupingLabels[normalized.interpretation.item_grouping]);
       parts.push(`roles: ${normalized.interpretation.term_roles.first} → ${normalized.interpretation.term_roles.following}`);
       parts.push(`inicio: ${effectLabels[policies.leading.effect]}/${displayLabels[policies.leading.display]}`);
@@ -1404,6 +1415,7 @@
       elements.blockValueInput.value = normalized.header.value || '';
       elements.blockBoldSelect.value = normalized.header.bold;
       elements.blockMergedSelect.value = normalized.header.merged_b_to_d;
+      elements.blockContentStartSelect.value = normalized.interpretation.content_start;
       elements.blockOrientationSelect.value = normalized.interpretation.orientation;
       elements.blockGroupingSelect.value = normalized.interpretation.item_grouping;
       elements.blockStartColumnSelect.value = normalized.interpretation.item_start_column;
@@ -1439,6 +1451,7 @@
         },
         interpretation: {
           type: 'principal_with_associated_values',
+          content_start: elements.blockContentStartSelect.value,
           orientation: elements.blockOrientationSelect.value,
           item_grouping: elements.blockGroupingSelect.value,
           item_start_column: elements.blockStartColumnSelect.value,
@@ -1723,6 +1736,7 @@
       elements.blockColumnSelect,
       elements.blockBoldSelect,
       elements.blockMergedSelect,
+      elements.blockContentStartSelect,
       elements.blockOrientationSelect,
       elements.blockStartColumnSelect,
       elements.blockFirstRoleSelect,

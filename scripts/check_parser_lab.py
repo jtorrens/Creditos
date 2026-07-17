@@ -82,7 +82,7 @@ def main():
 
     temporary_model = {
         "schema": "parser_lab_block_model",
-        "version": 4,
+        "version": 5,
         "blocks": [
             {
                 "id": "block_01_direction",
@@ -97,6 +97,7 @@ def main():
                 "enabled": True,
                 "interpretation": {
                     "type": "principal_with_associated_values",
+                    "content_start": "after_header",
                     "orientation": "vertical",
                     "item_grouping": "empty_rows",
                     "item_start_column": "B",
@@ -123,13 +124,21 @@ def main():
             "column_widths": {"block": 140, "A": 100, "B": 240, "C": 220, "D": 260}
         },
     }
-    obsolete_model = {**temporary_model, "version": 3}
+    obsolete_model = {**temporary_model, "version": 4}
     try:
         validate_block_model(obsolete_model)
     except ValueError:
         pass
     else:
         ok = fail("parser lab accepted the obsolete block-model contract") and ok
+    missing_content_start = json.loads(json.dumps(temporary_model))
+    del missing_content_start["blocks"][0]["interpretation"]["content_start"]
+    try:
+        validate_block_model(missing_content_start)
+    except ValueError:
+        pass
+    else:
+        ok = fail("parser lab accepted a block without an explicit content start") and ok
     previous_temp_directory = os.environ.get("CREDITOS_PARSER_LAB_TEMP_DIR")
     try:
         with tempfile.TemporaryDirectory() as temp_directory:

@@ -31,6 +31,7 @@ const crew = model.definitionFromRow(rows[8], 2);
 assert.deepStrictEqual(model.validateDefinition(direction), []);
 assert.strictEqual(direction.header.column, 'C');
 assert.strictEqual(direction.header.bold, 'required');
+assert.strictEqual(direction.interpretation.content_start, 'after_header');
 assert.strictEqual(crew.header.column, 'B');
 assert.strictEqual(crew.header.merged_b_to_d, 'required');
 assert.strictEqual(model.rowMatchesDefinition(rows[0], direction), true);
@@ -89,7 +90,7 @@ const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
 assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).schema, 'parser_lab_block_model');
-assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 4);
+assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 5);
 assert.deepStrictEqual(
   model.modelDocument([direction], [], normalizedRowsView).normalized_rows_view,
   normalizedRowsView
@@ -104,6 +105,37 @@ assert(model.validateDefinition(neutralDirection).length > 0);
 const separatorDirection = model.normalizeDefinition(direction);
 separatorDirection.interpretation.separator = { condition: 'empty_row', meaning: 'item' };
 assert(model.validateDefinition(separatorDirection).length > 0);
+const missingContentStart = model.normalizeDefinition(direction);
+delete missingContentStart.interpretation.content_start;
+assert(model.validateDefinition(missingContentStart).length > 0);
+
+const headerContentRows = [
+  row(1, { B: 'Una producción de Buendía Estudios Canarias' }, { merged: true }),
+  row(2, { B: 'con la participación de Atresmedia' }, { merged: true }),
+  { ...row(3, {}), empty: true },
+  row(4, { C: 'Bloque siguiente' }),
+];
+const headerContentDefinition = model.definitionFromRow(headerContentRows[0], 0);
+headerContentDefinition.interpretation.content_start = 'header';
+headerContentDefinition.interpretation.item_grouping = 'row';
+headerContentDefinition.interpretation.term_roles = { first: 'secondary', following: 'secondary' };
+const headerContentFollowing = model.definitionFromRow(headerContentRows[3], 1);
+const headerContentInstances = model.findBlockInstances(
+  headerContentRows,
+  [headerContentDefinition, headerContentFollowing]
+);
+const headerContentBlock = model.interpretModel(
+  headerContentRows,
+  headerContentInstances,
+  [headerContentDefinition, headerContentFollowing]
+).blocks[0];
+assert.strictEqual(headerContentBlock.content_start, 'header');
+assert.deepStrictEqual(headerContentBlock.items.map((item) => item.principal), [
+  'Una producción de Buendía Estudios Canarias',
+  'con la participación de Atresmedia',
+]);
+assert.deepStrictEqual(headerContentBlock.items.map((item) => item.role), ['secondary', 'secondary']);
+assert.deepStrictEqual(headerContentBlock.items[0].source_rows, [1]);
 
 const directionPage = model.normalizeDefinition(direction);
 directionPage.interpretation.empty_rows.between_items.effect = 'page';
@@ -305,6 +337,8 @@ assert(uiSource.includes('data-right-tab="inspector"'));
 assert(uiSource.includes('data-right-tab="jsons"'));
 assert(uiSource.includes('data-json-tab="composed"'));
 assert(uiSource.includes('parserLabBlockOrientationSelect'));
+assert(uiSource.includes('parserLabBlockContentStartSelect'));
+assert(uiSource.includes('En la propia fila de cabecera'));
 assert(uiSource.includes('parserLabNormalizedTable'));
 assert(uiSource.includes('data-normalized-column-resizer'));
 assert(uiSource.includes('function beginNormalizedColumnResize(column, event)'));
