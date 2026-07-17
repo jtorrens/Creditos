@@ -3,21 +3,85 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 
+const DEFAULT_REMOTE_STATUS_TIMEOUT_MS = 20_000;
+const GIT_TERMINATION_GRACE_MS = 1_000;
+
+function positiveTimeoutOrNull(value) {
+  const timeoutMs = Number(value);
+  return Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : null;
+}
+
+function terminateGitProcessTree(child, signal = 'SIGTERM') {
+  if (!child || !Number.isInteger(child.pid) || child.pid <= 0) return;
+
+  if (process.platform === 'win32') {
+    const args = ['/pid', String(child.pid), '/T'];
+    if (signal === 'SIGKILL') args.push('/F');
+    const terminator = spawn('taskkill', args, {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    terminator.once('error', () => {});
+    terminator.unref();
+    return;
+  }
+
+  try {
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error && error.code === 'ESRCH') return;
+    try {
+      child.kill(signal);
+    } catch (_error) {
+      // The process already exited between the timeout and cancellation.
+    }
+  }
+}
+
 function createDatabaseSync({
   getAppChannel = () => process.env.CREDITOS_APP_CHANNEL || 'main',
   getPersistentDatabasePath,
   getRepositoryRootForDatabase,
+  remoteStatusTimeoutMs = DEFAULT_REMOTE_STATUS_TIMEOUT_MS,
   reloadMainWindowServer,
+  spawnProcess = spawn,
   stopPythonServerAndWait,
+  terminateGitProcess = terminateGitProcessTree,
 }) {
   function runGit(args, options = {}) {
     return new Promise((resolve, reject) => {
-      const child = spawn('git', args, {
+      const timeoutMs = positiveTimeoutOrNull(options.timeoutMs);
+      const child = spawnProcess('git', args, {
         cwd: options.cwd,
+        detached: Boolean(timeoutMs) && process.platform !== 'win32',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
       let stdout = '';
       let stderr = '';
+      let settled = false;
+      let timeoutId = null;
+      let forceKillId = null;
+
+      function clearTimers() {
+        if (timeoutId) clearTimeout(timeoutId);
+        if (forceKillId) clearTimeout(forceKillId);
+      }
+
+      function rejectOnce(error, rejectOptions = {}) {
+        if (settled) return;
+        settled = true;
+        if (timeoutId) clearTimeout(timeoutId);
+        if (forceKillId && !rejectOptions.keepForceKill) clearTimeout(forceKillId);
+        reject(error);
+      }
+
+      function resolveOnce(result) {
+        if (settled) return;
+        settled = true;
+        clearTimers();
+        resolve(result);
+      }
+
       child.stdout.on('data', (chunk) => {
         stdout += chunk.toString();
       });
@@ -26,25 +90,52 @@ function createDatabaseSync({
       });
       child.on('error', (error) => {
         if (error.code === 'ENOENT') {
-          reject(new Error('No se encontro Git en este equipo.'));
+          rejectOnce(new Error('No se encontro Git en este equipo.'));
           return;
         }
-        reject(error);
+        rejectOnce(error);
       });
-      child.on('exit', (code) => {
+      child.on('close', (code, signal) => {
+        if (forceKillId) {
+          clearTimeout(forceKillId);
+          forceKillId = null;
+        }
+        if (settled) return;
         if (code === 0) {
-          resolve({ stdout: stdout.trim(), stderr: stderr.trim() });
+          resolveOnce({ stdout: stdout.trim(), stderr: stderr.trim() });
           return;
         }
-        const message = (stderr.trim() || stdout.trim() || `git termino con codigo ${code}`).slice(-4000);
-        reject(new Error(message));
+        const fallback = signal
+          ? `git fue cancelado por la señal ${signal}`
+          : `git termino con codigo ${code}`;
+        const message = (stderr.trim() || stdout.trim() || fallback).slice(-4000);
+        rejectOnce(new Error(message));
       });
+
+      if (timeoutMs) {
+        timeoutId = setTimeout(() => {
+          if (settled) return;
+          const seconds = Math.ceil(timeoutMs / 1000);
+          const duration = `${seconds} ${seconds === 1 ? 'segundo' : 'segundos'}`;
+          const error = new Error(options.timeoutMessage
+            || `La comprobación remota de GitHub superó ${duration} y se canceló.`);
+          error.code = 'GIT_REMOTE_TIMEOUT';
+          error.timeoutMs = timeoutMs;
+          terminateGitProcess(child, 'SIGTERM');
+          forceKillId = setTimeout(() => {
+            terminateGitProcess(child, 'SIGKILL');
+          }, GIT_TERMINATION_GRACE_MS);
+          if (forceKillId.unref) forceKillId.unref();
+          rejectOnce(error, { keepForceKill: true });
+        }, timeoutMs);
+        if (timeoutId.unref) timeoutId.unref();
+      }
     });
   }
 
   function runGitBuffer(args, options = {}) {
     return new Promise((resolve, reject) => {
-      const child = spawn('git', args, {
+      const child = spawnProcess('git', args, {
         cwd: options.cwd,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -67,7 +158,7 @@ function createDatabaseSync({
 
   function runPython(args, options = {}) {
     return new Promise((resolve, reject) => {
-      const child = spawn(getPythonCommand(), args, {
+      const child = spawnProcess(getPythonCommand(), args, {
         cwd: options.cwd,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -341,7 +432,20 @@ function createDatabaseSync({
 
     const relativeDbPath = path.relative(repoPath, dbPath).split(path.sep).join('/');
     try {
-      if (options.fetch) await runGit(['fetch', '--quiet'], { cwd: repoPath });
+      if (options.fetch) {
+        const fetchTimeoutMs = options.fetchTimeoutMs === undefined
+          ? remoteStatusTimeoutMs
+          : options.fetchTimeoutMs;
+        const timeoutSeconds = Math.ceil((positiveTimeoutOrNull(fetchTimeoutMs) || 0) / 1000);
+        const timeoutDuration = `${timeoutSeconds} ${timeoutSeconds === 1 ? 'segundo' : 'segundos'}`;
+        await runGit(['fetch', '--quiet'], {
+          cwd: repoPath,
+          timeoutMs: fetchTimeoutMs,
+          timeoutMessage: timeoutSeconds > 0
+            ? `GitHub no respondió en ${timeoutDuration}. Se canceló la comprobación remota; puedes continuar usando la base de datos local y volver a intentarlo desde Producciones.`
+            : undefined,
+        });
+      }
 
       const target = await databaseSyncTarget(repoPath);
       assertCanonicalDatabase(dbPath);
@@ -462,6 +566,7 @@ function createDatabaseSync({
         relativeDbPath,
         message: error.message,
         error: error.message,
+        errorCode: error.code || null,
         statusKind: 'error',
       };
     }
@@ -472,7 +577,7 @@ function createDatabaseSync({
   }
 
   async function forceDatabaseFromGitHub() {
-    const status = await databaseGitStatus({ fetch: true });
+    const status = await databaseGitStatus({ fetch: true, fetchTimeoutMs: null });
     assertUsableStatus(status);
     assertSafePushTarget(status);
     await stopPythonServerAndWait();
@@ -480,7 +585,7 @@ function createDatabaseSync({
     try {
       await runGit(['checkout', status.upstream, '--', status.relativeDbPath], { cwd: status.repoPath });
       await verifyDatabaseQuickCheck(status.dbPath);
-      const nextStatus = await databaseGitStatus({ fetch: true });
+      const nextStatus = await databaseGitStatus({ fetch: true, fetchTimeoutMs: null });
       return {
         ...nextStatus,
         backupPath,
@@ -495,7 +600,7 @@ function createDatabaseSync({
   }
 
   async function forceDatabaseToGitHub() {
-    const status = await databaseGitStatus({ fetch: true });
+    const status = await databaseGitStatus({ fetch: true, fetchTimeoutMs: null });
     assertUsableStatus(status);
     assertSafePushTarget(status);
     if (status.localAheadDbCommits) {
@@ -520,7 +625,7 @@ function createDatabaseSync({
         await runGit(['commit', '-m', 'Update credits database'], { cwd: worktreePath });
         await runGit(['push', status.syncTargetRemote, `HEAD:${status.syncTargetBranch}`], { cwd: worktreePath });
       }
-      return databaseGitStatus({ fetch: true });
+      return databaseGitStatus({ fetch: true, fetchTimeoutMs: null });
     } finally {
       try {
         await runGit(['worktree', 'remove', '--force', worktreePath], { cwd: status.repoPath });

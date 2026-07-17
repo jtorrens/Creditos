@@ -1,10 +1,11 @@
 {
   "name": "creditos-desktop",
-  "version": "0.1.70",
+  "version": "0.1.71",
   "private": true,
   "description": "Electron desktop app for Creditos.",
   "main": "main.js",
   "scripts": {
+    "test": "node --test ../../test/desktop/*.test.js",
     "start": "node run-electron.js",
     "dev": "node run-electron.js",
     "repair-electron": "node repair-electron.js",

@@ -169,6 +169,9 @@
         close,
         closed,
         finish,
+        setTitle(title) {
+          titleEl.textContent = title;
+        },
         setPhase(phaseMessage) {
           messageEl.textContent = phaseMessage;
         },
@@ -177,13 +180,18 @@
 
     async function initializeDatabaseWithSyncCheck() {
       setDatabaseSyncActionsDisabled(true);
+      let localDatabaseReady = false;
       const modal = openDatabaseSyncModal(
-        'Comprobando base de datos',
-        'Abriendo la base de datos local de Créditos...'
+        'Abriendo base de datos local',
+        'Validando y abriendo data/creditos.db...'
       );
       try {
+        await waitForStartupPhasePaint();
         await initializeDatabase({ silent: true, throwOnError: true });
-        modal.setPhase('Comparando los datos, el esquema y el código con origin/main...');
+        localDatabaseReady = true;
+        modal.setTitle('Consultando GitHub');
+        modal.setPhase('La base de datos local ya está abierta. Comprobando cambios en origin/main...');
+        await waitForStartupPhasePaint();
         const status = await refreshDatabaseSyncStatus({ throwOnError: true });
         const statusKind = databaseStatusKind(status);
         if (statusKind === 'remote') {
@@ -196,6 +204,7 @@
           await modal.closed;
           return status;
         }
+        modal.setTitle('Base de datos lista');
         modal.setPhase(statusKind === 'local'
           ? 'Base de datos lista. Hay cambios locales pendientes de subir.'
           : 'Base de datos local y GitHub están sincronizadas.');
@@ -205,8 +214,10 @@
       } catch (error) {
         setDatabaseSyncActionsDisabled(true);
         modal.finish(
-          'No se pudo comprobar la base de datos',
-          `${error.message}\n\nPuedes continuar para revisar el detalle en Producciones, pero no uses las acciones de sincronización hasta resolverlo.`,
+          localDatabaseReady ? 'No se pudo consultar GitHub' : 'No se pudo abrir la base de datos local',
+          localDatabaseReady
+            ? `${error.message}\n\nLa base de datos local está abierta y no se ha modificado. Puedes continuar y volver a comprobar GitHub desde Producciones.`
+            : `${error.message}\n\nNo se pudo completar la apertura de la base de datos local. Revisa el detalle antes de editar.`,
           'error',
           { acceptLabel: 'Continuar' }
         );
@@ -219,11 +230,16 @@
       return new Promise((resolve) => windowRef.setTimeout(resolve, 450));
     }
 
+    function waitForStartupPhasePaint() {
+      return new Promise((resolve) => windowRef.setTimeout(resolve, 0));
+    }
+
     async function applyDatabaseSyncAction(action, actionOptions = {}) {
       const native = nativeBridge();
       if (!native) throw new Error('La sincronizacion solo esta disponible desde la app de escritorio.');
       const setPhase = actionOptions.setPhase || (() => {});
-      if (native.getDatabaseSyncStatus) {
+      const isExplicitTransfer = action === 'download' || action === 'upload';
+      if (native.getDatabaseSyncStatus && !isExplicitTransfer) {
         setPhase('Revisando estado Git de la base de datos...');
         state.databaseSyncStatus = await native.getDatabaseSyncStatus();
         updateDatabaseStatus();
