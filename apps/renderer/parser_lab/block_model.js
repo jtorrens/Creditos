@@ -2,38 +2,36 @@
   const COLUMNS = ['A', 'B', 'C', 'D'];
   const OPERATORS = ['equals', 'contains', 'regex', 'nonempty'];
   const REQUIREMENTS = ['ignore', 'required', 'forbidden'];
-  const SEPARATOR_MEANINGS = ['item', 'group', 'page'];
+  const EMPTY_ROW_EFFECTS = ['continue', 'item', 'group', 'page'];
+  const EMPTY_ROW_DISPLAYS = ['ignore', 'compact', 'preserve'];
+  const ORIENTATIONS = ['vertical', 'horizontal'];
+  const ITEM_GROUPINGS = ['empty_rows', 'row', 'first_term'];
+  const TERM_ROLES = ['principal', 'secondary'];
   const COMPOSITION_SCOPES = ['item', 'block'];
   const COMPOSITION_TARGETS = ['group', 'page', 'cartela'];
 
   function defaultInterpretation() {
     return {
       type: 'principal_with_associated_values',
+      orientation: 'vertical',
+      item_grouping: 'empty_rows',
+      item_start_column: 'B',
       traversal: 'row_major',
       split_cell_lines: true,
-      separator: {
-        condition: 'empty_row',
-        meaning: 'item',
-        collapse_consecutive: true,
+      term_roles: {
+        first: 'principal',
+        following: 'secondary',
+      },
+      empty_rows: {
+        leading: { effect: 'continue', display: 'ignore' },
+        between_items: { effect: 'item', display: 'ignore' },
+        trailing: { effect: 'continue', display: 'ignore' },
       },
     };
   }
 
   function normalizeDefinition(definition) {
-    const source = definition || {};
-    const defaults = defaultInterpretation();
-    const interpretation = source.interpretation || {};
-    return {
-      ...JSON.parse(JSON.stringify(source)),
-      interpretation: {
-        ...defaults,
-        ...interpretation,
-        separator: {
-          ...defaults.separator,
-          ...(interpretation.separator || {}),
-        },
-      },
-    };
+    return JSON.parse(JSON.stringify(definition));
   }
 
   function definitionFromRow(row, index = 0) {
@@ -42,6 +40,7 @@
     return {
       id: uniqueDefinitionId(value || `block_${index + 1}`, index),
       name: value || `Bloque ${index + 1}`,
+      enabled: true,
       header: {
         column,
         operator: value ? 'equals' : 'nonempty',
@@ -57,6 +56,9 @@
     const errors = [];
     const header = definition && definition.header || {};
     if (!String(definition && definition.name || '').trim()) errors.push('El bloque necesita un nombre.');
+    if (typeof (definition && definition.enabled) !== 'boolean') {
+      errors.push('El estado de inclusión del bloque no es válido.');
+    }
     if (!COLUMNS.includes(header.column)) errors.push('Selecciona una columna válida.');
     if (!OPERATORS.includes(header.operator)) errors.push('Selecciona una condición válida.');
     if (!REQUIREMENTS.includes(header.bold)) errors.push('La condición de negrita no es válida.');
@@ -71,19 +73,40 @@
         errors.push('La expresión regular no es válida.');
       }
     }
-    const interpretation = normalizeDefinition(definition).interpretation;
+    const interpretation = definition && definition.interpretation || {};
     if (interpretation.type !== 'principal_with_associated_values') {
       errors.push('El tipo de interpretación no es válido.');
+    }
+    if (!ORIENTATIONS.includes(interpretation.orientation)) {
+      errors.push('La orientación del bloque no es válida.');
+    }
+    if (!ITEM_GROUPINGS.includes(interpretation.item_grouping)) {
+      errors.push('La forma de crear los ítems no es válida.');
+    }
+    if (!COLUMNS.includes(interpretation.item_start_column)) {
+      errors.push('La columna que inicia cada ítem no es válida.');
+    }
+    const termRoles = interpretation.term_roles || {};
+    if (!TERM_ROLES.includes(termRoles.first) || !TERM_ROLES.includes(termRoles.following)) {
+      errors.push('La clasificación de los términos no es válida.');
     }
     if (interpretation.traversal !== 'row_major') {
       errors.push('El orden de lectura no es válido.');
     }
-    if (interpretation.separator.condition !== 'empty_row') {
-      errors.push('La condición del separador no es válida.');
+    if (interpretation.split_cell_lines !== true) {
+      errors.push('La lectura de líneas de celda no es válida.');
     }
-    if (!SEPARATOR_MEANINGS.includes(interpretation.separator.meaning)) {
-      errors.push('El significado del separador no es válido.');
+    if (Object.prototype.hasOwnProperty.call(interpretation, 'separator')) {
+      errors.push('El contrato antiguo de separador ya no es válido.');
     }
+    const emptyRows = interpretation.empty_rows || {};
+    if (!emptyRows.leading || !emptyRows.between_items || !emptyRows.trailing) {
+      errors.push('Falta la definición completa de filas vacías.');
+    }
+    Object.values(emptyRows).forEach((policy) => {
+      if (!EMPTY_ROW_EFFECTS.includes(policy.effect)) errors.push('El efecto de las filas vacías no es válido.');
+      if (!EMPTY_ROW_DISPLAYS.includes(policy.display)) errors.push('El tratamiento visual de las filas vacías no es válido.');
+    });
     return errors;
   }
 
@@ -146,57 +169,58 @@
     return instances;
   }
 
-  function modelDocument(definitions, compositionRules = []) {
+  function modelDocument(definitions, compositionRules, normalizedRowsView) {
     return {
       schema: 'parser_lab_block_model',
-      version: 1,
-      blocks: (definitions || []).map(normalizeDefinition),
-      composition_rules: (compositionRules || []).map(normalizeCompositionRule),
+      version: 4,
+      blocks: definitions.map(normalizeDefinition),
+      composition_rules: compositionRules.map(normalizeCompositionRule),
+      normalized_rows_view: JSON.parse(JSON.stringify(normalizedRowsView)),
     };
+  }
+
+  function copyDefinitionSettings(targetDefinition, sourceDefinition) {
+    const target = normalizeDefinition(targetDefinition);
+    const source = normalizeDefinition(sourceDefinition);
+    return normalizeDefinition({
+      ...target,
+      header: {
+        ...target.header,
+        bold: source.header.bold,
+        merged_b_to_d: source.header.merged_b_to_d,
+      },
+      interpretation: JSON.parse(JSON.stringify(source.interpretation)),
+    });
   }
 
   function normalizeCompositionRule(rule, index = 0) {
-    const source = rule || {};
-    const scope = source.scope || 'item';
-    const defaultField = scope === 'block' ? 'name' : 'principal';
-    return {
-      id: String(source.id || `composition_${String(index + 1).padStart(2, '0')}`),
-      scope,
-      match: {
-        field: source.match && source.match.field || defaultField,
-        operator: source.match && source.match.operator || 'equals',
-        value: String(source.match && source.match.value || ''),
-      },
-      action: {
-        type: source.action && source.action.type || 'group_next',
-        count: Number(source.action && source.action.count !== undefined ? source.action.count : 1),
-        target: source.action && source.action.target || 'cartela',
-      },
-    };
+    return JSON.parse(JSON.stringify(rule));
   }
 
   function validateCompositionRule(rule) {
-    const normalized = normalizeCompositionRule(rule);
+    const normalized = rule || {};
     const errors = [];
     if (!COMPOSITION_SCOPES.includes(normalized.scope)) errors.push('El ámbito de composición no es válido.');
+    const match = normalized.match || {};
+    const action = normalized.action || {};
     const expectedField = normalized.scope === 'block' ? 'name' : 'principal';
-    if (normalized.match.field !== expectedField) errors.push(`El campo debe ser ${expectedField}.`);
-    if (!OPERATORS.includes(normalized.match.operator) || normalized.match.operator === 'nonempty') {
+    if (match.field !== expectedField) errors.push(`El campo debe ser ${expectedField}.`);
+    if (!OPERATORS.includes(match.operator) || match.operator === 'nonempty') {
       errors.push('El operador de composición no es válido.');
     }
-    if (!normalized.match.value.trim()) errors.push('La regla de composición necesita un valor.');
-    if (normalized.match.operator === 'regex') {
+    if (!String(match.value || '').trim()) errors.push('La regla de composición necesita un valor.');
+    if (match.operator === 'regex') {
       try {
-        new RegExp(normalized.match.value, 'iu');
+        new RegExp(match.value, 'iu');
       } catch (_error) {
         errors.push('La expresión regular de composición no es válida.');
       }
     }
-    if (normalized.action.type !== 'group_next') errors.push('La acción de composición no es válida.');
-    if (!Number.isInteger(normalized.action.count) || normalized.action.count < 1) {
+    if (action.type !== 'group_next') errors.push('La acción de composición no es válida.');
+    if (!Number.isInteger(action.count) || action.count < 1) {
       errors.push('Indica cuántos elementos siguientes deben agruparse.');
     }
-    if (!COMPOSITION_TARGETS.includes(normalized.action.target)) {
+    if (!COMPOSITION_TARGETS.includes(action.target)) {
       errors.push('El destino de composición no es válido.');
     }
     return errors;
@@ -221,50 +245,201 @@
       definition_id: instance && instance.definition_id || normalized.id,
       name: instance && instance.name || normalized.name,
       matched: Boolean(instance && instance.matched),
+      enabled: normalized.enabled,
       start_row: instance && instance.start_row || null,
       end_row: instance && instance.end_row || null,
+      orientation: normalized.interpretation.orientation,
       items: [],
+      leading_empty_rows: null,
+      trailing_empty_rows: null,
     };
-    if (!instance || !instance.matched) return result;
+    if (!instance || !instance.matched || !normalized.enabled) return result;
 
     const bodyStart = instance.source_index + 1;
     const bodyEnd = instance.source_index + instance.row_count;
     const bodyRows = (rows || []).slice(bodyStart, bodyEnd);
+    const populatedIndexes = bodyRows.reduce((indexes, row, index) => {
+      if (!isEmptyRow(row)) indexes.push(index);
+      return indexes;
+    }, []);
+    if (!populatedIndexes.length) {
+      result.leading_empty_rows = emptyRowBoundary(
+        normalized.interpretation.empty_rows.leading,
+        bodyRows.length
+      );
+      return result;
+    }
+    const firstPopulatedIndex = populatedIndexes[0];
+    const lastPopulatedIndex = populatedIndexes[populatedIndexes.length - 1];
+    result.leading_empty_rows = emptyRowBoundary(
+      normalized.interpretation.empty_rows.leading,
+      firstPopulatedIndex
+    );
+    result.trailing_empty_rows = emptyRowBoundary(
+      normalized.interpretation.empty_rows.trailing,
+      bodyRows.length - lastPopulatedIndex - 1
+    );
+    if (normalized.interpretation.item_grouping === 'row') {
+      interpretHorizontalRows(
+        bodyRows,
+        firstPopulatedIndex,
+        lastPopulatedIndex,
+        normalized.interpretation,
+        result
+      );
+      return result;
+    }
+    if (normalized.interpretation.item_grouping === 'first_term') {
+      interpretHorizontalGroupedRows(
+        bodyRows,
+        firstPopulatedIndex,
+        lastPopulatedIndex,
+        normalized.interpretation,
+        result
+      );
+      return result;
+    }
     let values = [];
     let sourceRows = [];
+    let internalEmptyRows = [];
 
-    const flush = (endedBySeparator) => {
+    const flush = (emptyBoundary = null) => {
       if (!values.length) return;
-      result.items.push({
-        principal: values[0].value,
-        associated: values.slice(1).map((entry) => entry.value),
-        separator_after: endedBySeparator ? normalized.interpretation.separator.meaning : null,
-        source_rows: sourceRows.slice(),
-        source_values: values.slice(),
-      });
+      const item = buildItem(values, sourceRows, normalized.interpretation, emptyBoundary);
+      if (emptyBoundary) item.empty_rows_after = emptyBoundary;
+      if (internalEmptyRows.length) item.internal_empty_rows = internalEmptyRows.slice();
+      result.items.push(item);
       values = [];
       sourceRows = [];
+      internalEmptyRows = [];
     };
 
-    bodyRows.forEach((row) => {
+    for (let index = firstPopulatedIndex; index <= lastPopulatedIndex; index += 1) {
+      const row = bodyRows[index];
       if (isEmptyRow(row)) {
-        flush(true);
-        return;
+        let emptyCount = 1;
+        while (index + 1 <= lastPopulatedIndex && isEmptyRow(bodyRows[index + 1])) {
+          emptyCount += 1;
+          index += 1;
+        }
+        const boundary = emptyRowBoundary(normalized.interpretation.empty_rows.between_items, emptyCount);
+        if (boundary.effect === 'continue') internalEmptyRows.push(boundary);
+        else flush(boundary);
+        continue;
       }
       const rowValues = flattenRowValues(row, normalized.interpretation.split_cell_lines);
-      if (!rowValues.length) return;
+      if (!rowValues.length) continue;
       sourceRows.push(row.row);
       values.push(...rowValues);
-    });
-    flush(false);
+    }
+    flush();
     return result;
+  }
+
+  function interpretHorizontalRows(bodyRows, firstIndex, lastIndex, interpretation, result) {
+    for (let index = firstIndex; index <= lastIndex; index += 1) {
+      const row = bodyRows[index];
+      if (isEmptyRow(row)) {
+        let emptyCount = 1;
+        while (index + 1 <= lastIndex && isEmptyRow(bodyRows[index + 1])) {
+          emptyCount += 1;
+          index += 1;
+        }
+        const previousItem = result.items[result.items.length - 1];
+        if (previousItem) applyEmptyBoundary(previousItem, emptyRowBoundary(
+          interpretation.empty_rows.between_items,
+          emptyCount
+        ));
+        continue;
+      }
+      const values = flattenRowValues(row, interpretation.split_cell_lines);
+      if (!values.length) continue;
+      result.items.push(buildItem(values, [row.row], interpretation));
+    }
+  }
+
+  function interpretHorizontalGroupedRows(bodyRows, firstIndex, lastIndex, interpretation, result) {
+    let values = [];
+    let sourceRows = [];
+    let internalEmptyRows = [];
+    const flush = (emptyBoundary = null) => {
+      if (!values.length) return;
+      const item = buildItem(values, sourceRows, interpretation, emptyBoundary);
+      if (internalEmptyRows.length) item.internal_empty_rows = internalEmptyRows.slice();
+      result.items.push(item);
+      values = [];
+      sourceRows = [];
+      internalEmptyRows = [];
+    };
+
+    for (let index = firstIndex; index <= lastIndex; index += 1) {
+      const row = bodyRows[index];
+      if (isEmptyRow(row)) {
+        let emptyCount = 1;
+        while (index + 1 <= lastIndex && isEmptyRow(bodyRows[index + 1])) {
+          emptyCount += 1;
+          index += 1;
+        }
+        const boundary = emptyRowBoundary(interpretation.empty_rows.between_items, emptyCount);
+        if (boundary.effect === 'continue') internalEmptyRows.push(boundary);
+        else flush(boundary);
+        continue;
+      }
+      const rowValues = flattenRowValues(row, interpretation.split_cell_lines);
+      if (!rowValues.length) continue;
+      const startsItem = Boolean(String(
+        row.values && row.values[interpretation.item_start_column] || ''
+      ).trim());
+      if (startsItem && values.length) flush();
+      sourceRows.push(row.row);
+      values.push(...rowValues);
+    }
+    flush();
+  }
+
+  function buildItem(values, sourceRows, interpretation, emptyBoundary = null) {
+    const terms = values.map((entry, index) => ({
+      ...entry,
+      role: index === 0 ? interpretation.term_roles.first : interpretation.term_roles.following,
+    }));
+    const principalTerms = terms.filter((term) => term.role === 'principal');
+    const principal = principalTerms.length ? principalTerms[0].value : terms[0].value;
+    const item = {
+      principal,
+      role: terms[0].role,
+      associated: terms.filter((term) => term.value !== principal || term !== principalTerms[0]).map((term) => term.value),
+      terms,
+      orientation: interpretation.orientation,
+      separator_after: null,
+      source_rows: sourceRows.slice(),
+      source_values: values.slice(),
+    };
+    if (emptyBoundary) applyEmptyBoundary(item, emptyBoundary);
+    return item;
+  }
+
+  function applyEmptyBoundary(item, boundary) {
+    item.separator_after = boundary && boundary.effect !== 'continue' ? boundary.effect : null;
+    if (boundary) item.empty_rows_after = boundary;
+  }
+
+  function emptyRowBoundary(policy, sourceCount) {
+    if (!sourceCount) return null;
+    return {
+      effect: policy.effect,
+      display: policy.display,
+      source_count: sourceCount,
+      output_count: policy.display === 'preserve' ? sourceCount : policy.display === 'compact' ? 1 : 0,
+    };
   }
 
   function composePreview(semanticPreview, compositionRules) {
     const rules = (compositionRules || []).map(normalizeCompositionRule);
     const itemRules = rules.filter((rule) => rule.scope === 'item' && !validateCompositionRule(rule).length);
     const blockRules = rules.filter((rule) => rule.scope === 'block' && !validateCompositionRule(rule).length);
-    const blocks = ((semanticPreview && semanticPreview.blocks) || []).filter((block) => block.matched).map((block) => ({
+    const blocks = ((semanticPreview && semanticPreview.blocks) || []).filter((block) => (
+      block.matched && block.enabled
+    )).map((block) => ({
       ...block,
       item_groups: composeSequence(block.items || [], itemRules, (item) => item.principal),
     }));
@@ -357,6 +532,7 @@
   }
 
   root.CreditosParserLabBlockModel = {
+    copyDefinitionSettings,
     definitionFromRow,
     composePreview,
     findBlockInstances,

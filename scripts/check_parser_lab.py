@@ -29,6 +29,8 @@ def main():
         load_temporary_block_model,
         save_temporary_block_model,
         source_kind_from_name,
+        temporary_block_model_path,
+        validate_block_model,
     )
 
     ok = True
@@ -80,7 +82,7 @@ def main():
 
     temporary_model = {
         "schema": "parser_lab_block_model",
-        "version": 1,
+        "version": 4,
         "blocks": [
             {
                 "id": "block_01_direction",
@@ -92,6 +94,21 @@ def main():
                     "bold": "ignore",
                     "merged_b_to_d": "ignore",
                 },
+                "enabled": True,
+                "interpretation": {
+                    "type": "principal_with_associated_values",
+                    "orientation": "vertical",
+                    "item_grouping": "empty_rows",
+                    "item_start_column": "B",
+                    "traversal": "row_major",
+                    "split_cell_lines": True,
+                    "term_roles": {"first": "principal", "following": "secondary"},
+                    "empty_rows": {
+                        "leading": {"effect": "continue", "display": "ignore"},
+                        "between_items": {"effect": "item", "display": "ignore"},
+                        "trailing": {"effect": "continue", "display": "ignore"},
+                    },
+                },
             }
         ],
         "composition_rules": [
@@ -102,7 +119,17 @@ def main():
                 "action": {"type": "group_next", "count": 1, "target": "cartela"},
             }
         ],
+        "normalized_rows_view": {
+            "column_widths": {"block": 140, "A": 100, "B": 240, "C": 220, "D": 260}
+        },
     }
+    obsolete_model = {**temporary_model, "version": 3}
+    try:
+        validate_block_model(obsolete_model)
+    except ValueError:
+        pass
+    else:
+        ok = fail("parser lab accepted the obsolete block-model contract") and ok
     previous_temp_directory = os.environ.get("CREDITOS_PARSER_LAB_TEMP_DIR")
     try:
         with tempfile.TemporaryDirectory() as temp_directory:
