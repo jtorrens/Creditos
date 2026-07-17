@@ -9,6 +9,8 @@
     if (!rootElement) return null;
     const blockModel = root.CreditosParserLabBlockModel;
     if (!blockModel) throw new Error('No se ha cargado el modelo aislado de bloques del Parser Lab.');
+    const uiSupport = root.CreditosParserLabUiSupport;
+    if (!uiSupport) throw new Error('No se ha cargado el soporte aislado de interfaz del Parser Lab.');
 
     rootElement.innerHTML = `
       <div class="parser-lab-shell">
@@ -579,43 +581,17 @@
 
     function rebuildRowIndexes() {
       const rows = state.inspection ? state.inspection.rows || [] : [];
-      rowByNumber = new Map(rows.map((row) => [row.row, row]));
-      blockInstanceByRow = new Map();
-      headerCandidatesByRow = new Map();
-      rowDecisionByNumber = new Map(
-        ((state.semanticPreview && state.semanticPreview.row_decisions) || []).map((entry) => [entry.row, entry])
+      const indexes = uiSupport.buildRowIndexes(
+        rows,
+        state.blockInstances,
+        (state.semanticPreview && state.semanticPreview.row_decisions) || [],
+        COLUMNS
       );
-      const matchedInstances = state.blockInstances.filter((instance) => instance.matched);
-      let instanceIndex = 0;
-      rows.forEach((row) => {
-        while (
-          matchedInstances[instanceIndex]
-          && row.row > matchedInstances[instanceIndex].end_row
-        ) instanceIndex += 1;
-        const instance = matchedInstances[instanceIndex];
-        if (instance && row.row >= instance.start_row && row.row <= instance.end_row) {
-          blockInstanceByRow.set(row.row, instance);
-        }
-      });
-      state.blockInstances.forEach((instance) => {
-        (instance.candidate_rows || []).forEach((rowNumber) => {
-          const candidates = headerCandidatesByRow.get(rowNumber) || [];
-          candidates.push(instance);
-          headerCandidatesByRow.set(rowNumber, candidates);
-        });
-      });
-      searchTextByRow = new Map(rows.map((row) => {
-        const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
-        const block = blockInstanceByRow.get(row.row);
-        return [row.row, [
-          row.row,
-          ...COLUMNS.map((column) => row.values && row.values[column]),
-          block && block.name,
-          row.empty ? 'fila vacía división separador' : '',
-          boldColumns.length ? `negrita ${boldColumns.join(' ')}` : '',
-          row.merged_b_to_d ? 'combinada b:d' : '',
-        ].join(' ').toLocaleLowerCase('es')];
-      }));
+      rowByNumber = indexes.rowByNumber;
+      blockInstanceByRow = indexes.blockInstanceByRow;
+      headerCandidatesByRow = indexes.headerCandidatesByRow;
+      searchTextByRow = indexes.searchTextByRow;
+      rowDecisionByNumber = indexes.rowDecisionByNumber;
     }
 
     function render() {
@@ -1044,7 +1020,7 @@
       compositionTab.append(compositionCopy);
       compositionTab.addEventListener('click', showCompositionEditor);
       elements.blockList.appendChild(compositionTab);
-      ensureRovingTabStop(elements.blockList);
+      uiSupport.ensureRovingTabStop(elements.blockList);
       renderCopyTargetOptions();
       updateBlockReorderControls();
     }
@@ -1394,7 +1370,7 @@
         });
         tabs.appendChild(button);
       });
-      ensureRovingTabStop(tabs);
+      uiSupport.ensureRovingTabStop(tabs);
       elements.previewContent.appendChild(tabs);
 
       const activeEntry = tabEntries.find((entry) => entry.block.definition_id === state.activePreviewBlockId);
@@ -2057,128 +2033,6 @@
       }
     }
 
-    function ensureRovingTabStop(container) {
-      const tabs = Array.from(container.querySelectorAll('[role="tab"]'));
-      if (!tabs.length || tabs.some((tab) => tab.tabIndex === 0)) return;
-      tabs[0].tabIndex = 0;
-    }
-
-    function navigateTablist(container, event) {
-      const tab = event.target.closest && event.target.closest('[role="tab"]');
-      if (!tab || event.target !== tab || !container.contains(tab)) return;
-      const tabs = Array.from(container.querySelectorAll('[role="tab"]')).filter((candidate) => !candidate.disabled);
-      const currentIndex = tabs.indexOf(tab);
-      let nextIndex;
-      if (event.key === 'Home') nextIndex = 0;
-      else if (event.key === 'End') nextIndex = tabs.length - 1;
-      else if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
-      else if (event.key === 'ArrowDown' || event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
-      else return;
-      event.preventDefault();
-      const identity = {
-        blockId: tabs[nextIndex].dataset.blockId,
-        rightTab: tabs[nextIndex].dataset.rightTab,
-        jsonTab: tabs[nextIndex].dataset.jsonTab,
-      };
-      tabs[nextIndex].click();
-      root.requestAnimationFrame(() => {
-        const candidates = Array.from(container.querySelectorAll('[role="tab"]'));
-        const selected = candidates.find((candidate) => (
-          (identity.blockId && candidate.dataset.blockId === identity.blockId)
-          || (identity.rightTab && candidate.dataset.rightTab === identity.rightTab)
-          || (identity.jsonTab && candidate.dataset.jsonTab === identity.jsonTab)
-        )) || candidates.find((candidate) => candidate.getAttribute('aria-selected') === 'true');
-        if (selected) selected.focus({ preventScroll: true });
-      });
-    }
-
-    function setupSplitters() {
-      documentRef.querySelectorAll('.parser-lab-splitter').forEach((splitter) => {
-        splitter.addEventListener('pointerdown', (event) => beginResize(splitter, event));
-        splitter.addEventListener('keydown', (event) => resizeSplitterWithKeyboard(splitter, event));
-        const bounds = splitter.dataset.split === 'workspace' ? [38, 78] : [22, 78];
-        splitter.setAttribute('aria-valuemin', String(bounds[0]));
-        splitter.setAttribute('aria-valuemax', String(bounds[1]));
-        root.requestAnimationFrame(() => updateSplitterAria(splitter));
-      });
-    }
-
-    function splitTarget(split) {
-      return split === 'workspace' ? elements.workspace : split === 'left' ? elements.leftPane : elements.inspectorPane;
-    }
-
-    function splitVariable(split) {
-      return split === 'workspace'
-        ? '--parser-lab-left-size'
-        : split === 'left'
-          ? '--parser-lab-table-size'
-          : '--parser-lab-selection-size';
-    }
-
-    function currentSplitPercentage(split) {
-      const target = splitTarget(split);
-      const inlineValue = Number.parseFloat(target.style.getPropertyValue(splitVariable(split)));
-      if (Number.isFinite(inlineValue)) return inlineValue;
-      const targetRect = target.getBoundingClientRect();
-      const firstPanel = split === 'workspace'
-        ? elements.leftPane
-        : split === 'left'
-          ? target.querySelector('.parser-lab-table-panel')
-          : target.querySelector('.parser-lab-selection-panel');
-      const panelRect = firstPanel.getBoundingClientRect();
-      const total = split === 'workspace' ? targetRect.width : targetRect.height;
-      const size = split === 'workspace' ? panelRect.width : panelRect.height;
-      return total > 0 ? (size / total) * 100 : (split === 'workspace' ? 68 : split === 'left' ? 62 : 30);
-    }
-
-    function applySplitPercentage(split, percentage, splitter) {
-      const target = splitTarget(split);
-      const minimum = split === 'workspace' ? 38 : 22;
-      const maximum = 78;
-      const value = clamp(percentage, minimum, maximum);
-      target.style.setProperty(splitVariable(split), `${value}%`);
-      updateSplitterAria(splitter, value);
-    }
-
-    function updateSplitterAria(splitter, percentage = currentSplitPercentage(splitter.dataset.split)) {
-      const rounded = Math.round(percentage);
-      splitter.setAttribute('aria-valuenow', String(rounded));
-      splitter.setAttribute('aria-valuetext', `${rounded}% para el primer panel`);
-    }
-
-    function resizeSplitterWithKeyboard(splitter, event) {
-      const split = splitter.dataset.split;
-      const decrease = split === 'workspace' ? 'ArrowLeft' : 'ArrowUp';
-      const increase = split === 'workspace' ? 'ArrowRight' : 'ArrowDown';
-      if (event.key !== decrease && event.key !== increase) return;
-      event.preventDefault();
-      const announcedValue = Number.parseFloat(splitter.getAttribute('aria-valuenow'));
-      const currentValue = Number.isFinite(announcedValue) ? announcedValue : currentSplitPercentage(split);
-      applySplitPercentage(split, currentValue + (event.key === increase ? 2 : -2), splitter);
-    }
-
-    function beginResize(splitter, event) {
-      event.preventDefault();
-      const split = splitter.dataset.split;
-      const target = splitTarget(split);
-      const rect = target.getBoundingClientRect();
-      const move = (moveEvent) => {
-        if (split === 'workspace') {
-          applySplitPercentage(split, ((moveEvent.clientX - rect.left) / rect.width) * 100, splitter);
-        } else {
-          applySplitPercentage(split, ((moveEvent.clientY - rect.top) / rect.height) * 100, splitter);
-        }
-      };
-      const stop = () => {
-        documentRef.removeEventListener('pointermove', move);
-        documentRef.removeEventListener('pointerup', stop);
-        documentRef.removeEventListener('pointercancel', stop);
-      };
-      documentRef.addEventListener('pointermove', move);
-      documentRef.addEventListener('pointerup', stop);
-      documentRef.addEventListener('pointercancel', stop);
-    }
-
     function clamp(value, minimum, maximum) {
       return Math.max(minimum, Math.min(maximum, value));
     }
@@ -2259,13 +2113,13 @@
       elements.previewContent,
       documentRef.querySelector('.parser-lab-right-tabs'),
       documentRef.querySelector('.parser-lab-json-tabs'),
-    ].forEach((tablist) => tablist.addEventListener('keydown', (event) => navigateTablist(tablist, event)));
+    ].forEach((tablist) => tablist.addEventListener('keydown', (event) => uiSupport.navigateTablist(tablist, event)));
     documentRef.querySelectorAll('[data-normalized-column-resizer]').forEach((resizer) => {
       const column = resizer.dataset.normalizedColumnResizer;
       resizer.addEventListener('pointerdown', (event) => beginNormalizedColumnResize(column, event));
       resizer.addEventListener('keydown', (event) => resizeNormalizedColumnWithKeyboard(column, event));
     });
-    setupSplitters();
+    uiSupport.setupSplitters({ documentRef, elements, clamp });
     root.addEventListener('pagehide', flushBlockModelOnPageHide);
     setRightTab(state.activeRightTab);
     setJsonTab(state.activeJsonTab);
@@ -2276,16 +2130,24 @@
   }
 
   root.CreditosParserLabUi = { initializeParserLab };
-  if (root.CreditosParserLabBlockModel) {
-    initializeParserLab();
-  } else {
-    const script = root.document.createElement('script');
-    script.src = './parser_lab/block_model.js';
-    script.addEventListener('load', () => initializeParserLab(), { once: true });
-    script.addEventListener('error', () => {
-      const rootElement = root.document.getElementById('parserLabRoot');
-      if (rootElement) rootElement.textContent = 'No se pudo cargar el modelo aislado de bloques.';
-    }, { once: true });
-    root.document.head.appendChild(script);
+
+  function loadParserLabDependency(globalName, source) {
+    if (root[globalName]) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = root.document.createElement('script');
+      script.src = source;
+      script.dataset.parserLabDependency = globalName;
+      script.addEventListener('load', resolve, { once: true });
+      script.addEventListener('error', () => reject(new Error(`No se pudo cargar ${source}.`)), { once: true });
+      root.document.head.appendChild(script);
+    });
   }
+
+  Promise.all([
+    loadParserLabDependency('CreditosParserLabBlockModel', './parser_lab/block_model.js'),
+    loadParserLabDependency('CreditosParserLabUiSupport', './parser_lab/ui_support.js'),
+  ]).then(() => initializeParserLab()).catch((error) => {
+    const rootElement = root.document.getElementById('parserLabRoot');
+    if (rootElement) rootElement.textContent = `No se pudo iniciar Parser Lab: ${error.message}`;
+  });
 })(globalThis);

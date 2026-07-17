@@ -4,8 +4,10 @@ const fs = require('fs');
 const path = require('path');
 
 require(path.resolve(__dirname, '../apps/renderer/parser_lab/block_model.js'));
+require(path.resolve(__dirname, '../apps/renderer/parser_lab/ui_support.js'));
 
 const model = globalThis.CreditosParserLabBlockModel;
+const uiSupport = globalThis.CreditosParserLabUiSupport;
 const row = (number, values, options = {}) => ({
   row: number,
   values: { A: '', B: '', C: '', D: '', ...values },
@@ -521,8 +523,30 @@ const truncatedComposed = model.composePreview({
 }, [conflictingRules[1]]);
 assert(truncatedComposed.diagnostics.some((entry) => entry.code === 'composition_truncated'));
 
+const rowIndexes = uiSupport.buildRowIndexes(
+  rows,
+  instances,
+  semantic.row_decisions,
+  ['A', 'B', 'C', 'D']
+);
+assert.strictEqual(rowIndexes.rowByNumber.get(2), rows[1]);
+assert.strictEqual(rowIndexes.blockInstanceByRow.get(3).definition_id, direction.id);
+assert.strictEqual(rowIndexes.blockInstanceByRow.get(6).definition_id, cast.id);
+assert.deepStrictEqual(
+  rowIndexes.headerCandidatesByRow.get(1).map((instance) => instance.definition_id),
+  [direction.id]
+);
+assert(rowIndexes.searchTextByRow.get(4).includes('fila vacía'));
+assert(rowIndexes.searchTextByRow.get(1).includes('negrita c'));
+assert.strictEqual(rowIndexes.rowDecisionByNumber.get(2).definition_id, direction.id);
+
 const uiSource = fs.readFileSync(path.resolve(__dirname, '../apps/renderer/parser_lab/ui.js'), 'utf8');
+const uiSupportSource = fs.readFileSync(path.resolve(__dirname, '../apps/renderer/parser_lab/ui_support.js'), 'utf8');
 const cssSource = fs.readFileSync(path.resolve(__dirname, '../apps/renderer/parser_lab/parser_lab.css'), 'utf8');
+const responsiveCssSource = fs.readFileSync(
+  path.resolve(__dirname, '../apps/renderer/parser_lab/parser_lab_responsive.css'),
+  'utf8'
+);
 assert(uiSource.includes('data-right-tab="inspector"'));
 assert(uiSource.includes('data-right-tab="jsons"'));
 assert(uiSource.includes('data-json-tab="composed"'));
@@ -566,12 +590,13 @@ assert(uiSource.includes('blockModel.copyDefinitionSettings(target, source)'));
 assert(uiSource.includes('¿Copiar los ajustes de'));
 assert(uiSource.includes('parserLabBlockFilterInput'));
 assert(uiSource.includes('parserLabCopyBlockTargetSelect'));
-assert(uiSource.includes('function navigateTablist(container, event)'));
+assert(uiSource.includes("loadParserLabDependency('CreditosParserLabUiSupport', './parser_lab/ui_support.js')"));
+assert(uiSource.includes('uiSupport.navigateTablist(tablist, event)'));
 assert(uiSource.includes('function navigateTableRows(rowNumber, event)'));
-assert(uiSource.includes('function resizeSplitterWithKeyboard(splitter, event)'));
+assert(uiSource.includes('uiSupport.setupSplitters({'));
 assert(uiSource.includes('aria-label="Redimensionar filas y previo"'));
-assert(uiSource.includes("splitter.setAttribute('aria-valuenow'"));
 assert(uiSource.includes('function rebuildRowIndexes()'));
+assert(uiSource.includes('uiSupport.buildRowIndexes('));
 assert(uiSource.includes('renderNormalizedRows();'));
 assert(uiSource.includes("button.tabIndex = active ? 0 : -1"));
 assert(uiSource.includes("include.tabIndex = active ? 0 : -1"));
@@ -581,7 +606,12 @@ assert(!uiSource.includes('parserLabClearModelBtn'));
 assert(!uiSource.includes('parserLabCancelBlockBtn'));
 assert(!uiSource.includes('parserLabDeleteBlockBtn'));
 assert((uiSource.match(/data-split=/g) || []).length >= 3);
+assert(uiSupportSource.includes('function buildRowIndexes('));
+assert(uiSupportSource.includes('function navigateTablist(container, event)'));
+assert(uiSupportSource.includes('function setupSplitters('));
+assert(uiSupportSource.includes("splitter.setAttribute('aria-valuenow'"));
 assert(cssSource.includes('#parserLabJsonsPane[hidden]'));
+assert(cssSource.startsWith("@import url('./parser_lab_responsive.css');"));
 assert(cssSource.includes('.parser-lab-block-editor-workspace'));
 assert(cssSource.includes('.parser-lab-block-tab.drop-target'));
 assert(cssSource.includes('min-height: 58px'));
@@ -594,10 +624,13 @@ assert(cssSource.includes('.parser-lab-table.resizing-columns'));
 assert(cssSource.includes('.parser-lab-block-navigation'));
 assert(cssSource.includes('.parser-lab-block-filter'));
 assert(cssSource.includes('.parser-lab-splitter:focus-visible'));
-assert(cssSource.includes('height: auto;'));
 assert(cssSource.includes('.parser-lab-preview-warning'));
 assert(cssSource.includes('.parser-lab-preview-trace'));
 assert(cssSource.includes('--parser-lab-empty-row-count'));
-assert(cssSource.includes('grid-template-rows: minmax(700px, 82vh) minmax(720px, 86vh)'));
+assert(responsiveCssSource.includes('@media (max-width: 980px)'));
+assert(responsiveCssSource.includes('@media (max-width: 700px)'));
+assert(responsiveCssSource.includes('grid-template-columns: 1fr;'));
+assert(responsiveCssSource.includes('grid-template-rows: minmax(700px, 82vh) minmax(720px, 86vh)'));
+assert(responsiveCssSource.includes('height: auto;'));
 
 console.log('ok parser lab manual block model');
