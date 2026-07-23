@@ -152,7 +152,6 @@
     exportAllPdfBtn: document.getElementById('exportAllPdfBtn'),
     exportMovBtn: document.getElementById('exportMovBtn'),
   };
-
   const TYPOGRAPHY_FIELDS = [
     ['page_header', 'Cabecera'],
     ['block_title', 'Título del bloque'],
@@ -1092,6 +1091,7 @@
     getVisualCartelas,
     hasCartelaStyleOverrides,
     moveSelectedCartelaVisualOrder,
+    copyCartelaStyle: (sourceId, targetId) => appCommands.copyCartelaStyle(sourceId, targetId),
     selectCartela: (cartelaId) => {
       state.selectedCartelaId = cartelaId;
       rebuild({ selectionOnly: true });

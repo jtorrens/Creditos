@@ -196,6 +196,40 @@
       options.refreshPdfIfActive();
     }
 
+    async function copyCartelaStyle(sourceId, targetId) {
+      if (!state.structure || !Array.isArray(state.structure.cartelas) || sourceId === targetId) return;
+      const source = state.structure.cartelas.find((cartela) => cartela.id === sourceId);
+      const target = state.structure.cartelas.find((cartela) => cartela.id === targetId);
+      if (!source || !target) return;
+      const sourceName = cartelaName(source);
+      const targetName = cartelaName(target);
+      const message = `¿Copiar el estilo y sus overrides de "${sourceName}" a "${targetName}"? Los bloques, el contenido y el nombre de "${targetName}" se conservarán.`;
+      const native = options.nativeBridge();
+      let confirmed = false;
+      if (native && native.confirm) {
+        const result = await native.confirm({ title: 'Copiar estilo de cartela', message, confirmLabel: 'Copiar estilo' });
+        confirmed = !!(result && result.confirmed);
+      } else {
+        confirmed = options.windowRef.confirm(message);
+      }
+      if (!confirmed) return;
+
+      options.applyExplicitCartelaOverridesFromSource(target, source, source, { includeSourceRefs: false });
+      state.selectedCartelaId = target.id;
+      state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+      options.renderCartelaList();
+      options.renderEditor();
+      options.renderPreview();
+      options.refreshPdfIfActive();
+      options.scheduleAutosave();
+    }
+
+    function cartelaName(cartela) {
+      const ref = cartela && cartela.pages && cartela.pages[0] && cartela.pages[0].source_refs && cartela.pages[0].source_refs[0];
+      const material = state.materials.find((candidate) => candidate.id === ref);
+      return cartela.title || (material && material.title) || cartela.id;
+    }
+
     function updateSelectedCartela(fields) {
       const cartela = options.getSelectedCartela();
       if (!options.updateCartelaInStructure(cartela, fields)) return;
@@ -780,6 +814,7 @@
       addEmptyCartela,
       adjustCurrentPdfPageLines,
       changePdfPage,
+      copyCartelaStyle,
       copyStylesFromEpisodeFlow,
       createProductionFromUi,
       createStyleFromUi,

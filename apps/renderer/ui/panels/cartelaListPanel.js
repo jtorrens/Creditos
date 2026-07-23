@@ -3,6 +3,7 @@
     const documentRef = options.documentRef || root.document;
     const els = options.els;
     const state = options.state;
+    let draggedCartelaId = null;
 
     function renderCartelaList() {
       els.blockList.innerHTML = '';
@@ -18,11 +19,40 @@
         const isActive = cartela.id === state.selectedCartelaId;
         const enabledWithoutStyle = cartela.enabled !== false && !style;
         const button = documentRef.createElement('div');
+        button.draggable = true;
+        button.dataset.cartelaId = cartela.id;
+        button.title = 'Arrastra esta cartela sobre otra para copiar su estilo y sus overrides.';
         button.className = 'block-button'
           + (isActive ? ' active' : '')
           + (hasOverrides ? ' has-overrides' : '')
           + (enabledWithoutStyle ? ' missing-style' : '');
         button.addEventListener('click', () => options.selectCartela(cartela.id));
+        button.addEventListener('dragstart', (event) => {
+          draggedCartelaId = cartela.id;
+          button.classList.add('dragging');
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'copy';
+            event.dataTransfer.setData('text/plain', cartela.id);
+          }
+        });
+        button.addEventListener('dragover', (event) => {
+          if (!draggedCartelaId || draggedCartelaId === cartela.id) return;
+          event.preventDefault();
+          button.classList.add('drop-target');
+          if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+        });
+        button.addEventListener('dragleave', () => button.classList.remove('drop-target'));
+        button.addEventListener('drop', (event) => {
+          event.preventDefault();
+          button.classList.remove('drop-target');
+          options.copyCartelaStyle(draggedCartelaId, cartela.id);
+        });
+        button.addEventListener('dragend', () => {
+          draggedCartelaId = null;
+          els.blockList.querySelectorAll('.dragging, .drop-target').forEach((item) => {
+            item.classList.remove('dragging', 'drop-target');
+          });
+        });
 
         button.innerHTML = `
           <div class="block-group">${String(index + 1).padStart(2, '0')}</div>
@@ -33,6 +63,7 @@
         orderControls.className = 'cartela-order-controls';
         const upButton = documentRef.createElement('button');
         upButton.type = 'button';
+        upButton.draggable = false;
         upButton.textContent = '↑';
         upButton.title = 'Mover cartela arriba';
         upButton.disabled = index === 0;
@@ -42,6 +73,7 @@
         });
         const downButton = documentRef.createElement('button');
         downButton.type = 'button';
+        downButton.draggable = false;
         downButton.textContent = '↓';
         downButton.title = 'Mover cartela abajo';
         downButton.disabled = index >= cartelas.length - 1;

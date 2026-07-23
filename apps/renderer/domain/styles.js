@@ -285,7 +285,7 @@
       return output;
     }
 
-    function applyExplicitCartelaOverridesFromSource(target, source, sourceRaw = source) {
+    function applyCartelaStyleSettingsFromSource(target, source, sourceRaw = source) {
       if (!target || !source) return false;
       const styleId = sourceRaw && sourceRaw.style_id !== undefined ? sourceRaw.style_id : source.style_id;
       target.style_id = styleId || '';
@@ -326,7 +326,12 @@
         delete target.animation;
       }
 
-      applyExplicitSourceRefSettings(target, source, sourceRaw);
+      return true;
+    }
+
+    function applyExplicitCartelaOverridesFromSource(target, source, sourceRaw = source, applyOptions = {}) {
+      if (!applyCartelaStyleSettingsFromSource(target, source, sourceRaw)) return false;
+      if (applyOptions.includeSourceRefs !== false) applyExplicitSourceRefSettings(target, source, sourceRaw);
       return true;
     }
 
@@ -1070,6 +1075,7 @@
 
     return {
       applyBlockStyleToCartelaRefs,
+      applyCartelaStyleSettingsFromSource,
       applyExplicitCartelaOverridesFromSource,
       applyExplicitSourceRefSettings,
       baseStyleCartelaFromSettings,

@@ -1231,6 +1231,21 @@ button.primary:hover {
   border-color: #4a505a;
 }
 
+.block-button[draggable='true'] {
+  cursor: grab;
+}
+
+.block-button.dragging {
+  cursor: grabbing;
+  opacity: 0.42;
+}
+
+.block-button.drop-target {
+  background: rgba(111, 147, 255, 0.22);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
 .block-button.active {
   background: #303541;
   border-color: var(--accent);
