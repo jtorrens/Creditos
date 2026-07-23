@@ -29,6 +29,10 @@
             <button id="parserLabOpenBtn" type="button" disabled>Cargar ODS/XLSX</button>
             <button id="parserLabClearBtn" type="button" disabled>Limpiar</button>
             <input id="parserLabFileInput" class="hidden-input" type="file" accept=".ods,.xlsx,application/vnd.oasis.opendocument.spreadsheet,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <div id="parserLabSourceContext" class="parser-lab-source-context" data-origin="none">
+              <span id="parserLabSourceOrigin" class="parser-lab-source-origin">Sin archivo</span>
+              <span id="parserLabSourceName" class="parser-lab-source-name">No hay una fuente cargada.</span>
+            </div>
           </div>
           <label class="parser-lab-filter" for="parserLabFilterInput">
             <span>Filtrar</span>
@@ -345,6 +349,9 @@
       modelDialogCancelButton: documentRef.getElementById('parserLabModelDialogCancelBtn'),
       modelDialogConfirmButton: documentRef.getElementById('parserLabModelDialogConfirmBtn'),
       fileInput: documentRef.getElementById('parserLabFileInput'),
+      sourceContext: documentRef.getElementById('parserLabSourceContext'),
+      sourceOrigin: documentRef.getElementById('parserLabSourceOrigin'),
+      sourceName: documentRef.getElementById('parserLabSourceName'),
       filterInput: documentRef.getElementById('parserLabFilterInput'),
       summary: documentRef.getElementById('parserLabSummary'),
       sheetMeta: documentRef.getElementById('parserLabSheetMeta'),
@@ -784,6 +791,24 @@
       return kind;
     }
 
+    function renderSourceContext(inspection = state.inspection) {
+      if (!inspection) {
+        elements.sourceContext.dataset.origin = 'none';
+        elements.sourceContext.title = 'No hay una fuente cargada.';
+        elements.sourceOrigin.textContent = 'Sin archivo';
+        elements.sourceName.textContent = 'No hay una fuente cargada.';
+        return;
+      }
+      const sourceKind = String(inspection.source_kind || '').toUpperCase();
+      const associated = state.sourceOrigin === 'associated';
+      elements.sourceContext.dataset.origin = associated ? 'associated' : 'temporary';
+      elements.sourceOrigin.textContent = associated
+        ? `${sourceKind} de Cartelas · predeterminado`
+        : `${sourceKind} temporal de Parser Lab`;
+      elements.sourceName.textContent = inspection.source;
+      elements.sourceContext.title = `${elements.sourceOrigin.textContent}: ${inspection.source}`;
+    }
+
     async function inspectFile(file, inspectOptions = {}) {
       flushPendingBlockEdit();
       const sourceKind = sourceKindForFile(file);
@@ -911,6 +936,7 @@
 
       if (!inspection) {
         applyNormalizedRowsView();
+        renderSourceContext();
         elements.summary.textContent = 'Sin archivo cargado';
         elements.sheetMeta.textContent = 'El lector todavía no ha procesado ningún archivo.';
         elements.tableEmpty.hidden = false;
@@ -923,6 +949,7 @@
       }
 
       const foundBlocks = state.blockInstances.filter((instance) => instance.matched).length;
+      renderSourceContext(inspection);
       elements.summary.textContent = `${inspection.source_kind.toUpperCase()} · ${rows.length}/${inspection.rows.length} filas · ${foundBlocks}/${state.blockDefinitions.length} bloques`;
       elements.sheetMeta.textContent = `${inspection.source} · hoja ${inspection.sheet}`;
       elements.tableEmpty.hidden = rows.length > 0;

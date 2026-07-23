@@ -124,6 +124,48 @@
   min-width: 0;
 }
 
+.parser-lab-file-actions {
+  flex-wrap: wrap;
+}
+
+.parser-lab-source-context {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  min-width: 190px;
+}
+
+.parser-lab-source-origin {
+  background: #343943;
+  border: 1px solid #4a515e;
+  border-radius: 999px;
+  color: var(--muted);
+  flex: 0 0 auto;
+  font-size: 10px;
+  padding: 4px 7px;
+}
+
+.parser-lab-source-context[data-origin="associated"] .parser-lab-source-origin {
+  background: #23394c;
+  border-color: #365b78;
+  color: #bfdaf0;
+}
+
+.parser-lab-source-context[data-origin="temporary"] .parser-lab-source-origin {
+  background: #4a3c24;
+  border-color: #735e36;
+  color: #ead7a8;
+}
+
+.parser-lab-source-name {
+  color: var(--muted);
+  font-size: 11px;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .parser-lab-filter input {
   min-width: 0;
   width: 100%;

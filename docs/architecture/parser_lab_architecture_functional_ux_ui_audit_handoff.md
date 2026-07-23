@@ -123,6 +123,8 @@ La UI no debe contener algoritmos alternativos de parsing. Debe editar el contra
 |---|---|---|
 | `POST` | `/api/parser-lab/inspect-source` | Inspección normalizada del archivo cargado. |
 | `POST` | `/api/parser-lab/associated-source` | Copia del archivo asociado al capítulo y modelo activos. |
+
+La barra de Parser Lab identifica siempre la procedencia de la fuente inspeccionada. Distingue entre el ODS/XLSX predeterminado procedente de Cartelas y un archivo temporal cargado únicamente en Parser Lab, y muestra el nombre concreto del archivo en ambos casos. La selección temporal no modifica la fuente asociada en Cartelas.
 | `GET` | `/api/parser-lab/model-library` | Biblioteca local, modelo activo y ruta de persistencia. |
 | `POST` | `/api/parser-lab/model-library` | Crear, duplicar, renombrar, borrar, seleccionar o guardar modelos con validación estricta. |
 
