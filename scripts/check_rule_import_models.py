@@ -157,7 +157,7 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 2
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
 
     print("ok rule import models DB persistence and production parser")
     return 0

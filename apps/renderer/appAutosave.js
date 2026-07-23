@@ -26,6 +26,7 @@
       const base = {
         production_id: state.selectedProductionId,
         episode_id: state.selectedEpisodeId,
+        import_model_id: options.currentImportModelId(),
       };
       if (state.source) {
         await options.dbPost('/api/db/save-document', { ...base, kind: 'source', data: state.source });
@@ -35,6 +36,12 @@
         await options.dbPost('/api/db/save-document', { ...base, kind: 'render', data: state.render });
       }
       setAutosaveStatus(`Autoguardado ${new Date().toLocaleTimeString()}`);
+    }
+
+    async function flushCurrentEpisode() {
+      windowRef.clearTimeout(state.autosaveTimer);
+      state.autosaveTimer = null;
+      await persistCurrentEpisode();
     }
 
     function scheduleStyleAutosave(styleId) {
@@ -53,6 +60,7 @@
     }
 
     return {
+      flushCurrentEpisode,
       persistCurrentEpisode,
       scheduleAutosave,
       scheduleStyleAutosave,

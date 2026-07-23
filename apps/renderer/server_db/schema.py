@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def init_db(connection):
@@ -38,12 +38,13 @@ def init_db(connection):
             production_id INTEGER NOT NULL,
             episode_id INTEGER NOT NULL,
             kind TEXT NOT NULL,
+            import_model_id TEXT NOT NULL DEFAULT '',
             schema TEXT,
             version INTEGER,
             data_json TEXT NOT NULL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            UNIQUE (production_id, episode_id, kind),
+            UNIQUE (production_id, episode_id, kind, import_model_id),
             FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
             FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
         );
@@ -84,5 +85,61 @@ def init_db(connection):
         )
     if "settings_json" not in columns:
         connection.execute("ALTER TABLE productions ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}'")
+    document_columns = {row["name"] for row in connection.execute("PRAGMA table_info(documents)")}
+    if "import_model_id" not in document_columns:
+        connection.executescript(
+            """
+            ALTER TABLE documents RENAME TO documents_without_import_model;
+
+            CREATE TABLE documents (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                production_id INTEGER NOT NULL,
+                episode_id INTEGER NOT NULL,
+                kind TEXT NOT NULL,
+                import_model_id TEXT NOT NULL DEFAULT '',
+                schema TEXT,
+                version INTEGER,
+                data_json TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                UNIQUE (production_id, episode_id, kind, import_model_id),
+                FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
+                FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+            );
+
+            INSERT INTO documents (
+                id, production_id, episode_id, kind, import_model_id,
+                schema, version, data_json, created_at, updated_at
+            )
+            SELECT
+                documents_without_import_model.id,
+                documents_without_import_model.production_id,
+                documents_without_import_model.episode_id,
+                documents_without_import_model.kind,
+                CASE
+                    WHEN documents_without_import_model.kind = 'reference' THEN ''
+                    ELSE COALESCE(
+                        (
+                            SELECT json_extract(source_document.data_json, '$.import_model_id')
+                            FROM documents_without_import_model AS source_document
+                            WHERE source_document.production_id = documents_without_import_model.production_id
+                              AND source_document.episode_id = documents_without_import_model.episode_id
+                              AND source_document.kind = 'source'
+                              AND json_valid(source_document.data_json)
+                        ),
+                        productions.import_model_id
+                    )
+                END,
+                documents_without_import_model.schema,
+                documents_without_import_model.version,
+                documents_without_import_model.data_json,
+                documents_without_import_model.created_at,
+                documents_without_import_model.updated_at
+            FROM documents_without_import_model
+            JOIN productions ON productions.id = documents_without_import_model.production_id;
+
+            DROP TABLE documents_without_import_model;
+            """
+        )
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()

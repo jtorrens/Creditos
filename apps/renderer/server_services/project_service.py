@@ -174,7 +174,7 @@ def duplicate_production(connection, production_id):
 
     for document in connection.execute(
         """
-        SELECT episode_id, kind, schema, version, data_json
+        SELECT episode_id, kind, import_model_id, schema, version, data_json
         FROM documents
         WHERE production_id = ?
         """,
@@ -185,13 +185,17 @@ def duplicate_production(connection, production_id):
             continue
         connection.execute(
             """
-            INSERT INTO documents (production_id, episode_id, kind, schema, version, data_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO documents (
+                production_id, episode_id, kind, import_model_id,
+                schema, version, data_json, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 new_production_id,
                 new_episode_id,
                 document["kind"],
+                document["import_model_id"],
                 document["schema"],
                 document["version"],
                 document["data_json"],

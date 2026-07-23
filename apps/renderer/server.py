@@ -235,6 +235,7 @@ class Handler(BaseHTTPRequestHandler):
                         payload.get("episode_id"),
                         payload.get("kind"),
                         payload.get("data"),
+                        payload.get("import_model_id"),
                     )
                     self.send_json(200, {"ok": True})
                     return
@@ -245,6 +246,7 @@ class Handler(BaseHTTPRequestHandler):
                         payload.get("production_id"),
                         payload.get("episode_id"),
                         payload.get("kind"),
+                        payload.get("import_model_id"),
                     )
                     self.send_json(200, {"data": data})
                     return
@@ -252,12 +254,13 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/db/load-episode":
                     production_id = payload.get("production_id")
                     episode_id = payload.get("episode_id")
+                    import_model_id = payload.get("import_model_id")
                     self.send_json(
                         200,
                         {
-                            "source": load_document(connection, production_id, episode_id, "source"),
-                            "structure": load_document(connection, production_id, episode_id, "structure"),
-                            "render": load_document(connection, production_id, episode_id, "render"),
+                            "source": load_document(connection, production_id, episode_id, "source", import_model_id),
+                            "structure": load_document(connection, production_id, episode_id, "structure", import_model_id),
+                            "render": load_document(connection, production_id, episode_id, "render", import_model_id),
                             "reference": load_document(connection, production_id, episode_id, "reference"),
                             "styles": load_styles(connection, production_id),
                         },

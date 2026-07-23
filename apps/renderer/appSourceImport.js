@@ -81,12 +81,14 @@
         await options.dbPost('/api/db/save-document', {
           production_id: state.selectedProductionId,
           episode_id: state.selectedEpisodeId,
+          import_model_id: currentSelectedImportModelId(),
           kind: 'source',
           data: state.source,
         });
         await options.dbPost('/api/db/save-document', {
           production_id: state.selectedProductionId,
           episode_id: state.selectedEpisodeId,
+          import_model_id: currentSelectedImportModelId(),
           kind: 'structure',
           data: options.getStructureJsonForOutput(),
         });

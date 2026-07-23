@@ -707,13 +707,17 @@
 
     async function updateProductionImportModelFromUi() {
       if (!state.selectedProductionId || !options.els.productionImportModelSelect) return;
+      const previousModelId = options.selectedImportModelIdInDomain(options.selectedProduction(), state.importModels);
       const fields = {
         import_model_id: options.els.productionImportModelSelect.value || options.defaultImportModelIdInDomain(state.importModels),
       };
-      options.setSelectedProductionLocalFields(fields);
-      options.renderProductionList();
+      if (fields.import_model_id === previousModelId) return;
       try {
+        await options.flushCurrentEpisode();
+        options.setSelectedProductionLocalFields(fields);
+        options.renderProductionList();
         await options.persistSelectedProductionFields(fields);
+        await options.loadCurrentEpisode();
       } catch (error) {
         options.windowRef.alert('No se pudo actualizar el modelo de importación: ' + error.message);
         await options.initializeDatabase({ silent: true });
@@ -748,6 +752,7 @@
         const result = await options.dbPost('/api/db/load-episode', {
           production_id: state.selectedProductionId,
           episode_id: sourceEpisodeId,
+          import_model_id: options.selectedImportModelIdInDomain(options.selectedProduction(), state.importModels),
         });
         const sourceRawById = new Map(((result.structure && result.structure.cartelas) || []).map((cartela) => [cartela.id, cartela]));
         const sourceStructure = options.migrateStructure(result.structure);

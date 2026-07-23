@@ -84,6 +84,11 @@ Current documents are preserved as JSON payloads inside SQLite rows:
 - `render`
 - production `styles`
 
+`source`, `structure`, and `render` are versioned independently for every import
+model selected in a production. Style definitions remain production-wide while
+each structure keeps its own style assignments. Reference video data remains
+episode-wide.
+
 This keeps the existing render/editor logic stable while replacing external JSON files as the normal persistence mechanism.
 
 Changes in the editor are autosaved to the database. The normal workflow does not require JSON import/export or explicit Save buttons.

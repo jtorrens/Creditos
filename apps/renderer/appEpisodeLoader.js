@@ -17,6 +17,7 @@
         const result = await options.dbPost('/api/db/load-episode', {
           production_id: state.selectedProductionId,
           episode_id: state.selectedEpisodeId,
+          import_model_id: options.currentImportModelId(),
         });
         if (result.structure && result.structure.settings && !options.selectedProductionHasStoredSettings(options.selectedProduction())) {
           options.setSelectedProductionLocalFields({ settings: options.stripProductionLayoutFromSettings(result.structure.settings) });

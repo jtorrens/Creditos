@@ -23,6 +23,22 @@ se migra una sola vez y no participa en la ejecución ni actúa como fallback.
 6. El resultado se valida como `source_json`.
 7. Materiales, estructura, render y Preview consumen el contrato estable existente.
 
+## Variantes de trabajo por modelo
+
+Los documentos `source`, `structure` y `render` se guardan por la clave compuesta
+producción, capítulo y modelo de importación. Cambiar el modelo activo termina
+primero cualquier autoguardado pendiente y carga la variante del modelo elegido.
+Por tanto, sus asociaciones de estilos, cartelas, ajustes y paginación no se
+sobrescriben entre el importador de IA, un importador estático y un modelo manual.
+
+Las definiciones de estilo pertenecen a la producción y se comparten entre
+variantes; cada `structure` conserva independientemente qué estilo aplica. El
+vídeo de referencia pertenece al capítulo y también es común a todos los modelos.
+
+La migración a esquema v3 asigna los documentos anteriores al
+`import_model_id` declarado por su documento `source`. Solo si el origen no lo
+declara usa el modelo seleccionado en la producción.
+
 ## Fallos explícitos
 
 La importación se detiene si una frontera está ausente, fuera de orden o es

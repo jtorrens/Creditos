@@ -409,6 +409,7 @@
     setSelectedProductionLocalFields,
   } = appProjectState;
   const appAutosave = globalThis.CreditosAppAutosave.createAppAutosave({
+    currentImportModelId: () => selectedImportModelIdInDomain(selectedProduction(), state.importModels),
     dbPost,
     getStructureJsonForOutput,
     getStyleById,
@@ -417,6 +418,7 @@
     writeStyleFile,
   });
   const {
+    flushCurrentEpisode,
     persistCurrentEpisode,
     scheduleAutosave,
     scheduleStyleAutosave,
@@ -955,6 +957,7 @@
     deleteManualCartela,
     els,
     findPageWithRef,
+    flushCurrentEpisode,
     frameForPdfPageIndex,
     getCurrentPhysicalPages,
     getEffectiveStyleTitleTypography,
@@ -965,6 +968,7 @@
     getProductionSettings,
     initializeDatabase,
     insertManualCartela,
+    loadCurrentEpisode,
     moveCartelaVisualOrderInStructure,
     migrateStructure,
     nativeBridge,
@@ -1003,6 +1007,7 @@
     sanitizeStyleCartelaOverrides,
     scheduleStyleAutosave,
     scheduleAutosave,
+    selectedImportModelIdInDomain,
     selectedProduction,
     setSelectedProductionLocalFields,
     showEpisodeStyleSourceModal: (episodes) => projectPanel.showEpisodeStyleSourceModal(episodes),
@@ -1046,6 +1051,7 @@
     buildCurrentRenderJson,
     createMaterialsFromSource,
     createStructureFromSource,
+    currentImportModelId: () => selectedImportModelIdInDomain(selectedProduction(), state.importModels),
     dbPost,
     defaultPreviewSettings,
     loadStyleObjects,
