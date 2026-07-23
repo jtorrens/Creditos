@@ -15,7 +15,8 @@ Rama de referencia: `agent/parser-lab-model-workflow`
 - Mejorados el comportamiento con hojas largas, la legibilidad visual y el responsive.
 - Reducida de forma incremental la concentración de responsabilidades de la interfaz, sin reescrituras ni cambios compartidos.
 - Validado el flujo real con una hoja de 605 filas, tres bloques y una composición multibloque en una cartela.
-- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.76`.
+- Añadidas fronteras estructurales de inicio de hoja, posición relativa y final de hoja.
+- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.77`.
 - Confirmado que `data/creditos.db`, los parsers y los modelos de producción permanecen intactos.
 
 Cortes publicados:
@@ -38,7 +39,6 @@ Este bloque cruza la frontera aislada de Parser Lab y requiere autorización esp
 
 ### P1 — Cierre funcional
 
-- Representar explícitamente inicio de hoja, final de hoja e inicio relativo al bloque anterior.
 - Completar la validación con formatos y casos límite adicionales.
 - Decidir si el alcance definitivo seguirá limitado a una hoja y a las columnas A–D.
 
@@ -63,7 +63,7 @@ Este bloque cruza la frontera aislada de Parser Lab y requiere autorización esp
 ## Orden recomendado
 
 1. Acordar el contrato de integración y la propiedad del modelo en la DB.
-2. Cerrar fronteras estructurales y casos límite.
+2. Cerrar formatos y casos límite adicionales.
 3. Validar rendimiento y UX con archivos grandes.
 4. Autorizar e implementar la integración con la aplicación principal.
 5. Ejecutar la regresión y liberación combinadas.

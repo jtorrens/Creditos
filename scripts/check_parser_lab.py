@@ -83,12 +83,13 @@ def main():
 
     temporary_model = {
         "schema": "parser_lab_block_model",
-        "version": 5,
+        "version": 6,
         "blocks": [
             {
                 "id": "block_01_direction",
                 "name": "Dirección",
                 "header": {
+                    "source": "match",
                     "column": "C",
                     "operator": "equals",
                     "value": "Dirección",

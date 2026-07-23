@@ -1,6 +1,7 @@
 (function (root) {
   const COLUMNS = ['A', 'B', 'C', 'D'];
   const OPERATORS = ['equals', 'contains', 'regex', 'nonempty'];
+  const HEADER_SOURCES = ['match', 'sheet_start', 'after_previous', 'sheet_end'];
   const REQUIREMENTS = ['ignore', 'required', 'forbidden'];
   const EMPTY_ROW_EFFECTS = ['continue', 'item', 'group', 'page'];
   const EMPTY_ROW_DISPLAYS = ['ignore', 'compact', 'preserve'];
@@ -44,6 +45,7 @@
       name: value || `Bloque ${index + 1}`,
       enabled: true,
       header: {
+        source: 'match',
         column,
         operator: value ? 'equals' : 'nonempty',
         value,
@@ -61,14 +63,15 @@
     if (typeof (definition && definition.enabled) !== 'boolean') {
       errors.push('El estado de inclusión del bloque no es válido.');
     }
+    if (!HEADER_SOURCES.includes(header.source)) errors.push('Selecciona un inicio de bloque válido.');
     if (!COLUMNS.includes(header.column)) errors.push('Selecciona una columna válida.');
     if (!OPERATORS.includes(header.operator)) errors.push('Selecciona una condición válida.');
     if (!REQUIREMENTS.includes(header.bold)) errors.push('La condición de negrita no es válida.');
     if (!REQUIREMENTS.includes(header.merged_b_to_d)) errors.push('La condición de combinación no es válida.');
-    if (header.operator !== 'nonempty' && !String(header.value || '').trim()) {
+    if (header.source === 'match' && header.operator !== 'nonempty' && !String(header.value || '').trim()) {
       errors.push('La condición necesita un valor.');
     }
-    if (header.operator === 'regex') {
+    if (header.source === 'match' && header.operator === 'regex') {
       try {
         new RegExp(header.value, 'iu');
       } catch (_error) {
@@ -122,6 +125,7 @@
   function compileDefinitionMatcher(definition, validationErrors = validateDefinition(definition)) {
     if (validationErrors.length) return () => false;
     const header = definition.header;
+    if (header.source !== 'match') return () => false;
     const expected = normalizeText(header.value);
     const expression = header.operator === 'regex' ? new RegExp(header.value, 'iu') : null;
     return (row) => {
@@ -148,7 +152,7 @@
     const definitionMatchers = sourceDefinitions.map((definition, definitionIndex) => (
       compileDefinitionMatcher(definition, definitionValidationErrors[definitionIndex])
     ));
-    const candidatesByDefinition = sourceDefinitions.map((definition, definitionIndex) => (
+    const matchedCandidatesByDefinition = sourceDefinitions.map((definition, definitionIndex) => (
       sourceRows.reduce((indexes, row, index) => {
         if (definitionMatchers[definitionIndex](row)) indexes.push(index);
         return indexes;
@@ -157,7 +161,13 @@
     let cursor = 0;
     const instances = sourceDefinitions.map((definition, definitionIndex) => {
       const validationErrors = definitionValidationErrors[definitionIndex];
-      const candidateIndexes = candidatesByDefinition[definitionIndex];
+      const headerSource = definition && definition.header && definition.header.source;
+      const candidateIndexes = structuralCandidateIndexes(
+        sourceRows,
+        headerSource,
+        cursor,
+        matchedCandidatesByDefinition[definitionIndex]
+      );
       const orderedCandidates = candidateIndexes.filter((index) => index >= cursor);
       const precedingCandidates = candidateIndexes.filter((index) => index < cursor);
       const candidateRows = candidateIndexes.map((index) => sourceRows[index].row);
@@ -181,8 +191,8 @@
           matchStatus,
           'error',
           precedingCandidates.length
-            ? `La cabecera solo aparece antes de la posición esperada: ${rowList(candidateRows)}.`
-            : 'La cabecera no aparece en la hoja.',
+            ? `La frontera solo aparece antes de la posición esperada: ${rowList(candidateRows)}.`
+            : 'La frontera no aparece en la hoja.',
           candidateRows
         ));
       } else if (orderedCandidates.length > 1) {
@@ -232,7 +242,7 @@
           selected_row: sourceRows[matchIndex].row,
           reason: matchStatus === 'ambiguous'
             ? `Se usa provisionalmente la primera coincidencia ordenada, fila ${sourceRows[matchIndex].row}.`
-            : `Coincidencia única y ordenada en la fila ${sourceRows[matchIndex].row}.`,
+            : structuralMatchReason(headerSource, sourceRows[matchIndex].row),
         },
         source_index: matchIndex,
         start_row: sourceRows[matchIndex].row,
@@ -287,6 +297,21 @@
     return instances;
   }
 
+  function structuralCandidateIndexes(rows, source, cursor, matchedCandidates) {
+    if (!rows.length) return [];
+    if (source === 'sheet_start') return [0];
+    if (source === 'sheet_end') return [rows.length - 1];
+    if (source === 'after_previous') return cursor < rows.length ? [cursor] : [];
+    return matchedCandidates;
+  }
+
+  function structuralMatchReason(source, rowNumber) {
+    if (source === 'sheet_start') return `Inicio de hoja en la fila ${rowNumber}.`;
+    if (source === 'sheet_end') return `Última fila de la hoja, fila ${rowNumber}.`;
+    if (source === 'after_previous') return `Fila siguiente a la frontera anterior, fila ${rowNumber}.`;
+    return `Coincidencia única y ordenada en la fila ${rowNumber}.`;
+  }
+
   function diagnostic(code, severity, message, rows = []) {
     return { code, severity, message, rows: rows.slice() };
   }
@@ -298,7 +323,7 @@
   function modelDocument(definitions, compositionRules, normalizedRowsView) {
     return {
       schema: 'parser_lab_block_model',
-      version: 5,
+      version: 6,
       blocks: definitions.map(normalizeDefinition),
       composition_rules: compositionRules.map(normalizeCompositionRule),
       normalized_rows_view: JSON.parse(JSON.stringify(normalizedRowsView)),

@@ -1418,6 +1418,15 @@
   grid-template-columns: 1fr 1fr;
 }
 
+.parser-lab-boundary-match-fields {
+  display: grid;
+  gap: 9px;
+}
+
+.parser-lab-boundary-match-fields[hidden] {
+  display: none;
+}
+
 .parser-lab-form-actions {
   display: flex;
   flex-wrap: wrap;

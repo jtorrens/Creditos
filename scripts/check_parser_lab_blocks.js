@@ -31,6 +31,7 @@ const direction = model.definitionFromRow(rows[0], 0);
 const cast = model.definitionFromRow(rows[4], 1);
 const crew = model.definitionFromRow(rows[8], 2);
 assert.deepStrictEqual(model.validateDefinition(direction), []);
+assert.strictEqual(direction.header.source, 'match');
 assert.strictEqual(direction.header.column, 'C');
 assert.strictEqual(direction.header.bold, 'required');
 assert.strictEqual(direction.interpretation.content_start, 'after_header');
@@ -147,11 +148,54 @@ assert.strictEqual(ambiguousInstances[0].match_status, 'ambiguous');
 assert.deepStrictEqual(ambiguousInstances[0].candidate_rows, [1, 3]);
 assert.strictEqual(ambiguousInstances[0].start_row, 1);
 assert.strictEqual(ambiguousInstances[0].range_status, 'warning');
+const sheetStart = model.normalizeDefinition(direction);
+sheetStart.id = 'block_sheet_start';
+sheetStart.name = 'Inicio de hoja';
+sheetStart.header.source = 'sheet_start';
+const afterPrevious = model.normalizeDefinition(cast);
+afterPrevious.id = 'block_after_previous';
+afterPrevious.name = 'Después de la frontera';
+afterPrevious.header.source = 'after_previous';
+const sheetEnd = model.normalizeDefinition(crew);
+sheetEnd.id = 'block_sheet_end';
+sheetEnd.name = 'Final de hoja';
+sheetEnd.header.source = 'sheet_end';
+const structuralInstances = model.findBlockInstances(rows, [sheetStart, afterPrevious, sheetEnd]);
+assert.deepStrictEqual(
+  structuralInstances.map((instance) => ({
+    name: instance.name,
+    start: instance.start_row,
+    end: instance.end_row,
+    status: instance.match_status,
+  })),
+  [
+    { name: 'Inicio de hoja', start: 1, end: 1, status: 'matched' },
+    { name: 'Después de la frontera', start: 2, end: 9, status: 'matched' },
+    { name: 'Final de hoja', start: 10, end: 10, status: 'matched' },
+  ]
+);
+assert.strictEqual(
+  structuralInstances[0].match_trace.reason,
+  'Inicio de hoja en la fila 1.'
+);
+assert.strictEqual(
+  structuralInstances[1].match_trace.reason,
+  'Fila siguiente a la frontera anterior, fila 2.'
+);
+assert.strictEqual(
+  structuralInstances[2].match_trace.reason,
+  'Última fila de la hoja, fila 10.'
+);
+const misplacedSheetStart = model.findBlockInstances(rows, [cast, sheetStart]);
+assert.strictEqual(misplacedSheetStart[1].match_status, 'out_of_order');
+const invalidHeaderSource = model.normalizeDefinition(direction);
+delete invalidHeaderSource.header.source;
+assert(model.validateDefinition(invalidHeaderSource).length > 0);
 const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
 assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).schema, 'parser_lab_block_model');
-assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 5);
+assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 6);
 assert.deepStrictEqual(
   model.modelDocument([direction], [], normalizedRowsView).normalized_rows_view,
   normalizedRowsView
@@ -591,6 +635,12 @@ assert(uiSource.includes('function restoreNavigationFocus(request)'));
 assert(uiSource.includes('function rowDecision(rowNumber)'));
 assert(uiSource.includes('const insertionIndex = state.blockDefinitions.findIndex'));
 assert(uiSource.includes("renderPreviewSeparator(boundary, 'Hueco interno', true)"));
+assert(uiSource.includes('parserLabBlockHeaderSourceSelect'));
+assert(uiSource.includes('updateBoundaryFields'));
+assert(uiSource.includes('revealEditingBlockStart'));
+assert(uiSource.includes('Primera fila de la hoja'));
+assert(uiSource.includes('Fila siguiente a la frontera anterior'));
+assert(uiSource.includes('Última fila de la hoja'));
 assert(uiSource.includes('parserLabMoveBlockUpBtn'));
 assert(uiSource.includes('parser-lab-composition-tab'));
 assert(uiSource.includes("definition.enabled = include.checked"));

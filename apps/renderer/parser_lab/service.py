@@ -8,7 +8,7 @@ from .inspection import inspect_source_rows
 
 
 BLOCK_MODEL_SCHEMA = "parser_lab_block_model"
-BLOCK_MODEL_VERSION = 5
+BLOCK_MODEL_VERSION = 6
 MODEL_LIBRARY_SCHEMA = "parser_lab_model_library"
 MODEL_LIBRARY_VERSION = 1
 MODEL_LIBRARY_FILENAME = "model-library.json"
@@ -250,6 +250,13 @@ def validate_block_model(model):
     for index, block in enumerate(blocks):
         if not isinstance(block, dict) or not isinstance(block.get("header"), dict):
             raise ValueError(f"El bloque {index + 1} no tiene una cabecera válida.")
+        if block["header"].get("source") not in {
+            "match",
+            "sheet_start",
+            "after_previous",
+            "sheet_end",
+        }:
+            raise ValueError(f"El bloque {index + 1} tiene una frontera de inicio inválida.")
         if not str(block.get("id") or "").strip() or not str(block.get("name") or "").strip():
             raise ValueError(f"El bloque {index + 1} necesita identificador y nombre.")
         if not isinstance(block.get("enabled"), bool):

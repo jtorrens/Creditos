@@ -192,46 +192,58 @@
                 <span>Nombre del bloque</span>
                 <input id="parserLabBlockNameInput" class="text-input" type="text">
               </label>
-              <div class="parser-lab-form-grid">
+              <label>
+                <span>Inicio del bloque</span>
+                <select id="parserLabBlockHeaderSourceSelect" class="text-input">
+                  <option value="match">Cabecera que coincide</option>
+                  <option value="sheet_start">Primera fila de la hoja</option>
+                  <option value="after_previous">Fila siguiente a la frontera anterior</option>
+                  <option value="sheet_end">Última fila de la hoja</option>
+                </select>
+              </label>
+              <div id="parserLabBlockHeaderMatchFields" class="parser-lab-boundary-match-fields">
+                <div class="parser-lab-form-grid">
+                  <label>
+                    <span>Columna</span>
+                    <select id="parserLabBlockColumnSelect" class="text-input">
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Condición</span>
+                    <select id="parserLabBlockOperatorSelect" class="text-input">
+                      <option value="equals">Igual a</option>
+                      <option value="contains">Contiene</option>
+                      <option value="regex">Expresión regular</option>
+                      <option value="nonempty">No vacía</option>
+                    </select>
+                  </label>
+                </div>
                 <label>
-                  <span>Columna</span>
-                  <select id="parserLabBlockColumnSelect" class="text-input">
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
+                  <span>Valor</span>
+                  <input id="parserLabBlockValueInput" class="text-input" type="text">
+                </label>
+                <label>
+                  <span>Negrita</span>
+                  <select id="parserLabBlockBoldSelect" class="text-input">
+                    <option value="ignore">Ignorar</option>
+                    <option value="required">Requerida</option>
+                    <option value="forbidden">Prohibida</option>
                   </select>
                 </label>
                 <label>
-                  <span>Condición</span>
-                  <select id="parserLabBlockOperatorSelect" class="text-input">
-                    <option value="equals">Igual a</option>
-                    <option value="contains">Contiene</option>
-                    <option value="regex">Expresión regular</option>
-                    <option value="nonempty">No vacía</option>
+                  <span>Combinada B–D</span>
+                  <select id="parserLabBlockMergedSelect" class="text-input">
+                    <option value="ignore">Ignorar</option>
+                    <option value="required">Requerida</option>
+                    <option value="forbidden">Prohibida</option>
                   </select>
                 </label>
               </div>
-              <label>
-                <span>Valor</span>
-                <input id="parserLabBlockValueInput" class="text-input" type="text">
-              </label>
-              <label>
-                <span>Negrita</span>
-                <select id="parserLabBlockBoldSelect" class="text-input">
-                  <option value="ignore">Ignorar</option>
-                  <option value="required">Requerida</option>
-                  <option value="forbidden">Prohibida</option>
-                </select>
-              </label>
-              <label>
-                <span>Combinada B–D</span>
-                <select id="parserLabBlockMergedSelect" class="text-input">
-                  <option value="ignore">Ignorar</option>
-                  <option value="required">Requerida</option>
-                  <option value="forbidden">Prohibida</option>
-                </select>
-              </label>
+              <p id="parserLabBlockStructuralBoundaryNote" class="parser-lab-rule-note" hidden></p>
               <label>
                 <span>El contenido empieza</span>
                 <select id="parserLabBlockContentStartSelect" class="text-input">
@@ -381,6 +393,9 @@
       blockForm: documentRef.getElementById('parserLabBlockForm'),
       blockFormTitle: documentRef.getElementById('parserLabBlockFormTitle'),
       blockNameInput: documentRef.getElementById('parserLabBlockNameInput'),
+      blockHeaderSourceSelect: documentRef.getElementById('parserLabBlockHeaderSourceSelect'),
+      blockHeaderMatchFields: documentRef.getElementById('parserLabBlockHeaderMatchFields'),
+      blockStructuralBoundaryNote: documentRef.getElementById('parserLabBlockStructuralBoundaryNote'),
       blockColumnSelect: documentRef.getElementById('parserLabBlockColumnSelect'),
       blockOperatorSelect: documentRef.getElementById('parserLabBlockOperatorSelect'),
       blockValueInput: documentRef.getElementById('parserLabBlockValueInput'),
@@ -1845,12 +1860,22 @@
         regex: 'regex',
         nonempty: 'no vacía',
       };
-      const parts = [`${header.column} ${operatorLabels[header.operator]}`];
-      if (header.operator !== 'nonempty') parts.push(`“${header.value}”`);
-      if (header.bold === 'required') parts.push('negrita');
-      if (header.bold === 'forbidden') parts.push('sin negrita');
-      if (header.merged_b_to_d === 'required') parts.push('B–D combinada');
-      if (header.merged_b_to_d === 'forbidden') parts.push('no combinada');
+      const structuralLabels = {
+        sheet_start: 'primera fila de la hoja',
+        after_previous: 'fila siguiente a la frontera anterior',
+        sheet_end: 'última fila de la hoja',
+      };
+      const parts = [];
+      if (header.source === 'match') {
+        parts.push(`${header.column} ${operatorLabels[header.operator]}`);
+        if (header.operator !== 'nonempty') parts.push(`“${header.value}”`);
+        if (header.bold === 'required') parts.push('negrita');
+        if (header.bold === 'forbidden') parts.push('sin negrita');
+        if (header.merged_b_to_d === 'required') parts.push('B–D combinada');
+        if (header.merged_b_to_d === 'forbidden') parts.push('no combinada');
+      } else {
+        parts.push(structuralLabels[header.source] || header.source);
+      }
       const effectLabels = { continue: 'continúa', item: 'siguiente ítem', group: 'grupo', page: 'página' };
       const displayLabels = { ignore: 'ignora hueco', compact: 'compacta a 1', preserve: 'respeta hueco' };
       const normalized = blockModel.normalizeDefinition(definition);
@@ -1880,7 +1905,7 @@
       flushPendingBlockEdit();
       state.activeEditorTab = definition.id;
       state.editingBlockId = definition.id;
-      populateBlockForm(definition, 'Editar cabecera');
+      populateBlockForm(definition, 'Editar frontera');
     }
 
     function populateBlockForm(definition, title) {
@@ -1891,6 +1916,7 @@
       elements.blockForm.hidden = false;
       elements.blockFormTitle.textContent = title;
       elements.blockNameInput.value = normalized.name;
+      elements.blockHeaderSourceSelect.value = normalized.header.source;
       elements.blockColumnSelect.value = normalized.header.column;
       elements.blockOperatorSelect.value = normalized.header.operator;
       elements.blockValueInput.value = normalized.header.value || '';
@@ -1906,6 +1932,7 @@
       setEmptyRowPolicyFields('Between', normalized.interpretation.empty_rows.between_items);
       setEmptyRowPolicyFields('Trailing', normalized.interpretation.empty_rows.trailing);
       elements.blockFormError.hidden = true;
+      updateBoundaryFields();
       updateBlockValueInput();
       updateOrientationFields();
     }
@@ -1924,6 +1951,7 @@
         name: elements.blockNameInput.value.trim(),
         enabled: current ? current.enabled : true,
         header: {
+          source: elements.blockHeaderSourceSelect.value,
           column: elements.blockColumnSelect.value,
           operator: elements.blockOperatorSelect.value,
           value: elements.blockValueInput.value.trim(),
@@ -2014,10 +2042,33 @@
       if (index >= 0) moveDefinition(index, offset);
     }
 
+    function revealEditingBlockStart() {
+      const instance = state.blockInstances.find((candidate) => (
+        candidate.definition_id === state.editingBlockId
+      ));
+      if (instance && instance.matched) selectRow(instance.start_row, true);
+    }
+
     function updateBlockValueInput() {
-      const disabled = elements.blockOperatorSelect.value === 'nonempty';
+      const disabled = (
+        elements.blockHeaderSourceSelect.value !== 'match'
+        || elements.blockOperatorSelect.value === 'nonempty'
+      );
       elements.blockValueInput.disabled = disabled;
-      if (disabled) elements.blockValueInput.value = '';
+      if (elements.blockOperatorSelect.value === 'nonempty') elements.blockValueInput.value = '';
+    }
+
+    function updateBoundaryFields() {
+      const source = elements.blockHeaderSourceSelect.value;
+      const notes = {
+        sheet_start: 'El bloque comienza en la primera fila normalizada de la hoja.',
+        after_previous: 'El bloque comienza en la fila inmediatamente posterior a la frontera anterior.',
+        sheet_end: 'El bloque comienza en la última fila normalizada de la hoja.',
+      };
+      elements.blockHeaderMatchFields.hidden = source !== 'match';
+      elements.blockStructuralBoundaryNote.hidden = source === 'match';
+      elements.blockStructuralBoundaryNote.textContent = notes[source] || '';
+      updateBlockValueInput();
     }
 
     function updateOrientationFields() {
@@ -2359,6 +2410,11 @@
     elements.blockGroupingSelect.addEventListener('change', () => {
       updateOrientationFields();
       applyLiveBlockDefinition();
+    });
+    elements.blockHeaderSourceSelect.addEventListener('change', () => {
+      updateBoundaryFields();
+      applyLiveBlockDefinition();
+      revealEditingBlockStart();
     });
     elements.blockOperatorSelect.addEventListener('change', () => {
       updateBlockValueInput();

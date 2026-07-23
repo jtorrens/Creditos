@@ -2,7 +2,7 @@
 
 Fecha de referencia: 2026-07-23
 
-Aplicación verificada: Créditos `0.1.76`
+Aplicación verificada: Créditos `0.1.77`
 
 Rama de implementación: `agent/parser-lab-model-workflow`
 
@@ -40,7 +40,7 @@ La promoción de una regla probada a `apps/renderer/import_models` requiere una 
 
 - La implementación está en `agent/parser-lab-model-workflow`.
 - El PR de integración a `main` es el borrador #1.
-- El commit `7947e6c` es la base publicada de Parser Lab; las mejoras posteriores incorporan la biblioteca local de modelos y elevan la aplicación a `0.1.76`.
+- El commit `7947e6c` es la base publicada de Parser Lab; las mejoras posteriores incorporan la biblioteca local, las fronteras estructurales y elevan la aplicación a `0.1.77`.
 - `data/creditos.db` no forma parte del commit ni del PR.
 - El ejecutable usado para la verificación fue:
   `apps/desktop/dist/mac-arm64/Creditos.app`.
@@ -165,20 +165,20 @@ Ejemplo reducido:
 Contrato contenedor: `parser_lab_model_library`, versión 1.
 
 Cada modelo tiene `id` estable, nombre único, revisión, fechas de creación y
-actualización, y un documento `parser_lab_block_model` versión 5. La biblioteca
+actualización, y un documento `parser_lab_block_model` versión 6. La biblioteca
 mantiene un único `active_model_id` y permite quedar vacía después de borrar el
 último modelo. Crear, duplicar, renombrar y borrar se realizan desde la barra
 superior con diálogos propios de Parser Lab; duplicar copia toda la regla y genera
 una identidad nueva.
 
-Contrato: `parser_lab_block_model`, versión 5.
+Contrato: `parser_lab_block_model`, versión 6.
 
 Estructura superior:
 
 ```json
 {
   "schema": "parser_lab_block_model",
-  "version": 5,
+  "version": 6,
   "blocks": [],
   "composition_rules": [],
   "normalized_rows_view": {
@@ -205,6 +205,7 @@ Contratos retirados que no deben reintroducirse:
   "name": "Equipo técnico",
   "enabled": true,
   "header": {
+    "source": "match",
     "column": "C",
     "operator": "equals",
     "value": "Equipo técnico",
@@ -238,6 +239,7 @@ Una definición se busca de forma secuencial a partir de la cabecera anterior. L
 
 Condiciones disponibles:
 
+- origen `match`, `sheet_start`, `after_previous` o `sheet_end`;
 - columna A, B, C o D;
 - operador `equals`, `contains`, `regex` o `nonempty`;
 - negrita ignorada, requerida o prohibida;
@@ -364,7 +366,9 @@ La prioridad de modelado es:
 2. interpretar el patrón uniforme de cada bloque;
 3. aplicar composición adicional solo cuando sea necesario.
 
-Una frontera también puede ser el inicio o final de hoja y no necesariamente un texto. Esta idea fue acordada, pero todavía no está representada completamente en el contrato actual.
+Una frontera puede ser una cabecera que coincide, la primera fila de la hoja, la
+fila inmediatamente posterior a la frontera anterior o la última fila de la hoja.
+Las fronteras estructurales no dependen del texto ni del formato de una celda.
 
 ### 7.4 Copia de ajustes entre bloques
 
@@ -522,19 +526,13 @@ Ejemplo:
 - creación de ítems: uno por fila;
 - la línea «Una producción de Buendía Estudios Canarias» se conserva como ítem real.
 
-La implementación es genérica, forma parte de la versión 5 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` a sus bloques previos.
+La implementación es genérica, forma parte de la versión 6 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` al contenido y `source: "match"` a sus fronteras previas.
 
-## 10. Decisiones acordadas aún no implementadas
+## 10. Alcance aún por decidir
 
-### 10.1 Fronteras estructurales
-
-También se acordó considerar:
-
-- inicio de hoja;
-- final de hoja;
-- inicio relativo después del bloque anterior.
-
-El contrato actual solo encuentra fronteras mediante filas que cumplen un matcher. La auditoría debe estudiar un modelo explícito de fronteras estructurales sin debilitar la detección secuencial.
+Las fronteras textuales y estructurales ya están representadas. Continúa pendiente
+decidir si el producto definitivo seguirá limitado a una hoja y a las columnas
+A–D, y si necesita historial recuperable o deshacer además de las revisiones.
 
 ## 11. Riesgos y preguntas abiertas para la auditoría
 
