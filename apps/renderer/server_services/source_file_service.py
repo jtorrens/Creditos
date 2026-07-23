@@ -74,3 +74,25 @@ def load_active_source_file(connection, production_id, episode_id):
         "mime": row["mime_type"],
         "base64": base64.b64encode(row["data_blob"]).decode("ascii"),
     }
+
+
+def load_source_file(connection, production_id, episode_id, import_model_id):
+    row = connection.execute(
+        """
+        SELECT source_files.file_name, source_files.mime_type, source_files.data_blob
+        FROM source_files
+        JOIN episodes ON episodes.id = source_files.episode_id
+        WHERE source_files.production_id = ?
+          AND source_files.episode_id = ?
+          AND source_files.import_model_id = ?
+          AND episodes.production_id = source_files.production_id
+        """,
+        (int(production_id), int(episode_id), str(import_model_id or "")),
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        "name": row["file_name"],
+        "mime": row["mime_type"],
+        "bytes": row["data_blob"],
+    }

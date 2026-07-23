@@ -1,6 +1,7 @@
 (function (root) {
   function createAppEpisodeLoader(options = {}) {
     const state = options.state;
+    const windowRef = options.windowRef || root;
 
     async function loadProductionStyles() {
       if (!state.databasePath || !state.selectedProductionId) return;
@@ -32,7 +33,9 @@
           state.structure = result.structure
             ? options.createStructureFromSource(state.source, state.materials, options.migrateStructure(result.structure))
             : options.createStructureFromSource(state.source, state.materials, null);
-          state.render = result.render || options.buildCurrentRenderJson(state.source, state.materials, state.structure);
+          state.render = result.source_refresh && result.source_refresh.status === 'refreshed'
+            ? options.buildCurrentRenderJson(state.source, state.materials, state.structure)
+            : result.render || options.buildCurrentRenderJson(state.source, state.materials, state.structure);
           state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
           options.applyPreviewSettingsToUi(state.structure.preview_settings);
           state.pngPreviewZoomMode = 'auto';
@@ -50,6 +53,16 @@
         options.updateXlsxStatus();
         options.updateReferenceVideoStatus();
         options.rebuild();
+        if (result.source_refresh && result.source_refresh.status === 'refreshed') {
+          await options.persistCurrentEpisode();
+        }
+        if (result.source_refresh && result.source_refresh.status === 'failed') {
+          windowRef.alert(
+            'No se pudo actualizar el origen con la revisión actual del modelo. ' +
+            'Se mantiene la última versión válida.\n\n' +
+            result.source_refresh.error
+          );
+        }
       } finally {
         state.isLoadingEpisode = false;
       }

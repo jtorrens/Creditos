@@ -16,7 +16,7 @@ from parser_lab.service import (
     inspect_uploaded_source,
 )
 from server_db.connection import db_connect, default_db_path
-from server_services.import_service import import_credit_source
+from server_services.import_service import import_credit_source, refresh_credit_source_if_stale
 from server_services.import_rule_model_service import (
     apply_rule_model_library_action,
     load_rule_model_library,
@@ -282,10 +282,19 @@ class Handler(BaseHTTPRequestHandler):
                     production_id = payload.get("production_id")
                     episode_id = payload.get("episode_id")
                     import_model_id = payload.get("import_model_id")
+                    source = load_document(connection, production_id, episode_id, "source", import_model_id)
+                    source, source_refresh = refresh_credit_source_if_stale(
+                        connection,
+                        production_id,
+                        episode_id,
+                        import_model_id,
+                        source,
+                    )
                     self.send_json(
                         200,
                         {
-                            "source": load_document(connection, production_id, episode_id, "source", import_model_id),
+                            "source": source,
+                            "source_refresh": source_refresh,
                             "structure": load_document(connection, production_id, episode_id, "structure", import_model_id),
                             "render": load_document(connection, production_id, episode_id, "render", import_model_id),
                             "reference": load_document(connection, production_id, episode_id, "reference"),

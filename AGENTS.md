@@ -6,7 +6,7 @@ Project: Electron app "Créditos".
 
 - Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
 - All implementation, documentation, dependency, build, and verification work must be done in this canonical Créditos workspace on `main`.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.87`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.88`.
 - If the worktree or version does not match the canonical application, stop and ask the user before moving changes.
 
 ## Parallel Work

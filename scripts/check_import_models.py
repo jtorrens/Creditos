@@ -52,6 +52,7 @@ def calls_validate_source_json(path):
 def main():
     sys.path.insert(0, str(PACKAGE_ROOT))
     registry = importlib.import_module("import_models.registry")
+    import_service = importlib.import_module("server_services.import_service")
     errors = []
 
     if not registry.IMPORT_MODELS:
@@ -93,6 +94,50 @@ def main():
             )
         if not calls_validate_source_json(path):
             errors.append(f"{path.relative_to(REPO_ROOT)} does not call validate_source_json")
+
+    stale_source = {
+        "source": "credits.ods",
+        "import_rule_model": {"id": "rule_model_test", "revision": 2},
+    }
+    refreshed_source = {
+        "source": "credits.ods",
+        "import_rule_model": {"id": "rule_model_test", "revision": 3},
+    }
+    refreshed, refresh_status = import_service.refresh_credit_source_if_stale(
+        None,
+        1,
+        2,
+        "rule_model_test",
+        stale_source,
+        {
+            "get_rule_model": lambda _connection, _model_id: {"revision": 3},
+            "load_source_file": lambda _connection, _production_id, _episode_id, _model_id: {
+                "name": "credits.ods",
+                "bytes": b"source",
+            },
+            "import_credit_source": lambda *_args: refreshed_source,
+        },
+    )
+    if refreshed != refreshed_source or refresh_status != {
+        "status": "refreshed",
+        "from_revision": 2,
+        "to_revision": 3,
+    }:
+        errors.append("stale rule source was not refreshed to the current model revision")
+
+    preserved, failure_status = import_service.refresh_credit_source_if_stale(
+        None,
+        1,
+        2,
+        "rule_model_test",
+        stale_source,
+        {
+            "get_rule_model": lambda _connection, _model_id: {"revision": 3},
+            "load_source_file": lambda *_args: None,
+        },
+    )
+    if preserved != stale_source or not failure_status or failure_status.get("status") != "failed":
+        errors.append("failed rule refresh did not preserve the last valid source")
 
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)

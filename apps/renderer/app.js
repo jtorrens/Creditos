@@ -841,7 +841,6 @@
     writeAnimatedFrames,
     writeRepeatedFrames,
   } = appComposition;
-
   const appFonts = globalThis.CreditosAppFonts.createAppFonts({
     buildFontCatalog,
     fallbackFontCatalog,
@@ -1057,6 +1056,7 @@
     migrateStructure,
     normalizeReferenceVideo,
     normalizeSource,
+    persistCurrentEpisode,
     persistSelectedProductionFields,
     rebuild,
     selectedProduction,

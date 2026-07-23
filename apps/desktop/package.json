@@ -1,6 +1,6 @@
 {
   "name": "creditos-desktop",
-  "version": "0.1.87",
+  "version": "0.1.88",
   "private": true,
   "description": "Electron desktop app for Creditos.",
   "main": "main.js",
