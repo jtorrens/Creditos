@@ -21,7 +21,7 @@ from server_services.import_rule_model_service import (
     apply_rule_model_library_action,
     load_rule_model_library,
 )
-from server_services.document_service import load_document, save_document
+from server_services.document_service import list_structure_sources, load_document, save_document
 from server_services.project_service import (
     create_production,
     db_overview,
@@ -300,6 +300,13 @@ class Handler(BaseHTTPRequestHandler):
                             "reference": load_document(connection, production_id, episode_id, "reference"),
                             "styles": load_styles(connection, production_id),
                         },
+                    )
+                    return
+
+                if path == "/api/db/list-structure-sources":
+                    self.send_json(
+                        200,
+                        {"sources": list_structure_sources(connection, payload.get("production_id"))},
                     )
                     return
 

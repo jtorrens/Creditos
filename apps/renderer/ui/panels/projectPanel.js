@@ -126,21 +126,21 @@
       }
     }
 
-    function showEpisodeStyleSourceModal(episodes) {
+    function showEpisodeStyleSourceModal(sources) {
       return new Promise((resolve) => {
         const overlay = documentRef.createElement('div');
         overlay.className = 'modal-overlay';
         const modal = documentRef.createElement('div');
         modal.className = 'app-modal';
         const title = documentRef.createElement('h2');
-        title.textContent = 'Asignar estilos de otro capítulo';
+        title.textContent = 'Aplicar presentación de otro modelo o capítulo';
         const text = documentRef.createElement('p');
-        text.textContent = 'Elige el capítulo origen. Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.';
+        text.textContent = 'Se buscarán bloques equivalentes. Los estilos y overrides se copiarán cuando exista una coincidencia razonable; las agrupaciones solo cambiarán si la correspondencia es exacta y completa. Las imágenes del capítulo actual se conservarán.';
         const select = fieldControlRegistry.create('select', {
           className: 'text-input',
-          options: episodes.map((episode) => ({
-            value: episode.id,
-            label: episode.name || `Capítulo ${episode.episode_number || episode.id}`,
+          options: sources.map((source) => ({
+            value: source.id,
+            label: source.label,
           })),
         });
         const actions = documentRef.createElement('div');

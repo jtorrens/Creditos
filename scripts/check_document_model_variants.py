@@ -65,7 +65,7 @@ def create_v2_database(path):
 def main():
     sys.path.insert(0, str(RENDERER_ROOT))
     from server_db.connection import db_connect
-    from server_services.document_service import load_document, save_document
+    from server_services.document_service import list_structure_sources, load_document, save_document
 
     with tempfile.TemporaryDirectory() as directory:
         db_path = pathlib.Path(directory) / "creditos.db"
@@ -76,6 +76,7 @@ def main():
             assert load_document(connection, 1, 1, "structure", "modelo_ia") is None
             assert load_document(connection, 1, 1, "structure", "modelo_reglas")["association"] == "ia"
             assert load_document(connection, 1, 1, "reference")["file_path"] == "video.mov"
+            assert [item["import_model_id"] for item in list_structure_sources(connection, 1)] == ["modelo_reglas"]
 
             save_document(
                 connection,
@@ -83,6 +84,14 @@ def main():
                 1,
                 "structure",
                 {"schema": "credit_structure", "association": "ia_actualizada"},
+                "modelo_ia",
+            )
+            save_document(
+                connection,
+                1,
+                1,
+                "source",
+                {"schema": "credit_source", "import_model_id": "modelo_ia"},
                 "modelo_ia",
             )
 
@@ -99,6 +108,10 @@ def main():
             assert [(row["import_model_id"], json.loads(row["data_json"])["association"]) for row in rows] == [
                 ("modelo_ia", "ia_actualizada"),
                 ("modelo_reglas", "ia"),
+            ]
+            assert [item["import_model_id"] for item in list_structure_sources(connection, 1)] == [
+                "modelo_ia",
+                "modelo_reglas",
             ]
 
     print("ok document associations persist independently per import model")

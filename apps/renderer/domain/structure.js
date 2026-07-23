@@ -77,6 +77,342 @@
       };
     }
 
+    function transferStructurePresentation(
+      targetStructure,
+      targetMaterials,
+      sourceStructure,
+      sourceMaterials,
+      applyStyleSettings,
+      sourceRawStructure = sourceStructure
+    ) {
+      const target = JSON.parse(JSON.stringify(targetStructure || {}));
+      const source = migrateStructure(JSON.parse(JSON.stringify(sourceStructure || {})));
+      if (!target.cartelas || !source || !source.cartelas) {
+        return { structure: target, report: emptyTransferReport(targetMaterials) };
+      }
+      const sourceCartelaByRef = new Map();
+      const sourceRawById = new Map(((sourceRawStructure && sourceRawStructure.cartelas) || [])
+        .map((cartela) => [cartela.id, cartela]));
+      getVisualCartelas(source.cartelas).forEach((cartela, cartelaIndex) => {
+        getCartelaRefs(cartela).forEach((ref, refIndex) => {
+          sourceCartelaByRef.set(ref, { cartela, cartelaIndex, refIndex });
+        });
+      });
+      const matches = [];
+      (targetMaterials || []).forEach((targetMaterial) => {
+        const best = bestMaterialTransferMatch(targetMaterial, sourceMaterials || [], sourceCartelaByRef);
+        if (best) matches.push({ targetMaterial, ...best });
+      });
+      const matchByTargetRef = new Map(matches.map((match) => [match.targetMaterial.id, match]));
+      let styledCartelas = 0;
+      target.cartelas.forEach((cartela) => {
+        const candidates = getCartelaRefs(cartela)
+          .map((ref) => matchByTargetRef.get(ref))
+          .filter(Boolean);
+        if (!candidates.length || typeof applyStyleSettings !== 'function') return;
+        const sourceCartela = dominantSourceCartela(candidates);
+        if (!sourceCartela) return;
+        applyStyleSettings(cartela, sourceCartela, sourceRawById.get(sourceCartela.id) || sourceCartela);
+        copyExactSourceRefSettings(cartela, candidates);
+        styledCartelas += 1;
+      });
+
+      const exactGroups = new Map();
+      target.cartelas.forEach((cartela) => {
+        const refs = getCartelaRefs(cartela);
+        if (!refs.length) return;
+        const exactMatches = refs.map((ref) => matchByTargetRef.get(ref));
+        if (exactMatches.some((match) => !match || match.confidence !== 'exact')) return;
+        const sourceIds = new Set(exactMatches.map((match) => match.sourceCartela.id));
+        if (sourceIds.size !== 1) return;
+        const sourceId = exactMatches[0].sourceCartela.id;
+        if (!exactGroups.has(sourceId)) exactGroups.set(sourceId, []);
+        exactGroups.get(sourceId).push({ cartela, matches: exactMatches });
+      });
+      const removedCartelaIds = new Set();
+      let groupedCartelas = 0;
+      let protectedImageCartelas = 0;
+      exactGroups.forEach((entries) => {
+        if (entries.length < 2) return;
+        if (entries.some((entry) => cartelaImages(entry.cartela).length)) {
+          protectedImageCartelas += entries.filter((entry) => cartelaImages(entry.cartela).length).length;
+          return;
+        }
+        const sourceCartela = entries[0].matches[0].sourceCartela;
+        const sourceRefs = getCartelaRefs(sourceCartela);
+        const matchedSourceRefs = entries.flatMap((entry) => entry.matches.map((match) => match.sourceMaterial.id));
+        if (matchedSourceRefs.length !== sourceRefs.length
+          || new Set(matchedSourceRefs).size !== sourceRefs.length
+          || sourceRefs.some((ref) => !matchedSourceRefs.includes(ref))) return;
+        entries.sort((left, right) => Math.min(...left.matches.map((match) => match.sourceRefIndex))
+          - Math.min(...right.matches.map((match) => match.sourceRefIndex)));
+        const destination = entries[0].cartela;
+        destination.pages = mergeExactCartelaPages(destination, entries, sourceCartela);
+        entries.slice(1).forEach((entry) => removedCartelaIds.add(entry.cartela.id));
+        groupedCartelas += entries.length - 1;
+      });
+      target.cartelas = target.cartelas.filter((cartela) => !removedCartelaIds.has(cartela.id));
+      const imageSourceByTarget = new Map();
+      const targetsByImageSource = new Map();
+      target.cartelas.forEach((cartela) => {
+        if (cartelaImages(cartela).length) return;
+        const candidates = getCartelaRefs(cartela)
+          .map((ref) => matchByTargetRef.get(ref))
+          .filter(Boolean);
+        const sourceCartela = dominantSourceCartela(candidates);
+        if (!sourceCartela || !cartelaImages(sourceCartela).length) return;
+        imageSourceByTarget.set(cartela.id, sourceCartela);
+        targetsByImageSource.set(sourceCartela.id, (targetsByImageSource.get(sourceCartela.id) || 0) + 1);
+      });
+      let copiedImageCartelas = 0;
+      let copiedImages = 0;
+      let ambiguousImageCartelas = 0;
+      imageSourceByTarget.forEach((sourceCartela, targetId) => {
+        if (targetsByImageSource.get(sourceCartela.id) !== 1) {
+          ambiguousImageCartelas += 1;
+          return;
+        }
+        const targetCartela = target.cartelas.find((cartela) => cartela.id === targetId);
+        if (!targetCartela) return;
+        targetCartela.images = JSON.parse(JSON.stringify(cartelaImages(sourceCartela)));
+        copiedImageCartelas += 1;
+        copiedImages += targetCartela.images.length;
+      });
+      const anchoredImages = transferAnchoredImageCartelas(target, source, matches);
+      copiedImageCartelas += anchoredImages.copiedImageCartelas;
+      copiedImages += anchoredImages.copiedImages;
+      enforceUniqueMaterialRefs(target);
+      addMissingMaterialsToStructure(target.cartelas, targetMaterials || [], target.settings || {});
+      ensureCartelaOrders(target.cartelas);
+      return {
+        structure: target,
+        report: {
+          matched_materials: matches.length,
+          exact_matches: matches.filter((match) => match.confidence === 'exact').length,
+          approximate_matches: matches.filter((match) => match.confidence !== 'exact').length,
+          unmatched_materials: Math.max(0, (targetMaterials || []).length - matches.length),
+          styled_cartelas: styledCartelas,
+          grouped_cartelas: groupedCartelas,
+          protected_image_cartelas: protectedImageCartelas,
+          copied_image_cartelas: copiedImageCartelas,
+          copied_images: copiedImages,
+          created_image_cartelas: anchoredImages.createdImageCartelas,
+          ambiguous_image_cartelas: ambiguousImageCartelas,
+          resulting_cartelas: target.cartelas.length,
+        },
+      };
+    }
+
+    function emptyTransferReport(materials) {
+      return {
+        matched_materials: 0,
+        exact_matches: 0,
+        approximate_matches: 0,
+        unmatched_materials: (materials || []).length,
+        styled_cartelas: 0,
+        grouped_cartelas: 0,
+        protected_image_cartelas: 0,
+        copied_image_cartelas: 0,
+        copied_images: 0,
+        created_image_cartelas: 0,
+        ambiguous_image_cartelas: 0,
+        resulting_cartelas: 0,
+      };
+    }
+
+    function dominantSourceCartela(matches) {
+      const candidates = new Map();
+      matches.forEach((match) => {
+        const current = candidates.get(match.sourceCartela.id) || { cartela: match.sourceCartela, score: 0 };
+        current.score += match.score;
+        candidates.set(match.sourceCartela.id, current);
+      });
+      return [...candidates.values()].sort((left, right) => right.score - left.score)[0]?.cartela || null;
+    }
+
+    function transferAnchoredImageCartelas(target, source, matches) {
+      const exactBySourceRef = new Map();
+      matches.filter((match) => match.confidence === 'exact').forEach((match) => {
+        if (!exactBySourceRef.has(match.sourceMaterial.id)) exactBySourceRef.set(match.sourceMaterial.id, []);
+        exactBySourceRef.get(match.sourceMaterial.id).push(match);
+      });
+      let copiedImageCartelas = 0;
+      let copiedImages = 0;
+      let createdImageCartelas = 0;
+      const sourceCartelas = getVisualCartelas(source.cartelas);
+      sourceCartelas.forEach((sourceCartela, sourceIndex) => {
+        const images = cartelaImages(sourceCartela);
+        if (!images.length || getCartelaRefs(sourceCartela).length) return;
+        const sourceAnchor = previousCartelaWithRefs(sourceCartelas, sourceIndex);
+        const sourceAnchorRefs = getCartelaRefs(sourceAnchor);
+        if (!sourceAnchorRefs.length) return;
+        const anchorMatches = sourceAnchorRefs.flatMap((ref) => exactBySourceRef.get(ref) || []);
+        if (anchorMatches.length !== sourceAnchorRefs.length
+          || new Set(anchorMatches.map((match) => match.targetMaterial.id)).size !== sourceAnchorRefs.length) return;
+        const targetAnchors = target.cartelas.filter((cartela) => {
+          const refs = new Set(getCartelaRefs(cartela));
+          return anchorMatches.every((match) => refs.has(match.targetMaterial.id));
+        });
+        if (targetAnchors.length !== 1) return;
+        const targetAnchor = targetAnchors[0];
+        if (cartelaImages(targetAnchor).length) return;
+        const sourceName = normalizeTransferText(sourceCartela.manual_name || sourceCartela.title);
+        const namedTarget = sourceName
+          ? target.cartelas.find((cartela) => !getCartelaRefs(cartela).length
+            && normalizeTransferText(cartela.manual_name || cartela.title) === sourceName)
+          : null;
+        const targetVisualCartelas = getVisualCartelas(target.cartelas);
+        const targetAnchorIndex = targetVisualCartelas.findIndex((cartela) => cartela.id === targetAnchor.id);
+        const adjacentTarget = targetVisualCartelas[targetAnchorIndex + 1];
+        const targetImageCartela = namedTarget || (
+          adjacentTarget && adjacentTarget.manual && !getCartelaRefs(adjacentTarget).length
+            ? adjacentTarget
+            : null
+        );
+        if (targetImageCartela) {
+          if (!cartelaImages(targetImageCartela).length) {
+            targetImageCartela.images = JSON.parse(JSON.stringify(images));
+            copiedImageCartelas += 1;
+            copiedImages += images.length;
+          }
+          return;
+        }
+        const clone = JSON.parse(JSON.stringify(sourceCartela));
+        clone.id = uniqueCartelaId(target.cartelas, target.cartelas.length + 1);
+        clone.manual = true;
+        clone.images = JSON.parse(JSON.stringify(images));
+        clone.source_order = Math.max(0, ...target.cartelas.map((cartela) => Number(cartela.source_order) || 0)) + 1;
+        const anchorOrder = Number(targetAnchor.visual_order) || 1;
+        target.cartelas.forEach((cartela) => {
+          if (Number(cartela.visual_order) > anchorOrder) cartela.visual_order = Number(cartela.visual_order) + 1;
+        });
+        clone.visual_order = anchorOrder + 1;
+        clone.pages = [{ id: `${clone.id}_page_001`, title: '', source_refs: [], source_ref_settings: {} }];
+        target.cartelas.push(clone);
+        copiedImageCartelas += 1;
+        copiedImages += images.length;
+        createdImageCartelas += 1;
+      });
+      return { copiedImageCartelas, copiedImages, createdImageCartelas };
+    }
+
+    function previousCartelaWithRefs(cartelas, index) {
+      for (let candidateIndex = index - 1; candidateIndex >= 0; candidateIndex -= 1) {
+        if (getCartelaRefs(cartelas[candidateIndex]).length) return cartelas[candidateIndex];
+      }
+      return null;
+    }
+
+    function copyExactSourceRefSettings(cartela, matches) {
+      matches.filter((match) => match.confidence === 'exact').forEach((match) => {
+        const targetPage = findPageWithRef(cartela, match.targetMaterial.id);
+        const sourcePage = findPageWithRef(match.sourceCartela, match.sourceMaterial.id);
+        const sourceSettings = sourcePage && sourcePage.source_ref_settings && sourcePage.source_ref_settings[match.sourceMaterial.id];
+        if (!targetPage || !sourceSettings) return;
+        const settings = JSON.parse(JSON.stringify(sourceSettings));
+        delete settings.locked;
+        delete settings.frozen_material;
+        targetPage.source_ref_settings = targetPage.source_ref_settings || {};
+        targetPage.source_ref_settings[match.targetMaterial.id] = settings;
+      });
+    }
+
+    function mergeExactCartelaPages(destination, entries, sourceCartela) {
+      const targetRefBySourceRef = new Map();
+      const targetSettingsByRef = new Map();
+      entries.forEach((entry) => {
+        entry.matches.forEach((match) => targetRefBySourceRef.set(match.sourceMaterial.id, match.targetMaterial.id));
+        (entry.cartela.pages || []).forEach((page) => {
+          (page.source_refs || []).forEach((ref) => {
+            targetSettingsByRef.set(ref, JSON.parse(JSON.stringify(
+              page.source_ref_settings && page.source_ref_settings[ref] || { columns: 1 }
+            )));
+          });
+        });
+      });
+      return (sourceCartela.pages || []).map((sourcePage, pageIndex) => {
+        const refs = (sourcePage.source_refs || []).map((ref) => targetRefBySourceRef.get(ref)).filter(Boolean);
+        const settings = {};
+        refs.forEach((ref) => {
+          settings[ref] = targetSettingsByRef.get(ref) || { columns: 1 };
+        });
+        return {
+          id: `${destination.id}_page_${String(pageIndex + 1).padStart(3, '0')}`,
+          title: sourcePage.title || '',
+          source_refs: refs,
+          source_ref_settings: settings,
+        };
+      }).filter((page) => page.source_refs.length);
+    }
+
+    function bestMaterialTransferMatch(targetMaterial, sourceMaterials, sourceCartelaByRef) {
+      const targetEvidence = materialTransferEvidence(targetMaterial);
+      let best = null;
+      (sourceMaterials || []).forEach((sourceMaterial) => {
+        const location = sourceCartelaByRef.get(sourceMaterial.id);
+        if (!location) return;
+        const sourceEvidence = materialTransferEvidence(sourceMaterial);
+        const exactTitle = !!targetEvidence.title && targetEvidence.title === sourceEvidence.title;
+        const rowOverlap = intersectionSize(targetEvidence.rows, sourceEvidence.rows);
+        const termOverlap = intersectionSize(targetEvidence.terms, sourceEvidence.terms);
+        const score = (exactTitle ? 10000 : 0) + (rowOverlap * 50) + (termOverlap * 8);
+        const reasonableMatch = exactTitle || rowOverlap >= 2 || termOverlap >= 2 || (rowOverlap >= 1 && termOverlap >= 1);
+        if (!reasonableMatch || (best && best.score >= score)) return;
+        best = {
+          score,
+          confidence: exactTitle ? 'exact' : 'approximate',
+          sourceMaterial,
+          sourceCartela: location.cartela,
+          sourceCartelaIndex: location.cartelaIndex,
+          sourceRefIndex: location.refIndex,
+        };
+      });
+      return best;
+    }
+
+    function materialTransferEvidence(material) {
+      const rows = new Set();
+      const terms = new Set();
+      addTransferTerm(terms, material && material.title);
+      (material && material.items || []).forEach((item) => {
+        [item.row, item.source_row].forEach((row) => addTransferRow(rows, row));
+        ['role', 'name', 'actor', 'character', 'value', 'title'].forEach((key) => addTransferTerm(terms, item[key]));
+        (item.names || []).forEach((name) => {
+          [name.row, name.source_row].forEach((row) => addTransferRow(rows, row));
+          addTransferTerm(terms, name.name || name.value);
+        });
+      });
+      addTransferRow(rows, material && material.start_row);
+      return { rows, terms, title: normalizeTransferText(material && material.title) };
+    }
+
+    function addTransferRow(rows, value) {
+      const row = Number(value);
+      if (Number.isFinite(row) && row > 0) rows.add(row);
+    }
+
+    function addTransferTerm(terms, value) {
+      const normalized = normalizeTransferText(value);
+      if (normalized) terms.add(normalized);
+    }
+
+    function normalizeTransferText(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\p{L}\p{N}]+/gu, ' ')
+        .trim()
+        .toLowerCase();
+    }
+
+    function intersectionSize(left, right) {
+      let count = 0;
+      left.forEach((value) => {
+        if (right.has(value)) count += 1;
+      });
+      return count;
+    }
+
     function materialHasRenderableContent(material) {
       if (!material) return false;
       if (material.type === 'logos') return true;
@@ -606,6 +942,7 @@
       removeDefaultEmptyCartelas,
       resetCartelaOverride,
       structureJsonForOutput,
+      transferStructurePresentation,
       updateCartela,
       uniqueCartelaImageId,
       uniqueCartelaId,

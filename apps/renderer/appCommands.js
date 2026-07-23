@@ -760,53 +760,107 @@
 
     async function copyStylesFromEpisodeFlow() {
       if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
-        options.windowRef.alert('Selecciona una producción y un capítulo antes de copiar estilos.');
+        options.windowRef.alert('Selecciona una producción y un capítulo antes de aplicar otra presentación.');
         return;
       }
-      const candidates = options.currentProductionEpisodes().filter((episode) => String(episode.id) !== String(state.selectedEpisodeId));
-      if (!candidates.length) {
-        options.windowRef.alert('No hay otros capítulos en esta producción.');
-        return;
-      }
-      const sourceEpisodeId = await options.showEpisodeStyleSourceModal(candidates);
-      if (!sourceEpisodeId) return;
-      const sourceEpisode = candidates.find((episode) => String(episode.id) === String(sourceEpisodeId));
-      const native = options.nativeBridge();
-      const message = `Asignar a este capítulo los estilos usados en "${sourceEpisode ? sourceEpisode.name : 'otro capítulo'}"? Se copiará la asignación de estilo y solo los overrides explícitos de cartelas con el mismo ID.`;
-      let confirmed = false;
-      if (native && native.confirm) {
-        const result = await native.confirm({ title: 'Asignar estilos', message, confirmLabel: 'Asignar estilos' });
-        confirmed = !!(result && result.confirmed);
-      } else {
-        confirmed = options.windowRef.confirm(message);
-      }
-      if (!confirmed) return;
 
       try {
+        const available = await options.dbPost('/api/db/list-structure-sources', {
+          production_id: state.selectedProductionId,
+        });
+        const currentModelId = options.selectedImportModelIdInDomain(options.selectedProduction(), state.importModels);
+        const episodesById = new Map(options.currentProductionEpisodes().map((episode) => [String(episode.id), episode]));
+        const modelsById = new Map((state.importModels || []).map((model) => [String(model.id), model]));
+        const candidates = (available.sources || [])
+          .filter((source) => String(source.episode_id) !== String(state.selectedEpisodeId)
+            || String(source.import_model_id) !== String(currentModelId))
+          .map((source, index) => {
+            const episode = episodesById.get(String(source.episode_id));
+            const model = modelsById.get(String(source.import_model_id));
+            const episodeLabel = episode && episode.name
+              ? episode.name
+              : `Capítulo ${episode ? episode.episode_number : source.episode_id}`;
+            return {
+              ...source,
+              id: `presentation_source_${index}`,
+              label: `${episodeLabel} · ${model ? model.label : source.import_model_id}`,
+            };
+          });
+        if (!candidates.length) {
+          options.windowRef.alert('No hay otro modelo o capítulo con datos guardados en esta producción.');
+          return;
+        }
+        const selectedSourceId = await options.showEpisodeStyleSourceModal(candidates);
+        if (!selectedSourceId) return;
+        const selectedSource = candidates.find((source) => source.id === selectedSourceId);
+        if (!selectedSource) return;
         const result = await options.dbPost('/api/db/load-episode', {
           production_id: state.selectedProductionId,
-          episode_id: sourceEpisodeId,
-          import_model_id: options.selectedImportModelIdInDomain(options.selectedProduction(), state.importModels),
+          episode_id: selectedSource.episode_id,
+          import_model_id: selectedSource.import_model_id,
         });
-        const sourceRawById = new Map(((result.structure && result.structure.cartelas) || []).map((cartela) => [cartela.id, cartela]));
+        if (!result.source || !result.structure) {
+          options.windowRef.alert('El origen elegido no contiene una fuente y estructura utilizables.');
+          return;
+        }
+        const source = options.normalizeSource(
+          result.source,
+          result.source.meta && result.source.meta.loaded_file
+        );
+        const sourceMaterials = options.createMaterialsFromSource(source);
         const sourceStructure = options.migrateStructure(result.structure);
-        const sourceById = new Map((sourceStructure && sourceStructure.cartelas ? sourceStructure.cartelas : []).map((cartela) => [cartela.id, cartela]));
-        let assigned = 0;
-        (state.structure.cartelas || []).forEach((cartela) => {
-          const sourceCartela = sourceById.get(cartela.id);
-          if (!sourceCartela) return;
-          options.applyExplicitCartelaOverridesFromSource(cartela, sourceCartela, sourceRawById.get(cartela.id) || sourceCartela);
-          assigned += 1;
-        });
-        state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
-        options.renderCartelaList();
-        options.renderEditor();
-        options.renderPreview();
-        options.refreshPdfIfActive();
-        options.scheduleAutosave();
-        options.windowRef.alert(`Estilos asignados en ${assigned} cartela${assigned === 1 ? '' : 's'}.`);
+        const transferred = options.transferStructurePresentation(
+          state.structure,
+          state.materials,
+          sourceStructure,
+          sourceMaterials,
+          (target, sourceCartela, sourceRaw) => options.applyExplicitCartelaOverridesFromSource(
+            target,
+            sourceCartela,
+            sourceRaw,
+            { includeSourceRefs: false }
+          ),
+          result.structure
+        );
+        const report = transferred.report;
+        if (!report.matched_materials) {
+          options.windowRef.alert('No se encontraron bloques equivalentes. El capítulo actual no se ha modificado.');
+          return;
+        }
+        const protection = report.protected_image_cartelas
+          ? ` ${report.protected_image_cartelas} cartela(s) con imágenes conservarán también su agrupación.`
+          : '';
+        const images = report.copied_images
+          ? ` Se copiarán ${report.copied_images} imagen(es) a ${report.copied_image_cartelas} cartela(s) vacías.`
+          : '';
+        const createdImageCartelas = report.created_image_cartelas
+          ? ` Se crearán ${report.created_image_cartelas} cartela(s) gráfica(s) ancladas a un bloque exacto.`
+          : '';
+        const ambiguousImages = report.ambiguous_image_cartelas
+          ? ` ${report.ambiguous_image_cartelas} posible(s) destino(s) de imagen se omitirán por ambigüedad.`
+          : '';
+        const message = `Se han encontrado ${report.exact_matches} coincidencia(s) exacta(s) y ${report.approximate_matches} aproximada(s). Se aplicará presentación a ${report.styled_cartelas} cartela(s) y se unirán ${report.grouped_cartelas} agrupación(es) exactas. ${report.unmatched_materials} bloque(s) quedarán sin cambios.${images}${createdImageCartelas}${ambiguousImages}${protection}`;
+        const native = options.nativeBridge();
+        let confirmed = false;
+        if (native && native.confirm) {
+          const confirmation = await native.confirm({
+            title: 'Aplicar presentación',
+            message,
+            confirmLabel: 'Aplicar',
+          });
+          confirmed = !!(confirmation && confirmation.confirmed);
+        } else {
+          confirmed = options.windowRef.confirm(message);
+        }
+        if (!confirmed) return;
+        state.structure = transferred.structure;
+        if (!(state.structure.cartelas || []).some((cartela) => cartela.id === state.selectedCartelaId)) {
+          state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
+        }
+        options.rebuild();
+        options.windowRef.alert(`Presentación aplicada desde "${selectedSource.label}". ${report.styled_cartelas} cartela(s) actualizadas; ${report.grouped_cartelas} agrupación(es) exactas y ${report.copied_images} imagen(es) copiadas.`);
       } catch (error) {
-        options.windowRef.alert('No se pudieron asignar los estilos: ' + error.message);
+        options.windowRef.alert('No se pudo aplicar la presentación: ' + error.message);
       }
     }
 

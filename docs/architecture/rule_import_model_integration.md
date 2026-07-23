@@ -39,6 +39,27 @@ La migración a esquema v3 asigna los documentos anteriores al
 `import_model_id` declarado por su documento `source`. Solo si el origen no lo
 declara usa el modelo seleccionado en la producción.
 
+## Traslado asistido de presentación
+
+Cartelas permite analizar otra variante de modelo o capítulo guardada en la misma
+producción y aplicar su presentación al capítulo actual. Es una operación
+confirmada y de mejor esfuerzo:
+
+- el título normalizado, las filas de origen y el contenido identifican bloques
+  equivalentes;
+- una coincidencia razonable permite copiar estilo y overrides;
+- una agrupación solo cambia con correspondencia exacta, completa y uno a uno;
+- nunca se divide ni reordena una cartela por una aproximación;
+- las imágenes existentes en el destino se conservan;
+- las imágenes ausentes se copian cuando el destino es inequívoco;
+- una cartela gráfica independiente se recrea únicamente si está anclada tras un
+  bloque con correspondencia exacta;
+- las imágenes ambiguas no se duplican.
+
+Antes de aplicar, la interfaz resume coincidencias exactas y aproximadas,
+agrupaciones, bloques sin cambios e imágenes que se copiarán. Cancelar conserva
+íntegra la variante actual.
+
 ## Fallos explícitos
 
 La importación se detiene si una frontera está ausente, fuera de orden o es

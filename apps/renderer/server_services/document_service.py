@@ -66,3 +66,32 @@ def load_document(connection, production_id, episode_id, kind, import_model_id=N
         (int(production_id), int(episode_id), kind, model_id),
     ).fetchone()
     return json.loads(row["data_json"]) if row else None
+
+
+def list_structure_sources(connection, production_id):
+    rows = connection.execute(
+        """
+        SELECT structure.episode_id, structure.import_model_id, structure.updated_at
+        FROM documents AS structure
+        WHERE structure.production_id = ?
+          AND structure.kind = 'structure'
+          AND EXISTS (
+              SELECT 1
+              FROM documents AS source
+              WHERE source.production_id = structure.production_id
+                AND source.episode_id = structure.episode_id
+                AND source.import_model_id = structure.import_model_id
+                AND source.kind = 'source'
+          )
+        ORDER BY structure.episode_id, structure.import_model_id
+        """,
+        (int(production_id),),
+    ).fetchall()
+    return [
+        {
+            "episode_id": row["episode_id"],
+            "import_model_id": row["import_model_id"],
+            "updated_at": row["updated_at"],
+        }
+        for row in rows
+    ]
