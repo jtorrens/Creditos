@@ -4,7 +4,9 @@
     const els = options.els;
     const state = options.state;
     const fieldControlRegistry = options.fieldControlRegistry;
+    const cartelaPreviewStatus = documentRef.getElementById('cartelaPreviewStatus');
     let cartelaPreviewRenderId = 0;
+    let cartelaPreviewScheduleId = 0;
     let cartelaPreviewHoldFrames = 75;
     const cartelaPreviewPlayback = {
       frame: 0,
@@ -18,13 +20,35 @@
       cartelaId: null,
     };
 
-    function renderCartelaPreview() {
+    function setCartelaPreviewPending(pending) {
+      if (!cartelaPreviewStatus) return;
+      cartelaPreviewStatus.hidden = !pending;
+    }
+
+    function scheduleCartelaPreview() {
+      const scheduleId = ++cartelaPreviewScheduleId;
+      setCartelaPreviewPending(true);
+      root.requestAnimationFrame(() => {
+        root.setTimeout(() => {
+          if (scheduleId !== cartelaPreviewScheduleId) return;
+          renderCartelaPreview({ scheduled: true });
+        }, 0);
+      });
+    }
+
+    function renderCartelaPreview(renderOptions = {}) {
+      if (renderOptions.deferred) {
+        scheduleCartelaPreview();
+        return;
+      }
+      if (!renderOptions.scheduled) cartelaPreviewScheduleId += 1;
       if (!els.cartelaPreview) return;
       els.cartelaPreview.innerHTML = '';
       const cartela = options.getSelectedCartela();
       if (!state.render || !state.structure || !cartela) {
         els.cartelaPreview.className = 'cartela-preview empty-state';
         els.cartelaPreview.textContent = 'Selecciona una cartela.';
+        setCartelaPreviewPending(false);
         return;
       }
       const layout = options.getRenderLayout();
@@ -34,6 +58,7 @@
       if (!page) {
         els.cartelaPreview.className = 'cartela-preview empty-state';
         els.cartelaPreview.textContent = 'Sin página activa.';
+        setCartelaPreviewPending(false);
         return;
       }
       els.cartelaPreview.className = 'cartela-preview';
@@ -86,9 +111,13 @@
       cartelaPreviewPlayback.frame = localFrame;
       cartelaPreviewPlayback.cartelaId = cartela.id;
       const localFrameState = cartelaPreviewRenderFrameState(frameState);
-      drawPanelPage(canvas, localFrameState.page, layout, zoom, localFrameState, { transparent: !!video }).catch((error) => {
-        if (renderId === cartelaPreviewRenderId) console.warn(error);
-      });
+      drawPanelPage(canvas, localFrameState.page, layout, zoom, localFrameState, { transparent: !!video })
+        .catch((error) => {
+          if (renderId === cartelaPreviewRenderId) console.warn(error);
+        })
+        .finally(() => {
+          if (renderId === cartelaPreviewRenderId) setCartelaPreviewPending(false);
+        });
       updateCartelaPreviewPlaybackUi(playbackOptions, localFrameState);
       if (cartelaPreviewPlayback.playing && cartelaPreviewPlayback.cartelaId === cartela.id) {
         startCartelaPreviewPlayback(playbackOptions);

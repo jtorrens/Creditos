@@ -1094,7 +1094,7 @@
     moveSelectedCartelaVisualOrder,
     selectCartela: (cartelaId) => {
       state.selectedCartelaId = cartelaId;
-      rebuild();
+      rebuild({ selectionOnly: true });
     },
     selectedEpisode,
     state,
@@ -1674,8 +1674,8 @@
     });
   }
 
-  function rebuild() {
-    return appLifecycle.rebuild();
+  function rebuild(options) {
+    return appLifecycle.rebuild(options);
   }
 
   function renderMeta() {
@@ -1846,8 +1846,8 @@
     return appCommands.deleteSelectedStyle();
   }
 
-  function renderEditor() {
-    return appMainEditor.renderEditor();
+  function renderEditor(options) {
+    return appMainEditor.renderEditor(options);
   }
 
   function renderCartelaFields(cartela) {

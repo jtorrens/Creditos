@@ -13,7 +13,13 @@
       });
     }
 
-    function rebuild() {
+    function rebuild(rebuildOptions = {}) {
+      if (rebuildOptions.selectionOnly) {
+        options.renderCartelaList();
+        options.renderCartelaPreview({ deferred: true });
+        windowRef.requestAnimationFrame(() => options.renderEditor({ renderPreview: false }));
+        return;
+      }
       if (state.source && state.structure) {
         state.render = options.buildCurrentRenderJson(state.source, state.materials, state.structure);
       }

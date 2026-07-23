@@ -4,14 +4,15 @@
     const els = options.els;
     const state = options.state;
 
-    function renderEditor() {
+    function renderEditor(renderOptions = {}) {
+      const shouldRenderPreview = renderOptions.renderPreview !== false;
       if (!state.source || !state.selectedCartelaId) {
         els.editorTitle.textContent = 'Sin cartela seleccionada';
         els.editorKind.textContent = '';
         els.editorKind.className = '';
         els.editorBody.className = 'editor-body empty-state';
         els.editorBody.textContent = 'Asocia un archivo de créditos y selecciona una cartela.';
-        options.renderCartelaPreview();
+        if (shouldRenderPreview) options.renderCartelaPreview();
         return;
       }
 
@@ -34,7 +35,7 @@
         materialsGrid.appendChild(options.renderMaterialEditor(material, ref));
       });
       els.editorBody.appendChild(materialsGrid);
-      options.renderCartelaPreview();
+      if (shouldRenderPreview) options.renderCartelaPreview();
     }
 
     function renderEditorHeaderActions(cartela) {
