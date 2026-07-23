@@ -70,6 +70,30 @@ def main():
             if row_six is not None and row_six.get("merged_b_to_d") is not False:
                 ok = fail("ODS inspection changed row 6 merge metadata") and ok
 
+    xlsx_paths = sorted((REPO_ROOT / "test" / "xls").rglob("*.xlsx"))
+    if not xlsx_paths:
+        ok = fail("parser lab has no real XLSX fixtures for batch inspection") and ok
+    batch_row_counts = []
+    for xlsx_path in xlsx_paths:
+        inspection = inspect_source_rows(xlsx_path.read_bytes(), xlsx_path.name, "xlsx")
+        rows = inspection["rows"]
+        row_numbers = [row["row"] for row in rows]
+        expected_numbers = list(range(row_numbers[0], row_numbers[-1] + 1)) if row_numbers else []
+        if row_numbers != expected_numbers:
+            ok = fail(f"parser lab did not preserve contiguous rows for {xlsx_path}") and ok
+        if inspection["sheet"] != "Rodillo Final" or len(inspection["workbook_sheets"]) != 2:
+            ok = fail(f"parser lab selected unexpected workbook metadata for {xlsx_path}") and ok
+        if not any(row["empty"] for row in rows):
+            ok = fail(f"parser lab lost empty divisions for {xlsx_path}") and ok
+        if not any(row["merged_b_to_d"] for row in rows):
+            ok = fail(f"parser lab lost merged-cell evidence for {xlsx_path}") and ok
+        batch_row_counts.append(len(rows))
+    if batch_row_counts:
+        print(
+            "ok parser lab xlsx batch "
+            f"{len(batch_row_counts)} files · {min(batch_row_counts)}-{max(batch_row_counts)} rows"
+        )
+
     restored = expand_empty_rows([
         {"row": 1, "values": {"A": "", "B": "", "C": "Cabecera", "D": ""}, "styles": {}, "bold": {}, "merged_b_to_d": False},
         {"row": 4, "values": {"A": "", "B": "Cargo", "C": "", "D": "Nombre"}, "styles": {}, "bold": {}, "merged_b_to_d": False},

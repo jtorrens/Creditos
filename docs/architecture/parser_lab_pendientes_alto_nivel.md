@@ -16,6 +16,8 @@ Rama de referencia: `agent/parser-lab-model-workflow`
 - Reducida de forma incremental la concentración de responsabilidades de la interfaz, sin reescrituras ni cambios compartidos.
 - Validado el flujo real con una hoja de 605 filas, tres bloques y una composición multibloque en una cartela.
 - Añadidas fronteras estructurales de inicio de hoja, posición relativa y final de hoja.
+- Incorporada una regresión de inspección sobre los 18 XLSX reales disponibles,
+  con cinco capítulos y revisiones de entre 576 y 642 filas.
 - Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.78`.
 - Confirmado que `data/creditos.db`, los parsers y los modelos de producción permanecen intactos.
 
