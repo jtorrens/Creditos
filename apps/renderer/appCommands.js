@@ -203,7 +203,7 @@
       if (!source || !target) return;
       const sourceName = cartelaName(source);
       const targetName = cartelaName(target);
-      const message = `¿Copiar el estilo y sus overrides de "${sourceName}" a "${targetName}"? Los bloques, el contenido y el nombre de "${targetName}" se conservarán.`;
+      const message = `¿Copiar el estilo y sus overrides de “${sourceName}” a “${targetName}”? El nombre, los bloques y el contenido de “${targetName}” se conservarán.`;
       const native = options.nativeBridge();
       let confirmed = false;
       if (native && native.confirm) {

@@ -651,7 +651,8 @@
       const confirmed = await requestModelConfirmation(
         'Borrar modelo',
         `Se borrará “${active.name}”. Esta acción no se puede deshacer.`,
-        'Borrar'
+        'Borrar',
+        true
       );
       if (!confirmed) return;
       try {
@@ -685,14 +686,14 @@
       });
     }
 
-    async function requestModelConfirmation(title, message, confirmLabel = 'Aceptar') {
+    async function requestModelConfirmation(title, message, confirmLabel = 'Aceptar', danger = false) {
       const result = await openModelDialog({
         title,
         message,
         value: '',
         confirmLabel,
         needsName: false,
-        danger: true,
+        danger,
       });
       return result !== null;
     }
@@ -707,6 +708,7 @@
       elements.modelDialogNameInput.value = value;
       elements.modelDialogConfirmButton.textContent = confirmLabel;
       elements.modelDialogConfirmButton.classList.toggle('danger', danger);
+      elements.modelDialogConfirmButton.classList.toggle('confirm', !danger);
       elements.modelDialogBackdrop.hidden = false;
       root.requestAnimationFrame(() => {
         if (needsName) {
@@ -1396,8 +1398,9 @@
       if (!source || targetIndex < 0) return;
       const target = state.blockDefinitions[targetIndex];
       const accepted = await requestModelConfirmation(
-        'Copiar ajustes del bloque',
-        `¿Copiar los ajustes de “${source.name}” a “${target.name}”? La cabecera y el nombre de “${target.name}” se conservarán.`
+        'Copiar ajustes de bloque',
+        `¿Copiar los ajustes de “${source.name}” a “${target.name}”? La cabecera, el nombre y el contenido de “${target.name}” se conservarán.`,
+        'Copiar ajustes'
       );
       if (!accepted) return;
       const updated = blockModel.copyDefinitionSettings(target, source);
@@ -2174,7 +2177,9 @@
       if (existing) {
         const accepted = await requestModelConfirmation(
           'Eliminar cabecera',
-          `¿Eliminar la cabecera “${existing.name}”? Dejará de actuar como frontera y los rangos contiguos se unirán.`
+          `¿Eliminar la cabecera “${existing.name}”? Dejará de actuar como frontera y los rangos contiguos se unirán.`,
+          'Eliminar',
+          true
         );
         if (!accepted) return;
         state.blockDefinitions = state.blockDefinitions.filter((definition) => definition.id !== existing.id);
