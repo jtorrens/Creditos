@@ -450,8 +450,10 @@
     let persistenceQueue = Promise.resolve();
     let resolveModelDialog = null;
     let blockEditTimer = null;
+    let rowFilterTimer = null;
     let draggedBlockId = null;
     let rowByNumber = new Map();
+    let rowElementByNumber = new Map();
     let blockInstanceByRow = new Map();
     let headerCandidatesByRow = new Map();
     let searchTextByRow = new Map();
@@ -933,6 +935,7 @@
       elements.filterInput.disabled = !inspection;
       updateHeaderAction();
       elements.tableBody.replaceChildren();
+      rowElementByNumber = new Map();
 
       if (!inspection) {
         applyNormalizedRowsView();
@@ -961,6 +964,9 @@
       const fragment = documentRef.createDocumentFragment();
       rows.forEach((row) => fragment.appendChild(renderRow(row)));
       elements.tableBody.appendChild(fragment);
+      rowElementByNumber = new Map(Array.from(elements.tableBody.rows).map((rowElement) => (
+        [Number(rowElement.dataset.row), rowElement]
+      )));
       ensureRovingTableRow();
       applyNormalizedRowsView();
       renderSelection();
@@ -2197,6 +2203,9 @@
 
     function selectRow(rowNumber, reveal = false, focusRequest = null) {
       flushPendingBlockEdit();
+      const previousRowNumber = state.selectedRowNumber;
+      const previousEditorTab = state.activeEditorTab;
+      const previousPreviewBlockId = state.activePreviewBlockId;
       const selectionHiddenByFilter = Boolean(
         reveal
         && state.filter.trim()
@@ -2212,7 +2221,7 @@
         const definition = state.blockDefinitions.find((candidate) => candidate.id === instance.definition_id);
         state.activeEditorTab = instance.definition_id;
         state.activePreviewBlockId = instance.definition_id;
-        if (definition) openDefinitionEditor(definition);
+        if (definition && state.editingBlockId !== definition.id) openDefinitionEditor(definition);
       } else {
         state.activeEditorTab = null;
         state.activePreviewBlockId = null;
@@ -2223,27 +2232,84 @@
       else {
         updateHeaderAction();
         renderSelection();
-        renderBlockModel();
-        renderParserPreview({ preserveScroll: true });
-        updateNormalizedBlockHighlight();
+        if (previousEditorTab !== state.activeEditorTab) updateBlockNavigationSelection();
+        if (previousPreviewBlockId !== state.activePreviewBlockId) {
+          renderParserPreview({ preserveScroll: true });
+        } else {
+          updatePreviewItemSelection();
+        }
+        if (previousEditorTab !== state.activeEditorTab || previousPreviewBlockId !== state.activePreviewBlockId) {
+          updateNormalizedBlockHighlight();
+        }
       }
-      Array.from(elements.tableBody.rows).forEach((rowElement) => {
-        const selected = Number(rowElement.dataset.row) === rowNumber;
-        rowElement.classList.toggle('selected', selected);
-        rowElement.setAttribute('aria-selected', selected ? 'true' : 'false');
-        rowElement.tabIndex = selected ? 0 : -1;
-        if (selected && reveal) rowElement.scrollIntoView({ block: 'center' });
-      });
+      updateNormalizedRowSelection(previousRowNumber, rowNumber, reveal);
       restoreNavigationFocus(focusRequest);
     }
 
+    function updateNormalizedRowSelection(previousRowNumber, rowNumber, reveal) {
+      const previousRow = rowElementByNumber.get(previousRowNumber);
+      const nextRow = rowElementByNumber.get(rowNumber);
+      if (previousRow && previousRow !== nextRow) {
+        previousRow.classList.remove('selected');
+        previousRow.setAttribute('aria-selected', 'false');
+        previousRow.tabIndex = -1;
+      }
+      if (!nextRow) return;
+      nextRow.classList.add('selected');
+      nextRow.setAttribute('aria-selected', 'true');
+      nextRow.tabIndex = 0;
+      if (reveal) nextRow.scrollIntoView({ block: 'center' });
+    }
+
+    function updateBlockNavigationSelection() {
+      if (state.blockFilter.trim()) {
+        renderBlockModel();
+        return;
+      }
+      elements.blockEditorRegion.removeAttribute('aria-labelledby');
+      elements.blockList.querySelectorAll('.parser-lab-block-tab').forEach((tab) => {
+        const tabId = tab.dataset.blockId || (tab.id === 'parserLabCompositionTab' ? 'composition' : '');
+        const active = tabId === state.activeEditorTab;
+        tab.classList.toggle('active', active);
+        tab.setAttribute('aria-selected', String(active));
+        tab.tabIndex = active ? 0 : -1;
+        const include = tab.querySelector('input[type="checkbox"]');
+        if (include) include.tabIndex = active ? 0 : -1;
+        if (active) elements.blockEditorRegion.setAttribute('aria-labelledby', tab.id);
+      });
+      uiSupport.ensureRovingTabStop(elements.blockList);
+      renderCopyTargetOptions();
+      updateBlockReorderControls();
+    }
+
+    function updatePreviewItemSelection() {
+      const blocksById = new Map(((state.semanticPreview && state.semanticPreview.blocks) || []).map((block) => (
+        [block.definition_id, block]
+      )));
+      const previewItems = Array.from(elements.previewContent.querySelectorAll('.parser-lab-preview-item'));
+      let hasSelectedItem = false;
+      previewItems.forEach((itemElement) => {
+        const block = blocksById.get(itemElement.dataset.blockId);
+        const item = block && block.items[Number(itemElement.dataset.itemIndex)];
+        const selected = Boolean(item && item.source_rows.includes(state.selectedRowNumber));
+        itemElement.tabIndex = selected ? 0 : -1;
+        hasSelectedItem = hasSelectedItem || selected;
+      });
+      if (!hasSelectedItem && previewItems.length) previewItems[0].tabIndex = 0;
+    }
+
     function updateNormalizedBlockHighlight() {
-      Array.from(elements.tableBody.rows).forEach((rowElement) => {
-        const instance = blockInstanceContainingRow(Number(rowElement.dataset.row));
-        rowElement.classList.toggle('parser-lab-active-block-range', Boolean(instance && (
-          instance.definition_id === state.activeEditorTab
-          || instance.definition_id === state.activePreviewBlockId
-        )));
+      elements.tableBody.querySelectorAll('.parser-lab-active-block-range').forEach((rowElement) => {
+        rowElement.classList.remove('parser-lab-active-block-range');
+      });
+      const activeIds = new Set([state.activeEditorTab, state.activePreviewBlockId].filter(Boolean));
+      state.blockInstances.filter((instance) => (
+        instance.matched && activeIds.has(instance.definition_id)
+      )).forEach((instance) => {
+        for (let rowNumber = instance.start_row; rowNumber <= instance.end_row; rowNumber += 1) {
+          const rowElement = rowElementByNumber.get(rowNumber);
+          if (rowElement) rowElement.classList.add('parser-lab-active-block-range');
+        }
       });
     }
 
@@ -2377,6 +2443,7 @@
     }
 
     function renderActiveJsonDocument() {
+      if (state.activeRightTab !== 'jsons') return;
       if (state.activeJsonTab === 'inspection') {
         elements.inspectionJson.textContent = JSON.stringify(state.inspection, null, 2);
       } else if (state.activeJsonTab === 'model') {
@@ -2477,7 +2544,11 @@
     });
     elements.filterInput.addEventListener('input', () => {
       state.filter = elements.filterInput.value;
-      renderNormalizedRows();
+      if (rowFilterTimer) root.clearTimeout(rowFilterTimer);
+      rowFilterTimer = root.setTimeout(() => {
+        rowFilterTimer = null;
+        renderNormalizedRows();
+      }, 100);
     });
     elements.blockFilterInput.addEventListener('input', () => {
       state.blockFilter = elements.blockFilterInput.value;

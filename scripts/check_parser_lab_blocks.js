@@ -615,6 +615,9 @@ assert(uiSource.includes('data-normalized-column-resizer'));
 assert(uiSource.includes('function beginNormalizedColumnResize(column, event)'));
 assert(uiSource.includes('function currentNormalizedColumnWidths()'));
 assert(uiSource.includes('function updateNormalizedBlockHighlight()'));
+assert(uiSource.includes('function updateNormalizedRowSelection('));
+assert(uiSource.includes('function updateBlockNavigationSelection()'));
+assert(uiSource.includes('function updatePreviewItemSelection()'));
 assert(uiSource.includes("'parser-lab-active-block-range'"));
 assert(uiSource.includes('normalized_rows_view'));
 assert(uiSource.includes('parserLabBlockGroupingSelect'));
@@ -648,6 +651,14 @@ assert(uiSource.includes('parser-lab-composition-tab'));
 assert(uiSource.includes("definition.enabled = include.checked"));
 assert(uiSource.includes("elements.defineBlockButton.textContent = header ? 'Eliminar cabecera' : 'Definir como cabecera'"));
 assert(uiSource.includes('state.activePreviewBlockId = instance.definition_id'));
+const selectRowSource = uiSource.slice(
+  uiSource.indexOf('function selectRow('),
+  uiSource.indexOf('function updateNormalizedRowSelection(')
+);
+assert(!selectRowSource.includes('renderBlockModel();'));
+assert(selectRowSource.includes('updateBlockNavigationSelection();'));
+assert(selectRowSource.includes('updatePreviewItemSelection();'));
+assert(selectRowSource.includes('updateNormalizedRowSelection(previousRowNumber, rowNumber, reveal);'));
 assert(uiSource.includes("status.textContent = block.enabled ? `${block.items.length} ítems` : 'Ignorado'"));
 assert(uiSource.includes("item.addEventListener('dragstart'"));
 assert(uiSource.includes('copyBlockSettings(draggedBlockId, definition.id)'));
