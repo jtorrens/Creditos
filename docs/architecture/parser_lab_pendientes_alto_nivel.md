@@ -18,7 +18,13 @@ Rama de referencia: `agent/parser-lab-model-workflow`
 - Añadidas fronteras estructurales de inicio de hoja, posición relativa y final de hoja.
 - Incorporada una regresión de inspección sobre los 18 XLSX reales disponibles,
   con cinco capítulos y revisiones de entre 576 y 642 filas.
-- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.78`.
+- Validado el modelo activo contra dos ODS reales de 562 y 621 filas: las 19
+  fronteras se resuelven en orden y sin ambigüedad en ambos documentos.
+- Confirmado como cambio de contenido, no como fallo de detección, que la copia
+  ODS de pruebas sustituye «Postproducción Imagen y Sonido» por «GRAFISMO».
+- Protegida la biblioteca local con escritura atómica, copia válida de seguridad,
+  recuperación automática y aviso visible si el JSON principal queda corrupto.
+- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.79`.
 - Confirmado que `data/creditos.db`, los parsers y los modelos de producción permanecen intactos.
 
 Cortes publicados:
@@ -46,7 +52,6 @@ Este bloque cruza la frontera aislada de Parser Lab y requiere autorización esp
 
 ### P2 — Robustez y escalabilidad
 
-- Probar recuperación ante guardados interrumpidos o definiciones inválidas.
 - Decidir si además de revisiones se necesita historial recuperable o deshacer.
 - Garantizar fluidez con miles de filas y entre 30 y 100 bloques.
 - Continuar simplificando la interfaz mediante cortes pequeños.

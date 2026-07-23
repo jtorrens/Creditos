@@ -28,6 +28,7 @@ def main():
         apply_model_library_action,
         inspect_uploaded_source,
         load_model_library,
+        model_library_backup_path,
         model_library_path,
         source_kind_from_name,
         validate_block_model,
@@ -185,6 +186,19 @@ def main():
             )
             if saved_record["model"] != temporary_model or saved_record["revision"] != 2:
                 ok = fail("parser lab did not save and revise the active model") and ok
+            saved_document = model_library_path().read_text(encoding="utf-8")
+            try:
+                apply_model_library_action({
+                    "action": "save",
+                    "model_id": initial_id,
+                    "model": missing_content_start,
+                })
+            except ValueError:
+                pass
+            else:
+                ok = fail("parser lab persisted an invalid model definition") and ok
+            if model_library_path().read_text(encoding="utf-8") != saved_document:
+                ok = fail("parser lab changed persistence after rejecting an invalid model") and ok
 
             created = apply_model_library_action({"action": "create", "name": "Modelo B"})
             created_id = created["library"]["active_model_id"]
@@ -229,6 +243,25 @@ def main():
             persisted_library = json.loads(model_library_path().read_text(encoding="utf-8"))
             if validate_model_library(persisted_library) != persisted_library:
                 ok = fail("parser lab model library is not valid JSON") and ok
+            backup_path = model_library_backup_path()
+            if not backup_path.exists():
+                ok = fail("parser lab did not retain a valid model-library backup") and ok
+
+            dangling_temporary_path = model_library_path().with_suffix(".tmp")
+            dangling_temporary_path.write_text("{interrupted", encoding="utf-8")
+            uninterrupted = load_model_library()
+            if uninterrupted["library"] != persisted_library or uninterrupted["recovered"]:
+                ok = fail("parser lab did not ignore an interrupted temporary write") and ok
+
+            model_library_path().write_text("{invalid", encoding="utf-8")
+            recovered = load_model_library()
+            if not recovered["recovered"]:
+                ok = fail("parser lab did not report recovery from its valid backup") and ok
+            recovered_primary = json.loads(model_library_path().read_text(encoding="utf-8"))
+            if recovered_primary != recovered["library"]:
+                ok = fail("parser lab did not restore the recovered library atomically") and ok
+            if validate_model_library(recovered_primary) != recovered_primary:
+                ok = fail("parser lab recovered an invalid model library") and ok
     finally:
         if previous_temp_directory is None:
             os.environ.pop("CREDITOS_PARSER_LAB_TEMP_DIR", None)

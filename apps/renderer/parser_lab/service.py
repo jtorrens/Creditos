@@ -12,6 +12,7 @@ BLOCK_MODEL_VERSION = 6
 MODEL_LIBRARY_SCHEMA = "parser_lab_model_library"
 MODEL_LIBRARY_VERSION = 1
 MODEL_LIBRARY_FILENAME = "model-library.json"
+MODEL_LIBRARY_BACKUP_FILENAME = "model-library.backup.json"
 PERSISTENT_BLOCK_MODEL_DIRECTORY = Path.home() / ".creditos" / "parser-lab"
 
 
@@ -32,6 +33,11 @@ def model_library_path():
     configured_directory = os.environ.get("CREDITOS_PARSER_LAB_TEMP_DIR")
     base_directory = Path(configured_directory) if configured_directory else PERSISTENT_BLOCK_MODEL_DIRECTORY
     return base_directory / MODEL_LIBRARY_FILENAME
+
+
+def model_library_backup_path(path=None):
+    primary_path = path or model_library_path()
+    return primary_path.with_name(MODEL_LIBRARY_BACKUP_FILENAME)
 
 
 def empty_block_model():
@@ -66,13 +72,32 @@ def empty_model_library():
 
 def load_model_library():
     path = model_library_path()
+    recovered = False
     if not path.exists():
         library = empty_model_library()
         write_json_document(path, library)
     else:
-        library = json.loads(path.read_text(encoding="utf-8"))
-        validate_model_library(library)
-    return {"library": library, "path": str(path), "temporary": True}
+        try:
+            library = read_model_library_document(path)
+            backup_path = model_library_backup_path(path)
+            if not backup_path.exists():
+                write_json_text_atomic(backup_path, library)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as primary_error:
+            backup_path = model_library_backup_path(path)
+            try:
+                library = read_model_library_document(backup_path)
+            except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+                raise ValueError(
+                    "La biblioteca local no es válida y su copia de seguridad tampoco se puede recuperar."
+                ) from primary_error
+            write_json_text_atomic(path, library)
+            recovered = True
+    return {
+        "library": library,
+        "path": str(path),
+        "temporary": True,
+        "recovered": recovered,
+    }
 
 
 def apply_model_library_action(payload):
@@ -128,12 +153,34 @@ def apply_model_library_action(payload):
 
 def write_json_document(path, document):
     path.parent.mkdir(parents=True, exist_ok=True)
+    backup_path = model_library_backup_path(path)
+    previous_document = None
+    if path.exists():
+        try:
+            previous_document = read_model_library_document(path)
+        except (OSError, UnicodeError, json.JSONDecodeError, ValueError):
+            previous_document = None
+    if previous_document is not None:
+        write_json_text_atomic(backup_path, previous_document)
+    write_json_text_atomic(path, document)
+    if not backup_path.exists():
+        write_json_text_atomic(backup_path, document)
+
+
+def write_json_text_atomic(path, document):
+    path.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = path.with_suffix(".tmp")
     temporary_path.write_text(
         json.dumps(document, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     temporary_path.replace(path)
+
+
+def read_model_library_document(path):
+    library = json.loads(path.read_text(encoding="utf-8"))
+    validate_model_library(library)
+    return library
 
 
 def validate_model_library(library):

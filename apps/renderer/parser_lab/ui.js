@@ -502,7 +502,10 @@
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'No se pudo cargar la biblioteca de modelos.');
         applyModelLibrary(payload.library);
-        setPersistenceStatus('Biblioteca local cargada', payload.path);
+        setPersistenceStatus(
+          payload.recovered ? 'Biblioteca recuperada desde copia de seguridad' : 'Biblioteca local cargada',
+          payload.path
+        );
         render();
       } catch (error) {
         setPersistenceStatus(`Sin persistencia local: ${error.message}`, '', true);
