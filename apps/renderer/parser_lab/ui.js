@@ -15,6 +15,16 @@
     rootElement.innerHTML = `
       <div class="parser-lab-shell">
         <div class="parser-lab-toolbar">
+          <div class="parser-lab-model-library" aria-label="Conjunto de reglas activo">
+            <label for="parserLabModelSelect">Modelo</label>
+            <select id="parserLabModelSelect" class="text-input" disabled>
+              <option>Cargando modelos…</option>
+            </select>
+            <button id="parserLabCreateModelBtn" type="button" disabled>Crear</button>
+            <button id="parserLabDuplicateModelBtn" type="button" disabled>Duplicar</button>
+            <button id="parserLabRenameModelBtn" type="button" disabled>Renombrar</button>
+            <button id="parserLabDeleteModelBtn" class="parser-lab-subtle-danger" type="button" disabled>Borrar</button>
+          </div>
           <div class="parser-lab-file-actions">
             <button id="parserLabOpenBtn" type="button" disabled>Cargar ODS/XLSX</button>
             <button id="parserLabClearBtn" type="button" disabled>Limpiar</button>
@@ -88,7 +98,7 @@
                 </div>
                 <div class="parser-lab-block-toolbar">
                   <button id="parserLabDefineBlockBtn" type="button" disabled>Definir fila como cabecera</button>
-                  <span id="parserLabModelPersistence" class="parser-lab-model-persistence" role="status" aria-live="polite">Cargando JSON local…</span>
+                  <span id="parserLabModelPersistence" class="parser-lab-model-persistence" role="status" aria-live="polite">Cargando biblioteca local…</span>
                 </div>
                 <div id="parserLabFormatSummary" class="parser-lab-format-summary" hidden></div>
               </section>
@@ -296,11 +306,38 @@
           </aside>
         </div>
       </div>
+      <div id="parserLabModelDialogBackdrop" class="parser-lab-model-dialog-backdrop" hidden>
+        <form id="parserLabModelDialog" class="parser-lab-model-dialog" role="dialog" aria-modal="true" aria-labelledby="parserLabModelDialogTitle">
+          <h3 id="parserLabModelDialogTitle">Modelo</h3>
+          <p id="parserLabModelDialogMessage"></p>
+          <label id="parserLabModelDialogNameField">
+            <span>Nombre</span>
+            <input id="parserLabModelDialogNameInput" class="text-input" type="text" autocomplete="off">
+          </label>
+          <div class="parser-lab-model-dialog-actions">
+            <button id="parserLabModelDialogCancelBtn" type="button">Cancelar</button>
+            <button id="parserLabModelDialogConfirmBtn" type="submit">Aceptar</button>
+          </div>
+        </form>
+      </div>
     `;
 
     const elements = {
       openButton: documentRef.getElementById('parserLabOpenBtn'),
       clearButton: documentRef.getElementById('parserLabClearBtn'),
+      modelSelect: documentRef.getElementById('parserLabModelSelect'),
+      createModelButton: documentRef.getElementById('parserLabCreateModelBtn'),
+      duplicateModelButton: documentRef.getElementById('parserLabDuplicateModelBtn'),
+      renameModelButton: documentRef.getElementById('parserLabRenameModelBtn'),
+      deleteModelButton: documentRef.getElementById('parserLabDeleteModelBtn'),
+      modelDialogBackdrop: documentRef.getElementById('parserLabModelDialogBackdrop'),
+      modelDialog: documentRef.getElementById('parserLabModelDialog'),
+      modelDialogTitle: documentRef.getElementById('parserLabModelDialogTitle'),
+      modelDialogMessage: documentRef.getElementById('parserLabModelDialogMessage'),
+      modelDialogNameField: documentRef.getElementById('parserLabModelDialogNameField'),
+      modelDialogNameInput: documentRef.getElementById('parserLabModelDialogNameInput'),
+      modelDialogCancelButton: documentRef.getElementById('parserLabModelDialogCancelBtn'),
+      modelDialogConfirmButton: documentRef.getElementById('parserLabModelDialogConfirmBtn'),
       fileInput: documentRef.getElementById('parserLabFileInput'),
       filterInput: documentRef.getElementById('parserLabFilterInput'),
       summary: documentRef.getElementById('parserLabSummary'),
@@ -383,6 +420,8 @@
       blockDefinitions: [],
       compositionRules: [],
       normalizedRowsView: { column_widths: {} },
+      modelLibrary: [],
+      activeModelId: null,
       blockInstances: [],
       semanticPreview: null,
       composedPreview: null,
@@ -395,6 +434,7 @@
       modelReady: false,
     };
     let persistenceQueue = Promise.resolve();
+    let resolveModelDialog = null;
     let blockEditTimer = null;
     let draggedBlockId = null;
     let rowByNumber = new Map();
@@ -451,35 +491,225 @@
       };
     }
 
-    async function loadTemporaryBlockModel() {
+    async function loadModelLibrary() {
       try {
-        const response = await fetchRef('/api/parser-lab/block-model');
+        const response = await fetchRef('/api/parser-lab/model-library');
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || 'No se pudo cargar el JSON temporal.');
-        const definitions = payload.model && payload.model.blocks;
-        const compositionRules = payload.model && payload.model.composition_rules;
-        const normalizedRowsView = payload.model && payload.model.normalized_rows_view;
-        if (!Array.isArray(definitions)) throw new Error('El JSON temporal no contiene una lista de bloques.');
-        if (!Array.isArray(compositionRules)) throw new Error('El JSON temporal no contiene una lista válida de reglas.');
-        if (!normalizedRowsView || !normalizedRowsView.column_widths || typeof normalizedRowsView.column_widths !== 'object') {
-          throw new Error('El JSON temporal no contiene la vista de filas normalizadas.');
-        }
-        const errors = definitions.flatMap((definition) => blockModel.validateDefinition(definition));
-        errors.push(...compositionRules.flatMap((rule) => blockModel.validateCompositionRule(rule)));
-        if (errors.length) throw new Error(errors.join(' '));
-        state.blockDefinitions = definitions.map(blockModel.normalizeDefinition);
-        state.compositionRules = compositionRules.map(blockModel.normalizeCompositionRule);
-        state.normalizedRowsView = {
-          column_widths: { ...normalizedRowsView.column_widths },
-        };
-        setPersistenceStatus('JSON local cargado', payload.path);
+        if (!response.ok) throw new Error(payload.error || 'No se pudo cargar la biblioteca de modelos.');
+        applyModelLibrary(payload.library);
+        setPersistenceStatus('Biblioteca local cargada', payload.path);
         render();
       } catch (error) {
         setPersistenceStatus(`Sin persistencia local: ${error.message}`, '', true);
       } finally {
         state.modelReady = true;
         elements.openButton.disabled = false;
+        elements.createModelButton.disabled = false;
+        renderModelLibraryControls();
       }
+    }
+
+    function applyModelLibrary(library) {
+      if (!library || !Array.isArray(library.models)) {
+        throw new Error('El JSON local no contiene una biblioteca de modelos válida.');
+      }
+      state.modelLibrary = library.models.map((record) => JSON.parse(JSON.stringify(record)));
+      state.activeModelId = library.active_model_id;
+      const active = activeModelRecord();
+      if (!active && state.modelLibrary.length) {
+        throw new Error('El modelo activo no existe en la biblioteca.');
+      }
+      applyActiveModelRecord(active);
+      renderModelLibraryControls();
+    }
+
+    function applyActiveModelRecord(record) {
+      const model = record ? record.model : blockModel.modelDocument([], [], { column_widths: {} });
+      const definitions = model && model.blocks;
+      const compositionRules = model && model.composition_rules;
+      const normalizedRowsView = model && model.normalized_rows_view;
+      if (!Array.isArray(definitions)) throw new Error('El modelo no contiene una lista de bloques.');
+      if (!Array.isArray(compositionRules)) throw new Error('El modelo no contiene una lista válida de reglas.');
+      if (!normalizedRowsView || !normalizedRowsView.column_widths || typeof normalizedRowsView.column_widths !== 'object') {
+        throw new Error('El modelo no contiene la vista de filas normalizadas.');
+      }
+      const errors = definitions.flatMap((definition) => blockModel.validateDefinition(definition));
+      errors.push(...compositionRules.flatMap((rule) => blockModel.validateCompositionRule(rule)));
+      if (errors.length) throw new Error(errors.join(' '));
+      state.blockDefinitions = definitions.map(blockModel.normalizeDefinition);
+      state.compositionRules = compositionRules.map(blockModel.normalizeCompositionRule);
+      state.normalizedRowsView = {
+        column_widths: { ...normalizedRowsView.column_widths },
+      };
+      state.editingBlockId = null;
+      state.editingCompositionId = null;
+      state.activeEditorTab = null;
+      state.activePreviewBlockId = null;
+      closeBlockEditor();
+      closeCompositionEditor();
+    }
+
+    function activeModelRecord() {
+      return state.modelLibrary.find((record) => record.id === state.activeModelId) || null;
+    }
+
+    function renderModelLibraryControls() {
+      const currentValue = state.activeModelId || '';
+      elements.modelSelect.replaceChildren();
+      if (!state.modelLibrary.length) {
+        const option = documentRef.createElement('option');
+        option.value = '';
+        option.textContent = 'Sin modelos';
+        elements.modelSelect.appendChild(option);
+      } else {
+        state.modelLibrary.forEach((record) => {
+          const option = documentRef.createElement('option');
+          option.value = record.id;
+          option.textContent = record.name;
+          option.title = `Revisión ${record.revision}`;
+          elements.modelSelect.appendChild(option);
+        });
+      }
+      elements.modelSelect.value = currentValue;
+      const hasActive = Boolean(activeModelRecord());
+      elements.modelSelect.disabled = !state.modelReady || !state.modelLibrary.length;
+      elements.createModelButton.disabled = !state.modelReady;
+      elements.duplicateModelButton.disabled = !hasActive;
+      elements.renameModelButton.disabled = !hasActive;
+      elements.deleteModelButton.disabled = !hasActive;
+    }
+
+    async function runModelLibraryAction(action, fields = {}) {
+      const response = await fetchRef('/api/parser-lab/model-library', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...fields }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'No se pudo actualizar la biblioteca de modelos.');
+      applyModelLibrary(payload.library);
+      setPersistenceStatus('Biblioteca local guardada', payload.path);
+      render();
+      return payload;
+    }
+
+    async function createModel() {
+      const name = await requestModelName('Crear modelo', 'Modelo sin título', 'Crear');
+      if (name === null) return;
+      try {
+        await runModelLibraryAction('create', { name });
+      } catch (error) {
+        root.alert(error.message);
+      }
+    }
+
+    async function duplicateModel() {
+      const active = activeModelRecord();
+      if (!active) return;
+      const name = await requestModelName('Duplicar modelo', `${active.name} copia`, 'Duplicar');
+      if (name === null) return;
+      try {
+        flushPendingBlockEdit();
+        await persistBlockModel();
+        await runModelLibraryAction('duplicate', { model_id: active.id, name });
+      } catch (error) {
+        root.alert(error.message);
+      }
+    }
+
+    async function renameModel() {
+      const active = activeModelRecord();
+      if (!active) return;
+      const name = await requestModelName('Renombrar modelo', active.name, 'Renombrar');
+      if (name === null || name.trim() === active.name) return;
+      try {
+        await runModelLibraryAction('rename', { model_id: active.id, name });
+      } catch (error) {
+        root.alert(error.message);
+      }
+    }
+
+    async function deleteModel() {
+      const active = activeModelRecord();
+      if (!active) return;
+      const confirmed = await requestModelConfirmation(
+        'Borrar modelo',
+        `Se borrará “${active.name}”. Esta acción no se puede deshacer.`,
+        'Borrar'
+      );
+      if (!confirmed) return;
+      try {
+        await runModelLibraryAction('delete', { model_id: active.id });
+      } catch (error) {
+        root.alert(error.message);
+      }
+    }
+
+    async function selectModel(modelId) {
+      if (!modelId || modelId === state.activeModelId) return;
+      const previousId = state.activeModelId;
+      try {
+        flushPendingBlockEdit();
+        await persistBlockModel();
+        await runModelLibraryAction('set_active', { model_id: modelId });
+      } catch (error) {
+        elements.modelSelect.value = previousId || '';
+        root.alert(error.message);
+      }
+    }
+
+    function requestModelName(title, value, confirmLabel) {
+      return openModelDialog({
+        title,
+        message: '',
+        value,
+        confirmLabel,
+        needsName: true,
+        danger: false,
+      });
+    }
+
+    async function requestModelConfirmation(title, message, confirmLabel = 'Aceptar') {
+      const result = await openModelDialog({
+        title,
+        message,
+        value: '',
+        confirmLabel,
+        needsName: false,
+        danger: true,
+      });
+      return result !== null;
+    }
+
+    function openModelDialog({ title, message, value, confirmLabel, needsName, danger }) {
+      if (resolveModelDialog) resolveModelDialog(null);
+      elements.modelDialogTitle.textContent = title;
+      elements.modelDialogMessage.textContent = message;
+      elements.modelDialogMessage.hidden = !message;
+      elements.modelDialogNameField.hidden = !needsName;
+      elements.modelDialogNameInput.required = needsName;
+      elements.modelDialogNameInput.value = value;
+      elements.modelDialogConfirmButton.textContent = confirmLabel;
+      elements.modelDialogConfirmButton.classList.toggle('danger', danger);
+      elements.modelDialogBackdrop.hidden = false;
+      root.requestAnimationFrame(() => {
+        if (needsName) {
+          elements.modelDialogNameInput.focus();
+          elements.modelDialogNameInput.select();
+        } else {
+          elements.modelDialogConfirmButton.focus();
+        }
+      });
+      return new Promise((resolve) => {
+        resolveModelDialog = resolve;
+      });
+    }
+
+    function closeModelDialog(value = null) {
+      elements.modelDialogBackdrop.hidden = true;
+      const resolve = resolveModelDialog;
+      resolveModelDialog = null;
+      if (resolve) resolve(value);
     }
 
     function currentBlockModelDocument() {
@@ -491,19 +721,22 @@
     }
 
     function persistBlockModel({ keepalive = false } = {}) {
+      if (!state.activeModelId) return Promise.resolve(null);
       const model = currentBlockModelDocument();
       elements.modelJson.textContent = JSON.stringify(model, null, 2);
-      setPersistenceStatus('Guardando JSON local…');
+      setPersistenceStatus('Guardando modelo…');
       persistenceQueue = persistenceQueue.catch(() => {}).then(async () => {
-        const response = await fetchRef('/api/parser-lab/block-model', {
+        const response = await fetchRef('/api/parser-lab/model-library', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(model),
+          body: JSON.stringify({ action: 'save', model_id: state.activeModelId, model }),
           keepalive,
         });
         const payload = await response.json();
-        if (!response.ok) throw new Error(payload.error || 'No se pudo guardar el JSON temporal.');
-        setPersistenceStatus('JSON local guardado', payload.path);
+        if (!response.ok) throw new Error(payload.error || 'No se pudo guardar el modelo.');
+        state.modelLibrary = payload.library.models.map((record) => JSON.parse(JSON.stringify(record)));
+        renderModelLibraryControls();
+        setPersistenceStatus('Modelo guardado', payload.path);
         return payload;
       }).catch((error) => {
         setPersistenceStatus(`Error al guardar: ${error.message}`, '', true);
@@ -518,10 +751,15 @@
         blockEditTimer = null;
       }
       const model = currentBlockModelDocument();
+      if (!state.activeModelId) return;
       const navigatorRef = root.navigator;
       if (navigatorRef && typeof navigatorRef.sendBeacon === 'function' && typeof root.Blob === 'function') {
-        const body = new root.Blob([JSON.stringify(model)], { type: 'application/json' });
-        if (navigatorRef.sendBeacon('/api/parser-lab/block-model', body)) return;
+        const body = new root.Blob([JSON.stringify({
+          action: 'save',
+          model_id: state.activeModelId,
+          model,
+        })], { type: 'application/json' });
+        if (navigatorRef.sendBeacon('/api/parser-lab/model-library', body)) return;
       }
       persistBlockModel({ keepalive: true });
     }
@@ -659,12 +897,17 @@
       const tr = documentRef.createElement('tr');
       const block = blockInstanceContainingRow(row.row);
       const isBlockHeader = block && block.start_row === row.row;
+      const isActiveBlock = Boolean(block && (
+        block.definition_id === state.activeEditorTab
+        || block.definition_id === state.activePreviewBlockId
+      ));
       const headerCandidates = headerCandidatesByRow.get(row.row) || [];
       const isAlternativeHeader = headerCandidates.some((instance) => instance.start_row !== row.row);
       tr.tabIndex = row.row === state.selectedRowNumber ? 0 : -1;
       tr.dataset.row = String(row.row);
       tr.classList.toggle('selected', row.row === state.selectedRowNumber);
       tr.classList.toggle('parser-lab-block-range-row', Boolean(block));
+      tr.classList.toggle('parser-lab-active-block-range', isActiveBlock);
       tr.classList.toggle('parser-lab-block-header-row', Boolean(isBlockHeader));
       tr.classList.toggle('parser-lab-header-candidate-row', isAlternativeHeader);
       tr.classList.toggle('parser-lab-empty-source-row', Boolean(row.empty));
@@ -1062,7 +1305,7 @@
       elements.moveBlockDownButton.disabled = index < 0 || index >= state.blockDefinitions.length - 1;
     }
 
-    function copyBlockSettings(sourceId, targetId) {
+    async function copyBlockSettings(sourceId, targetId) {
       flushPendingBlockEdit();
       draggedBlockId = null;
       if (!sourceId || !targetId || sourceId === targetId) return;
@@ -1070,7 +1313,8 @@
       const targetIndex = state.blockDefinitions.findIndex((definition) => definition.id === targetId);
       if (!source || targetIndex < 0) return;
       const target = state.blockDefinitions[targetIndex];
-      const accepted = !root.confirm || root.confirm(
+      const accepted = await requestModelConfirmation(
+        'Copiar ajustes del bloque',
         `¿Copiar los ajustes de “${source.name}” a “${target.name}”? La cabecera y el nombre de “${target.name}” se conservarán.`
       );
       if (!accepted) return;
@@ -1817,13 +2061,14 @@
         : 'Crea inmediatamente una frontera de bloque desde esta fila.';
     }
 
-    function handleHeaderAction() {
+    async function handleHeaderAction() {
       flushPendingBlockEdit();
       const row = selectedRow();
       if (!row || row.empty) return;
       const existing = selectedHeaderDefinition();
       if (existing) {
-        const accepted = !root.confirm || root.confirm(
+        const accepted = await requestModelConfirmation(
+          'Eliminar cabecera',
           `¿Eliminar la cabecera “${existing.name}”? Dejará de actuar como frontera y los rangos contiguos se unirán.`
         );
         if (!accepted) return;
@@ -1881,6 +2126,7 @@
         renderSelection();
         renderBlockModel();
         renderParserPreview({ preserveScroll: true });
+        updateNormalizedBlockHighlight();
       }
       Array.from(elements.tableBody.rows).forEach((rowElement) => {
         const selected = Number(rowElement.dataset.row) === rowNumber;
@@ -1890,6 +2136,16 @@
         if (selected && reveal) rowElement.scrollIntoView({ block: 'center' });
       });
       restoreNavigationFocus(focusRequest);
+    }
+
+    function updateNormalizedBlockHighlight() {
+      Array.from(elements.tableBody.rows).forEach((rowElement) => {
+        const instance = blockInstanceContainingRow(Number(rowElement.dataset.row));
+        rowElement.classList.toggle('parser-lab-active-block-range', Boolean(instance && (
+          instance.definition_id === state.activeEditorTab
+          || instance.definition_id === state.activePreviewBlockId
+        )));
+      });
     }
 
     function restoreNavigationFocus(request) {
@@ -2049,6 +2305,31 @@
 
     elements.openButton.addEventListener('click', () => elements.fileInput.click());
     elements.clearButton.addEventListener('click', clearInspection);
+    elements.modelSelect.addEventListener('change', () => selectModel(elements.modelSelect.value));
+    elements.createModelButton.addEventListener('click', createModel);
+    elements.duplicateModelButton.addEventListener('click', duplicateModel);
+    elements.renameModelButton.addEventListener('click', renameModel);
+    elements.deleteModelButton.addEventListener('click', deleteModel);
+    elements.modelDialog.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = elements.modelDialogNameField.hidden
+        ? true
+        : elements.modelDialogNameInput.value.trim();
+      if (value === '') {
+        elements.modelDialogNameInput.focus();
+        return;
+      }
+      closeModelDialog(value);
+    });
+    elements.modelDialogCancelButton.addEventListener('click', () => closeModelDialog());
+    elements.modelDialogBackdrop.addEventListener('click', (event) => {
+      if (event.target === elements.modelDialogBackdrop) closeModelDialog();
+    });
+    elements.modelDialog.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      closeModelDialog();
+    });
     elements.defineBlockButton.addEventListener('click', handleHeaderAction);
     elements.moveBlockUpButton.addEventListener('click', () => moveActiveDefinition(-1));
     elements.moveBlockDownButton.addEventListener('click', () => moveActiveDefinition(1));
@@ -2124,9 +2405,9 @@
     setRightTab(state.activeRightTab);
     setJsonTab(state.activeJsonTab);
     render();
-    loadTemporaryBlockModel();
+    loadModelLibrary();
 
-    return { clearInspection, inspectFile, loadTemporaryBlockModel, persistBlockModel, render, state };
+    return { clearInspection, inspectFile, loadModelLibrary, persistBlockModel, render, state };
   }
 
   root.CreditosParserLabUi = { initializeParserLab };

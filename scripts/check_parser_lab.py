@@ -25,12 +25,13 @@ def main():
     from import_models.registry import IMPORT_MODELS, parse_source
     from parser_lab.inspection import empty_row, expand_empty_rows, inspect_source_rows
     from parser_lab.service import (
+        apply_model_library_action,
         inspect_uploaded_source,
-        load_temporary_block_model,
-        save_temporary_block_model,
+        load_model_library,
+        model_library_path,
         source_kind_from_name,
-        temporary_block_model_path,
         validate_block_model,
+        validate_model_library,
     )
 
     ok = True
@@ -143,13 +144,66 @@ def main():
     try:
         with tempfile.TemporaryDirectory() as temp_directory:
             os.environ["CREDITOS_PARSER_LAB_TEMP_DIR"] = temp_directory
-            saved = save_temporary_block_model(temporary_model)
-            loaded = load_temporary_block_model()
-            saved_path = pathlib.Path(saved["path"])
-            if not saved_path.is_file() or loaded.get("model") != temporary_model:
-                ok = fail("parser lab did not persist its temporary block model") and ok
-            if json.loads(saved_path.read_text(encoding="utf-8")) != temporary_model:
-                ok = fail("parser lab temporary block model is not valid JSON") and ok
+            loaded = load_model_library()
+            library = loaded["library"]
+            initial_id = library["active_model_id"]
+            if pathlib.Path(loaded["path"]) != model_library_path():
+                ok = fail("parser lab returned an unexpected model-library path") and ok
+
+            saved = apply_model_library_action({
+                "action": "save",
+                "model_id": initial_id,
+                "model": temporary_model,
+            })
+            saved_record = next(
+                record for record in saved["library"]["models"] if record["id"] == initial_id
+            )
+            if saved_record["model"] != temporary_model or saved_record["revision"] != 2:
+                ok = fail("parser lab did not save and revise the active model") and ok
+
+            created = apply_model_library_action({"action": "create", "name": "Modelo B"})
+            created_id = created["library"]["active_model_id"]
+            duplicated = apply_model_library_action({
+                "action": "duplicate",
+                "model_id": initial_id,
+                "name": "Modelo B copia",
+            })
+            duplicate_id = duplicated["library"]["active_model_id"]
+            duplicate = next(
+                record for record in duplicated["library"]["models"] if record["id"] == duplicate_id
+            )
+            if duplicate["model"] != temporary_model or duplicate_id == initial_id:
+                ok = fail("parser lab did not duplicate the complete model with a new identity") and ok
+
+            renamed = apply_model_library_action({
+                "action": "rename",
+                "model_id": duplicate_id,
+                "name": "Modelo duplicado",
+            })
+            renamed_record = next(
+                record for record in renamed["library"]["models"] if record["id"] == duplicate_id
+            )
+            if renamed_record["name"] != "Modelo duplicado" or renamed_record["revision"] != 2:
+                ok = fail("parser lab did not rename the model without changing its identity") and ok
+
+            selected = apply_model_library_action({
+                "action": "set_active",
+                "model_id": created_id,
+            })
+            if selected["library"]["active_model_id"] != created_id:
+                ok = fail("parser lab did not change the active model") and ok
+            deleted = apply_model_library_action({
+                "action": "delete",
+                "model_id": created_id,
+            })
+            if any(record["id"] == created_id for record in deleted["library"]["models"]):
+                ok = fail("parser lab did not delete the selected model") and ok
+            if deleted["library"]["active_model_id"] is None:
+                ok = fail("parser lab did not select a surviving model after deletion") and ok
+
+            persisted_library = json.loads(model_library_path().read_text(encoding="utf-8"))
+            if validate_model_library(persisted_library) != persisted_library:
+                ok = fail("parser lab model library is not valid JSON") and ok
     finally:
         if previous_temp_directory is None:
             os.environ.pop("CREDITOS_PARSER_LAB_TEMP_DIR", None)

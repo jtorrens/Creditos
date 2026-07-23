@@ -1,8 +1,8 @@
 # Parser Lab: arquitectura, funcionalidad y handoff de auditoría UX/UI
 
-Fecha de referencia: 2026-07-17
+Fecha de referencia: 2026-07-23
 
-Aplicación verificada: Créditos `0.1.75`
+Aplicación verificada: Créditos `0.1.76`
 
 Rama de implementación: `agent/parser-lab-model-workflow`
 
@@ -40,12 +40,15 @@ La promoción de una regla probada a `apps/renderer/import_models` requiere una 
 
 - La implementación está en `agent/parser-lab-model-workflow`.
 - El PR de integración a `main` es el borrador #1.
-- El commit `7947e6c` es la base publicada de Parser Lab; esta revisión documental y funcional eleva la aplicación a `0.1.75`.
+- El commit `7947e6c` es la base publicada de Parser Lab; las mejoras posteriores incorporan la biblioteca local de modelos y elevan la aplicación a `0.1.76`.
 - `data/creditos.db` no forma parte del commit ni del PR.
 - El ejecutable usado para la verificación fue:
   `apps/desktop/dist/mac-arm64/Creditos.app`.
-- El JSON experimental del usuario no se versiona. Vive por defecto en:
-  `~/.creditos/parser-lab/block-model.json`.
+- La biblioteca experimental del usuario no se versiona. Vive por defecto en:
+  `~/.creditos/parser-lab/model-library.json`.
+- El antiguo `block-model.json` se migró una sola vez a la biblioteca. La copia
+  `block-model.migrated-v5.json` es solo respaldo de esa operación y el código actual
+  no contiene fallback al contrato retirado.
 
 ## 4. Reglas de aislamiento
 
@@ -80,7 +83,7 @@ Si una mejora necesita cruzar esa frontera, hay que detenerse, explicar la neces
 | Archivo | Responsabilidad |
 |---|---|
 | `apps/renderer/parser_lab/inspection.py` | Construye el snapshot aislado de filas normalizadas. Reutiliza lectores compartidos sin ejecutar un import model. |
-| `apps/renderer/parser_lab/service.py` | Carga, valida y guarda el modelo JSON experimental; expone la operación de inspección. |
+| `apps/renderer/parser_lab/service.py` | Carga, valida y guarda la biblioteca JSON experimental y sus modelos; expone la operación de inspección. |
 | `apps/renderer/parser_lab/block_model.js` | Dominio puro del laboratorio: validación, detección de bloques, interpretación semántica y composición. |
 | `apps/renderer/parser_lab/ui.js` | Estado de sesión, eventos, sincronización de paneles, formularios, tablas y previo. |
 | `apps/renderer/parser_lab/parser_lab.css` | Layout, tema de la pestaña, tabla clara, tabs, formularios y previo. |
@@ -103,12 +106,13 @@ flowchart LR
     A["ODS o XLSX"] --> B["inspection.py"]
     B --> C["parser_lab_inspection v2"]
     C --> D["Filas normalizadas"]
-    E["parser_lab_block_model v4"] --> F["block_model.js"]
-    C --> F
-    F --> G["parser_lab_semantic_preview v1"]
-    G --> H["Reglas de composición"]
-    H --> I["parser_lab_composed_preview v1"]
-    I --> J["Previo simple"]
+    E["parser_lab_model_library v1"] --> F["Modelo activo v5"]
+    F --> G["block_model.js"]
+    C --> G
+    G --> H["parser_lab_semantic_preview v1"]
+    H --> I["Reglas de composición"]
+    I --> J["parser_lab_composed_preview v1"]
+    J --> K["Previo simple"]
 ```
 
 La UI no debe contener algoritmos alternativos de parsing. Debe editar el contrato, invocar el dominio y representar el resultado.
@@ -118,8 +122,8 @@ La UI no debe contener algoritmos alternativos de parsing. Debe editar el contra
 | Método | Ruta | Resultado |
 |---|---|---|
 | `POST` | `/api/parser-lab/inspect-source` | Inspección normalizada del archivo cargado. |
-| `GET` | `/api/parser-lab/block-model` | Modelo JSON local v4 y ruta de persistencia. |
-| `POST` | `/api/parser-lab/block-model` | Validación estricta y guardado atómico del modelo. |
+| `GET` | `/api/parser-lab/model-library` | Biblioteca local, modelo activo y ruta de persistencia. |
+| `POST` | `/api/parser-lab/model-library` | Crear, duplicar, renombrar, borrar, seleccionar o guardar modelos con validación estricta. |
 
 El guardado escribe primero un `.tmp` y después reemplaza el JSON de destino.
 
@@ -156,7 +160,16 @@ Ejemplo reducido:
 }
 ```
 
-### 6.2 Modelo experimental
+### 6.2 Biblioteca local y modelo experimental
+
+Contrato contenedor: `parser_lab_model_library`, versión 1.
+
+Cada modelo tiene `id` estable, nombre único, revisión, fechas de creación y
+actualización, y un documento `parser_lab_block_model` versión 5. La biblioteca
+mantiene un único `active_model_id` y permite quedar vacía después de borrar el
+último modelo. Crear, duplicar, renombrar y borrar se realizan desde la barra
+superior con diálogos propios de Parser Lab; duplicar copia toda la regla y genera
+una identidad nueva.
 
 Contrato: `parser_lab_block_model`, versión 5.
 
@@ -407,6 +420,9 @@ Hay tres splitters:
 - Negritas y estilos disponibles se muestran en la fila y en el inspector.
 - Las filas vacías aparecen como divisiones, no desaparecen.
 - Las cabeceras y rangos de bloque reciben estados visuales.
+- Seleccionar un bloque desplaza la tabla hasta su cabecera y aplica un fondo azul
+  atenuado a todo el rango. Cabecera, fila activa y filas vacías mantienen tonos
+  distintos para no perder su categoría dentro de la selección.
 - Los anchos de Bloque y A–D se cambian arrastrando el borde derecho de su cabecera.
 - Los anchos se guardan en `normalized_rows_view.column_widths`.
 - Los separadores admiten teclado con flecha izquierda/derecha.
@@ -506,7 +522,7 @@ Ejemplo:
 - creación de ítems: uno por fila;
 - la línea «Una producción de Buendía Estudios Canarias» se conserva como ítem real.
 
-La implementación es genérica, forma parte de la versión 5 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` a sus 16 bloques previos.
+La implementación es genérica, forma parte de la versión 5 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` a sus bloques previos.
 
 ## 10. Decisiones acordadas aún no implementadas
 

@@ -1,19 +1,21 @@
 # Parser Lab: estado y pendientes a alto nivel
 
-Fecha de corte: 17 de julio de 2026
+Fecha de corte: 23 de julio de 2026
 
-Rama de referencia: `codex/parser-lab-lote-b2`
+Rama de referencia: `agent/parser-lab-model-workflow`
 
 ## Ejecutado en este hilo
 
 - Reforzado el modelo de reglas, incluidas cabeceras ausentes, ambiguas o fuera de orden, trazabilidad de filas y composición.
 - Cerrado el comportamiento de la cabecera como primer ítem y de las tres políticas contextuales de filas vacías.
-- Consolidado el guardado vivo del modelo experimental en un único JSON.
+- Incorporada una biblioteca JSON local de modelos con identidad estable, selección
+  activa y operaciones de crear, duplicar, renombrar y borrar.
+- Migrado una sola vez el modelo experimental previo, sin fallback al contrato retirado.
 - Mejorada la navegación y sincronización entre tabla, bloques, editor y previo, incluyendo teclado, foco, scroll, filtros y redimensionado.
 - Mejorados el comportamiento con hojas largas, la legibilidad visual y el responsive.
 - Reducida de forma incremental la concentración de responsabilidades de la interfaz, sin reescrituras ni cambios compartidos.
 - Validado el flujo real con una hoja de 605 filas, tres bloques y una composición multibloque en una cartela.
-- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.75`.
+- Ejecutados los controles completos de arquitectura, seguridad y regresión; empaquetado y abierto `Creditos.app` versión `0.1.76`.
 - Confirmado que `data/creditos.db`, los parsers y los modelos de producción permanecen intactos.
 
 Cortes publicados:
@@ -30,7 +32,7 @@ No hay un P0 conocido. Los frentes abiertos son:
 
 - Guardar la definición activa en la base de datos principal, sin concepto de borrador temporal.
 - Añadir el modelo de reglas como otra opción de importación para cada producción.
-- Acordar identidad, versiones, sustitución y recuperación de modelos.
+- Trasladar a la DB la identidad, revisión y selección ya definidas por la biblioteca local.
 
 Este bloque cruza la frontera aislada de Parser Lab y requiere autorización específica.
 
@@ -43,7 +45,7 @@ Este bloque cruza la frontera aislada de Parser Lab y requiere autorización esp
 ### P2 — Robustez y escalabilidad
 
 - Probar recuperación ante guardados interrumpidos o definiciones inválidas.
-- Decidir si habrá múltiples modelos, historial o deshacer.
+- Decidir si además de revisiones se necesita historial recuperable o deshacer.
 - Garantizar fluidez con miles de filas y entre 30 y 100 bloques.
 - Continuar simplificando la interfaz mediante cortes pequeños.
 

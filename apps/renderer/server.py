@@ -13,9 +13,9 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID
 from parser_lab.service import (
+    apply_model_library_action,
     inspect_uploaded_source,
-    load_temporary_block_model,
-    save_temporary_block_model,
+    load_model_library,
 )
 from server_db.connection import db_connect
 from server_services.import_service import import_credit_source
@@ -40,8 +40,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/reference-video":
             self.handle_reference_video(parsed_url.query)
             return
-        if path == "/api/parser-lab/block-model":
-            self.handle_parser_lab_block_model_load()
+        if path == "/api/parser-lab/model-library":
+            self.handle_parser_lab_model_library_load()
             return
         if path == "/":
             path = "/index.html"
@@ -114,8 +114,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/parser-lab/inspect-source":
             self.handle_parser_lab_inspection()
             return
-        if path == "/api/parser-lab/block-model":
-            self.handle_parser_lab_block_model_save()
+        if path == "/api/parser-lab/model-library":
+            self.handle_parser_lab_model_library_action()
             return
         if path.startswith("/api/db/"):
             self.handle_db(path)
@@ -151,15 +151,15 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 
-    def handle_parser_lab_block_model_load(self):
+    def handle_parser_lab_model_library_load(self):
         try:
-            self.send_json(200, load_temporary_block_model())
+            self.send_json(200, load_model_library())
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 
-    def handle_parser_lab_block_model_save(self):
+    def handle_parser_lab_model_library_action(self):
         try:
-            self.send_json(200, save_temporary_block_model(self.read_json_body()))
+            self.send_json(200, apply_model_library_action(self.read_json_body()))
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 

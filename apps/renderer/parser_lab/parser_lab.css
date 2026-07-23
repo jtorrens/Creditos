@@ -27,6 +27,94 @@
   padding: 12px;
 }
 
+.parser-lab-model-library {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.parser-lab-model-library label {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.parser-lab-model-library select {
+  max-width: 420px;
+  min-width: 220px;
+}
+
+.parser-lab-model-library button {
+  padding: 5px 9px;
+}
+
+.parser-lab-model-library .parser-lab-subtle-danger {
+  background: transparent;
+  color: var(--muted);
+}
+
+.parser-lab-model-library .parser-lab-subtle-danger:hover:not(:disabled) {
+  color: var(--red);
+}
+
+.parser-lab-model-dialog-backdrop {
+  align-items: center;
+  background: rgba(8, 12, 18, 0.64);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 80;
+}
+
+.parser-lab-model-dialog-backdrop[hidden] {
+  display: none;
+}
+
+.parser-lab-model-dialog {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.38);
+  display: grid;
+  gap: 14px;
+  max-width: 440px;
+  padding: 20px;
+  width: min(440px, 100%);
+}
+
+.parser-lab-model-dialog h3,
+.parser-lab-model-dialog p {
+  margin: 0;
+}
+
+.parser-lab-model-dialog p {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.parser-lab-model-dialog label {
+  display: grid;
+  gap: 6px;
+}
+
+.parser-lab-model-dialog [hidden] {
+  display: none;
+}
+
+.parser-lab-model-dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.parser-lab-model-dialog-actions .danger {
+  background: #7b3340;
+  border-color: #a24a59;
+}
+
 .parser-lab-workflow {
   align-items: center;
   display: flex;
@@ -869,9 +957,18 @@
   background: #e4e8ec;
 }
 
+.parser-lab-table-panel .parser-lab-table tbody tr.parser-lab-active-block-range td {
+  background: #d9e5f0;
+}
+
 .parser-lab-table-panel .parser-lab-table tbody tr.parser-lab-block-header-row td {
   background: #d5dee8;
   border-top-color: #849bb5;
+}
+
+.parser-lab-table-panel .parser-lab-table tbody tr.parser-lab-active-block-range.parser-lab-block-header-row td {
+  background: #bfd2e5;
+  border-top-color: #5f82a8;
 }
 
 .parser-lab-table-panel .parser-lab-table tbody tr.parser-lab-header-candidate-row td {
@@ -882,6 +979,10 @@
   background: #dfe2e5;
   border-bottom-color: #b7bdc4;
   border-top-color: #b7bdc4;
+}
+
+.parser-lab-table-panel .parser-lab-table tbody tr.parser-lab-active-block-range.parser-lab-empty-source-row td {
+  background: #cedae6;
 }
 
 .parser-lab-table-panel .parser-lab-table tbody tr.selected td:first-child {
@@ -914,9 +1015,10 @@
 
 .parser-lab-table-panel .parser-lab-table tbody tr.selected td,
 .parser-lab-table-panel .parser-lab-table tbody tr.selected.parser-lab-block-range-row td,
+.parser-lab-table-panel .parser-lab-table tbody tr.selected.parser-lab-active-block-range td,
 .parser-lab-table-panel .parser-lab-table tbody tr.selected.parser-lab-block-header-row td,
 .parser-lab-table-panel .parser-lab-table tbody tr.selected.parser-lab-empty-source-row td {
-  background: #ccd9e6;
+  background: #b9cee3;
 }
 
 .parser-lab-format-summary {
