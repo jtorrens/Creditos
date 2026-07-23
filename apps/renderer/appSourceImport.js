@@ -51,6 +51,8 @@
         form.append('file', file);
         form.append('import_model_id', currentSelectedImportModelId());
         form.append('db_path', state.databasePath);
+        form.append('production_id', state.selectedProductionId);
+        form.append('episode_id', state.selectedEpisodeId);
 
         const response = await windowRef.fetch('/api/parse-xlsx', { method: 'POST', body: form });
         const payload = await response.json();

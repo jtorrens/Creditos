@@ -437,6 +437,8 @@
       activeRightTab: 'inspector',
       activeJsonTab: 'row',
       modelReady: false,
+      sourceOrigin: null,
+      associatedContextKey: '',
     };
     let persistenceQueue = Promise.resolve();
     let resolveModelDialog = null;
@@ -782,7 +784,7 @@
       return kind;
     }
 
-    async function inspectFile(file) {
+    async function inspectFile(file, inspectOptions = {}) {
       flushPendingBlockEdit();
       const sourceKind = sourceKindForFile(file);
       elements.openButton.disabled = true;
@@ -796,6 +798,8 @@
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'No se pudo inspeccionar el archivo.');
         state.inspection = payload;
+        state.sourceOrigin = inspectOptions.origin || 'temporary';
+        state.associatedContextKey = inspectOptions.contextKey || '';
         state.selectedRowNumber = payload.rows && payload.rows[0] ? payload.rows[0].row : null;
         state.filter = '';
         elements.filterInput.value = '';
@@ -813,6 +817,47 @@
         elements.openButton.disabled = false;
         elements.fileInput.value = '';
       }
+    }
+
+    function selectedProjectContext() {
+      try {
+        const selection = JSON.parse(root.localStorage.getItem('creditos:lastSelection') || '{}');
+        if (!selection.productionId || !selection.episodeId) return null;
+        return {
+          productionId: selection.productionId,
+          episodeId: selection.episodeId,
+        };
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    async function loadAssociatedSource() {
+      if (state.sourceOrigin === 'temporary') return;
+      const context = selectedProjectContext();
+      if (!context) return;
+      const response = await fetchRef('/api/parser-lab/associated-source', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          production_id: context.productionId,
+          episode_id: context.episodeId,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'No se pudo cargar el archivo asociado.');
+      const sourceFile = payload.file;
+      if (!sourceFile) {
+        if (state.sourceOrigin === 'associated') clearInspection();
+        return;
+      }
+      const contextKey = `${context.productionId}:${context.episodeId}:${sourceFile.import_model_id}`;
+      if (state.inspection && state.sourceOrigin === 'associated' && state.associatedContextKey === contextKey) return;
+      const bytes = Uint8Array.from(root.atob(sourceFile.base64), (character) => character.charCodeAt(0));
+      const file = new root.File([bytes], sourceFile.name, {
+        type: sourceFile.mime || 'application/octet-stream',
+      });
+      await inspectFile(file, { origin: 'associated', contextKey });
     }
 
     function filteredRows() {
@@ -2323,6 +2368,8 @@
     function clearInspection() {
       flushPendingBlockEdit();
       state.inspection = null;
+      state.sourceOrigin = null;
+      state.associatedContextKey = '';
       state.selectedRowNumber = null;
       state.filter = '';
       elements.filterInput.value = '';
@@ -2399,7 +2446,7 @@
     elements.compositionScopeSelect.addEventListener('change', updateCompositionFieldLabel);
     elements.fileInput.addEventListener('change', () => {
       const file = elements.fileInput.files && elements.fileInput.files[0];
-      if (file) inspectFile(file);
+      if (file) inspectFile(file, { origin: 'temporary' });
     });
     elements.filterInput.addEventListener('input', () => {
       state.filter = elements.filterInput.value;
@@ -2433,13 +2480,22 @@
       resizer.addEventListener('keydown', (event) => resizeNormalizedColumnWithKeyboard(column, event));
     });
     uiSupport.setupSplitters({ documentRef, elements, clamp });
+    const parserLabTabButton = documentRef.querySelector('[data-tab="parserLab"]');
+    if (parserLabTabButton) {
+      parserLabTabButton.addEventListener('click', () => {
+        loadAssociatedSource().catch((error) => {
+          elements.summary.classList.add('parser-lab-error');
+          elements.summary.textContent = error.message;
+        });
+      });
+    }
     root.addEventListener('pagehide', flushBlockModelOnPageHide);
     setRightTab(state.activeRightTab);
     setJsonTab(state.activeJsonTab);
     render();
     loadModelLibrary();
 
-    return { clearInspection, inspectFile, loadModelLibrary, persistBlockModel, render, state };
+    return { clearInspection, inspectFile, loadAssociatedSource, loadModelLibrary, persistBlockModel, render, state };
   }
 
   root.CreditosParserLabUi = { initializeParserLab };

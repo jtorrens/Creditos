@@ -122,10 +122,12 @@ La UI no debe contener algoritmos alternativos de parsing. Debe editar el contra
 | Método | Ruta | Resultado |
 |---|---|---|
 | `POST` | `/api/parser-lab/inspect-source` | Inspección normalizada del archivo cargado. |
+| `POST` | `/api/parser-lab/associated-source` | Copia del archivo asociado al capítulo y modelo activos. |
 | `GET` | `/api/parser-lab/model-library` | Biblioteca local, modelo activo y ruta de persistencia. |
 | `POST` | `/api/parser-lab/model-library` | Crear, duplicar, renombrar, borrar, seleccionar o guardar modelos con validación estricta. |
 
-El guardado escribe primero un `.tmp` y después reemplaza el JSON de destino.
+Los modelos se guardan en SQLite. La carga del origen asociado es de solo lectura
+para Parser Lab.
 
 ## 6. Contratos de datos
 
@@ -146,6 +148,12 @@ Contiene:
 - indicador `empty`.
 
 Las filas vacías internas se restauran usando la numeración original. Esta decisión es esencial: una fila vacía puede representar una división de ítem, grupo o página y no puede descartarse durante la inspección.
+
+Al entrar por primera vez en Parser Lab se inspecciona automáticamente la copia
+del ODS/XLSX asociado al capítulo y modelo activos, si existe. La tabla
+`source_files` conserva esos bytes junto a la importación. El botón de carga del
+laboratorio puede sustituir el archivo temporalmente en esa pestaña, pero nunca
+modifica la asociación ni los documentos usados por Cartelas.
 
 Ejemplo reducido:
 

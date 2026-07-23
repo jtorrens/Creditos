@@ -204,6 +204,37 @@ def duplicate_production(connection, production_id):
             ),
         )
 
+    for source_file in connection.execute(
+        """
+        SELECT episode_id, import_model_id, file_name, mime_type, data_blob
+        FROM source_files
+        WHERE production_id = ?
+        """,
+        (int(production_id),),
+    ):
+        new_episode_id = episode_map.get(source_file["episode_id"])
+        if not new_episode_id:
+            continue
+        connection.execute(
+            """
+            INSERT INTO source_files (
+                production_id, episode_id, import_model_id,
+                file_name, mime_type, data_blob, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                new_production_id,
+                new_episode_id,
+                source_file["import_model_id"],
+                source_file["file_name"],
+                source_file["mime_type"],
+                source_file["data_blob"],
+                timestamp,
+                timestamp,
+            ),
+        )
+
     for style in connection.execute(
         """
         SELECT style_id, name, data_json

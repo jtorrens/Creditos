@@ -30,6 +30,7 @@ from server_services.project_service import (
     update_production,
 )
 from server_services.style_service import delete_style, load_styles, save_style
+from server_services.source_file_service import load_active_source_file, save_source_file
 
 
 ROOT = Path(__file__).resolve().parent
@@ -119,6 +120,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/parser-lab/model-library":
             self.handle_parser_lab_model_library_action()
             return
+        if path == "/api/parser-lab/associated-source":
+            self.handle_parser_lab_associated_source()
+            return
         if path.startswith("/api/db/"):
             self.handle_db(path)
             return
@@ -140,6 +144,16 @@ class Handler(BaseHTTPRequestHandler):
                     source_name,
                     import_model_id,
                 )
+                if fields.get("production_id") and fields.get("episode_id"):
+                    save_source_file(
+                        connection,
+                        fields.get("production_id"),
+                        fields.get("episode_id"),
+                        import_model_id,
+                        source_name,
+                        uploaded.get("content_type") or mimetypes.guess_type(source_name)[0],
+                        file_bytes,
+                    )
             self.send_json(200, parsed)
         except Exception as error:
             self.send_json(500, {"error": str(error)})
@@ -187,6 +201,19 @@ class Handler(BaseHTTPRequestHandler):
                         "temporary": False,
                     },
                 )
+        except Exception as error:
+            self.send_json(500, {"error": str(error)})
+
+    def handle_parser_lab_associated_source(self):
+        try:
+            payload = self.read_json_body()
+            with db_connect(payload.get("db_path")) as connection:
+                source_file = load_active_source_file(
+                    connection,
+                    payload.get("production_id"),
+                    payload.get("episode_id"),
+                )
+            self.send_json(200, {"file": source_file})
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 

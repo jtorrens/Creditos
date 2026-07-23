@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 
 def init_db(connection):
@@ -69,6 +69,21 @@ def init_db(connection):
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
             is_active INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS source_files (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            production_id INTEGER NOT NULL,
+            episode_id INTEGER NOT NULL,
+            import_model_id TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            mime_type TEXT NOT NULL,
+            data_blob BLOB NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE (production_id, episode_id, import_model_id),
+            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
+            FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
         );
         """
     )

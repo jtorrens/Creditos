@@ -72,7 +72,7 @@ def main():
         create_v2_database(db_path)
 
         with db_connect(db_path) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 3
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
             assert load_document(connection, 1, 1, "structure", "modelo_ia") is None
             assert load_document(connection, 1, 1, "structure", "modelo_reglas")["association"] == "ia"
             assert load_document(connection, 1, 1, "reference")["file_path"] == "video.mov"
