@@ -6,7 +6,7 @@ Project: Electron app "Créditos".
 
 - Do not modify the deprecated legacy Créditos workspace or its `deprecated/legacy-main` branch.
 - All implementation, documentation, dependency, build, and verification work must be done in this canonical Créditos workspace on `main`.
-- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.70`.
+- Before editing or generating project files, run `git branch --show-current` and confirm that this is the canonical application on `main`. Its current application version is `0.1.80`.
 - If the worktree or version does not match the canonical application, stop and ask the user before moving changes.
 
 ## Parallel Work
@@ -140,6 +140,6 @@ The parser inspection/model-development tab is an isolated laboratory feature. I
 - Work for this tab must be contained in tab-specific UI, services, state, and tests.
 - It must not change the behavior or output of existing import models, the production parser endpoint, source normalization, materials, structure/cartelas, rendering, export, persistence, or any other application section.
 - It may consume copies of normalized reader output through an explicit inspection boundary, but it must not mutate production source data or editor state.
-- Experimental rules and results must remain separate from registered production import models. Promoting a tested model into the production registry is a separate task requiring explicit user authorization.
+- Candidate results remain isolated until saved as a valid DB-backed manual import model. Production execution uses the registered `rule_based_credits` family and the exact persisted revision selected by the production; it must never read the retired local JSON library or infer a fallback rule.
 - Do not refactor, reorganize, or modify general/shared application code merely to accommodate this tab. If a required change would cross the tab boundary, stop and obtain explicit user authorization for that specific change first.
 - Existing parser golden outputs and application behavior must remain unchanged while the tab is developed.

@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 def init_db(connection):
@@ -58,6 +58,16 @@ def init_db(connection):
             updated_at TEXT NOT NULL,
             UNIQUE (production_id, style_id),
             FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS import_rule_models (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+            revision INTEGER NOT NULL DEFAULT 1,
+            model_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 0
         );
         """
     )

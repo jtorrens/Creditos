@@ -13,12 +13,14 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID
 from parser_lab.service import (
-    apply_model_library_action,
     inspect_uploaded_source,
-    load_model_library,
 )
-from server_db.connection import db_connect
+from server_db.connection import db_connect, default_db_path
 from server_services.import_service import import_credit_source
+from server_services.import_rule_model_service import (
+    apply_rule_model_library_action,
+    load_rule_model_library,
+)
 from server_services.document_service import load_document, save_document
 from server_services.project_service import (
     create_production,
@@ -131,7 +133,13 @@ class Handler(BaseHTTPRequestHandler):
             file_bytes = uploaded["content"]
             source_name = uploaded["filename"] or "uploaded_source"
             import_model_id = fields.get("import_model_id") or DEFAULT_IMPORT_MODEL_ID
-            parsed = import_credit_source(file_bytes, source_name, import_model_id)
+            with db_connect(fields.get("db_path")) as connection:
+                parsed = import_credit_source(
+                    connection,
+                    file_bytes,
+                    source_name,
+                    import_model_id,
+                )
             self.send_json(200, parsed)
         except Exception as error:
             self.send_json(500, {"error": str(error)})
@@ -153,13 +161,32 @@ class Handler(BaseHTTPRequestHandler):
 
     def handle_parser_lab_model_library_load(self):
         try:
-            self.send_json(200, load_model_library())
+            with db_connect(None) as connection:
+                self.send_json(
+                    200,
+                    {
+                        "library": load_rule_model_library(connection),
+                        "path": str(default_db_path()),
+                        "temporary": False,
+                    },
+                )
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 
     def handle_parser_lab_model_library_action(self):
         try:
-            self.send_json(200, apply_model_library_action(self.read_json_body()))
+            with db_connect(None) as connection:
+                self.send_json(
+                    200,
+                    {
+                        "library": apply_rule_model_library_action(
+                            connection,
+                            self.read_json_body(),
+                        ),
+                        "path": str(default_db_path()),
+                        "temporary": False,
+                    },
+                )
         except Exception as error:
             self.send_json(500, {"error": str(error)})
 

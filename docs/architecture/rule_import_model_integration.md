@@ -1,0 +1,47 @@
+# Modelos manuales de importación
+
+Fecha: 23 de julio de 2026
+
+## Propiedad
+
+Los modelos manuales de reglas son modelos de importación persistidos en SQLite.
+La tabla `import_rule_models` conserva identidad, nombre, revisión, contrato JSON y
+selección activa del editor. Cada producción selecciona el modelo que usa mediante
+el `import_model_id` existente.
+
+La biblioteca JSON de Parser Lab fue una persistencia de desarrollo. Su contenido
+se migra una sola vez y no participa en la ejecución ni actúa como fallback.
+
+## Flujo
+
+1. Parser Lab edita el modelo almacenado en `import_rule_models`.
+2. El resumen de proyecto combina importadores estáticos y modelos manuales.
+3. La producción guarda el ID estable del modelo en `productions.import_model_id`.
+4. La importación carga esa revisión desde la misma DB.
+5. `rule_based_credits.py` normaliza ODS/XLSX, resuelve fronteras en orden e
+   interpreta los términos.
+6. El resultado se valida como `source_json`.
+7. Materiales, estructura, render y Preview consumen el contrato estable existente.
+
+## Fallos explícitos
+
+La importación se detiene si una frontera está ausente, fuera de orden o es
+ambigua. No se elige silenciosamente una coincidencia y no se ejecutan contratos
+anteriores. El ajuste se realiza en Parser Lab y crea una nueva revisión.
+
+## Presentación
+
+Los roles del modelo se proyectan sobre las categorías tipográficas existentes:
+
+- `principal` → Nombre;
+- `secondary` → Cargo;
+- nombre del bloque → Título de bloque.
+
+La orientación del bloque se conserva como pista de layout. Los saltos de página
+derivados de filas vacías se trasladan a `structure.page_breaks`.
+
+## Compatibilidad
+
+Los importadores `standard_credits_xls` y `traz_credits_ods` no cambian su salida.
+El importador manual es una familia registrada y solo se ejecuta cuando una
+producción selecciona el ID de un registro de `import_rule_models`.

@@ -50,6 +50,7 @@
         const form = new windowRef.FormData();
         form.append('file', file);
         form.append('import_model_id', currentSelectedImportModelId());
+        form.append('db_path', state.databasePath);
 
         const response = await windowRef.fetch('/api/parse-xlsx', { method: 'POST', body: form });
         const payload = await response.json();

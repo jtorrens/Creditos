@@ -18,3 +18,11 @@ Do not put parser rules in `server.py` or `app.js`.
 - Do not change an existing model's parse behavior, schema, or golden output for parser-lab work unless the user explicitly authorizes that production change.
 - Keep inspection/trace data outside the stable production `source_json` contract and outside persisted editor documents.
 - Any future promotion of a candidate model must be performed as a separate, explicitly authorized change with registry entry, schema validation, fixtures, and golden tests.
+
+## Manual Rule Models
+
+- `rule_based_credits` is the registered production family for DB-backed manual models.
+- The selected rule record is loaded by the server service and passed explicitly to the parser.
+- Production parsing must validate the current rule contract and fail on missing, ambiguous, or out-of-order boundaries.
+- Never read the retired Parser Lab JSON library from a production importer.
+- Preserve the stable `source_json` boundary consumed by materials, structure, render, and Preview.

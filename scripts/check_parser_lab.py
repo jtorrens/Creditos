@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 import json
-import os
 import pathlib
 import subprocess
 import sys
-import tempfile
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -25,14 +23,9 @@ def main():
     from import_models.registry import IMPORT_MODELS, parse_source
     from parser_lab.inspection import empty_row, expand_empty_rows, inspect_source_rows
     from parser_lab.service import (
-        apply_model_library_action,
         inspect_uploaded_source,
-        load_model_library,
-        model_library_backup_path,
-        model_library_path,
         source_kind_from_name,
         validate_block_model,
-        validate_model_library,
     )
 
     ok = True
@@ -166,108 +159,6 @@ def main():
         pass
     else:
         ok = fail("parser lab accepted a block without an explicit content start") and ok
-    previous_temp_directory = os.environ.get("CREDITOS_PARSER_LAB_TEMP_DIR")
-    try:
-        with tempfile.TemporaryDirectory() as temp_directory:
-            os.environ["CREDITOS_PARSER_LAB_TEMP_DIR"] = temp_directory
-            loaded = load_model_library()
-            library = loaded["library"]
-            initial_id = library["active_model_id"]
-            if pathlib.Path(loaded["path"]) != model_library_path():
-                ok = fail("parser lab returned an unexpected model-library path") and ok
-
-            saved = apply_model_library_action({
-                "action": "save",
-                "model_id": initial_id,
-                "model": temporary_model,
-            })
-            saved_record = next(
-                record for record in saved["library"]["models"] if record["id"] == initial_id
-            )
-            if saved_record["model"] != temporary_model or saved_record["revision"] != 2:
-                ok = fail("parser lab did not save and revise the active model") and ok
-            saved_document = model_library_path().read_text(encoding="utf-8")
-            try:
-                apply_model_library_action({
-                    "action": "save",
-                    "model_id": initial_id,
-                    "model": missing_content_start,
-                })
-            except ValueError:
-                pass
-            else:
-                ok = fail("parser lab persisted an invalid model definition") and ok
-            if model_library_path().read_text(encoding="utf-8") != saved_document:
-                ok = fail("parser lab changed persistence after rejecting an invalid model") and ok
-
-            created = apply_model_library_action({"action": "create", "name": "Modelo B"})
-            created_id = created["library"]["active_model_id"]
-            duplicated = apply_model_library_action({
-                "action": "duplicate",
-                "model_id": initial_id,
-                "name": "Modelo B copia",
-            })
-            duplicate_id = duplicated["library"]["active_model_id"]
-            duplicate = next(
-                record for record in duplicated["library"]["models"] if record["id"] == duplicate_id
-            )
-            if duplicate["model"] != temporary_model or duplicate_id == initial_id:
-                ok = fail("parser lab did not duplicate the complete model with a new identity") and ok
-
-            renamed = apply_model_library_action({
-                "action": "rename",
-                "model_id": duplicate_id,
-                "name": "Modelo duplicado",
-            })
-            renamed_record = next(
-                record for record in renamed["library"]["models"] if record["id"] == duplicate_id
-            )
-            if renamed_record["name"] != "Modelo duplicado" or renamed_record["revision"] != 2:
-                ok = fail("parser lab did not rename the model without changing its identity") and ok
-
-            selected = apply_model_library_action({
-                "action": "set_active",
-                "model_id": created_id,
-            })
-            if selected["library"]["active_model_id"] != created_id:
-                ok = fail("parser lab did not change the active model") and ok
-            deleted = apply_model_library_action({
-                "action": "delete",
-                "model_id": created_id,
-            })
-            if any(record["id"] == created_id for record in deleted["library"]["models"]):
-                ok = fail("parser lab did not delete the selected model") and ok
-            if deleted["library"]["active_model_id"] is None:
-                ok = fail("parser lab did not select a surviving model after deletion") and ok
-
-            persisted_library = json.loads(model_library_path().read_text(encoding="utf-8"))
-            if validate_model_library(persisted_library) != persisted_library:
-                ok = fail("parser lab model library is not valid JSON") and ok
-            backup_path = model_library_backup_path()
-            if not backup_path.exists():
-                ok = fail("parser lab did not retain a valid model-library backup") and ok
-
-            dangling_temporary_path = model_library_path().with_suffix(".tmp")
-            dangling_temporary_path.write_text("{interrupted", encoding="utf-8")
-            uninterrupted = load_model_library()
-            if uninterrupted["library"] != persisted_library or uninterrupted["recovered"]:
-                ok = fail("parser lab did not ignore an interrupted temporary write") and ok
-
-            model_library_path().write_text("{invalid", encoding="utf-8")
-            recovered = load_model_library()
-            if not recovered["recovered"]:
-                ok = fail("parser lab did not report recovery from its valid backup") and ok
-            recovered_primary = json.loads(model_library_path().read_text(encoding="utf-8"))
-            if recovered_primary != recovered["library"]:
-                ok = fail("parser lab did not restore the recovered library atomically") and ok
-            if validate_model_library(recovered_primary) != recovered_primary:
-                ok = fail("parser lab recovered an invalid model library") and ok
-    finally:
-        if previous_temp_directory is None:
-            os.environ.pop("CREDITOS_PARSER_LAB_TEMP_DIR", None)
-        else:
-            os.environ["CREDITOS_PARSER_LAB_TEMP_DIR"] = previous_temp_directory
-
     if tuple(IMPORT_MODELS) != registered_before:
         ok = fail("parser lab inspection changed the production import-model registry") and ok
 

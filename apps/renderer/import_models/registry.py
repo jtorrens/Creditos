@@ -1,4 +1,4 @@
-from . import standard_credits_xls, traz_credits_ods
+from . import rule_based_credits, standard_credits_xls, traz_credits_ods
 
 
 DEFAULT_IMPORT_MODEL_ID = standard_credits_xls.IMPORT_MODEL["id"]
@@ -6,6 +6,7 @@ DEFAULT_IMPORT_MODEL_ID = standard_credits_xls.IMPORT_MODEL["id"]
 IMPORT_MODELS = {
     standard_credits_xls.IMPORT_MODEL["id"]: standard_credits_xls.IMPORT_MODEL,
     traz_credits_ods.IMPORT_MODEL["id"]: traz_credits_ods.IMPORT_MODEL,
+    rule_based_credits.IMPORT_MODEL["id"]: rule_based_credits.IMPORT_MODEL,
 }
 
 
@@ -30,4 +31,5 @@ def list_import_models():
             "source_kinds": model.get("source_kinds", []),
         }
         for model in IMPORT_MODELS.values()
+        if not model.get("dynamic_template")
     ]

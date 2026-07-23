@@ -3,6 +3,7 @@ import json
 from import_models.registry import DEFAULT_IMPORT_MODEL_ID, list_import_models
 from server_db.connection import default_db_path
 from .common import now_iso
+from .import_rule_model_service import list_rule_import_models
 
 
 def row_to_dict(row):
@@ -47,7 +48,7 @@ def db_overview(connection):
         "db_path": str(default_db_path()),
         "productions": productions,
         "episodes": episodes,
-        "import_models": list_import_models(),
+        "import_models": [*list_import_models(), *list_rule_import_models(connection)],
     }
 
 

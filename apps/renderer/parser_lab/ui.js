@@ -502,10 +502,7 @@
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'No se pudo cargar la biblioteca de modelos.');
         applyModelLibrary(payload.library);
-        setPersistenceStatus(
-          payload.recovered ? 'Biblioteca recuperada desde copia de seguridad' : 'Biblioteca local cargada',
-          payload.path
-        );
+        setPersistenceStatus('Modelos cargados desde la base de datos', payload.path);
         render();
       } catch (error) {
         setPersistenceStatus(`Sin persistencia local: ${error.message}`, '', true);
@@ -596,7 +593,7 @@
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'No se pudo actualizar la biblioteca de modelos.');
       applyModelLibrary(payload.library);
-      setPersistenceStatus('Biblioteca local guardada', payload.path);
+      setPersistenceStatus('Modelos guardados en la base de datos', payload.path);
       render();
       return payload;
     }

@@ -16,6 +16,7 @@
       const previousByRef = new Map();
       const previousOverrides = previous && previous.overrides ? previous.overrides : {};
       const previousPageBreaks = previous && previous.page_breaks ? previous.page_breaks : {};
+      const sourcePageBreaks = pageBreaksFromMaterials(materials);
       const previousPreviewSettings = normalizePreviewSettings(previous && previous.preview_settings ? previous.preview_settings : {});
 
       if (previous && Array.isArray(previous.cartelas)) {
@@ -70,7 +71,7 @@
         cartelas: cleanCartelas,
         settings,
         overrides: previousOverrides,
-        page_breaks: previousPageBreaks,
+        page_breaks: { ...sourcePageBreaks, ...previousPageBreaks },
         page_line_adjustments: previous && previous.page_line_adjustments ? previous.page_line_adjustments : {},
         preview_settings: previousPreviewSettings,
       };
@@ -88,6 +89,25 @@
         if (item.kind === 'logo') return item.value || item.title;
         return Object.keys(item || {}).some((key) => !['id', 'kind', 'row', 'section'].includes(key) && item[key]);
       });
+    }
+
+    function pageBreaksFromMaterials(materials) {
+      const result = {};
+      (materials || []).forEach((material) => {
+        const indexes = material.page_break_after_item_indexes || [];
+        const breaks = indexes.map((index) => {
+          const item = (material.items || [])[Number(index)];
+          if (!item) return null;
+          const names = Array.isArray(item.names) ? item.names : [];
+          if (names.length) {
+            const lastName = names[names.length - 1];
+            return `${item.id}__${lastName.id}`;
+          }
+          return `${item.id}__${item.id}_empty_name`;
+        }).filter(Boolean);
+        if (breaks.length) result[material.id] = breaks;
+      });
+      return result;
     }
 
     function removeDefaultEmptyCartelas(cartelas, materials) {

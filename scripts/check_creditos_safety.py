@@ -9,6 +9,7 @@ CHECKS = [
     "check_import_models.py",
     "check_parser_golden.py",
     "check_parser_lab.py",
+    "check_rule_import_models.py",
     "check_domain_no_dom.py",
     "check_domain_imports.py",
     "check_renderer_app_boundaries.py",

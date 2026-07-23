@@ -16,6 +16,11 @@
             titles: block.titles || [block.title],
             type: block.type,
             items: block.items || [],
+            layout_hint: block.layout_hint || '',
+            orientation_hint: block.orientation_hint || '',
+            page_break_after_item_indexes: Array.isArray(block.page_break_after_item_indexes)
+              ? block.page_break_after_item_indexes.slice()
+              : [],
           });
           return;
         }
@@ -156,6 +161,7 @@
     }
 
     function defaultLayoutForMaterial(material) {
+      if (material.layout_hint) return material.layout_hint;
       if (material.type === 'crew_section') return 'roll_section';
       if (material.type === 'cast') return 'cast_page';
       if (material.type === 'music_licenses') return 'music_licenses';
@@ -166,6 +172,7 @@
     }
 
     function defaultOrientationForMaterial(material) {
+      if (material.orientation_hint) return material.orientation_hint;
       if (material.type === 'cards') return 'vertical';
       if (material.type === 'music_licenses') return 'vertical';
       if (material.type === 'thanks') return 'vertical';
