@@ -115,45 +115,6 @@
   border-color: #a24a59;
 }
 
-.parser-lab-workflow {
-  align-items: center;
-  display: flex;
-  gap: 6px;
-  grid-column: 1 / -1;
-}
-
-.parser-lab-workflow span {
-  align-items: center;
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--muted);
-  display: inline-flex;
-  font-size: 10px;
-  gap: 6px;
-  padding: 4px 9px 4px 5px;
-}
-
-.parser-lab-workflow b {
-  align-items: center;
-  background: var(--panel-3);
-  border-radius: 50%;
-  display: inline-flex;
-  height: 19px;
-  justify-content: center;
-  width: 19px;
-}
-
-.parser-lab-workflow span.active {
-  border-color: var(--accent);
-  color: var(--accent-strong);
-}
-
-.parser-lab-workflow span.complete b {
-  background: var(--green);
-  color: #13261d;
-}
-
 .parser-lab-file-actions,
 .parser-lab-filter,
 .parser-lab-summary {

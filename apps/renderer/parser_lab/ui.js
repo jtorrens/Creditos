@@ -35,12 +35,6 @@
             <input id="parserLabFilterInput" class="text-input" type="search" placeholder="Fila, contenido, negrita o combinada…" disabled>
           </label>
           <div id="parserLabSummary" class="parser-lab-summary">Sin archivo cargado</div>
-          <div class="parser-lab-workflow" aria-label="Flujo del laboratorio">
-            <span id="parserLabSourceStep"><b>1</b> Fuente</span>
-            <span id="parserLabBlocksStep"><b>2</b> Bloques</span>
-            <span id="parserLabCompositionStep"><b>3</b> Composición</span>
-            <span id="parserLabPreviewStep"><b>4</b> Previo</span>
-          </div>
         </div>
         <div id="parserLabWorkspace" class="parser-lab-workspace">
           <div id="parserLabLeftPane" class="parser-lab-left-pane">
@@ -353,10 +347,6 @@
       fileInput: documentRef.getElementById('parserLabFileInput'),
       filterInput: documentRef.getElementById('parserLabFilterInput'),
       summary: documentRef.getElementById('parserLabSummary'),
-      sourceStep: documentRef.getElementById('parserLabSourceStep'),
-      blocksStep: documentRef.getElementById('parserLabBlocksStep'),
-      compositionStep: documentRef.getElementById('parserLabCompositionStep'),
-      previewStep: documentRef.getElementById('parserLabPreviewStep'),
       sheetMeta: documentRef.getElementById('parserLabSheetMeta'),
       tableEmpty: documentRef.getElementById('parserLabTableEmpty'),
       tableWrap: documentRef.getElementById('parserLabTableWrap'),
@@ -862,7 +852,6 @@
       rebuildRowIndexes();
       renderBlockModel();
       renderParserPreview();
-      renderWorkflow();
       renderActiveJsonDocument();
       renderNormalizedRows();
     }
@@ -1352,19 +1341,6 @@
       elements.blockEditorEmpty.hidden = true;
       elements.compositionEditor.hidden = false;
       renderBlockModel();
-    }
-
-    function renderWorkflow() {
-      const found = state.blockInstances.filter((instance) => instance.matched).length;
-      setWorkflowStep(elements.sourceStep, Boolean(state.inspection), !state.inspection);
-      setWorkflowStep(elements.blocksStep, state.blockDefinitions.length > 0 && found > 0, Boolean(state.inspection));
-      setWorkflowStep(elements.compositionStep, state.compositionRules.length > 0, found > 0);
-      setWorkflowStep(elements.previewStep, Boolean(state.inspection && found > 0), false);
-    }
-
-    function setWorkflowStep(element, complete, active) {
-      element.classList.toggle('complete', complete);
-      element.classList.toggle('active', !complete && active);
     }
 
     function renderCompositionRules() {

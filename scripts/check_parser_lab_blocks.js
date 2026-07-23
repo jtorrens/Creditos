@@ -608,6 +608,8 @@ assert(!uiSource.includes('root.prompt('));
 assert(!uiSource.includes('root.confirm('));
 assert(uiSource.includes('/api/parser-lab/model-library'));
 assert(!uiSource.includes('/api/parser-lab/block-model'));
+assert(!uiSource.includes('parser-lab-workflow'));
+assert(!uiSource.includes('renderWorkflow'));
 assert(uiSource.includes('parserLabNormalizedTable'));
 assert(uiSource.includes('data-normalized-column-resizer'));
 assert(uiSource.includes('function beginNormalizedColumnResize(column, event)'));

@@ -2,7 +2,7 @@
 
 Fecha de referencia: 2026-07-23
 
-Aplicación verificada: Créditos `0.1.77`
+Aplicación verificada: Créditos `0.1.78`
 
 Rama de implementación: `agent/parser-lab-model-workflow`
 
@@ -40,7 +40,7 @@ La promoción de una regla probada a `apps/renderer/import_models` requiere una 
 
 - La implementación está en `agent/parser-lab-model-workflow`.
 - El PR de integración a `main` es el borrador #1.
-- El commit `7947e6c` es la base publicada de Parser Lab; las mejoras posteriores incorporan la biblioteca local, las fronteras estructurales y elevan la aplicación a `0.1.77`.
+- El commit `7947e6c` es la base publicada de Parser Lab; las mejoras posteriores incorporan la biblioteca local, las fronteras estructurales y elevan la aplicación a `0.1.78`.
 - `data/creditos.db` no forma parte del commit ni del PR.
 - El ejecutable usado para la verificación fue:
   `apps/desktop/dist/mac-arm64/Creditos.app`.
