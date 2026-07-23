@@ -101,6 +101,8 @@
                   block.vertical_align = getSourceRefVerticalAlign(page, ref, cartela);
                   block.typography = getSourceRefTypography(page, ref, cartela);
                   const effectiveBlockStyle = getEffectiveCartelaBlockStyle(cartela);
+                  block.show_block_title = effectiveBlockStyle.show_block_title !== false;
+                  if (!block.show_block_title) block.title = '';
                   block.force_role_name_columns = effectiveBlockStyle.force_role_name_columns;
                   if (block.force_role_name_columns) forceRenderedRoleNameColumns(block);
                   block.concatenate_rows = effectiveBlockStyle.concatenate_rows;

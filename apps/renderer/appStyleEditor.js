@@ -55,7 +55,7 @@
           summary: 'Columnas, concatenación y alineaciones',
           icon: '▦',
           status: () => cardStatus({
-            override: hasAnyStyleBlockOverride(style, ['columns', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
+            override: hasAnyStyleBlockOverride(style, ['columns', 'show_block_title', 'concatenate_rows', 'force_role_name_columns', 'vertical_align'])
               || hasAnyStyleBlockAlignmentOverride(style, ['role', 'name', 'text']),
           }),
           render: (panel) => panel.appendChild(renderStyleBlockControls(style)),
@@ -156,6 +156,7 @@
       const block = options.getEffectiveStyleBlock(style);
       const alignment = block.alignment || {};
       const alignmentOptions = [['left', 'Izquierda'], ['center', 'Centro'], ['right', 'Derecha']];
+      wrap.appendChild(options.localSelectRow('Mostrar título de bloque', options.boolSelectValue(block.show_block_title), options.yesNoOptions, (value) => options.updateEditableStyleBlock(style, { show_block_title: options.normalizeBoolean(value, true) }), { override: !!(style.block && style.block.show_block_title !== undefined), reset: () => options.resetEditableStyleBlockOverride(style, 'show_block_title') }));
       wrap.appendChild(options.localNumberRow('Columnas del bloque', block.columns, 1, 6, (value) => options.updateEditableStyleBlock(style, { columns: value })));
       wrap.appendChild(options.localSelectRow('Concatenar filas', options.boolSelectValue(block.concatenate_rows), options.yesNoOptions, (value) => options.updateEditableStyleBlock(style, { concatenate_rows: options.normalizeBoolean(value, false) }), { override: !!(style.block && style.block.concatenate_rows !== undefined), reset: () => options.resetEditableStyleBlockOverride(style, 'concatenate_rows') }));
       wrap.appendChild(options.localSelectRow('Forzar estructura cargo/nombre', options.boolSelectValue(block.force_role_name_columns), options.yesNoOptions, (value) => options.updateEditableStyleBlock(style, { force_role_name_columns: options.normalizeBoolean(value, false) }), { override: !!(style.block && style.block.force_role_name_columns !== undefined), reset: () => options.resetEditableStyleBlockOverride(style, 'force_role_name_columns') }));

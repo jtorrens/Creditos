@@ -458,7 +458,7 @@
       const id = options.uniqueStyleId(state.styles, 'nuevo_estilo');
       const style = {
         schema: 'credits_cartela_style_json',
-        version: 2,
+        version: 3,
         id,
         name: 'Nuevo estilo',
         file_name: `${id}.json`,
@@ -478,7 +478,7 @@
       const id = options.uniqueStyleId(state.styles, options.safeStyleId(`${source.id}_copia`));
       const style = {
         schema: 'credits_cartela_style_json',
-        version: 2,
+        version: 3,
         id,
         name: `${source.name} copia`,
         file_name: `${id}.json`,

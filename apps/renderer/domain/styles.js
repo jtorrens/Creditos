@@ -47,6 +47,7 @@
     function normalizeStyleBlock(value = {}) {
       return {
         columns: Math.max(1, Number(value.columns) || 1),
+        show_block_title: normalizeBoolean(value.show_block_title, true),
         concatenate_rows: normalizeBoolean(value.concatenate_rows, false),
         force_role_name_columns: normalizeBoolean(value.force_role_name_columns, false),
         alignment: {
@@ -83,6 +84,7 @@
     function sanitizeStyleBlockOverrides(value = {}) {
       const output = {};
       if (value.columns !== undefined) output.columns = Math.max(1, Number(value.columns) || 1);
+      if (value.show_block_title !== undefined) output.show_block_title = normalizeBoolean(value.show_block_title, true);
       if (value.concatenate_rows !== undefined) output.concatenate_rows = normalizeBoolean(value.concatenate_rows, false);
       if (value.force_role_name_columns !== undefined) output.force_role_name_columns = normalizeBoolean(value.force_role_name_columns, false);
       if (value.alignment !== undefined) output.alignment = { ...(value.alignment || {}) };
@@ -96,7 +98,7 @@
       const id = safeStyleId(json.id || fileBase);
       return {
         schema: 'credits_cartela_style_json',
-        version: 2,
+        version: 3,
         id,
         name: String(json.name || fileBase || id),
         file_name: file.name || `${id}.json`,
@@ -212,7 +214,7 @@
     function serializeCartelaStyle(style) {
       const output = {
         schema: 'credits_cartela_style_json',
-        version: 2,
+        version: 3,
         id: style.id,
         name: style.name,
         cartela: sanitizeStyleCartelaOverrides(style.cartela || {}),
@@ -527,7 +529,7 @@
             title: '',
             blocks: [{
               id: 'style_preview_block',
-              title: 'Dirección de producción',
+              title: block.show_block_title === false ? '' : 'Dirección de producción',
               type: 'credits',
               columns: block.columns,
               alignment: block.alignment,
@@ -986,6 +988,7 @@
         if (!cartela.block_style) return;
         const styleBlock = effectiveStyleBlockForStyle(style);
         if (sameStyleValue(cartela.block_style.columns, styleBlock.columns)) delete cartela.block_style.columns;
+        if (sameStyleValue(cartela.block_style.show_block_title, styleBlock.show_block_title)) delete cartela.block_style.show_block_title;
         if (sameStyleValue(cartela.block_style.concatenate_rows, styleBlock.concatenate_rows)) delete cartela.block_style.concatenate_rows;
         if (sameStyleValue(cartela.block_style.force_role_name_columns, styleBlock.force_role_name_columns)) delete cartela.block_style.force_role_name_columns;
         if (sameStyleValue(cartela.block_style.vertical_align, styleBlock.vertical_align)) delete cartela.block_style.vertical_align;
@@ -1045,6 +1048,9 @@
         const defaultBlock = normalizeStyleBlock({
           typography: Object.fromEntries(blockTypographyFields.map(([key]) => [key, settings.typography && settings.typography[key]])),
         });
+        if (style.block.show_block_title !== undefined && sameStyleValue(style.block.show_block_title, defaultBlock.show_block_title)) {
+          delete style.block.show_block_title;
+        }
         if (style.block.concatenate_rows !== undefined && sameStyleValue(style.block.concatenate_rows, defaultBlock.concatenate_rows)) {
           delete style.block.concatenate_rows;
         }
