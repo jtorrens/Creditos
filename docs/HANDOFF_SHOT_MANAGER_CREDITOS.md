@@ -108,6 +108,12 @@ En Producciones, el panel «Asociación con Shot Manager» permite:
 4. elegir un elemento de estructura;
 5. guardar o quitar la asociación conscientemente.
 
+El capítulo local es el único capítulo activo de la aplicación. El selector
+del panel y el selector de Cartelas son dos vistas sincronizadas del mismo
+estado. Si la asociación contiene cambios sin guardar, Créditos pide
+confirmación antes de permitir el cambio desde cualquiera de las dos
+pantallas.
+
 Al cargar una asociación, todos los IDs se verifican contra el snapshot
 actual. Si un ID dejó de existir, Créditos muestra el problema y no selecciona
 otro elemento por nombre, posición o parecido.

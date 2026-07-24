@@ -13,9 +13,12 @@
       connectionOperation: 0,
       connected: false,
       contextKey: '',
+      dirty: false,
+      localEpisodeId: '',
       snapshot: null,
       snapshotOperation: 0,
     };
+    let bypassSourceEpisodeGuard = false;
     let localObserver = null;
     let localRenderQueued = false;
 
@@ -35,6 +38,20 @@
     function setStatus(message, tone = '') {
       els.status.textContent = message;
       els.status.className = `shot-manager-status${tone ? ` ${tone}` : ''}`;
+    }
+
+    function confirmDiscardPendingChanges() {
+      if (!state.dirty) return true;
+      return windowRef.confirm(
+        'Hay cambios en la asociación con Shot Manager sin guardar. ' +
+        'Si cambias de capítulo se descartarán. ¿Quieres continuar?',
+      );
+    }
+
+    function markDirty(message = 'Cambios pendientes de guardar.') {
+      state.dirty = true;
+      setStatus(message, 'warning');
+      renderActions();
     }
 
     function addBlankOption(select, label) {
@@ -61,6 +78,7 @@
       }
       els.localEpisodeSelect.value = selectedValue;
       els.localEpisodeSelect.disabled = !!els.sourceEpisodeSelect.disabled;
+      state.localEpisodeId = selectedValue;
     }
 
     function renderProductionOptions(selectedId = '') {
@@ -195,6 +213,7 @@
     async function loadLocalAssociation(loadOptions = {}) {
       const operation = ++state.associationOperation;
       const context = localContext();
+      state.dirty = false;
       state.contextKey = contextKey(context);
       state.association = null;
       state.snapshot = null;
@@ -215,6 +234,7 @@
         return;
       }
       state.association = result.association;
+      state.dirty = false;
       renderActions();
       if (!state.association) {
         setStatus(
@@ -308,6 +328,7 @@
         return;
       }
       state.association = result.association;
+      state.dirty = false;
       setStatus('Asociación guardada y verificada.', 'ok');
       renderActions();
     }
@@ -323,6 +344,7 @@
         return;
       }
       state.association = null;
+      state.dirty = false;
       state.snapshot = null;
       renderProductionOptions();
       renderSnapshotOptions();
@@ -341,23 +363,62 @@
       });
     }
 
+    function selectLocalEpisode(episodeId) {
+      const nextEpisodeId = String(episodeId || '');
+      if (nextEpisodeId === state.localEpisodeId) return true;
+      if (!confirmDiscardPendingChanges()) {
+        els.localEpisodeSelect.value = state.localEpisodeId;
+        return false;
+      }
+      state.dirty = false;
+      state.localEpisodeId = nextEpisodeId;
+      els.sourceEpisodeSelect.value = nextEpisodeId;
+      bypassSourceEpisodeGuard = true;
+      try {
+        els.sourceEpisodeSelect.dispatchEvent(
+          new windowRef.Event('change', { bubbles: true }),
+        );
+      } finally {
+        bypassSourceEpisodeGuard = false;
+      }
+      scheduleLocalSync();
+      return true;
+    }
+
+    function guardSourceEpisodeChange(event) {
+      const nextEpisodeId = String(els.sourceEpisodeSelect.value || '');
+      if (
+        bypassSourceEpisodeGuard ||
+        !state.localEpisodeId ||
+        nextEpisodeId === state.localEpisodeId
+      ) return;
+      if (!confirmDiscardPendingChanges()) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        els.sourceEpisodeSelect.value = state.localEpisodeId;
+        windowRef.queueMicrotask(renderLocalEpisodes);
+        return;
+      }
+      state.dirty = false;
+      state.localEpisodeId = nextEpisodeId;
+    }
+
     function bind() {
       els.localEpisodeSelect.addEventListener('change', () => {
-        els.sourceEpisodeSelect.value = els.localEpisodeSelect.value;
-        els.sourceEpisodeSelect.dispatchEvent(new windowRef.Event('change', { bubbles: true }));
-        scheduleLocalSync();
+        selectLocalEpisode(els.localEpisodeSelect.value);
       });
       els.productionSelect.addEventListener('change', async () => {
+        state.dirty = true;
         await loadSnapshot(els.productionSelect.value);
-        if (state.snapshot) setStatus('Selecciona el capítulo y el elemento de estructura.');
+        if (state.snapshot) {
+          markDirty('Selecciona el capítulo y el elemento de estructura.');
+        }
       });
       els.episodeSelect.addEventListener('change', () => {
-        setStatus('Cambios pendientes de guardar.', 'warning');
-        renderActions();
+        markDirty();
       });
       els.structureSelect.addEventListener('change', () => {
-        setStatus('Cambios pendientes de guardar.', 'warning');
-        renderActions();
+        markDirty();
       });
       els.saveButton.addEventListener('click', saveAssociation);
       els.deleteButton.addEventListener('click', deleteAssociation);
@@ -374,6 +435,11 @@
         childList: true,
         subtree: true,
       });
+      els.sourceEpisodeSelect.addEventListener(
+        'change',
+        guardSourceEpisodeChange,
+        true,
+      );
       els.sourceEpisodeSelect.addEventListener('change', scheduleLocalSync);
       renderLocalEpisodes();
     }
@@ -393,6 +459,7 @@
       loadLocalAssociation,
       refreshConnection,
       saveAssociation,
+      selectLocalEpisode,
     };
   }
 
