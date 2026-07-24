@@ -49,7 +49,8 @@
       options.updateXlsxStatus();
     }
 
-    function setActiveTab(tabName) {
+    async function setActiveTab(tabName) {
+      const previousTabName = state.activeTab;
       let nextTabName = tabName;
       if (!documentRef.getElementById(`${nextTabName}Pane`)) nextTabName = 'settings';
       state.activeTab = nextTabName;
@@ -64,6 +65,15 @@
         windowRef.requestAnimationFrame(options.renderCartelaPreview);
       }
       if (nextTabName === 'pdf') options.renderPdfPreview();
+      if (previousTabName === 'parserLab' && nextTabName !== 'parserLab') {
+        try {
+          const parserLab = windowRef.CreditosParserLabUi && windowRef.CreditosParserLabUi.instance;
+          if (parserLab && parserLab.flushPendingBlockEdit) await parserLab.flushPendingBlockEdit();
+          if (options.reloadCurrentEpisode) await options.reloadCurrentEpisode();
+        } catch (error) {
+          windowRef.alert(`No se pudo sincronizar la revisión actual del Parser.\n\n${error.message}`);
+        }
+      }
     }
 
     function renderPreview() {

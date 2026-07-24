@@ -72,6 +72,37 @@ test('actualiza los saltos de página desde el origen aunque la estructura conse
   ]);
 });
 
+test('una frontera nueva crea otra cartela y hereda la presentación anterior', () => {
+  const domain = createDomain();
+  const first = material('small_parts', 'Pequeñas Partes', [75]);
+  const added = material('meditempus', 'Pequeñas Partes Meditempus ETT SA', [79]);
+  const previousStructure = {
+    version: 12,
+    cartelas: [{
+      ...cartela('small_parts_cartela', ['meditempus', 'small_parts'], { style_id: 'cast_style' }),
+      orientation: 'horizontal',
+      columns: 2,
+      block_style: { typography: { name: { color: '#ffffff' } } },
+    }],
+  };
+
+  const structure = domain.createStructureFromSource(
+    { sheet: 'Créditos' },
+    [first, added],
+    previousStructure,
+    { default_cartela_duration: 4 },
+    { detached_material_ids: ['meditempus'] }
+  );
+
+  assert.equal(structure.cartelas.length, 2);
+  assert.deepEqual(structure.cartelas[0].pages[0].source_refs, ['small_parts']);
+  assert.deepEqual(structure.cartelas[1].pages[0].source_refs, ['meditempus']);
+  assert.equal(structure.cartelas[1].style_id, 'cast_style');
+  assert.equal(structure.cartelas[1].orientation, 'horizontal');
+  assert.equal(structure.cartelas[1].columns, 2);
+  assert.deepEqual(structure.cartelas[1].block_style, previousStructure.cartelas[0].block_style);
+});
+
 test('traslada presentación conservadoramente y solo agrupa correspondencias exactas completas', () => {
   const domain = createDomain();
   const targetMaterials = [

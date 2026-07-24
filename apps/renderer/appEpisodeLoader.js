@@ -32,7 +32,20 @@
           state.source = options.normalizeSource(result.source, result.source.meta && result.source.meta.loaded_file);
           state.materials = options.createMaterialsFromSource(state.source);
           const storedStructure = result.structure ? options.migrateStructure(result.structure) : null;
-          state.structure = options.createStructureFromSource(state.source, state.materials, storedStructure);
+          const addedBlockGroups = new Set(
+            result.source_refresh && Array.isArray(result.source_refresh.added_block_groups)
+              ? result.source_refresh.added_block_groups
+              : []
+          );
+          const detachedMaterialIds = state.materials
+            .filter((material) => addedBlockGroups.has(String(material.group || '')))
+            .map((material) => material.id);
+          state.structure = options.createStructureFromSource(
+            state.source,
+            state.materials,
+            storedStructure,
+            { detached_material_ids: detachedMaterialIds }
+          );
           sourceBreaksChanged = !!storedStructure && JSON.stringify(storedStructure.page_breaks || {})
             !== JSON.stringify(state.structure.page_breaks || {});
           const sourceRefreshed = result.source_refresh && result.source_refresh.status === 'refreshed';

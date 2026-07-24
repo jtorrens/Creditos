@@ -10,10 +10,12 @@
       normalizeVerticalAlign,
     } = dependencies;
 
-    function createStructureFromSource(source, materials, previousStructure, settings) {
+    function createStructureFromSource(source, materials, previousStructure, settings, migrationOptions = {}) {
       const previous = migrateStructure(previousStructure);
       const materialIds = new Set(materials.map((material) => material.id));
+      const detachedMaterialIds = new Set(migrationOptions.detached_material_ids || []);
       const previousByRef = new Map();
+      const detachedPresentationByRef = new Map();
       const previousOverrides = previous && previous.overrides ? previous.overrides : {};
       const sourcePageBreaks = pageBreaksFromMaterials(materials);
       const previousPreviewSettings = normalizePreviewSettings(previous && previous.preview_settings ? previous.preview_settings : {});
@@ -21,8 +23,12 @@
       if (previous && Array.isArray(previous.cartelas)) {
         previous.cartelas.forEach((cartela) => {
           const refs = getCartelaRefs(cartela);
-          refs.forEach((ref) => previousByRef.set(ref, cartela));
+          refs.forEach((ref) => {
+            if (detachedMaterialIds.has(ref)) detachedPresentationByRef.set(ref, cartela);
+            else previousByRef.set(ref, cartela);
+          });
         });
+        detachMaterialRefs(previous.cartelas, detachedMaterialIds);
       }
 
       const usedPrevious = new Set();
@@ -36,11 +42,13 @@
           return;
         }
         if (previousCartela) usedPrevious.add(previousCartela.id);
-        cartelas.push(
-          previousCartela
-            ? normalizeCartela(previousCartela, material, index)
-            : defaultCartelaForMaterial(material, index, settings)
-        );
+        if (previousCartela) {
+          cartelas.push(normalizeCartela(previousCartela, material, index));
+          return;
+        }
+        const cartela = defaultCartelaForMaterial(material, index, settings);
+        inheritCartelaPresentation(cartela, detachedPresentationByRef.get(material.id));
+        cartelas.push(cartela);
       });
 
       if (previous && Array.isArray(previous.cartelas)) {
@@ -74,6 +82,37 @@
         page_line_adjustments: previous && previous.page_line_adjustments ? previous.page_line_adjustments : {},
         preview_settings: previousPreviewSettings,
       };
+    }
+
+    function detachMaterialRefs(cartelas, detachedMaterialIds) {
+      if (!detachedMaterialIds.size) return;
+      (cartelas || []).forEach((cartela) => {
+        (cartela.pages || []).forEach((page) => {
+          page.source_refs = (page.source_refs || []).filter((ref) => !detachedMaterialIds.has(ref));
+          detachedMaterialIds.forEach((ref) => {
+            if (page.source_ref_settings) delete page.source_ref_settings[ref];
+          });
+        });
+      });
+    }
+
+    function inheritCartelaPresentation(target, source) {
+      if (!target || !source) return;
+      const excluded = new Set([
+        'id',
+        'title',
+        'source_order',
+        'visual_order',
+        'manual',
+        'manual_name',
+        'pages',
+        'images',
+        'notes',
+      ]);
+      Object.entries(source).forEach(([key, value]) => {
+        if (excluded.has(key)) return;
+        target[key] = JSON.parse(JSON.stringify(value));
+      });
     }
 
     function transferStructurePresentation(

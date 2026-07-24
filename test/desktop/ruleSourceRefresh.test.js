@@ -13,12 +13,14 @@ test('una revisión nueva del modelo reconstruye y persiste el episodio', async 
   };
   let persisted = 0;
   let previousStructureSeen = null;
+  let migrationOptionsSeen = null;
   const loader = globalThis.CreditosAppEpisodeLoader.createAppEpisodeLoader({
     applyPreviewSettingsToUi: () => {},
     buildCurrentRenderJson: () => freshRender,
-    createMaterialsFromSource: () => [{ id: 'block_1' }],
-    createStructureFromSource: (_source, _materials, previousStructure) => {
+    createMaterialsFromSource: () => [{ id: 'new_material', group: 'new_group' }],
+    createStructureFromSource: (_source, _materials, previousStructure, migrationOptions) => {
       previousStructureSeen = previousStructure;
+      migrationOptionsSeen = migrationOptions;
       return {
         cartelas: [{ id: 'cartela_1', style_id: previousStructure.cartelas[0].style_id }],
         preview_settings: {},
@@ -34,6 +36,7 @@ test('una revisión nueva del modelo reconstruye y persiste el episodio', async 
         status: 'refreshed',
         from_revision: 3,
         to_revision: 4,
+        added_block_groups: ['new_group'],
       },
       structure: { cartelas: [{ id: 'cartela_1', style_id: 'equipo' }] },
       render: { id: 'stale-render' },
@@ -60,6 +63,7 @@ test('una revisión nueva del modelo reconstruye y persiste el episodio', async 
   assert.equal(state.selectedCartelaId, 'cartela_1');
   assert.equal(previousStructureSeen.cartelas[0].style_id, 'equipo');
   assert.equal(state.structure.cartelas[0].style_id, 'equipo');
+  assert.deepEqual(migrationOptionsSeen, { detached_material_ids: ['new_material'] });
   assert.equal(persisted, 1);
   assert.equal(state.isLoadingEpisode, false);
 });

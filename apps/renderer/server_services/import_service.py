@@ -49,10 +49,25 @@ def refresh_credit_source_if_stale(
             source_file["name"],
             model_id,
         )
+        previous_groups = {
+            str(block.get("group") or "")
+            for block in (stored_source or {}).get("blocks", [])
+            if isinstance(block, dict) and block.get("group")
+        }
+        added_block_groups = [
+            str(block.get("group"))
+            for block in (refreshed or {}).get("blocks", [])
+            if (
+                isinstance(block, dict)
+                and block.get("group")
+                and str(block.get("group")) not in previous_groups
+            )
+        ]
         return refreshed, {
             "status": "refreshed",
             "from_revision": stored_revision,
             "to_revision": current_revision,
+            "added_block_groups": added_block_groups,
         }
     except Exception as error:
         return stored_source, {

@@ -2093,11 +2093,12 @@
     }
 
     function flushPendingBlockEdit() {
-      if (!blockEditTimer) return false;
-      root.clearTimeout(blockEditTimer);
-      blockEditTimer = null;
-      persistBlockModel();
-      return true;
+      if (blockEditTimer) {
+        root.clearTimeout(blockEditTimer);
+        blockEditTimer = null;
+        return persistBlockModel();
+      }
+      return persistenceQueue;
     }
 
     function moveDefinition(index, offset) {
@@ -2616,7 +2617,16 @@
     render();
     loadModelLibrary();
 
-    return { clearInspection, inspectFile, loadAssociatedSource, loadModelLibrary, persistBlockModel, render, state };
+    return {
+      clearInspection,
+      flushPendingBlockEdit,
+      inspectFile,
+      loadAssociatedSource,
+      loadModelLibrary,
+      persistBlockModel,
+      render,
+      state,
+    };
   }
 
   root.CreditosParserLabUi = { initializeParserLab };
@@ -2636,7 +2646,10 @@
   Promise.all([
     loadParserLabDependency('CreditosParserLabBlockModel', './parser_lab/block_model.js'),
     loadParserLabDependency('CreditosParserLabUiSupport', './parser_lab/ui_support.js'),
-  ]).then(() => initializeParserLab()).catch((error) => {
+  ]).then(() => {
+    root.CreditosParserLabUi.instance = initializeParserLab();
+    return root.CreditosParserLabUi.instance;
+  }).catch((error) => {
     const rootElement = root.document.getElementById('parserLabRoot');
     if (rootElement) rootElement.textContent = `No se pudo iniciar Parser Lab: ${error.message}`;
   });

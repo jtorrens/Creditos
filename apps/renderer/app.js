@@ -1495,7 +1495,7 @@
     buildCurrentRenderJson,
     documentRef: document,
     els,
-    getStyleById,
+    getStyleById, reloadCurrentEpisode: loadCurrentEpisode,
     renderCartelaList,
     renderCartelaPreview,
     renderEditor,
@@ -1663,8 +1663,8 @@
     savePreviewSettingsFromUi();
   }
 
-  function createStructureFromSource(source, materials, previousStructure) {
-    return createStructureFromSourceWithSettings(source, materials, previousStructure, getProductionSettings());
+  function createStructureFromSource(source, materials, previousStructure, migrationOptions) {
+    return createStructureFromSourceWithSettings(source, materials, previousStructure, getProductionSettings(), migrationOptions);
   }
 
   function buildCurrentRenderJson(source, materials, structure) {

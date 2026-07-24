@@ -99,10 +99,12 @@ def main():
     stale_source = {
         "source": "credits.ods",
         "import_rule_model": {"id": "rule_model_test", "revision": 2},
+        "blocks": [{"group": "existing"}],
     }
     refreshed_source = {
         "source": "credits.ods",
         "import_rule_model": {"id": "rule_model_test", "revision": 3},
+        "blocks": [{"group": "existing"}, {"group": "added"}],
     }
     refreshed, refresh_status = import_service.refresh_credit_source_if_stale(
         None,
@@ -123,6 +125,7 @@ def main():
         "status": "refreshed",
         "from_revision": 2,
         "to_revision": 3,
+        "added_block_groups": ["added"],
     }:
         errors.append("stale rule source was not refreshed to the current model revision")
 
