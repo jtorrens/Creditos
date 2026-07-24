@@ -13,6 +13,7 @@ const {
 const { registerNativeIpcHandlers } = require('./native/ipcHandlers');
 const { createPreferenceStore } = require('./native/preferences');
 const { createServerProcessManager } = require('./native/serverProcess');
+const { createShotManagerClient } = require('./native/shotManagerClient');
 
 const APP_DISPLAY_NAME = 'Creditos';
 
@@ -45,6 +46,9 @@ const {
 let mainWindow = null;
 const movExportManager = createMovExportManager();
 const fontAlternateAnalyzer = createFontAlternateAnalyzer();
+const shotManagerClient = createShotManagerClient({
+  getAppDataPath: () => app.getPath('appData'),
+});
 
 const serverProcessManager = createServerProcessManager({
   getAppChannel: () => APP_CHANNEL,
@@ -85,6 +89,7 @@ registerNativeIpcHandlers({
   nativeDialogs,
   queuedWritePreference,
   readPreferences,
+  shotManagerClient,
 });
 
 async function createMainWindow() {

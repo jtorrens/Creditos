@@ -217,7 +217,7 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
 
         legacy_model = json.loads(json.dumps(model))
         legacy_model["version"] = 6

@@ -31,6 +31,11 @@ from server_services.project_service import (
 )
 from server_services.style_service import delete_style, load_styles, save_style
 from server_services.source_file_service import load_active_source_file, save_source_file
+from server_services.shot_manager_association_service import (
+    delete_shot_manager_association,
+    load_shot_manager_association,
+    save_shot_manager_association,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -253,6 +258,29 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/db/delete-production":
                     delete_production(connection, payload.get("production_id"))
                     self.send_json(200, db_overview(connection))
+                    return
+
+                if path == "/api/db/read-shot-manager-association":
+                    association = load_shot_manager_association(
+                        connection,
+                        payload.get("creditosProductionId"),
+                        payload.get("creditosEpisodeId"),
+                    )
+                    self.send_json(200, {"ok": True, "association": association})
+                    return
+
+                if path == "/api/db/write-shot-manager-association":
+                    association = save_shot_manager_association(connection, payload)
+                    self.send_json(200, {"ok": True, "association": association})
+                    return
+
+                if path == "/api/db/delete-shot-manager-association":
+                    deleted = delete_shot_manager_association(
+                        connection,
+                        payload.get("creditosProductionId"),
+                        payload.get("creditosEpisodeId"),
+                    )
+                    self.send_json(200, {"ok": True, "deleted": deleted})
                     return
 
                 if path == "/api/db/save-document":

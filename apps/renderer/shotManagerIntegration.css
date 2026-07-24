@@ -1,0 +1,67 @@
+.shot-manager-integration {
+  border: 1px solid #3a4049;
+  border-radius: 10px;
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.shot-manager-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.shot-manager-heading h3 {
+  margin: 0 0 4px;
+}
+
+.shot-manager-heading p,
+.shot-manager-context {
+  color: #aeb5c0;
+  margin: 0;
+}
+
+.shot-manager-status {
+  background: #242931;
+  border-left: 3px solid #737d8a;
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.shot-manager-status.ok {
+  border-left-color: #4ea46b;
+}
+
+.shot-manager-status.warning {
+  border-left-color: #d1a623;
+}
+
+.shot-manager-status.error {
+  border-left-color: #d56666;
+}
+
+.shot-manager-fields {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.shot-manager-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.shot-manager-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .shot-manager-fields {
+    grid-template-columns: 1fr;
+  }
+}

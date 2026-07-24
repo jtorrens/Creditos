@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('creditosNative', {
   forceDatabaseToGitHub: () => ipcRenderer.invoke('creditos:force-database-to-github'),
   readPreferences: () => ipcRenderer.invoke('creditos:read-preferences'),
   writePreference: (payload) => ipcRenderer.invoke('creditos:write-preference', payload),
+  getShotManagerStatus: () => ipcRenderer.invoke('creditos:get-shot-manager-status'),
+  listShotManagerProductions: () => ipcRenderer.invoke('creditos:list-shot-manager-productions'),
+  getShotManagerProduction: (payload) => ipcRenderer.invoke('creditos:get-shot-manager-production', payload),
   onServerExit: (callback) => {
     ipcRenderer.on('creditos-server-exit', (_event, value) => callback(value));
   },

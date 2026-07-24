@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 
 def init_db(connection):
@@ -88,6 +88,24 @@ def init_db(connection):
             UNIQUE (production_id, episode_id, import_model_id),
             FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
             FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS shot_manager_associations (
+            production_id INTEGER NOT NULL,
+            episode_id INTEGER NOT NULL,
+            shot_manager_production_id TEXT NOT NULL,
+            shot_manager_season_id TEXT,
+            shot_manager_episode_id TEXT,
+            structure_entry_id TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (production_id, episode_id),
+            FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE,
+            FOREIGN KEY (episode_id) REFERENCES episodes(id) ON DELETE CASCADE,
+            CHECK (
+                (shot_manager_season_id IS NULL AND shot_manager_episode_id IS NULL)
+                OR
+                (shot_manager_season_id IS NOT NULL AND shot_manager_episode_id IS NOT NULL)
+            )
         );
         """
     )

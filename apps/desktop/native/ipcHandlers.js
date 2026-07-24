@@ -7,6 +7,7 @@ function registerNativeIpcHandlers({
   nativeDialogs,
   queuedWritePreference,
   readPreferences,
+  shotManagerClient,
 }) {
   ipcMain.handle('creditos:get-app-info', async () => getAppInfo());
 
@@ -66,6 +67,18 @@ function registerNativeIpcHandlers({
 
   ipcMain.handle('creditos:write-preference', async (_event, payload) => {
     return queuedWritePreference(payload && payload.key, payload ? payload.value : undefined);
+  });
+
+  ipcMain.handle('creditos:get-shot-manager-status', async () => {
+    return shotManagerClient.getStatus();
+  });
+
+  ipcMain.handle('creditos:list-shot-manager-productions', async () => {
+    return shotManagerClient.listProductions();
+  });
+
+  ipcMain.handle('creditos:get-shot-manager-production', async (_event, payload) => {
+    return shotManagerClient.getProduction(payload && payload.productionId);
   });
 }
 
