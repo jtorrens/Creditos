@@ -177,20 +177,20 @@ Ejemplo reducido:
 Contrato contenedor: `parser_lab_model_library`, versión 1.
 
 Cada modelo tiene `id` estable, nombre único, revisión, fechas de creación y
-actualización, y un documento `parser_lab_block_model` versión 6. La biblioteca
+actualización, y un documento `parser_lab_block_model` versión 7. La biblioteca
 mantiene un único `active_model_id` y permite quedar vacía después de borrar el
 último modelo. Crear, duplicar, renombrar y borrar se realizan desde la barra
 superior con diálogos propios de Parser Lab; duplicar copia toda la regla y genera
 una identidad nueva.
 
-Contrato: `parser_lab_block_model`, versión 6.
+Contrato: `parser_lab_block_model`, versión 7.
 
 Estructura superior:
 
 ```json
 {
   "schema": "parser_lab_block_model",
-  "version": 6,
+  "version": 7,
   "blocks": [],
   "composition_rules": [],
   "normalized_rows_view": {
@@ -230,6 +230,7 @@ Contratos retirados que no deben reintroducirse:
     "orientation": "horizontal",
     "item_grouping": "first_term",
     "item_start_column": "B",
+    "item_boundary_effect": "item",
     "traversal": "row_major",
     "split_cell_lines": true,
     "term_roles": {
@@ -279,6 +280,11 @@ Son decisiones ortogonales.
 - `empty_rows`: acumula términos hasta una fila vacía configurada como frontera;
 - `row`: crea un ítem por cada fila con contenido;
 - `first_term`: acumula filas hasta encontrar otro valor en `item_start_column`.
+
+Cuando se usa `first_term`, `item_boundary_effect` decide qué produce el siguiente
+primer término: `item` mantiene la página, `group` introduce una división interna
+de una línea y `page` fuerza un salto de página. Esta frontera es independiente de
+las filas vacías.
 
 El orden dentro de cada ítem es siempre de izquierda a derecha y de arriba abajo. Las líneas internas de una celda también se separan y conservan su posición.
 
@@ -538,7 +544,7 @@ Ejemplo:
 - creación de ítems: uno por fila;
 - la línea «Una producción de Buendía Estudios Canarias» se conserva como ítem real.
 
-La implementación es genérica, forma parte de la versión 6 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` al contenido y `source: "match"` a sus fronteras previas.
+La implementación es genérica, forma parte de la versión 7 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` al contenido y `source: "match"` a sus fronteras previas. La migración de v6 a v7 asigna a `item_boundary_effect` el efecto intermedio ya definido por cada bloque, por lo que «Jefes de Equipo» conserva página y «Equipo técnico» conserva siguiente ítem.
 
 ## 10. Alcance aún por decidir
 

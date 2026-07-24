@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import json
 import pathlib
+import sqlite3
 import sys
 import tempfile
 
@@ -28,6 +30,7 @@ def definition(block_id, name, column, value, orientation, grouping, roles):
             "content_start": "after_header",
             "item_grouping": grouping,
             "item_start_column": "B",
+            "item_boundary_effect": "item",
             "traversal": "row_major",
             "split_cell_lines": True,
             "term_roles": roles,
@@ -55,7 +58,7 @@ def main():
 
     model = {
         "schema": "parser_lab_block_model",
-        "version": 6,
+        "version": 7,
         "blocks": [
             definition(
                 "direction",
@@ -157,7 +160,26 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
+
+        legacy_model = json.loads(json.dumps(model))
+        legacy_model["version"] = 6
+        for block in legacy_model["blocks"]:
+            block["interpretation"].pop("item_boundary_effect")
+        with sqlite3.connect(db_path) as legacy_connection:
+            legacy_connection.execute(
+                "UPDATE import_rule_models SET model_json = ? WHERE id = ?",
+                (json.dumps(legacy_model, ensure_ascii=False), record_id),
+            )
+            legacy_connection.execute("PRAGMA user_version = 4")
+        with db_connect(db_path) as migrated_connection:
+            migrated = load_rule_model_library(migrated_connection)["models"][0]
+            assert migrated["model"]["version"] == 7
+            assert all(
+                block["interpretation"]["item_boundary_effect"] == "item"
+                for block in migrated["model"]["blocks"]
+            )
+            assert migrated["revision"] == 5
 
     print("ok rule import models DB persistence and production parser")
     return 0

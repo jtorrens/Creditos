@@ -279,6 +279,14 @@
                   <option value="D">D</option>
                 </select>
               </label>
+              <label id="parserLabBlockItemBoundaryField" hidden>
+                <span>Al encontrar otro primer término</span>
+                <select id="parserLabBlockItemBoundarySelect" class="text-input">
+                  <option value="item">Siguiente ítem</option>
+                  <option value="group">Salto de grupo</option>
+                  <option value="page">Salto de página</option>
+                </select>
+              </label>
               <label>
                 <span>Términos asociados</span>
                 <select id="parserLabBlockFollowingRoleSelect" class="text-input">
@@ -403,6 +411,8 @@
       blockGroupingSelect: documentRef.getElementById('parserLabBlockGroupingSelect'),
       blockStartColumnField: documentRef.getElementById('parserLabBlockStartColumnField'),
       blockStartColumnSelect: documentRef.getElementById('parserLabBlockStartColumnSelect'),
+      blockItemBoundaryField: documentRef.getElementById('parserLabBlockItemBoundaryField'),
+      blockItemBoundarySelect: documentRef.getElementById('parserLabBlockItemBoundarySelect'),
       blockFirstRoleSelect: documentRef.getElementById('parserLabBlockFirstRoleSelect'),
       blockFollowingRoleSelect: documentRef.getElementById('parserLabBlockFollowingRoleSelect'),
       blockLeadingEffectSelect: documentRef.getElementById('parserLabBlockLeadingEffectSelect'),
@@ -1951,6 +1961,9 @@
         ? 'contenido desde cabecera'
         : 'contenido después de cabecera');
       parts.push(groupingLabels[normalized.interpretation.item_grouping]);
+      if (normalized.interpretation.item_grouping === 'first_term') {
+        parts.push(`nuevo término: ${effectLabels[normalized.interpretation.item_boundary_effect]}`);
+      }
       parts.push(`roles: ${normalized.interpretation.term_roles.first} → ${normalized.interpretation.term_roles.following}`);
       parts.push(`inicio: ${effectLabels[policies.leading.effect]}/${displayLabels[policies.leading.display]}`);
       parts.push(`entre: ${effectLabels[policies.between_items.effect]}/${displayLabels[policies.between_items.display]}`);
@@ -1983,6 +1996,7 @@
       elements.blockOrientationSelect.value = normalized.interpretation.orientation;
       elements.blockGroupingSelect.value = normalized.interpretation.item_grouping;
       elements.blockStartColumnSelect.value = normalized.interpretation.item_start_column;
+      elements.blockItemBoundarySelect.value = normalized.interpretation.item_boundary_effect;
       elements.blockFirstRoleSelect.value = normalized.interpretation.term_roles.first;
       elements.blockFollowingRoleSelect.value = normalized.interpretation.term_roles.following;
       setEmptyRowPolicyFields('Leading', normalized.interpretation.empty_rows.leading);
@@ -2021,6 +2035,7 @@
           orientation: elements.blockOrientationSelect.value,
           item_grouping: elements.blockGroupingSelect.value,
           item_start_column: elements.blockStartColumnSelect.value,
+          item_boundary_effect: elements.blockItemBoundarySelect.value,
           traversal: 'row_major',
           split_cell_lines: true,
           term_roles: {
@@ -2133,6 +2148,7 @@
       const rowGrouping = grouping === 'row';
       const continueOption = elements.blockBetweenEffectSelect.querySelector('option[value="continue"]');
       elements.blockStartColumnField.hidden = grouping !== 'first_term';
+      elements.blockItemBoundaryField.hidden = grouping !== 'first_term';
       continueOption.textContent = rowGrouping
         ? 'Sin separación adicional · siguen siendo dos ítems'
         : 'Continuar el mismo ítem';
@@ -2520,6 +2536,7 @@
       elements.blockContentStartSelect,
       elements.blockOrientationSelect,
       elements.blockStartColumnSelect,
+      elements.blockItemBoundarySelect,
       elements.blockFirstRoleSelect,
       elements.blockFollowingRoleSelect,
       elements.blockLeadingEffectSelect,

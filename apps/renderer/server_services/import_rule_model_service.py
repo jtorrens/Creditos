@@ -226,7 +226,7 @@ def unique_name(connection, base_name):
 def empty_rule_model():
     return {
         "schema": "parser_lab_block_model",
-        "version": 6,
+        "version": 7,
         "blocks": [],
         "composition_rules": [],
         "normalized_rows_view": {"column_widths": {}},

@@ -7,6 +7,7 @@
   const EMPTY_ROW_DISPLAYS = ['ignore', 'compact', 'preserve'];
   const ORIENTATIONS = ['vertical', 'horizontal'];
   const ITEM_GROUPINGS = ['empty_rows', 'row', 'first_term'];
+  const ITEM_BOUNDARY_EFFECTS = ['item', 'group', 'page'];
   const CONTENT_STARTS = ['after_header', 'header'];
   const TERM_ROLES = ['principal', 'secondary'];
   const COMPOSITION_SCOPES = ['item', 'block'];
@@ -19,6 +20,7 @@
       content_start: 'after_header',
       item_grouping: 'empty_rows',
       item_start_column: 'B',
+      item_boundary_effect: 'item',
       traversal: 'row_major',
       split_cell_lines: true,
       term_roles: {
@@ -93,6 +95,9 @@
     }
     if (!COLUMNS.includes(interpretation.item_start_column)) {
       errors.push('La columna que inicia cada ítem no es válida.');
+    }
+    if (!ITEM_BOUNDARY_EFFECTS.includes(interpretation.item_boundary_effect)) {
+      errors.push('El efecto al encontrar otro primer término no es válido.');
     }
     const termRoles = interpretation.term_roles || {};
     if (!TERM_ROLES.includes(termRoles.first) || !TERM_ROLES.includes(termRoles.following)) {
@@ -323,7 +328,7 @@
   function modelDocument(definitions, compositionRules, normalizedRowsView) {
     return {
       schema: 'parser_lab_block_model',
-      version: 6,
+      version: 7,
       blocks: definitions.map(normalizeDefinition),
       composition_rules: compositionRules.map(normalizeCompositionRule),
       normalized_rows_view: JSON.parse(JSON.stringify(normalizedRowsView)),
@@ -572,11 +577,23 @@
       const startsItem = Boolean(String(
         row.values && row.values[interpretation.item_start_column] || ''
       ).trim());
-      if (startsItem && values.length) flush();
+      if (startsItem && values.length) flush(itemBoundary(interpretation));
       sourceRows.push(row.row);
       values.push(...rowValues);
     }
     flush();
+  }
+
+  function itemBoundary(interpretation) {
+    const effect = interpretation.item_boundary_effect;
+    return {
+      effect,
+      display: effect === 'group' ? 'compact' : 'ignore',
+      source_count: 0,
+      output_count: effect === 'group' ? 1 : 0,
+      source_rows: [],
+      context: 'first_term_boundary',
+    };
   }
 
   function buildItem(values, sourceRows, interpretation, emptyBoundary = null) {

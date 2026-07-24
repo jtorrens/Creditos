@@ -195,7 +195,7 @@ const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
 assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).schema, 'parser_lab_block_model');
-assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 6);
+assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 7);
 assert.deepStrictEqual(
   model.modelDocument([direction], [], normalizedRowsView).normalized_rows_view,
   normalizedRowsView
@@ -379,6 +379,18 @@ assert.deepStrictEqual(groupedHorizontalBlock.items[0].terms.map((term) => [term
 ]);
 assert.strictEqual(groupedHorizontalBlock.items[0].principal, 'Óscar Mesa');
 assert.deepStrictEqual(groupedHorizontalBlock.items[1].source_rows, [6]);
+assert.strictEqual(groupedHorizontalBlock.items[0].separator_after, 'item');
+
+const pagedFirstTermDefinition = model.normalizeDefinition(groupedHorizontalDefinition);
+pagedFirstTermDefinition.interpretation.item_boundary_effect = 'page';
+const pagedFirstTermBlock = model.interpretModel(
+  groupedHorizontalRows,
+  groupedHorizontalInstances,
+  [pagedFirstTermDefinition, groupedHorizontalFollowing]
+).blocks[0];
+assert.strictEqual(pagedFirstTermBlock.items[0].separator_after, 'page');
+assert.strictEqual(pagedFirstTermBlock.items[0].empty_rows_after.context, 'first_term_boundary');
+assert.deepStrictEqual(pagedFirstTermBlock.items[0].empty_rows_after.source_rows, []);
 
 const singleValueRows = [
   row(1, { C: 'Localizaciones' }),

@@ -217,10 +217,13 @@ def interpret_first_term(body, first, last, interpretation):
     source_rows = []
     pending_empty = []
 
-    def flush():
+    def flush(boundary=None):
         nonlocal values, source_rows
         if values:
-            items.append(build_item(values, source_rows, interpretation))
+            item = build_item(values, source_rows, interpretation)
+            if boundary:
+                item["boundary_after"] = boundary
+            items.append(item)
         values, source_rows = [], []
 
     for index in range(first, last + 1):
@@ -233,13 +236,11 @@ def interpret_first_term(body, first, last, interpretation):
             if boundary["effect"] == "continue":
                 pass
             else:
-                flush()
-                if items:
-                    items[-1]["boundary_after"] = boundary
+                flush(boundary)
         pending_empty = []
         starts_item = bool(str(row["values"].get(interpretation["item_start_column"], "")).strip())
         if starts_item and values:
-            flush()
+            flush(item_boundary(interpretation))
         start_column = (
             "A"
             if interpretation["content_start"] == "header" and index == first
@@ -251,6 +252,16 @@ def interpret_first_term(body, first, last, interpretation):
             values.extend(row_values)
     flush()
     return items
+
+
+def item_boundary(interpretation):
+    effect = interpretation["item_boundary_effect"]
+    return {
+        "effect": effect,
+        "display": "compact" if effect == "group" else "ignore",
+        "source_count": 0,
+        "output_count": 1 if effect == "group" else 0,
+    }
 
 
 def interpret_empty_groups(body, first, last, interpretation):

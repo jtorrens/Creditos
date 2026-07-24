@@ -1,4 +1,8 @@
-SCHEMA_VERSION = 4
+import json
+from datetime import datetime, timezone
+
+
+SCHEMA_VERSION = 5
 
 
 def init_db(connection):
@@ -156,5 +160,36 @@ def init_db(connection):
             DROP TABLE documents_without_import_model;
             """
         )
+    if current_version < 5:
+        migrate_rule_models_v7(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
+
+
+def migrate_rule_models_v7(connection):
+    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for row in connection.execute(
+        "SELECT id, model_json FROM import_rule_models"
+    ).fetchall():
+        model = json.loads(row["model_json"])
+        if model.get("schema") != "parser_lab_block_model" or model.get("version") != 6:
+            continue
+        for block in model.get("blocks", []):
+            interpretation = block.get("interpretation") or {}
+            empty_effect = (
+                interpretation.get("empty_rows", {})
+                .get("between_items", {})
+                .get("effect")
+            )
+            interpretation["item_boundary_effect"] = (
+                empty_effect if empty_effect in {"item", "group", "page"} else "item"
+            )
+        model["version"] = 7
+        connection.execute(
+            """
+            UPDATE import_rule_models
+            SET model_json = ?, revision = revision + 1, updated_at = ?
+            WHERE id = ?
+            """,
+            (json.dumps(model, ensure_ascii=False), timestamp, row["id"]),
+        )

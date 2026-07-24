@@ -78,7 +78,7 @@ def main():
             )
             assert duplicate_active["name"] == "origen_b.xlsx"
             assert base64.b64decode(duplicate_active["base64"]) == b"archivo-b"
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 4
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
 
     print("ok associated source files persist per import model")
     return 0
