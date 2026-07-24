@@ -388,26 +388,133 @@
     function renderSourceRefControls(cartela) {
       const wrap = documentRef.createElement('div');
       wrap.className = 'source-controls';
-
-      const select = fieldControlRegistry.create('select', {
-        value: state.materials[0] ? state.materials[0].id : '',
-        options: state.materials.map((material) => [
-          material.id,
-          `${material.group || '-'} · ${material.title || material.id}`,
-        ]),
-      });
-
       const addButton = documentRef.createElement('button');
       addButton.type = 'button';
-      addButton.textContent = 'Añadir bloque';
-      addButton.addEventListener('click', () => {
-        options.moveMaterialToCartela(state.structure, select.value, cartela);
+      addButton.textContent = 'Seleccionar bloques…';
+      addButton.addEventListener('click', () => openBlockPickerModal(cartela));
+
+      const count = documentRef.createElement('span');
+      count.className = 'source-controls-summary';
+      const includedCount = getCartelaMaterialIds(cartela).size;
+      count.textContent = `${includedCount} bloque${includedCount === 1 ? '' : 's'} en esta cartela`;
+
+      wrap.appendChild(addButton);
+      wrap.appendChild(count);
+      return wrap;
+    }
+
+    function getCartelaMaterialIds(cartela) {
+      return new Set((cartela && cartela.pages || []).flatMap((page) => page.source_refs || []));
+    }
+
+    function materialOwner(materialId) {
+      return (state.structure && state.structure.cartelas || []).find((candidate) => (
+        (candidate.pages || []).some((page) => (page.source_refs || []).includes(materialId))
+      )) || null;
+    }
+
+    function openBlockPickerModal(cartela) {
+      const included = getCartelaMaterialIds(cartela);
+      const selected = new Set();
+      const overlay = documentRef.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      const modal = documentRef.createElement('div');
+      modal.className = 'app-modal cartela-block-picker-modal';
+      const title = documentRef.createElement('h2');
+      title.textContent = 'Añadir bloques a la cartela';
+      const description = documentRef.createElement('p');
+      description.textContent = 'Los bloques resaltados ya pertenecen a esta cartela. Selecciona únicamente los que quieras añadir.';
+      const list = documentRef.createElement('div');
+      list.className = 'cartela-block-picker-list';
+      const actions = documentRef.createElement('div');
+      actions.className = 'modal-actions';
+      const cancelButton = documentRef.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.textContent = 'Cancelar';
+      const acceptButton = documentRef.createElement('button');
+      acceptButton.type = 'button';
+      acceptButton.className = 'primary';
+      acceptButton.textContent = 'Aceptar';
+      acceptButton.disabled = true;
+
+      (state.materials || []).forEach((material) => {
+        const isIncluded = included.has(material.id);
+        const owner = materialOwner(material.id);
+        const option = documentRef.createElement('label');
+        option.className = `cartela-block-picker-option${isIncluded ? ' included' : ''}`;
+        const checkbox = documentRef.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = isIncluded;
+        checkbox.disabled = isIncluded;
+        checkbox.value = material.id;
+        const copy = documentRef.createElement('span');
+        copy.className = 'cartela-block-picker-copy';
+        const name = documentRef.createElement('strong');
+        name.textContent = material.title || material.id;
+        const meta = documentRef.createElement('small');
+        meta.textContent = isIncluded
+          ? 'Ya está en esta cartela'
+          : owner
+            ? 'Está en otra cartela; se moverá al aceptar'
+            : 'Sin cartela';
+        copy.append(name, meta);
+        option.append(checkbox, copy);
+        if (!isIncluded) {
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) selected.add(material.id);
+            else selected.delete(material.id);
+            option.classList.toggle('selected', checkbox.checked);
+            acceptButton.disabled = selected.size === 0;
+          });
+        }
+        list.appendChild(option);
+      });
+
+      function close() {
+        overlay.remove();
+      }
+
+      cancelButton.addEventListener('click', close);
+      overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+      });
+      overlay.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          close();
+        }
+      });
+      acceptButton.addEventListener('click', async () => {
+        if (!selected.size) return;
+        const names = (state.materials || [])
+          .filter((material) => selected.has(material.id))
+          .map((material) => material.title || material.id);
+        const message = `Se añadirán ${names.length} bloque${names.length === 1 ? '' : 's'} a esta cartela:\n\n${names.join('\n')}\n\nSi alguno pertenece a otra cartela, se moverá desde ella.`;
+        const native = options.nativeBridge();
+        let confirmed = false;
+        if (native && native.confirm) {
+          const result = await native.confirm({
+            title: 'Confirmar bloques de la cartela',
+            message,
+            confirmLabel: 'Añadir bloques',
+          });
+          confirmed = !!(result && result.confirmed);
+        } else {
+          confirmed = windowRef.confirm(message);
+        }
+        if (!confirmed) return;
+        selected.forEach((materialId) => options.moveMaterialToCartela(state.structure, materialId, cartela));
+        close();
         options.rebuild();
       });
 
-      wrap.appendChild(select);
-      wrap.appendChild(addButton);
-      return wrap;
+      actions.append(cancelButton, acceptButton);
+      modal.append(title, description, list, actions);
+      overlay.appendChild(modal);
+      documentRef.body.appendChild(overlay);
+      cancelButton.focus();
     }
 
     return {

@@ -79,8 +79,10 @@
 
     function makeMaterialColumnSplitControl(wrap, splitKey, value) {
       const control = documentRef.createElement('label');
-      control.className = 'material-column-split-control';
+      control.className = 'material-table-header material-column-split-control';
       control.title = 'Repartir el ancho de edición entre cargo y nombre';
+      const rowLabel = documentRef.createElement('span');
+      rowLabel.textContent = 'Fila';
       const roleLabel = documentRef.createElement('span');
       roleLabel.textContent = 'Cargo';
       const slider = documentRef.createElement('input');
@@ -97,7 +99,7 @@
       });
       const nameLabel = documentRef.createElement('span');
       nameLabel.textContent = 'Nombre';
-      control.append(roleLabel, slider, nameLabel);
+      control.append(rowLabel, roleLabel, nameLabel, slider);
       return control;
     }
 
@@ -151,14 +153,7 @@
           namesWrap.appendChild(nameLine);
         });
 
-        if (orientation === 'horizontal') {
-          const fields = documentRef.createElement('div');
-          fields.className = 'preview-credit-fields';
-          fields.append(roleWrap, namesWrap);
-          row.appendChild(fields);
-        } else {
-          row.append(roleWrap, namesWrap);
-        }
+        row.append(roleWrap, namesWrap);
         return row;
       }
 
@@ -176,14 +171,7 @@
         const characterWrap = documentRef.createElement('div');
         characterWrap.className = 'preview-names';
         characterWrap.appendChild(makeRowPreviewInput(item.id, 'character', item.character || '', 'name-input', rowLabel, item.row, overrideEntries));
-        if (orientation === 'horizontal') {
-          const fields = documentRef.createElement('div');
-          fields.className = 'preview-credit-fields';
-          fields.append(actorWrap, characterWrap);
-          row.appendChild(fields);
-        } else {
-          row.append(actorWrap, characterWrap);
-        }
+        row.append(actorWrap, characterWrap);
         return row;
       }
 

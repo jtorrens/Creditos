@@ -65,10 +65,15 @@ test('el editor de materiales muestra el repartidor Cargo/Nombre', () => {
 
   const control = findByClass(panel, 'material-column-split-control');
   const row = findByClass(panel, 'preview-credit');
-  const fields = findByClass(panel, 'preview-credit-fields');
   assert.ok(control);
   assert.ok(row.className.includes('horizontal'));
-  assert.ok(fields);
+  assert.deepEqual(control.children.slice(0, 3).map((child) => child.textContent), ['Fila', 'Cargo', 'Nombre']);
+  assert.equal(findByClass(row, 'preview-credit-fields'), null);
+  assert.deepEqual(row.children.map((child) => child.className), [
+    'row-label',
+    'preview-role',
+    'preview-names',
+  ]);
 
   const slider = control.children.find((child) => child.tagName === 'INPUT');
   slider.value = '60';
