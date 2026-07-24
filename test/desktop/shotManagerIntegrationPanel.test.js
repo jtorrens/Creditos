@@ -231,6 +231,9 @@ test('envía el snapshot y exige confirmación antes de borrar contenido', async
 
   assert.equal(writes.length, 2);
   assert.equal(writes[0].snapshot, snapshot);
+  assert.deepEqual(writes[0].outputBindings, {
+    FINAL_RENDER: 'credits-render',
+  });
   assert.equal(writes[0].confirmDestructive, false);
   assert.equal(writes[1].confirmDestructive, true);
   assert.equal(els.status.textContent, 'Producción gobernada y jerarquía sincronizada.');

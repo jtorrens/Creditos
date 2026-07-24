@@ -402,8 +402,7 @@
     persistSelectedProductionFields,
     readSavedSelection,
     rememberCurrentSelection,
-    selectedEpisode,
-    selectedProduction,
+    selectedEpisode, selectedProduction,
     setSelectedProductionLocalFields,
   } = appProjectState;
   const appAutosave = globalThis.CreditosAppAutosave.createAppAutosave({
@@ -1264,7 +1263,7 @@
     rememberFileDirectory,
     safeFilePart,
     saveBlobAs,
-    selectedRenderProfile,
+    selectedEpisode, selectedProduction, selectedRenderProfile,
     state,
     storageKeys: STORAGE_KEYS,
     throwIfMovExportCancelled,

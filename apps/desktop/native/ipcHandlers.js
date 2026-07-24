@@ -80,6 +80,10 @@ function registerNativeIpcHandlers({
   ipcMain.handle('creditos:get-shot-manager-production', async (_event, payload) => {
     return shotManagerClient.getProduction(payload && payload.productionId);
   });
+
+  ipcMain.handle('creditos:resolve-shot-manager-output', async (_event, payload) => {
+    return shotManagerClient.resolveOutput(payload);
+  });
 }
 
 module.exports = { registerNativeIpcHandlers };

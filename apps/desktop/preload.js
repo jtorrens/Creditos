@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('creditosNative', {
   getShotManagerStatus: () => ipcRenderer.invoke('creditos:get-shot-manager-status'),
   listShotManagerProductions: () => ipcRenderer.invoke('creditos:list-shot-manager-productions'),
   getShotManagerProduction: (payload) => ipcRenderer.invoke('creditos:get-shot-manager-production', payload),
+  resolveShotManagerOutput: (payload) => ipcRenderer.invoke('creditos:resolve-shot-manager-output', payload),
   onServerExit: (callback) => {
     ipcRenderer.on('creditos-server-exit', (_event, value) => callback(value));
   },

@@ -6,6 +6,7 @@ from .project_service import unique_production_name
 
 
 PRODUCTION_TYPES = {"FILM", "SERIES"}
+FINAL_RENDER = "FINAL_RENDER"
 
 
 def _local_production(connection, production_id):
@@ -78,6 +79,15 @@ def _normalize_snapshot(payload):
         ),
         "production_type": production_type,
     }
+    output_entry_ids = []
+    for value in production_value.get("structureEntries") or []:
+        if not isinstance(value, dict) or value.get("type") != "OUTPUT":
+            continue
+        output_entry_ids.append(
+            _required_text(value.get("id"), "el ID de una salida")
+        )
+    if len(output_entry_ids) != len(set(output_entry_ids)):
+        raise ValueError("Shot Manager contiene IDs de salida duplicados.")
 
     seasons = []
     for value in snapshot.get("seasons") or []:
@@ -142,6 +152,7 @@ def _normalize_snapshot(payload):
         raise ValueError("Una serie de Shot Manager necesita al menos una temporada.")
     return {
         "production": production,
+        "output_entry_ids": set(output_entry_ids),
         "seasons": seasons,
         "episodes": episodes,
     }
@@ -222,10 +233,22 @@ def _local_hierarchy(connection, production_id):
 def _association_dict(connection, row):
     if row is None:
         return None
+    bindings = {
+        binding["artifact_kind"]: binding["structure_entry_id"]
+        for binding in connection.execute(
+            """
+            SELECT artifact_kind, structure_entry_id
+            FROM shot_manager_output_bindings
+            WHERE production_id = ?
+            ORDER BY artifact_kind
+            """,
+            (row["production_id"],),
+        )
+    }
     return {
         "creditosProductionId": str(row["production_id"]),
         "shotManagerProductionId": row["shot_manager_production_id"],
-        "structureEntryId": row["structure_entry_id"],
+        "outputBindings": bindings,
         "updatedAt": row["updated_at"],
         "localHierarchy": _local_hierarchy(connection, row["production_id"]),
     }
@@ -238,7 +261,6 @@ def load_shot_manager_association(connection, production_id):
         SELECT
             production_id,
             shot_manager_production_id,
-            structure_entry_id,
             updated_at
         FROM shot_manager_associations
         WHERE production_id = ?
@@ -367,7 +389,7 @@ def _apply_governance(
     connection,
     production,
     normalized,
-    structure_entry_id,
+    final_render_structure_entry_id,
     plan,
 ):
     timestamp = now_iso()
@@ -511,19 +533,36 @@ def _apply_governance(
             INSERT INTO shot_manager_associations (
                 production_id,
                 shot_manager_production_id,
-                structure_entry_id,
                 updated_at
             )
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?)
             ON CONFLICT(production_id) DO UPDATE SET
                 shot_manager_production_id = excluded.shot_manager_production_id,
-                structure_entry_id = excluded.structure_entry_id,
                 updated_at = excluded.updated_at
             """,
             (
                 production["id"],
                 normalized["production"]["id"],
+                timestamp,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO shot_manager_output_bindings (
+                production_id,
+                artifact_kind,
                 structure_entry_id,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(production_id, artifact_kind) DO UPDATE SET
+                structure_entry_id = excluded.structure_entry_id,
+                updated_at = excluded.updated_at
+            """,
+            (
+                production["id"],
+                FINAL_RENDER,
+                final_render_structure_entry_id,
                 timestamp,
             ),
         )
@@ -550,11 +589,11 @@ def save_shot_manager_association(connection, payload):
         payload.get("shotManagerProductionId"),
         "la producción de Shot Manager",
     )
-    structure_entry_id = _required_text(
-        payload.get("structureEntryId"),
-        "el elemento de estructura de Shot Manager",
-    )
     normalized = _normalize_snapshot(payload)
+    final_render_structure_entry_id = _final_render_binding(
+        payload,
+        normalized,
+    )
     if normalized["production"]["id"] != shot_manager_production_id:
         raise ValueError("El snapshot no corresponde a la producción seleccionada.")
     plan = _governance_plan(connection, production, normalized)
@@ -574,7 +613,7 @@ def save_shot_manager_association(connection, payload):
         connection,
         production,
         normalized,
-        structure_entry_id,
+        final_render_structure_entry_id,
         plan,
     )
     return {
@@ -593,11 +632,11 @@ def save_shot_manager_association(connection, payload):
 
 
 def create_governed_production(connection, payload):
-    structure_entry_id = _required_text(
-        payload.get("structureEntryId"),
-        "el elemento de estructura de Shot Manager",
-    )
     normalized = _normalize_snapshot(payload)
+    final_render_structure_entry_id = _final_render_binding(
+        payload,
+        normalized,
+    )
     requested_production_id = _required_text(
         payload.get("shotManagerProductionId"),
         "la producción de Shot Manager",
@@ -687,14 +726,28 @@ def create_governed_production(connection, payload):
             """
             INSERT INTO shot_manager_associations (
                 production_id, shot_manager_production_id,
+                updated_at
+            )
+            VALUES (?, ?, ?)
+            """,
+            (
+                production_id,
+                normalized["production"]["id"],
+                timestamp,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO shot_manager_output_bindings (
+                production_id, artifact_kind,
                 structure_entry_id, updated_at
             )
             VALUES (?, ?, ?, ?)
             """,
             (
                 production_id,
-                normalized["production"]["id"],
-                structure_entry_id,
+                FINAL_RENDER,
+                final_render_structure_entry_id,
                 timestamp,
             ),
         )
@@ -742,3 +795,20 @@ def delete_shot_manager_association(connection, production_id):
         connection.rollback()
         raise
     return cursor.rowcount > 0
+
+
+def _final_render_binding(payload, normalized):
+    bindings = payload.get("outputBindings")
+    if not isinstance(bindings, dict):
+        raise ValueError(
+            "La asociación necesita sus salidas oficiales de Shot Manager."
+        )
+    structure_entry_id = _required_text(
+        bindings.get(FINAL_RENDER),
+        "la salida de render final de Shot Manager",
+    )
+    if structure_entry_id not in normalized["output_entry_ids"]:
+        raise ValueError(
+            "La salida de render final no existe como OUTPUT en Shot Manager."
+        )
+    return structure_entry_id

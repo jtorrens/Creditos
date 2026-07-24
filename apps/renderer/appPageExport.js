@@ -5,7 +5,15 @@
     const els = options.els;
     const state = options.state;
 
-    async function exportScrollMovSequence({ native, filePath, fps, layout, encodingProfile, renderOptions = {} }) {
+    async function exportScrollMovSequence({
+      native,
+      filePath,
+      fps,
+      layout,
+      encodingProfile,
+      preventOverwrite = false,
+      renderOptions = {},
+    }) {
       const groups = options.getSelectedScrollCartelaGroups();
       if (!groups.length) return;
       const sourceFrames = options.getSelectedScrollSourceFrames(fps);
@@ -35,7 +43,7 @@
           writeFrame,
         });
         options.updateMovExportProgress(moviePlan.totalFrames, moviePlan.totalFrames);
-      });
+      }, { preventOverwrite });
     }
 
     async function renderScrollFrameToPngBlob(plan, frame, layout, renderOptions = {}) {
@@ -139,12 +147,18 @@
       const encodingProfile = options.selectedRenderProfile();
 
       try {
-        const saveResult = await native.chooseMovPath({
-          defaultPath: options.joinPath(options.readLocalPreference(options.storageKeys.renderDir), `${baseName}.mov`),
+        const saveResult = await resolveMovDestination(
+          native,
+          baseName,
           encodingProfile,
-        });
+        );
         if (!saveResult || saveResult.canceled) return;
-        options.rememberFileDirectory(options.storageKeys.renderDir, saveResult.filePath);
+        if (!saveResult.preventOverwrite) {
+          options.rememberFileDirectory(
+            options.storageKeys.renderDir,
+            saveResult.filePath,
+          );
+        }
 
         els.exportMovBtn.disabled = true;
         state.movExportProgress = options.openMovExportProgressModal();
@@ -155,6 +169,7 @@
             fps,
             layout,
             encodingProfile,
+            preventOverwrite: saveResult.preventOverwrite,
             renderOptions: currentExportRenderOptions(),
           });
           return;
@@ -224,7 +239,7 @@
             }
           }
           options.updateMovExportProgress(totalExportFrames, totalExportFrames);
-        });
+        }, { preventOverwrite: saveResult.preventOverwrite });
       } catch (error) {
         if (error.name === 'AbortError' || (state.movExportProgress && state.movExportProgress.isCancellationRequested())) return;
         windowRef.alert('No se pudo exportar MOV: ' + error.message);
@@ -234,6 +249,70 @@
         els.exportMovBtn.textContent = 'Exportar MOV';
         options.updatePdfToolbar(state.pdfPageIndex + 1, pages.length);
       }
+    }
+
+    async function resolveMovDestination(native, baseName, encodingProfile) {
+      const production = options.selectedProduction();
+      if (!production || production.governance_mode !== 'SHOT_MANAGER') {
+        return native.chooseMovPath({
+          defaultPath: options.joinPath(
+            options.readLocalPreference(options.storageKeys.renderDir),
+            `${baseName}.mov`,
+          ),
+          encodingProfile,
+        });
+      }
+      if (!native.resolveShotManagerOutput) {
+        throw new Error(
+          'Esta versión de Créditos no puede resolver salidas oficiales de Shot Manager.',
+        );
+      }
+      const episode = options.selectedEpisode();
+      if (
+        !production.shot_manager_production_id ||
+        !production.final_render_structure_entry_id ||
+        (
+          production.production_type === 'SERIES' &&
+          (!episode || !episode.shot_manager_episode_id)
+        )
+      ) {
+        throw new Error(
+          'La producción gobernada no tiene completa su salida de render final. Revísala en Producciones.',
+        );
+      }
+      const result = await native.resolveShotManagerOutput({
+        productionId: production.shot_manager_production_id,
+        artifactKind: 'FINAL_RENDER',
+        structureEntryId:
+          production.final_render_structure_entry_id,
+        episodeId:
+          production.production_type === 'SERIES'
+            ? episode.shot_manager_episode_id
+            : null,
+        extension: 'mov',
+      });
+      if (!result || !result.ok) {
+        throw new Error(
+          result && result.error
+            ? result.error.message
+            : 'Shot Manager no pudo resolver la salida oficial.',
+        );
+      }
+      const confirmation = native.confirm
+        ? await native.confirm({
+          title: 'Render final oficial',
+          message:
+            `Se renderizará la versión v${result.data.version} en:\n\n` +
+            result.data.filePath,
+          confirmLabel: 'Renderizar',
+        })
+        : { confirmed: true };
+      if (!confirmation.confirmed) return { canceled: true };
+      return {
+        canceled: false,
+        filePath: result.data.filePath,
+        preventOverwrite: true,
+      };
     }
 
     function readExportPageSelection(pages) {
@@ -308,6 +387,7 @@
       exportPngPages,
       exportScrollMovSequence,
       readExportPageSelection,
+      resolveMovDestination,
       renderPageToPngBlob,
       renderScrollFrameToPngBlob,
     };

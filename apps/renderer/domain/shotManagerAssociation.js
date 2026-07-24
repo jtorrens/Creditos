@@ -1,15 +1,4 @@
 (function (root) {
-  const TYPE_ORDER = {
-    WORK_AREA: 0,
-    INPUT: 1,
-    OUTPUT: 2,
-  };
-  const TYPE_LABELS = {
-    WORK_AREA: 'Área de trabajo',
-    INPUT: 'Input',
-    OUTPUT: 'Output',
-  };
-
   function availableProductions(catalog) {
     const records = catalog && Array.isArray(catalog.productions)
       ? catalog.productions
@@ -29,17 +18,20 @@
       ? snapshot.production.structureEntries
       : [];
     return entries
-      .filter((entry) => entry && typeof entry.id === 'string')
+      .filter((entry) => (
+        entry &&
+        entry.type === 'OUTPUT' &&
+        typeof entry.id === 'string'
+      ))
       .slice()
-      .sort((left, right) => {
-        const typeDifference = (TYPE_ORDER[left.type] ?? 99) - (TYPE_ORDER[right.type] ?? 99);
-        if (typeDifference) return typeDifference;
-        return String(left.name).localeCompare(String(right.name), 'es');
-      })
+      .sort((left, right) => String(left.name).localeCompare(
+        String(right.name),
+        'es',
+      ))
       .map((entry) => ({
         ...entry,
         id: String(entry.id),
-        label: `${TYPE_LABELS[entry.type] || entry.type} · ${entry.name} · ${entry.folderName}/`,
+        label: `${entry.name} · ${entry.folderName}/ · ${entry.slug}`,
       }));
   }
 
@@ -60,11 +52,16 @@
       };
     }
     if (!structureEntryOptions(snapshot).some(
-      (entry) => entry.id === String(association.structureEntryId),
+      (entry) => (
+        entry.id === String(
+          association.outputBindings &&
+          association.outputBindings.FINAL_RENDER,
+        )
+      ),
     )) {
       return {
         valid: false,
-        message: 'El elemento de estructura guardado ya no existe en Shot Manager.',
+        message: 'La salida de render final guardada ya no existe en Shot Manager.',
       };
     }
     return { valid: true, message: '' };

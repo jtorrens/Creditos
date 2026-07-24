@@ -40,7 +40,7 @@ def main():
 
             assert series["governance_mode"] == "INDEPENDENT"
             assert movie["governance_mode"] == "INDEPENDENT"
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
 
     print("ok film/series independent hierarchy")
     return 0

@@ -169,6 +169,61 @@ function validateSnapshot(value, productionId) {
   return snapshot;
 }
 
+function validateOutputResolution(value, requestValue) {
+  const resolution = assertObject(
+    value,
+    'INVALID_RESPONSE',
+    'La salida resuelta por Shot Manager no es válida.',
+  );
+  const relativeSegments =
+    typeof resolution.relativeDirectory === 'string'
+      ? resolution.relativeDirectory.replaceAll('\\', '/').split('/')
+      : [];
+  const normalizedFilePath =
+    typeof resolution.directoryPath === 'string' &&
+    typeof resolution.fileName === 'string'
+      ? path.normalize(path.join(
+        resolution.directoryPath,
+        resolution.fileName,
+      ))
+      : '';
+  if (
+    resolution.productionId !== requestValue.productionId ||
+    resolution.artifactKind !== 'FINAL_RENDER' ||
+    resolution.structureEntryId !== requestValue.structureEntryId ||
+    resolution.episodeId !== requestValue.episodeId ||
+    resolution.extension !== requestValue.extension ||
+    typeof resolution.relativeDirectory !== 'string' ||
+    typeof resolution.directoryPath !== 'string' ||
+    resolution.directoryExists !== true ||
+    typeof resolution.fileName !== 'string' ||
+    typeof resolution.filePath !== 'string' ||
+    relativeSegments.length === 0 ||
+    relativeSegments.some((segment) => (
+      !segment ||
+      segment === '.' ||
+      segment === '..'
+    )) ||
+    path.isAbsolute(resolution.relativeDirectory) ||
+    !path.isAbsolute(resolution.directoryPath) ||
+    !path.isAbsolute(resolution.filePath) ||
+    path.basename(resolution.fileName) !== resolution.fileName ||
+    path.normalize(resolution.filePath) !== normalizedFilePath ||
+    path.extname(resolution.fileName).toLowerCase() !==
+      `.${requestValue.extension}` ||
+    resolution.fileExists !== false ||
+    !Number.isInteger(resolution.version) ||
+    resolution.version < 1 ||
+    resolution.reserved !== false
+  ) {
+    throw new ShotManagerIntegrationError(
+      'INVALID_RESPONSE',
+      'Shot Manager devolvió una salida incompleta o distinta de la solicitada.',
+    );
+  }
+  return resolution;
+}
+
 function publicError(error) {
   if (error instanceof ShotManagerIntegrationError) {
     return {
@@ -347,12 +402,71 @@ function createShotManagerClient({
     }
   }
 
+  async function resolveOutput(payload) {
+    const value = payload && typeof payload === 'object' ? payload : {};
+    const productionId = typeof value.productionId === 'string'
+      ? value.productionId.trim()
+      : '';
+    const structureEntryId = typeof value.structureEntryId === 'string'
+      ? value.structureEntryId.trim()
+      : '';
+    const episodeId = value.episodeId == null
+      ? null
+      : String(value.episodeId).trim();
+    const extension = typeof value.extension === 'string'
+      ? value.extension.trim()
+      : '';
+    if (
+      !productionId ||
+      !structureEntryId ||
+      value.artifactKind !== 'FINAL_RENDER' ||
+      (value.episodeId != null && !episodeId) ||
+      !/^[a-z0-9]+$/.test(extension)
+    ) {
+      return {
+        ok: false,
+        error: publicError(new ShotManagerIntegrationError(
+          'OUTPUT_CONTEXT_REQUIRED',
+          'La resolución del render final necesita un contexto oficial completo.',
+        )),
+      };
+    }
+    const requestValue = {
+      productionId,
+      artifactKind: 'FINAL_RENDER',
+      structureEntryId,
+      episodeId,
+      extension,
+    };
+    const query = new URLSearchParams({
+      artifactKind: requestValue.artifactKind,
+      structureEntryId: requestValue.structureEntryId,
+      extension: requestValue.extension,
+    });
+    if (episodeId !== null) query.set('episodeId', episodeId);
+    try {
+      return {
+        ok: true,
+        data: validateOutputResolution(
+          await request(
+            `/productions/${encodeURIComponent(productionId)}` +
+              `/outputs/resolve?${query.toString()}`,
+          ),
+          requestValue,
+        ),
+      };
+    } catch (error) {
+      return { ok: false, error: publicError(error) };
+    }
+  }
+
   return {
     discoveryPath,
     getProduction,
     getStatus,
     listProductions,
     readConnection,
+    resolveOutput,
   };
 }
 

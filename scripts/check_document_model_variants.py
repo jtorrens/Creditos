@@ -94,7 +94,7 @@ def main():
                 connection,
                 movie_id,
             )] == [None]
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
 
     print("ok documents persist for series episodes and movie production scope")
     return 0

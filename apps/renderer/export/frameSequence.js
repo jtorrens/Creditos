@@ -7,7 +7,14 @@
       wait = () => Promise.resolve(),
     } = dependencies;
 
-    async function exportMovFramesIncrementally(native, filePath, fps, encodingProfile, writeFrames) {
+    async function exportMovFramesIncrementally(
+      native,
+      filePath,
+      fps,
+      encodingProfile,
+      writeFrames,
+      exportOptions = {},
+    ) {
       if (!native.startMovExport || !native.addMovFrame || !native.finishMovExport) {
         const pages = [];
         await writeFrames(async ({ bytes, frameCount }) => {
@@ -18,10 +25,21 @@
             bytes,
           });
         });
-        return native.exportMovSequence({ filePath, fps, encodingProfile, pages });
+        return native.exportMovSequence({
+          filePath,
+          fps,
+          encodingProfile,
+          pages,
+          preventOverwrite: exportOptions.preventOverwrite === true,
+        });
       }
 
-      const session = await native.startMovExport({ filePath, fps, encodingProfile });
+      const session = await native.startMovExport({
+        filePath,
+        fps,
+        encodingProfile,
+        preventOverwrite: exportOptions.preventOverwrite === true,
+      });
       onCancelAvailable(() => native.cancelMovExport({ exportId: session.exportId }));
       try {
         await writeFrames(async ({ bytes, frameCount }) => {

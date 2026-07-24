@@ -16,6 +16,12 @@ def series_snapshot(episode_count, remote_id="remote-series"):
             "name": "Serie gobernada",
             "code": "SG",
             "productionType": "SERIES",
+            "structureEntries": [
+                {
+                    "id": "credits-render",
+                    "type": "OUTPUT",
+                }
+            ],
         },
         "seasons": [
             {
@@ -44,7 +50,7 @@ def association_payload(production_id, snapshot, confirm=False):
     return {
         "creditosProductionId": production_id,
         "shotManagerProductionId": snapshot["production"]["id"],
-        "structureEntryId": "credits-render",
+        "outputBindings": {"FINAL_RENDER": "credits-render"},
         "snapshot": snapshot,
         "confirmDestructive": confirm,
     }
@@ -113,6 +119,9 @@ def main():
             )
             assert synchronized["confirmationRequired"] is False
             assert synchronized["association"]["localHierarchy"]["governanceMode"] == "SHOT_MANAGER"
+            assert synchronized["association"]["outputBindings"] == {
+                "FINAL_RENDER": "credits-render"
+            }
             assert connection.execute(
                 "SELECT COUNT(*) FROM episodes WHERE production_id = ?",
                 (production_id,),
@@ -169,7 +178,7 @@ def main():
                 connection,
                 {
                     "shotManagerProductionId": direct_snapshot["production"]["id"],
-                    "structureEntryId": "credits-render",
+                    "outputBindings": {"FINAL_RENDER": "credits-render"},
                     "snapshot": direct_snapshot,
                 },
             )
@@ -177,7 +186,7 @@ def main():
             assert direct_association["shotManagerProductionId"] == "remote-direct"
             assert direct_association["localHierarchy"]["governanceMode"] == "SHOT_MANAGER"
             assert len(direct_association["localHierarchy"]["episodes"]) == 3
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 11
 
     print("ok independent and Shot Manager governed production lifecycle")
     return 0

@@ -1,7 +1,8 @@
 # Handoff · VFX Shot Manager ↔ Créditos
 
-Estado de este documento: gobierno de producción v1 implementado. La
-resolución de outputs y la ejecución headless quedan fuera de esta fase.
+Estado de este documento: gobierno de producción y resolución de
+`FINAL_RENDER` implementados. Preview, registro de artefactos, reserva de
+versiones y ejecución headless quedan fuera de esta fase.
 
 ## Objetivo
 
@@ -11,9 +12,9 @@ Créditos admite dos modos excluyentes por producción:
 - `SHOT_MANAGER`: una producción oficial de Shot Manager gobierna el tipo y
   la jerarquía de temporadas y capítulos.
 
-Una producción gobernada también conserva el ID estable de un elemento de
-estructura. Esto permitirá solicitar la ruta y nomenclatura oficiales de un
-render o preview sin duplicar esas reglas en Créditos.
+Una producción gobernada conserva una vinculación explícita entre cada tipo
+de artefacto admitido y su salida estable de estructura. El modelo actual
+admite `FINAL_RENDER`; no usa una salida genérica ni selecciona por nombre.
 
 ## Propiedad de los datos
 
@@ -75,10 +76,13 @@ Créditos usa únicamente:
 - `GET /api/v1/health`
 - `GET /api/v1/productions`
 - `GET /api/v1/productions/{productionId}`
+- `GET /api/v1/productions/{productionId}/outputs/resolve`
 
 La API v1 es de solo lectura. Una desconexión no bloquea el trabajo en
 Créditos: se usa la jerarquía local ya sincronizada y se indica que no puede
-verificarse hasta abrir Shot Manager.
+verificarse hasta abrir Shot Manager. El trabajo editorial puede continuar
+con la copia local, pero un render final gobernado necesita Shot Manager
+abierto para resolver el destino actual del equipo.
 
 ## Persistencia portable
 
@@ -88,6 +92,11 @@ La asociación se guarda en `data/creditos.db`, no en preferencias del equipo:
 shot_manager_associations
 ├── production_id
 ├── shot_manager_production_id
+└── updated_at
+
+shot_manager_output_bindings
+├── production_id
+├── artifact_kind
 ├── structure_entry_id
 └── updated_at
 ```
@@ -97,25 +106,25 @@ Las temporadas y capítulos gobernados guardan además
 Por eso la misma base de datos puede sincronizarse entre Mac y PC aunque la
 raíz de producción sea distinta en cada equipo.
 
-El esquema actual es v10. La asociación es única por producción y la jerarquía
-oficial se materializa en las tablas normales de temporadas y capítulos, sin
-un modelo paralelo. Créditos modela una película
+El esquema actual es v11. La asociación es única por producción y cada
+`artifact_kind` tiene como máximo una salida oficial. La jerarquía oficial se
+materializa en las tablas normales de temporadas y capítulos, sin un modelo
+paralelo. Créditos modela una película
 directamente en producción y una serie como producción → temporada →
 capítulo. No existen capítulos ficticios para películas, ni secuencias o
 planos en Créditos.
 
-La migración v9 → v10 fue un one-off aplicado a la base activa. Todas las
-producciones existentes quedaron como `INDEPENDENT`; `MOVIE` se sustituyó por
-`FILM`; se conservaron producciones, temporadas, capítulos, documentos,
-archivos fuente y estilos. El código actual solo admite v10 y no contiene
-rutas alternativas ni conversores para el modelo retirado.
+La migración v10 → v11 fue un one-off aplicado a la base activa después de
+crear una copia SQLite coherente. Separó la identidad de la asociación de sus
+salidas y transformó cualquier selección v10 en `FINAL_RENDER`. El código
+actual solo admite v11; no contiene lectores duales, alias ni conversores.
 
 ## Comportamiento de la interfaz
 
 En Producciones, el panel «Gobierno de Shot Manager» permite:
 
 1. elegir una producción disponible de Shot Manager;
-2. elegir un elemento de estructura;
+2. elegir una salida `OUTPUT` para el render final;
 3. convertir la producción independiente activa en gobernada;
 4. crear directamente una producción gobernada nueva;
 5. sincronizar cambios posteriores de temporadas y capítulos;
@@ -126,8 +135,8 @@ La producción activa de Créditos determina la asociación mostrada. El capítu
 se elige únicamente en Cartelas cuando la producción es una serie; una
 película trabaja directamente con el contenido de producción.
 
-Al cargar una producción gobernada, la producción, su tipo, su jerarquía y el
-elemento de estructura se verifican contra el snapshot actual. Si la jerarquía
+Al cargar una producción gobernada, la producción, su tipo, su jerarquía y la
+salida de render final se verifican contra el snapshot actual. Si la jerarquía
 remota cambió, la interfaz exige una sincronización consciente. Los capítulos
 coincidentes conservan sus documentos. Los capítulos locales ausentes en Shot
 Manager se eliminan automáticamente solo cuando están vacíos; si contienen
@@ -147,11 +156,18 @@ Créditos ya puede:
 - codificar MOV con FFmpeg en ProRes o H.264;
 - cancelar y limpiar una exportación en curso.
 
-Actualmente el usuario elige manualmente la ruta final y el nombre base nace
-de la configuración local `pdf_base_name`. Este comportamiento no se cambia
-en esta fase.
+En una producción `INDEPENDENT`, el usuario sigue eligiendo manualmente la
+ruta final y el nombre base nace de la configuración local `pdf_base_name`.
 
-## Contrato pendiente para outputs
+En una producción `SHOT_MANAGER`, Créditos solicita `FINAL_RENDER` con los IDs
+oficiales de producción, capítulo y salida. Shot Manager devuelve la carpeta,
+el nombre y la primera versión libre conforme al separador, slug y padding de
+la producción. Créditos muestra el destino antes de renderizar y no abre el
+selector manual. Si Shot Manager está cerrado, falta la carpeta oficial o la
+versión pasa a existir antes de codificar, la exportación se detiene sin
+fallback local ni sobrescritura.
+
+## Contrato implementado para `FINAL_RENDER`
 
 Créditos no debe calcular por sí mismo nombres como:
 
@@ -160,33 +176,36 @@ trz_s01_e01_prev_v01.mov
 trz_s01_e01_cred_v01.mov
 ```
 
-La siguiente fase necesita que Shot Manager publique una operación canónica
-que reciba, como mínimo:
+Créditos consulta:
 
 ```json
 {
   "productionId": "production-id",
-  "seasonId": "season-id",
   "episodeId": "episode-id",
   "structureEntryId": "structure-entry-id",
-  "artifactKind": "PREVIEW",
+  "artifactKind": "FINAL_RENDER",
   "extension": "mov"
 }
 ```
 
-Y devuelva una resolución coherente para el equipo actual:
+Y recibe una resolución coherente para el equipo actual:
 
 ```json
 {
-  "directoryPath": "/raiz-local/S01/E01/previews",
-  "fileName": "trz_s01_e01_prev_v01.mov",
-  "filePath": "/raiz-local/S01/E01/previews/trz_s01_e01_prev_v01.mov",
-  "version": 1
+  "directoryPath": "/raiz-local/S01/E01/credits",
+  "directoryExists": true,
+  "fileName": "TRZ_S01_E01_cred_v001.mov",
+  "filePath": "/raiz-local/S01/E01/credits/TRZ_S01_E01_cred_v001.mov",
+  "fileExists": false,
+  "version": 1,
+  "reserved": false
 }
 ```
 
-La reserva concurrente de versiones y el registro de artefactos exigen write
-access explícito y no forman parte de la API read-only v1.
+La API elige la primera versión libre mediante inspección de disco, pero no la
+reserva. Créditos vuelve a rechazar una colisión antes de iniciar FFmpeg y usa
+modo sin sobrescritura. La reserva concurrente y el registro del artefacto
+exigen write access explícito y no forman parte de la API read-only v1.
 
 ## Contrato pendiente para render headless
 
@@ -204,13 +223,11 @@ El worker devolverá estados estructurados y el artefacto final. La cola será
 orquestadora; Shot Manager seguirá siendo la autoridad de contexto, rutas y
 versiones.
 
-## Criterios para iniciar la siguiente fase
+## Pendiente para la siguiente fase
 
 Antes de conectar el render automático deben estar cerrados:
 
-- endpoint de resolución de output en Shot Manager;
+- vinculación y resolución de `PREVIEW`;
 - decisión de reserva de versión;
-- definición de los artifact kinds de Créditos, al menos `PREVIEW` y
-  `FINAL_RENDER`;
 - política de registro del resultado final;
 - contrato JSON del worker headless.

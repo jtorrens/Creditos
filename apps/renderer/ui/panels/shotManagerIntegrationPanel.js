@@ -80,14 +80,17 @@
         els.context.textContent = '';
         return;
       }
-      addBlankOption(els.structureSelect, 'Selecciona un elemento');
+      addBlankOption(els.structureSelect, 'Selecciona una salida');
       for (const entry of domain.structureEntryOptions(state.snapshot)) {
         const option = documentRef.createElement('option');
         option.value = entry.id;
         option.textContent = entry.label;
         els.structureSelect.appendChild(option);
       }
-      els.structureSelect.value = selected.structureEntryId || '';
+      els.structureSelect.value = (
+        selected.outputBindings &&
+        selected.outputBindings.FINAL_RENDER
+      ) || '';
       els.structureSelect.disabled = false;
       const hierarchy = state.snapshot.production.productionType === 'SERIES'
         ? `${(state.snapshot.seasons || []).length} temporada(s) · ${(state.snapshot.episodes || []).length} capítulo(s)`
@@ -288,7 +291,9 @@
       const payload = {
         ...localContext(),
         shotManagerProductionId: els.productionSelect.value,
-        structureEntryId: els.structureSelect.value,
+        outputBindings: {
+          FINAL_RENDER: els.structureSelect.value,
+        },
         snapshot: state.snapshot,
         confirmDestructive,
       };
@@ -335,7 +340,9 @@
     async function createGovernedProduction() {
       const payload = {
         shotManagerProductionId: els.productionSelect.value,
-        structureEntryId: els.structureSelect.value,
+        outputBindings: {
+          FINAL_RENDER: els.structureSelect.value,
+        },
         snapshot: state.snapshot,
       };
       els.createButton.disabled = true;
@@ -401,7 +408,7 @@
         state.dirty = true;
         await loadSnapshot(els.productionSelect.value);
         if (state.snapshot && typesMatch()) {
-          markDirty('Selecciona el elemento de estructura y guarda la asociación.');
+          markDirty('Selecciona la salida de render final y guarda la asociación.');
         }
       });
       els.structureSelect.addEventListener('change', () => markDirty());

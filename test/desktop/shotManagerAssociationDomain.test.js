@@ -45,7 +45,9 @@ function snapshot() {
 function association() {
   return {
     shotManagerProductionId: 'production-1',
-    structureEntryId: 'credits-work',
+    outputBindings: {
+      FINAL_RENDER: 'preview-output',
+    },
     localHierarchy: {
       productionType: 'SERIES',
       governanceMode: 'SHOT_MANAGER',
@@ -67,7 +69,7 @@ function association() {
 test('ordena los elementos de estructura conservando sus IDs estables', () => {
   assert.deepEqual(
     domain.structureEntryOptions(snapshot()).map((entry) => entry.id),
-    ['credits-work', 'preview-output'],
+    ['preview-output'],
   );
 });
 
@@ -85,7 +87,7 @@ test('valida producción, tipo y elemento de estructura', () => {
   );
   assert.equal(domain.validateStoredSelection(value, {
     ...saved,
-    structureEntryId: 'missing',
+    outputBindings: { FINAL_RENDER: 'missing' },
   }, 'SERIES').valid, false);
 });
 

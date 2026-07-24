@@ -99,7 +99,7 @@ async function finalizeMovExport(tempDir, outputPath, fps, encodingProfile = 'pr
   const ffmpegPath = await resolveFfmpegPath();
   const profile = normalizeMovEncodingProfile(encodingProfile);
   await runFfmpeg(ffmpegPath, [
-    '-y',
+    options.preventOverwrite ? '-n' : '-y',
     '-framerate', String(fps),
     '-start_number', '0',
     '-i', path.join(tempDir, 'frame_%08d.png'),
@@ -116,8 +116,10 @@ function createMovExportManager() {
     const fps = Math.max(1, Math.round(Number(payload && payload.fps) || 25));
     const encodingProfile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
     const outputPath = payload && payload.filePath ? ensureMovExtension(payload.filePath) : null;
+    const preventOverwrite = payload && payload.preventOverwrite === true;
     if (!outputPath) throw new Error('No hay ruta de salida para el MOV.');
     if (!pages.length) throw new Error('No hay páginas para exportar.');
+    if (preventOverwrite) await assertOutputAvailable(outputPath);
 
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-mov-'));
     let frameIndex = 0;
@@ -130,7 +132,9 @@ function createMovExportManager() {
       }
 
       if (!frameIndex) throw new Error('No se generaron frames para el MOV.');
-      await finalizeMovExport(tempDir, outputPath, fps, encodingProfile);
+      await finalizeMovExport(tempDir, outputPath, fps, encodingProfile, {
+        preventOverwrite,
+      });
       return { canceled: false, filePath: outputPath, name: path.basename(outputPath), frames: frameIndex, fps };
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
@@ -141,10 +145,19 @@ function createMovExportManager() {
     const fps = Math.max(1, Math.round(Number(payload && payload.fps) || 25));
     const encodingProfile = normalizeMovEncodingProfile(payload && payload.encodingProfile);
     const outputPath = payload && payload.filePath ? ensureMovExtension(payload.filePath) : null;
+    const preventOverwrite = payload && payload.preventOverwrite === true;
     if (!outputPath) throw new Error('No hay ruta de salida para el MOV.');
+    if (preventOverwrite) await assertOutputAvailable(outputPath);
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'creditos-mov-'));
     const exportId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    sessions.set(exportId, { tempDir, outputPath, fps, encodingProfile, frameIndex: 0 });
+    sessions.set(exportId, {
+      tempDir,
+      outputPath,
+      fps,
+      encodingProfile,
+      preventOverwrite,
+      frameIndex: 0,
+    });
     return { exportId };
   }
 
@@ -165,7 +178,11 @@ function createMovExportManager() {
     session.finalizing = true;
     try {
       if (!session.frameIndex) throw new Error('No se generaron frames para el MOV.');
+      if (session.preventOverwrite) {
+        await assertOutputAvailable(session.outputPath);
+      }
       await finalizeMovExport(session.tempDir, session.outputPath, session.fps, session.encodingProfile, {
+        preventOverwrite: session.preventOverwrite,
         onSpawn: (child) => {
           session.ffmpegProcess = child;
           if (session.cancelRequested) child.kill('SIGTERM');
@@ -202,8 +219,35 @@ function createMovExportManager() {
   };
 }
 
+async function assertOutputAvailable(outputPath) {
+  let parent;
+  try {
+    parent = await fs.lstat(path.dirname(outputPath));
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      throw new Error(
+        'La carpeta oficial no existe. Actualiza la estructura en disco desde Shot Manager.',
+      );
+    }
+    throw error;
+  }
+  if (!parent.isDirectory() || parent.isSymbolicLink()) {
+    throw new Error('La carpeta oficial de salida no es una carpeta segura.');
+  }
+  try {
+    await fs.lstat(outputPath);
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return;
+    throw error;
+  }
+  throw new Error(
+    'La versión oficial ya existe. Vuelve a exportar para resolver la siguiente versión.',
+  );
+}
+
 module.exports = {
   createMovExportManager,
+  assertOutputAvailable,
   ensureMovExtension,
   normalizeMovEncodingProfile,
   resolveFfmpegPath,

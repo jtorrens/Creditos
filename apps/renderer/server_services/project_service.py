@@ -35,11 +35,19 @@ def db_overview(connection):
                 productions.settings_json,
                 productions.created_at,
                 productions.updated_at,
+                shot_manager_associations.shot_manager_production_id,
+                final_render_binding.structure_entry_id
+                    AS final_render_structure_entry_id,
                 COUNT(DISTINCT seasons.id) AS season_count,
                 COUNT(DISTINCT episodes.id) AS episode_count
             FROM productions
             LEFT JOIN seasons ON seasons.production_id = productions.id
             LEFT JOIN episodes ON episodes.production_id = productions.id
+            LEFT JOIN shot_manager_associations
+                ON shot_manager_associations.production_id = productions.id
+            LEFT JOIN shot_manager_output_bindings AS final_render_binding
+                ON final_render_binding.production_id = productions.id
+                AND final_render_binding.artifact_kind = 'FINAL_RENDER'
             GROUP BY productions.id
             ORDER BY productions.name COLLATE NOCASE
             """

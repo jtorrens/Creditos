@@ -114,3 +114,119 @@ test('rechaza snapshots que no correspondan al ID solicitado', async () => {
   assert.equal(result.ok, false);
   assert.equal(result.error.code, 'INVALID_RESPONSE');
 });
+
+test('resuelve FINAL_RENDER con contexto explícito y sin reservar versión', async () => {
+  let requestedUrl = '';
+  const client = createShotManagerClient({
+    fetchImpl: async (url) => {
+      requestedUrl = url;
+      return response({
+        apiVersion: 1,
+        data: {
+          productionId: 'prod-1',
+          artifactKind: 'FINAL_RENDER',
+          structureEntryId: 'credits-render',
+          episodeId: 'episode-1',
+          relativeDirectory: 'S01/E01/credits',
+          directoryPath: '/production/S01/E01/credits',
+          directoryExists: true,
+          fileName: 'TRZ_S01_E01_cred_v001.mov',
+          filePath: '/production/S01/E01/credits/TRZ_S01_E01_cred_v001.mov',
+          fileExists: false,
+          version: 1,
+          extension: 'mov',
+          reserved: false,
+        },
+      });
+    },
+    getAppDataPath: () => '/app-data',
+    readFile: async () => JSON.stringify(CONNECTION),
+  });
+
+  const result = await client.resolveOutput({
+    productionId: 'prod-1',
+    artifactKind: 'FINAL_RENDER',
+    structureEntryId: 'credits-render',
+    episodeId: 'episode-1',
+    extension: 'mov',
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.data.version, 1);
+  assert.match(
+    requestedUrl,
+    /artifactKind=FINAL_RENDER&structureEntryId=credits-render&extension=mov&episodeId=episode-1$/,
+  );
+});
+
+test('rechaza una respuesta de salida que afirme haber reservado la versión', async () => {
+  const client = createShotManagerClient({
+    fetchImpl: async () => response({
+      apiVersion: 1,
+      data: {
+        productionId: 'prod-1',
+        artifactKind: 'FINAL_RENDER',
+        structureEntryId: 'credits-render',
+        episodeId: null,
+        relativeDirectory: 'renders',
+        directoryPath: '/production/renders',
+        directoryExists: true,
+        fileName: 'TRZ_cred_v001.mov',
+        filePath: '/production/renders/TRZ_cred_v001.mov',
+        fileExists: false,
+        version: 1,
+        extension: 'mov',
+        reserved: true,
+      },
+    }),
+    getAppDataPath: () => '/app-data',
+    readFile: async () => JSON.stringify(CONNECTION),
+  });
+
+  const result = await client.resolveOutput({
+    productionId: 'prod-1',
+    artifactKind: 'FINAL_RENDER',
+    structureEntryId: 'credits-render',
+    episodeId: null,
+    extension: 'mov',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'INVALID_RESPONSE');
+});
+
+test('rechaza una ruta de salida que no coincide con su carpeta y nombre', async () => {
+  const client = createShotManagerClient({
+    fetchImpl: async () => response({
+      apiVersion: 1,
+      data: {
+        productionId: 'prod-1',
+        artifactKind: 'FINAL_RENDER',
+        structureEntryId: 'credits-render',
+        episodeId: null,
+        relativeDirectory: 'renders',
+        directoryPath: '/production/renders',
+        directoryExists: true,
+        fileName: 'TRZ_cred_v001.mov',
+        filePath: '/outside/TRZ_cred_v001.mov',
+        fileExists: false,
+        version: 1,
+        extension: 'mov',
+        reserved: false,
+      },
+    }),
+    getAppDataPath: () => '/app-data',
+    readFile: async () => JSON.stringify(CONNECTION),
+  });
+
+  const result = await client.resolveOutput({
+    productionId: 'prod-1',
+    artifactKind: 'FINAL_RENDER',
+    structureEntryId: 'credits-render',
+    episodeId: null,
+    extension: 'mov',
+  });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.error.code, 'INVALID_RESPONSE');
+});

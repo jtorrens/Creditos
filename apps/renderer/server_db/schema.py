@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 
 
 SCHEMA_SQL = """
@@ -107,9 +107,19 @@ ON source_files (production_id, IFNULL(episode_id, 0), import_model_id);
 CREATE TABLE shot_manager_associations (
     production_id INTEGER PRIMARY KEY,
     shot_manager_production_id TEXT NOT NULL UNIQUE,
-    structure_entry_id TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (production_id) REFERENCES productions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE shot_manager_output_bindings (
+    production_id INTEGER NOT NULL,
+    artifact_kind TEXT NOT NULL CHECK (artifact_kind IN ('FINAL_RENDER')),
+    structure_entry_id TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (production_id, artifact_kind),
+    FOREIGN KEY (production_id)
+        REFERENCES shot_manager_associations(production_id)
+        ON DELETE CASCADE
 );
 """
 
