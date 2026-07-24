@@ -7,6 +7,10 @@
       return options.productionEpisodes(state.episodes, productionId);
     }
 
+    function currentProductionSeasons(productionId = state.selectedProductionId) {
+      return options.productionSeasons(state.seasons, productionId);
+    }
+
     function selectedProduction() {
       return options.findSelectedProduction(state.productions, state.selectedProductionId);
     }
@@ -30,12 +34,24 @@
         fields,
       });
       state.productions = overview.productions || state.productions;
+      state.seasons = overview.seasons || state.seasons;
       state.episodes = overview.episodes || state.episodes;
       options.renderProjectSelectors();
     }
 
     function selectedEpisode() {
       return state.episodes.find((episode) => String(episode.id) === String(state.selectedEpisodeId)) || null;
+    }
+
+    function hasSelectedContentScope() {
+      const production = selectedProduction();
+      return !!(
+        production &&
+        (
+          production.production_type === 'MOVIE' ||
+          selectedEpisode()
+        )
+      );
     }
 
     function rememberCurrentSelection() {
@@ -63,8 +79,10 @@
 
     return {
       currentProductionEpisodes,
+      currentProductionSeasons,
       getProductionLayout,
       getProductionSettings,
+      hasSelectedContentScope,
       persistSelectedProductionFields,
       readSavedSelection,
       rememberCurrentSelection,

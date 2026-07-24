@@ -7,7 +7,7 @@
 
     function updateReferenceVideoStatus() {
       const video = state.referenceVideo;
-      const hasEpisode = !!(state.selectedProductionId && state.selectedEpisodeId);
+      const hasEpisode = options.hasSelectedContentScope();
       if (els.referenceVideoStatus) {
         els.referenceVideoStatus.textContent = video && video.name
           ? `Vídeo referencia: ${video.name}`
@@ -55,8 +55,8 @@
     }
 
     async function associateReferenceVideo() {
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-        windowRef.alert('Selecciona producción y episodio antes de asociar un vídeo.');
+      if (!state.databasePath || !options.hasSelectedContentScope()) {
+        windowRef.alert('Selecciona una producción y, si es una serie, un capítulo.');
         return;
       }
       const native = options.nativeBridge();
@@ -85,7 +85,7 @@
     }
 
     async function clearReferenceVideo() {
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) return;
+      if (!state.databasePath || !options.hasSelectedContentScope()) return;
       state.referenceVideo = null;
       clearReferenceVideoState();
       await persistReferenceVideo();

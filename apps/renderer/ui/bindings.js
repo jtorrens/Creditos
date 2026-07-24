@@ -21,6 +21,15 @@
     els.duplicateProductionBtn.addEventListener('click', actions.duplicateSelectedProduction);
     els.deleteProductionBtn.addEventListener('click', actions.deleteSelectedProduction);
     els.createProductionBtn.addEventListener('click', actions.createProductionFromUi);
+    if (els.newProductionTypeSelect) {
+      const syncProductionHierarchyFields = () => {
+        const isSeries = els.newProductionTypeSelect.value === 'SERIES';
+        els.newProductionSeasonCountInput.disabled = !isSeries;
+        els.newProductionEpisodeCountInput.disabled = !isSeries;
+      };
+      els.newProductionTypeSelect.addEventListener('change', syncProductionHierarchyFields);
+      syncProductionHierarchyFields();
+    }
     els.createStyleBtn.addEventListener('click', actions.createStyleFromUi);
     els.duplicateStyleBtn.addEventListener('click', actions.duplicateSelectedStyle);
     els.deleteStyleBtn.addEventListener('click', actions.deleteSelectedStyle);

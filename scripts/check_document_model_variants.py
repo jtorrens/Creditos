@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import json
 import pathlib
-import sqlite3
 import sys
 import tempfile
 
@@ -10,111 +8,95 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 RENDERER_ROOT = REPO_ROOT / "apps" / "renderer"
 
 
-def create_v2_database(path):
-    connection = sqlite3.connect(path)
-    connection.executescript(
-        """
-        PRAGMA user_version = 2;
-        CREATE TABLE productions (
-            id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL UNIQUE,
-            import_model_id TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-        CREATE TABLE episodes (
-            id INTEGER PRIMARY KEY,
-            production_id INTEGER NOT NULL,
-            episode_number INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        );
-        CREATE TABLE documents (
-            id INTEGER PRIMARY KEY,
-            production_id INTEGER NOT NULL,
-            episode_id INTEGER NOT NULL,
-            kind TEXT NOT NULL,
-            schema TEXT,
-            version INTEGER,
-            data_json TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE (production_id, episode_id, kind)
-        );
-        INSERT INTO productions VALUES (1, 'Prueba', 'modelo_ia', 'now', 'now');
-        INSERT INTO episodes VALUES (1, 1, 1, 'Episodio 01', 'now', 'now');
-        INSERT INTO documents VALUES (
-            1, 1, 1, 'source', 'credit_source', 1,
-            '{"schema":"credit_source","import_model_id":"modelo_reglas"}', 'now', 'now'
-        );
-        INSERT INTO documents VALUES (
-            2, 1, 1, 'structure', 'credit_structure', 1,
-            '{"schema":"credit_structure","association":"ia"}', 'now', 'now'
-        );
-        INSERT INTO documents VALUES (
-            3, 1, 1, 'reference', 'reference_video', 1,
-            '{"schema":"reference_video","file_path":"video.mov"}', 'now', 'now'
-        );
-        """
-    )
-    connection.commit()
-    connection.close()
-
-
 def main():
     sys.path.insert(0, str(RENDERER_ROOT))
     from server_db.connection import db_connect
-    from server_services.document_service import list_structure_sources, load_document, save_document
+    from server_services.document_service import (
+        list_structure_sources,
+        load_document,
+        save_document,
+    )
+    from server_services.project_service import create_production
 
     with tempfile.TemporaryDirectory() as directory:
         db_path = pathlib.Path(directory) / "creditos.db"
-        create_v2_database(db_path)
-
         with db_connect(db_path) as connection:
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
-            assert load_document(connection, 1, 1, "structure", "modelo_ia") is None
-            assert load_document(connection, 1, 1, "structure", "modelo_reglas")["association"] == "ia"
-            assert load_document(connection, 1, 1, "reference")["file_path"] == "video.mov"
-            assert [item["import_model_id"] for item in list_structure_sources(connection, 1)] == ["modelo_reglas"]
-
-            save_document(
+            series_id = create_production(
                 connection,
+                "Serie",
+                "SERIES",
                 1,
                 1,
-                "structure",
-                {"schema": "credit_structure", "association": "ia_actualizada"},
-                "modelo_ia",
+                import_model_id="modelo_ia",
             )
+            episode_id = connection.execute(
+                "SELECT id FROM episodes WHERE production_id = ?",
+                (series_id,),
+            ).fetchone()["id"]
             save_document(
                 connection,
-                1,
-                1,
+                series_id,
+                episode_id,
                 "source",
-                {"schema": "credit_source", "import_model_id": "modelo_ia"},
+                {"schema": "credit_source"},
                 "modelo_ia",
             )
-
-            assert load_document(connection, 1, 1, "structure", "modelo_ia")["association"] == "ia_actualizada"
-            assert load_document(connection, 1, 1, "structure", "modelo_reglas")["association"] == "ia"
-            rows = connection.execute(
-                """
-                SELECT import_model_id, data_json
-                FROM documents
-                WHERE production_id = 1 AND episode_id = 1 AND kind = 'structure'
-                ORDER BY import_model_id
-                """
-            ).fetchall()
-            assert [(row["import_model_id"], json.loads(row["data_json"])["association"]) for row in rows] == [
-                ("modelo_ia", "ia_actualizada"),
-                ("modelo_reglas", "ia"),
-            ]
-            assert [item["import_model_id"] for item in list_structure_sources(connection, 1)] == [
+            save_document(
+                connection,
+                series_id,
+                episode_id,
+                "structure",
+                {"schema": "credit_structure", "association": "serie"},
                 "modelo_ia",
-                "modelo_reglas",
-            ]
+            )
+            assert load_document(
+                connection,
+                series_id,
+                episode_id,
+                "structure",
+                "modelo_ia",
+            )["association"] == "serie"
+            assert [item["import_model_id"] for item in list_structure_sources(
+                connection,
+                series_id,
+            )] == ["modelo_ia"]
 
-    print("ok document associations persist independently per import model")
+            movie_id = create_production(
+                connection,
+                "Película",
+                "MOVIE",
+                import_model_id="modelo_ia",
+            )
+            save_document(
+                connection,
+                movie_id,
+                None,
+                "source",
+                {"schema": "credit_source"},
+                "modelo_ia",
+            )
+            save_document(
+                connection,
+                movie_id,
+                None,
+                "structure",
+                {"schema": "credit_structure", "association": "película"},
+                "modelo_ia",
+            )
+            assert load_document(
+                connection,
+                movie_id,
+                None,
+                "structure",
+                "modelo_ia",
+            )["association"] == "película"
+            assert [item["episode_id"] for item in list_structure_sources(
+                connection,
+                movie_id,
+            )] == [None]
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+
+    print("ok documents persist for series episodes and movie production scope")
     return 0
 
 

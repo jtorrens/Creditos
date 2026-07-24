@@ -130,6 +130,7 @@
       parseFrameDuration: timecodeDomain.parseFrameDuration,
       pdfPageVerticalJustify: layoutDomain.pdfPageVerticalJustify,
       productionEpisodes: projectsDomain.productionEpisodes,
+      productionSeasons: projectsDomain.productionSeasons,
       productionLayout: projectsDomain.productionLayout,
       productionSettings: projectsDomain.productionSettings,
       quoteFontFamily: typographyDomain.quoteFontFamily,

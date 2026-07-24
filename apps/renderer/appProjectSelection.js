@@ -19,6 +19,7 @@
 
     function applyDatabaseOverview(overview) {
       state.productions = overview.productions || [];
+      state.seasons = overview.seasons || [];
       state.episodes = overview.episodes || [];
       state.importModels = overview.import_models || state.importModels || [];
       const savedSelection = options.readSavedSelection();
@@ -48,7 +49,7 @@
       }
       options.rememberCurrentSelection();
       options.renderProjectSelectors();
-      if (state.selectedProductionId && state.selectedEpisodeId) {
+      if (options.hasSelectedContentScope()) {
         options.loadCurrentEpisode().catch((error) => console.warn(error));
       } else if (state.selectedProductionId) {
         options.loadProductionStyles().catch((error) => console.warn(error));
@@ -69,7 +70,7 @@
       state.selectedEpisodeId = savedEpisode ? savedEpisode.id : (episodes[0] ? episodes[0].id : null);
       options.rememberCurrentSelection();
       options.renderProjectSelectors();
-      if (state.selectedProductionId && state.selectedEpisodeId) await options.loadCurrentEpisode();
+      if (options.hasSelectedContentScope()) await options.loadCurrentEpisode();
       else if (state.selectedProductionId) await options.loadProductionStyles();
     }
 
@@ -85,7 +86,7 @@
     async function selectEpisodeFromUi() {
       state.selectedEpisodeId = els.episodeSelect.value || null;
       options.rememberCurrentSelection();
-      await options.loadCurrentEpisode();
+      if (options.hasSelectedContentScope()) await options.loadCurrentEpisode();
     }
 
     return {

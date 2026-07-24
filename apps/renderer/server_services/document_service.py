@@ -1,6 +1,7 @@
 import json
 
 from .common import now_iso
+from .content_scope import content_scope
 
 
 DOCUMENT_KINDS = {"source", "structure", "render", "reference"}
@@ -22,6 +23,9 @@ def save_document(connection, production_id, episode_id, kind, data, import_mode
     if not isinstance(data, dict):
         raise ValueError("El documento debe ser un objeto.")
     model_id = document_import_model_id(kind, import_model_id)
+    local_production_id, local_episode_id = content_scope(
+        connection, production_id, episode_id
+    )
     timestamp = now_iso()
     schema = data.get("schema")
     version = data.get("version")
@@ -32,15 +36,15 @@ def save_document(connection, production_id, episode_id, kind, data, import_mode
             schema, version, data_json, created_at, updated_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(production_id, episode_id, kind, import_model_id) DO UPDATE SET
+        ON CONFLICT DO UPDATE SET
             schema = excluded.schema,
             version = excluded.version,
             data_json = excluded.data_json,
             updated_at = excluded.updated_at
         """,
         (
-            int(production_id),
-            int(episode_id),
+            local_production_id,
+            local_episode_id,
             kind,
             model_id,
             schema,
@@ -57,13 +61,16 @@ def load_document(connection, production_id, episode_id, kind, import_model_id=N
     if kind not in DOCUMENT_KINDS:
         raise ValueError("Tipo de documento no valido.")
     model_id = document_import_model_id(kind, import_model_id)
+    local_production_id, local_episode_id = content_scope(
+        connection, production_id, episode_id
+    )
     row = connection.execute(
         """
         SELECT data_json
         FROM documents
-        WHERE production_id = ? AND episode_id = ? AND kind = ? AND import_model_id = ?
+        WHERE production_id = ? AND episode_id IS ? AND kind = ? AND import_model_id = ?
         """,
-        (int(production_id), int(episode_id), kind, model_id),
+        (local_production_id, local_episode_id, kind, model_id),
     ).fetchone()
     return json.loads(row["data_json"]) if row else None
 
@@ -79,7 +86,7 @@ def list_structure_sources(connection, production_id):
               SELECT 1
               FROM documents AS source
               WHERE source.production_id = structure.production_id
-                AND source.episode_id = structure.episode_id
+                AND source.episode_id IS structure.episode_id
                 AND source.import_model_id = structure.import_model_id
                 AND source.kind = 'source'
           )

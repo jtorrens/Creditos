@@ -28,6 +28,8 @@ def main():
             production_id = create_production(
                 connection,
                 "Produccion",
+                "SERIES",
+                1,
                 1,
                 import_model_id="modelo_a",
             )
@@ -78,7 +80,25 @@ def main():
             )
             assert duplicate_active["name"] == "origen_b.xlsx"
             assert base64.b64decode(duplicate_active["base64"]) == b"archivo-b"
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+
+            movie_id = create_production(
+                connection,
+                "Película",
+                "MOVIE",
+                import_model_id="modelo_a",
+            )
+            save_source_file(
+                connection,
+                movie_id,
+                None,
+                "modelo_a",
+                "pelicula.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                b"archivo-pelicula",
+            )
+            movie_active = load_active_source_file(connection, movie_id, None)
+            assert movie_active["name"] == "pelicula.xlsx"
 
     print("ok associated source files persist per import model")
     return 0

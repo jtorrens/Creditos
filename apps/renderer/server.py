@@ -149,7 +149,7 @@ class Handler(BaseHTTPRequestHandler):
                     source_name,
                     import_model_id,
                 )
-                if fields.get("production_id") and fields.get("episode_id"):
+                if fields.get("production_id"):
                     save_source_file(
                         connection,
                         fields.get("production_id"),
@@ -235,7 +235,9 @@ class Handler(BaseHTTPRequestHandler):
                     production_id = create_production(
                         connection,
                         payload.get("name"),
-                        payload.get("episode_count"),
+                        payload.get("production_type"),
+                        payload.get("season_count"),
+                        payload.get("episodes_per_season"),
                         payload.get("page_width"),
                         payload.get("page_height"),
                         payload.get("preview_background"),
@@ -264,7 +266,6 @@ class Handler(BaseHTTPRequestHandler):
                     association = load_shot_manager_association(
                         connection,
                         payload.get("creditosProductionId"),
-                        payload.get("creditosEpisodeId"),
                     )
                     self.send_json(200, {"ok": True, "association": association})
                     return
@@ -278,7 +279,6 @@ class Handler(BaseHTTPRequestHandler):
                     deleted = delete_shot_manager_association(
                         connection,
                         payload.get("creditosProductionId"),
-                        payload.get("creditosEpisodeId"),
                     )
                     self.send_json(200, {"ok": True, "deleted": deleted})
                     return

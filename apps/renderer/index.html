@@ -54,9 +54,14 @@
                 <div id="productionCreateBox" class="production-create-box">
                   <div class="field-grid">
                     <label for="newProductionNameInput">Nueva producción</label>
-                    <div class="inline-actions">
+                    <div class="inline-actions production-create-fields">
                       <input id="newProductionNameInput" class="text-input" type="text" placeholder="Nombre producción">
-                      <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de episodios">
+                      <select id="newProductionTypeSelect" class="text-input" aria-label="Tipo de producción">
+                        <option value="SERIES">Serie</option>
+                        <option value="MOVIE">Película</option>
+                      </select>
+                      <input id="newProductionSeasonCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de temporadas">
+                      <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Capítulos por temporada">
                       <button id="createProductionBtn" type="button">Guardar</button>
                     </div>
                   </div>
@@ -88,23 +93,15 @@
               <div class="shot-manager-heading">
                 <div>
                   <h3 id="shotManagerTitle">Asociación con Shot Manager</h3>
-                  <p>Relaciona cada capítulo de Créditos con su producción y estructura oficial.</p>
+                  <p>Relaciona la producción completa con su estructura oficial.</p>
                 </div>
                 <button id="refreshShotManagerBtn" type="button">Actualizar</button>
               </div>
               <div id="shotManagerStatus" class="shot-manager-status">Buscando Shot Manager…</div>
               <div class="shot-manager-fields">
-                <label for="shotManagerLocalEpisodeSelect">
-                  <span>Capítulo activo de Créditos</span>
-                  <select id="shotManagerLocalEpisodeSelect" class="text-input"></select>
-                </label>
                 <label for="shotManagerProductionSelect">
                   <span>Producción de Shot Manager</span>
                   <select id="shotManagerProductionSelect" class="text-input"></select>
-                </label>
-                <label for="shotManagerEpisodeSelect">
-                  <span>Capítulo de Shot Manager</span>
-                  <select id="shotManagerEpisodeSelect" class="text-input"></select>
                 </label>
                 <label for="shotManagerStructureSelect">
                   <span>Elemento de estructura</span>
@@ -176,7 +173,7 @@
 
       <section id="structurePane" class="tab-pane">
         <div class="structure-file-panel">
-          <label for="episodeSelect">Capítulo</label>
+          <label id="episodeSelectLabel" for="episodeSelect">Capítulo</label>
           <select id="episodeSelect" class="text-input"></select>
           <button id="openXlsxBtn" class="primary" type="button">Asociar archivo</button>
           <button id="openReferenceVideoBtn" type="button">Asociar vídeo</button>

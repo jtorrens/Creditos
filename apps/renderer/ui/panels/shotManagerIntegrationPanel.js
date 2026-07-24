@@ -1,7 +1,6 @@
 (function (root) {
   function createShotManagerIntegrationPanel(options = {}) {
     const documentRef = options.documentRef || root.document;
-    const windowRef = options.windowRef || root;
     const bridge = options.bridge;
     const associationApi = options.associationApi;
     const domain = options.domain;
@@ -14,38 +13,34 @@
       connected: false,
       contextKey: '',
       dirty: false,
-      localEpisodeId: '',
       snapshot: null,
       snapshotOperation: 0,
     };
-    let bypassSourceEpisodeGuard = false;
     let localObserver = null;
     let localRenderQueued = false;
 
     function localContext() {
       return {
         creditosProductionId: String(els.sourceProductionSelect.value || ''),
-        creditosEpisodeId: String(els.localEpisodeSelect.value || ''),
       };
     }
 
-    function contextKey(context = localContext()) {
-      return context.creditosProductionId && context.creditosEpisodeId
-        ? JSON.stringify([context.creditosProductionId, context.creditosEpisodeId])
+    function localProductionType() {
+      const option = els.sourceProductionSelect.options[
+        els.sourceProductionSelect.selectedIndex
+      ];
+      return option && option.dataset.productionType
+        ? option.dataset.productionType
         : '';
+    }
+
+    function contextKey(context = localContext()) {
+      return context.creditosProductionId || '';
     }
 
     function setStatus(message, tone = '') {
       els.status.textContent = message;
       els.status.className = `shot-manager-status${tone ? ` ${tone}` : ''}`;
-    }
-
-    function confirmDiscardPendingChanges() {
-      if (!state.dirty) return true;
-      return windowRef.confirm(
-        'Hay cambios en la asociación con Shot Manager sin guardar. ' +
-        'Si cambias de capítulo se descartarán. ¿Quieres continuar?',
-      );
     }
 
     function markDirty(message = 'Cambios pendientes de guardar.') {
@@ -59,26 +54,6 @@
       option.value = '';
       option.textContent = label;
       select.appendChild(option);
-    }
-
-    function renderLocalEpisodes() {
-      const selectedValue = String(els.sourceEpisodeSelect.value || '');
-      els.localEpisodeSelect.innerHTML = '';
-      const sourceOptions = Array.from(els.sourceEpisodeSelect.options || []);
-      if (!sourceOptions.length) {
-        addBlankOption(els.localEpisodeSelect, 'Sin capítulos locales');
-        els.localEpisodeSelect.disabled = true;
-        return;
-      }
-      for (const sourceOption of sourceOptions) {
-        const option = documentRef.createElement('option');
-        option.value = String(sourceOption.value || '');
-        option.textContent = sourceOption.textContent;
-        els.localEpisodeSelect.appendChild(option);
-      }
-      els.localEpisodeSelect.value = selectedValue;
-      els.localEpisodeSelect.disabled = !!els.sourceEpisodeSelect.disabled;
-      state.localEpisodeId = selectedValue;
     }
 
     function renderProductionOptions(selectedId = '') {
@@ -97,32 +72,13 @@
     }
 
     function renderSnapshotOptions(selected = {}) {
-      els.episodeSelect.innerHTML = '';
       els.structureSelect.innerHTML = '';
       if (!state.snapshot) {
-        addBlankOption(els.episodeSelect, 'Selecciona primero una producción');
         addBlankOption(els.structureSelect, 'Selecciona primero una producción');
-        els.episodeSelect.disabled = true;
         els.structureSelect.disabled = true;
         els.context.textContent = '';
         return;
       }
-
-      const isSeries = state.snapshot.production.productionType === 'SERIES';
-      addBlankOption(
-        els.episodeSelect,
-        isSeries ? 'Selecciona un capítulo' : 'No aplica · película',
-      );
-      for (const episode of domain.episodeOptions(state.snapshot)) {
-        const option = documentRef.createElement('option');
-        option.value = episode.id;
-        option.dataset.seasonId = episode.seasonId || '';
-        option.textContent = episode.label;
-        els.episodeSelect.appendChild(option);
-      }
-      els.episodeSelect.value = selected.episodeId || '';
-      els.episodeSelect.disabled = !isSeries;
-
       addBlankOption(els.structureSelect, 'Selecciona un elemento');
       for (const entry of domain.structureEntryOptions(state.snapshot)) {
         const option = documentRef.createElement('option');
@@ -132,32 +88,31 @@
       }
       els.structureSelect.value = selected.structureEntryId || '';
       els.structureSelect.disabled = false;
-      els.context.textContent = `Raíz en este equipo: ${state.snapshot.location.rootPath}`;
+      const hierarchy = state.snapshot.production.productionType === 'SERIES'
+        ? `${(state.snapshot.seasons || []).length} temporada(s) · ${(state.snapshot.episodes || []).length} capítulo(s)`
+        : 'Película · contenido a nivel de producción';
+      els.context.textContent = `${hierarchy} · Raíz en este equipo: ${state.snapshot.location.rootPath}`;
+    }
+
+    function typesMatch() {
+      return !!(
+        state.snapshot &&
+        localProductionType() &&
+        state.snapshot.production.productionType === localProductionType()
+      );
     }
 
     function renderActions() {
-      const context = localContext();
-      const isSeries = state.snapshot && state.snapshot.production.productionType === 'SERIES';
       const complete = !!(
-        context.creditosProductionId &&
-        context.creditosEpisodeId &&
+        contextKey() &&
         state.connected &&
         state.snapshot &&
+        typesMatch() &&
         els.productionSelect.value &&
-        els.structureSelect.value &&
-        (!isSeries || els.episodeSelect.value)
+        els.structureSelect.value
       );
-      els.saveButton.disabled = !complete;
+      els.saveButton.disabled = !complete || !state.dirty;
       els.deleteButton.disabled = !state.association;
-    }
-
-    function selectedSeasonId() {
-      const selectedOption = els.episodeSelect.options[
-        els.episodeSelect.selectedIndex
-      ];
-      return selectedOption && selectedOption.dataset.seasonId
-        ? selectedOption.dataset.seasonId
-        : null;
     }
 
     async function loadSnapshot(productionId, selected = {}) {
@@ -178,12 +133,22 @@
       }
       state.snapshot = result.data;
       renderSnapshotOptions(selected);
+      if (!typesMatch()) {
+        const localLabel = localProductionType() === 'MOVIE' ? 'película' : 'serie';
+        const remoteLabel = state.snapshot.production.productionType === 'MOVIE'
+          ? 'película'
+          : 'serie';
+        setStatus(
+          `No se puede asociar: Créditos es ${localLabel} y Shot Manager es ${remoteLabel}.`,
+          'error',
+        );
+      }
       renderActions();
       return true;
     }
 
-    async function applyStoredAssociation(association, associationOperation) {
-      if (associationOperation !== state.associationOperation) return;
+    async function applyStoredAssociation(association, operation) {
+      if (operation !== state.associationOperation) return;
       const record = domain.availableProductions(state.catalog).find(
         (candidate) => String(candidate.production.id) === String(
           association.shotManagerProductionId,
@@ -191,7 +156,7 @@
       );
       if (!record) {
         setStatus(
-          'La producción asociada ya no está disponible en este equipo. La asociación no se ha modificado.',
+          'La producción asociada no está disponible en este equipo. La asociación no se ha modificado.',
           'warning',
         );
         renderActions();
@@ -199,13 +164,18 @@
       }
       els.productionSelect.value = association.shotManagerProductionId;
       if (!await loadSnapshot(association.shotManagerProductionId, association)) return;
-      if (associationOperation !== state.associationOperation) return;
-      const validation = domain.validateStoredSelection(state.snapshot, association);
+      if (operation !== state.associationOperation) return;
+      const validation = domain.validateStoredSelection(
+        state.snapshot,
+        association,
+        localProductionType(),
+      );
       if (!validation.valid) {
         setStatus(`${validation.message} Elige el valor actual y guarda de nuevo.`, 'warning');
         renderActions();
         return;
       }
+      state.dirty = false;
       setStatus('Asociación guardada y verificada.', 'ok');
       renderActions();
     }
@@ -221,7 +191,7 @@
       renderSnapshotOptions();
       renderActions();
       if (!state.contextKey) {
-        setStatus('Selecciona una producción y un capítulo de Créditos.');
+        setStatus('Selecciona una producción de Créditos.');
         return;
       }
       const result = await associationApi.read(context);
@@ -234,16 +204,12 @@
         return;
       }
       state.association = result.association;
-      state.dirty = false;
       renderActions();
       if (!state.association) {
         setStatus(
           state.connected
-            ? 'Este capítulo todavía no está asociado con Shot Manager.'
-            : (
-              loadOptions.disconnectedMessage ||
-              'Sin asociación. Abre Shot Manager para crearla.'
-            ),
+            ? 'Esta producción todavía no está asociada con Shot Manager.'
+            : (loadOptions.disconnectedMessage || 'Sin asociación. Abre Shot Manager para crearla.'),
           state.connected ? '' : (loadOptions.disconnectedTone || ''),
         );
         return;
@@ -252,7 +218,7 @@
         setStatus(
           loadOptions.disconnectedMessage
             ? `${loadOptions.disconnectedMessage} Hay una asociación guardada sin verificar.`
-            : 'Hay una asociación guardada. Abre Shot Manager para verificar su contexto.',
+            : 'Hay una asociación guardada. Abre Shot Manager para verificarla.',
           'warning',
         );
         return;
@@ -274,16 +240,14 @@
         const status = await bridge.getShotManagerStatus();
         if (operation !== state.connectionOperation) return;
         if (!status || !status.connected) {
-          const disconnectedMessage = status && status.error
-            ? status.error.message
-            : 'Shot Manager no está disponible.';
-          const disconnectedTone = status && status.error &&
-            status.error.code !== 'SHOT_MANAGER_NOT_RUNNING'
-            ? 'error'
-            : '';
           await loadLocalAssociation({
-            disconnectedMessage,
-            disconnectedTone,
+            disconnectedMessage: status && status.error
+              ? status.error.message
+              : 'Shot Manager no está disponible.',
+            disconnectedTone: status && status.error &&
+              status.error.code !== 'SHOT_MANAGER_NOT_RUNNING'
+              ? 'error'
+              : '',
           });
           return;
         }
@@ -308,13 +272,9 @@
     }
 
     async function saveAssociation() {
-      const context = localContext();
-      const isSeries = state.snapshot.production.productionType === 'SERIES';
       const payload = {
-        ...context,
+        ...localContext(),
         shotManagerProductionId: els.productionSelect.value,
-        seasonId: isSeries ? selectedSeasonId() : null,
-        episodeId: isSeries ? els.episodeSelect.value : null,
         structureEntryId: els.structureSelect.value,
       };
       els.saveButton.disabled = true;
@@ -334,8 +294,7 @@
     }
 
     async function deleteAssociation() {
-      const context = localContext();
-      const result = await associationApi.delete(context);
+      const result = await associationApi.delete(localContext());
       if (!result || !result.ok) {
         setStatus(
           result && result.error ? result.error.message : 'No se pudo quitar la asociación.',
@@ -355,93 +314,32 @@
     function scheduleLocalSync() {
       if (localRenderQueued) return;
       localRenderQueued = true;
-      windowRef.queueMicrotask(() => {
+      root.queueMicrotask(() => {
         localRenderQueued = false;
-        renderLocalEpisodes();
         const nextKey = contextKey();
         if (nextKey !== state.contextKey) loadLocalAssociation();
       });
     }
 
-    function selectLocalEpisode(episodeId) {
-      const nextEpisodeId = String(episodeId || '');
-      if (nextEpisodeId === state.localEpisodeId) return true;
-      if (!confirmDiscardPendingChanges()) {
-        els.localEpisodeSelect.value = state.localEpisodeId;
-        return false;
-      }
-      state.dirty = false;
-      state.localEpisodeId = nextEpisodeId;
-      els.sourceEpisodeSelect.value = nextEpisodeId;
-      bypassSourceEpisodeGuard = true;
-      try {
-        els.sourceEpisodeSelect.dispatchEvent(
-          new windowRef.Event('change', { bubbles: true }),
-        );
-      } finally {
-        bypassSourceEpisodeGuard = false;
-      }
-      scheduleLocalSync();
-      return true;
-    }
-
-    function guardSourceEpisodeChange(event) {
-      const nextEpisodeId = String(els.sourceEpisodeSelect.value || '');
-      if (
-        bypassSourceEpisodeGuard ||
-        !state.localEpisodeId ||
-        nextEpisodeId === state.localEpisodeId
-      ) return;
-      if (!confirmDiscardPendingChanges()) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        els.sourceEpisodeSelect.value = state.localEpisodeId;
-        windowRef.queueMicrotask(renderLocalEpisodes);
-        return;
-      }
-      state.dirty = false;
-      state.localEpisodeId = nextEpisodeId;
-    }
-
     function bind() {
-      els.localEpisodeSelect.addEventListener('change', () => {
-        selectLocalEpisode(els.localEpisodeSelect.value);
-      });
       els.productionSelect.addEventListener('change', async () => {
         state.dirty = true;
         await loadSnapshot(els.productionSelect.value);
-        if (state.snapshot) {
-          markDirty('Selecciona el capítulo y el elemento de estructura.');
+        if (state.snapshot && typesMatch()) {
+          markDirty('Selecciona el elemento de estructura y guarda la asociación.');
         }
       });
-      els.episodeSelect.addEventListener('change', () => {
-        markDirty();
-      });
-      els.structureSelect.addEventListener('change', () => {
-        markDirty();
-      });
+      els.structureSelect.addEventListener('change', () => markDirty());
       els.saveButton.addEventListener('click', saveAssociation);
       els.deleteButton.addEventListener('click', deleteAssociation);
       els.refreshButton.addEventListener('click', refreshConnection);
-
-      localObserver = new windowRef.MutationObserver(scheduleLocalSync);
+      localObserver = new root.MutationObserver(scheduleLocalSync);
       localObserver.observe(els.sourceProductionSelect, {
         attributes: true,
         childList: true,
         subtree: true,
       });
-      localObserver.observe(els.sourceEpisodeSelect, {
-        attributes: true,
-        childList: true,
-        subtree: true,
-      });
-      els.sourceEpisodeSelect.addEventListener(
-        'change',
-        guardSourceEpisodeChange,
-        true,
-      );
-      els.sourceEpisodeSelect.addEventListener('change', scheduleLocalSync);
-      renderLocalEpisodes();
+      els.sourceProductionSelect.addEventListener('change', scheduleLocalSync);
     }
 
     async function initialize() {
@@ -459,7 +357,6 @@
       loadLocalAssociation,
       refreshConnection,
       saveAssociation,
-      selectLocalEpisode,
     };
   }
 

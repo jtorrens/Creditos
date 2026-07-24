@@ -13,6 +13,10 @@
       return (episodes || []).filter((episode) => String(episode.production_id) === String(productionId));
     }
 
+    function productionSeasons(seasons, productionId) {
+      return (seasons || []).filter((season) => String(season.production_id) === String(productionId));
+    }
+
     function productionLayout(production) {
       return {
         page_width: Math.max(1, Number(production && production.page_width) || 1920),
@@ -35,6 +39,7 @@
       applyProductionFields,
       findSelectedProduction,
       productionEpisodes,
+      productionSeasons,
       productionLayout,
       productionSettings,
     };

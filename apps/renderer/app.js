@@ -10,8 +10,7 @@
     activeTab: 'settings',
     databasePath: null,
     databaseSyncStatus: null,
-    productions: [],
-    episodes: [],
+    productions: [], seasons: [], episodes: [],
     importModels: [],
     selectedProductionId: null,
     selectedEpisodeId: null,
@@ -72,8 +71,9 @@
     productionPageHeightInput: document.getElementById('productionPageHeightInput'),
     productionPreviewBackgroundInput: document.getElementById('productionPreviewBackgroundInput'),
     productionImportModelSelect: document.getElementById('productionImportModelSelect'),
-    episodeSelect: document.getElementById('episodeSelect'),
+    episodeSelect: document.getElementById('episodeSelect'), episodeSelectLabel: document.getElementById('episodeSelectLabel'),
     newProductionNameInput: document.getElementById('newProductionNameInput'),
+    newProductionTypeSelect: document.getElementById('newProductionTypeSelect'), newProductionSeasonCountInput: document.getElementById('newProductionSeasonCountInput'),
     newProductionEpisodeCountInput: document.getElementById('newProductionEpisodeCountInput'),
     createProductionBtn: document.getElementById('createProductionBtn'),
     createStyleBtn: document.getElementById('createStyleBtn'),
@@ -336,7 +336,7 @@
     numberWithFallback,
     parseFrameDuration,
     pdfPageVerticalJustify,
-    productionEpisodes,
+    productionEpisodes, productionSeasons,
     productionLayout,
     productionSettings,
     quoteFontFamily,
@@ -386,7 +386,7 @@
     applyProductionFields,
     dbPost,
     findSelectedProduction,
-    productionEpisodes,
+    productionEpisodes, productionSeasons,
     productionLayout,
     productionSettings,
     readLocalJsonPreference,
@@ -397,9 +397,8 @@
     writeLocalJsonPreference,
   });
   const {
-    currentProductionEpisodes,
-    getProductionLayout,
-    getProductionSettings,
+    currentProductionEpisodes, currentProductionSeasons,
+    getProductionLayout, getProductionSettings, hasSelectedContentScope,
     persistSelectedProductionFields,
     readSavedSelection,
     rememberCurrentSelection,
@@ -412,6 +411,7 @@
     dbPost,
     getStructureJsonForOutput,
     getStyleById,
+    hasSelectedContentScope,
     state,
     windowRef: window,
     writeStyleFile,
@@ -427,6 +427,7 @@
     dbPost,
     els,
     formatSecondsAsFrameDuration,
+    hasSelectedContentScope,
     nativeBridge,
     normalizeReferenceVideo,
     readLocalPreference,
@@ -624,6 +625,7 @@
     dbPost,
     els,
     getStructureJsonForOutput,
+    hasSelectedContentScope,
     nativeBridge,
     normalizeSource,
     readLocalPreference,
@@ -1029,6 +1031,7 @@
   });
   const projectPanel = globalThis.CreditosProjectPanel.createProjectPanel({
     currentProductionEpisodes,
+    currentProductionSeasons,
     currentXlsxName,
     documentRef: document,
     els,
@@ -1041,7 +1044,6 @@
     selectedProduction,
     state,
     updateDatabaseStatus,
-    updateProductionEpisodeCount,
     updateProductionName,
     updateReferenceVideoStatus,
   });
@@ -1053,6 +1055,7 @@
     currentImportModelId: () => selectedImportModelIdInDomain(selectedProduction(), state.importModels),
     dbPost,
     defaultPreviewSettings,
+    hasSelectedContentScope,
     loadStyleObjects,
     migrateStructure,
     normalizeReferenceVideo,
@@ -1072,6 +1075,7 @@
     currentProductionEpisodes,
     dbPost,
     els,
+    hasSelectedContentScope,
     loadCurrentEpisode,
     loadProductionStyles,
     readSavedSelection,
@@ -1636,10 +1640,6 @@
 
   async function updateProductionName(productionId, name) {
     return appCommands.updateProductionName(productionId, name);
-  }
-
-  async function updateProductionEpisodeCount(productionId, value) {
-    return appCommands.updateProductionEpisodeCount(productionId, value);
   }
 
   async function loadProductionStyles() {

@@ -10,7 +10,7 @@
     }
 
     async function loadCurrentEpisode() {
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
+      if (!state.databasePath || !options.hasSelectedContentScope()) {
         return;
       }
       state.isLoadingEpisode = true;

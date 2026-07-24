@@ -8,8 +8,8 @@
     async function loadXlsxFile(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-        windowRef.alert('Selecciona producción y episodio antes de importar un archivo de créditos.');
+      if (!state.databasePath || !options.hasSelectedContentScope()) {
+        windowRef.alert('Selecciona una producción y, si es una serie, un capítulo.');
         event.target.value = '';
         return;
       }
@@ -18,8 +18,8 @@
     }
 
     async function openXlsxFile() {
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId) {
-        windowRef.alert('Selecciona producción y episodio antes de importar un archivo de créditos.');
+      if (!state.databasePath || !options.hasSelectedContentScope()) {
+        windowRef.alert('Selecciona una producción y, si es una serie, un capítulo.');
         return;
       }
       const native = options.nativeBridge();
@@ -52,7 +52,7 @@
         form.append('import_model_id', currentSelectedImportModelId());
         form.append('db_path', state.databasePath);
         form.append('production_id', state.selectedProductionId);
-        form.append('episode_id', state.selectedEpisodeId);
+        if (state.selectedEpisodeId) form.append('episode_id', state.selectedEpisodeId);
 
         const response = await windowRef.fetch('/api/parse-xlsx', { method: 'POST', body: form });
         const payload = await response.json();
@@ -79,7 +79,7 @@
       state.structure = options.createStructureFromSource(state.source, state.materials, state.structure);
       state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
       options.rebuild();
-      if (state.databasePath && state.selectedProductionId && state.selectedEpisodeId) {
+      if (state.databasePath && options.hasSelectedContentScope()) {
         await options.dbPost('/api/db/save-document', {
           production_id: state.selectedProductionId,
           episode_id: state.selectedEpisodeId,

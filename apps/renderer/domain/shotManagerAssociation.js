@@ -23,29 +23,6 @@
       ));
   }
 
-  function episodeOptions(snapshot) {
-    if (!snapshot || !Array.isArray(snapshot.episodes)) return [];
-    const seasons = new Map(
-      (Array.isArray(snapshot.seasons) ? snapshot.seasons : [])
-        .map((season) => [String(season.id), season]),
-    );
-    return snapshot.episodes
-      .filter((episode) => episode && episode.archivedAt === null)
-      .map((episode) => {
-        const season = seasons.get(String(episode.seasonId));
-        const parts = [
-          season && season.code,
-          episode.code,
-          episode.title,
-        ].filter(Boolean);
-        return {
-          id: String(episode.id),
-          label: parts.join(' · '),
-          seasonId: season ? String(season.id) : null,
-        };
-      });
-  }
-
   function structureEntryOptions(snapshot) {
     const entries = snapshot && snapshot.production &&
       Array.isArray(snapshot.production.structureEntries)
@@ -66,7 +43,7 @@
       }));
   }
 
-  function validateStoredSelection(snapshot, association) {
+  function validateStoredSelection(snapshot, association, localProductionType) {
     if (!snapshot || !association) {
       return { valid: false, message: 'No hay una asociación que comprobar.' };
     }
@@ -76,21 +53,10 @@
         message: 'La producción guardada ya no coincide con el contexto recibido.',
       };
     }
-    const productionIsSeries = snapshot.production.productionType === 'SERIES';
-    if (productionIsSeries) {
-      const episode = episodeOptions(snapshot).find(
-        (candidate) => candidate.id === String(association.episodeId),
-      );
-      if (!episode || episode.seasonId !== String(association.seasonId)) {
-        return {
-          valid: false,
-          message: 'El capítulo guardado ya no existe en Shot Manager.',
-        };
-      }
-    } else if (association.episodeId !== null || association.seasonId !== null) {
+    if (snapshot.production.productionType !== localProductionType) {
       return {
         valid: false,
-        message: 'Una producción de película no puede conservar un capítulo asociado.',
+        message: 'El tipo de producción no coincide entre Créditos y Shot Manager.',
       };
     }
     if (!structureEntryOptions(snapshot).some(
@@ -106,7 +72,6 @@
 
   root.CreditosDomainShotManagerAssociation = {
     availableProductions,
-    episodeOptions,
     structureEntryOptions,
     validateStoredSelection,
   };

@@ -587,52 +587,6 @@
       }
     }
 
-    async function updateProductionEpisodeCount(productionId, value) {
-      const production = state.productions.find((candidate) => String(candidate.id) === String(productionId));
-      if (!production) return;
-      const nextCount = Math.max(1, Math.round(Number(value) || 1));
-      const currentEpisodes = options.currentProductionEpisodes(productionId);
-      const currentCount = Math.max(
-        Number(production.episode_count) || 0,
-        ...currentEpisodes.map((episode) => Number(episode.episode_number) || 0),
-        1
-      );
-      if (nextCount < currentCount) {
-        const deletedEpisodes = currentEpisodes.filter((episode) => Number(episode.episode_number) > nextCount);
-        const withDocuments = deletedEpisodes.filter((episode) => !!episode.has_documents);
-        if (withDocuments.length) {
-          const names = withDocuments.map((episode) => episode.name || `Episodio ${episode.episode_number}`).join(', ');
-          const native = options.nativeBridge();
-          let confirmed = false;
-          if (native && native.confirm) {
-            const result = await native.confirm({
-              title: 'Reducir capítulos',
-              message: `Vas a borrar capítulos con archivos/datos asociados: ${names}.`,
-              confirmLabel: 'Borrar capítulos',
-            });
-            confirmed = !!(result && result.confirmed);
-          } else {
-            confirmed = options.windowRef.confirm(`Vas a borrar capítulos con archivos/datos asociados: ${names}. Continuar?`);
-          }
-          if (!confirmed) {
-            options.renderProjectSelectors();
-            return;
-          }
-        }
-      }
-
-      try {
-        const overview = await options.dbPost('/api/db/update-production', {
-          production_id: productionId,
-          fields: { episode_count: nextCount },
-        });
-        options.applyDatabaseOverview(overview);
-      } catch (error) {
-        options.windowRef.alert('No se pudo actualizar el número de capítulos: ' + error.message);
-        options.renderProjectSelectors();
-      }
-    }
-
     async function duplicateSelectedProduction() {
       const production = options.selectedProduction();
       if (!production) return;
@@ -692,6 +646,8 @@
         return;
       }
       const name = options.els.newProductionNameInput.value.trim();
+      const productionType = options.els.newProductionTypeSelect.value;
+      const seasonCount = Math.max(1, Math.round(Number(options.els.newProductionSeasonCountInput.value) || 1));
       const episodeCount = Math.max(1, Math.round(Number(options.els.newProductionEpisodeCountInput.value) || 1));
       if (!name) {
         options.windowRef.alert('Escribe el nombre de la producción.');
@@ -700,7 +656,9 @@
       try {
         const overview = await options.dbPost('/api/db/create-production', {
           name,
-          episode_count: episodeCount,
+          production_type: productionType,
+          season_count: productionType === 'SERIES' ? seasonCount : null,
+          episodes_per_season: productionType === 'SERIES' ? episodeCount : null,
           page_width: 1920,
           page_height: 1080,
           preview_background: '#ffffff',
@@ -900,7 +858,6 @@
       updateEditableStyleAnimation,
       updateEditableStyleTitleTypography,
       updateEditableStyleTypography,
-      updateProductionEpisodeCount,
       updateProductionImportModelFromUi,
       updateProductionLayoutFromUi,
       updateProductionName,

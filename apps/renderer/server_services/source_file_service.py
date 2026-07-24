@@ -1,6 +1,7 @@
 import base64
 
 from .common import now_iso
+from .content_scope import content_scope
 
 
 def save_source_file(
@@ -20,6 +21,9 @@ def save_source_file(
         raise ValueError("El archivo de origen necesita nombre.")
     if not isinstance(file_bytes, bytes) or not file_bytes:
         raise ValueError("El archivo de origen esta vacio.")
+    local_production_id, local_episode_id = content_scope(
+        connection, production_id, episode_id
+    )
     timestamp = now_iso()
     connection.execute(
         """
@@ -28,15 +32,15 @@ def save_source_file(
             file_name, mime_type, data_blob, created_at, updated_at
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(production_id, episode_id, import_model_id) DO UPDATE SET
+        ON CONFLICT DO UPDATE SET
             file_name = excluded.file_name,
             mime_type = excluded.mime_type,
             data_blob = excluded.data_blob,
             updated_at = excluded.updated_at
         """,
         (
-            int(production_id),
-            int(episode_id),
+            local_production_id,
+            local_episode_id,
             model_id,
             clean_name,
             str(mime_type or "application/octet-stream"),
@@ -49,6 +53,9 @@ def save_source_file(
 
 
 def load_active_source_file(connection, production_id, episode_id):
+    local_production_id, local_episode_id = content_scope(
+        connection, production_id, episode_id
+    )
     row = connection.execute(
         """
         SELECT
@@ -58,13 +65,11 @@ def load_active_source_file(connection, production_id, episode_id):
             source_files.data_blob
         FROM source_files
         JOIN productions ON productions.id = source_files.production_id
-        JOIN episodes ON episodes.id = source_files.episode_id
         WHERE source_files.production_id = ?
-          AND source_files.episode_id = ?
-          AND episodes.production_id = source_files.production_id
+          AND source_files.episode_id IS ?
           AND source_files.import_model_id = productions.import_model_id
         """,
-        (int(production_id), int(episode_id)),
+        (local_production_id, local_episode_id),
     ).fetchone()
     if not row:
         return None
@@ -77,17 +82,22 @@ def load_active_source_file(connection, production_id, episode_id):
 
 
 def load_source_file(connection, production_id, episode_id, import_model_id):
+    local_production_id, local_episode_id = content_scope(
+        connection, production_id, episode_id
+    )
     row = connection.execute(
         """
         SELECT source_files.file_name, source_files.mime_type, source_files.data_blob
         FROM source_files
-        JOIN episodes ON episodes.id = source_files.episode_id
         WHERE source_files.production_id = ?
-          AND source_files.episode_id = ?
+          AND source_files.episode_id IS ?
           AND source_files.import_model_id = ?
-          AND episodes.production_id = source_files.production_id
         """,
-        (int(production_id), int(episode_id), str(import_model_id or "")),
+        (
+            local_production_id,
+            local_episode_id,
+            str(import_model_id or ""),
+        ),
     ).fetchone()
     if not row:
         return None

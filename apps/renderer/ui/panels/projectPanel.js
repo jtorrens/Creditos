@@ -8,7 +8,7 @@
     function renderProjectSelectors() {
       renderSelect(els.productionSelect, state.productions, state.selectedProductionId, 'Sin producciones', (production) => production.name);
       renderProductionList();
-      renderSelect(els.episodeSelect, options.currentProductionEpisodes(), state.selectedEpisodeId, 'Sin episodios', (episode) => episode.name);
+      renderContentSelector();
       renderProductionLayoutControls();
       renderProductionImportModelControl();
       options.updateDatabaseStatus();
@@ -24,7 +24,7 @@
         els.productionList.className = 'production-list';
         const table = documentRef.createElement('table');
         table.className = 'data-table';
-        table.innerHTML = '<thead><tr><th></th><th>Producción</th><th>Capítulos</th><th>Formato</th><th>Importación</th></tr></thead>';
+        table.innerHTML = '<thead><tr><th></th><th>Producción</th><th>Tipo</th><th>Estructura</th><th>Formato</th><th>Importación</th></tr></thead>';
         const tbody = documentRef.createElement('tbody');
         state.productions.forEach((production) => {
           const row = documentRef.createElement('tr');
@@ -53,16 +53,15 @@
           nameCell.appendChild(nameInput);
           row.appendChild(nameCell);
 
-          const episodesCell = documentRef.createElement('td');
-          const episodesInput = fieldControlRegistry.create('number', {
-            className: 'table-input compact-number',
-            min: 1,
-            step: 1,
-            value: Number(production.episode_count) || options.currentProductionEpisodes(production.id).length || 1,
-            onInput: (value) => options.updateProductionEpisodeCount(production.id, value),
-          });
-          episodesCell.appendChild(episodesInput);
-          row.appendChild(episodesCell);
+          const typeCell = documentRef.createElement('td');
+          typeCell.textContent = production.production_type === 'MOVIE' ? 'Película' : 'Serie';
+          row.appendChild(typeCell);
+
+          const structureCell = documentRef.createElement('td');
+          structureCell.textContent = production.production_type === 'MOVIE'
+            ? 'Producción'
+            : `${Number(production.season_count) || 0} temp. · ${Number(production.episode_count) || 0} cap.`;
+          row.appendChild(structureCell);
 
           const formatCell = documentRef.createElement('td');
           formatCell.textContent = `${Number(production.page_width) || 1920}x${Number(production.page_height) || 1080}`;
@@ -79,6 +78,44 @@
       const hasProduction = !!options.selectedProduction();
       if (els.duplicateProductionBtn) els.duplicateProductionBtn.disabled = !hasProduction;
       if (els.deleteProductionBtn) els.deleteProductionBtn.disabled = !hasProduction;
+    }
+
+    function renderContentSelector() {
+      const production = options.selectedProduction();
+      els.episodeSelect.innerHTML = '';
+      if (!production) {
+        renderSelect(els.episodeSelect, [], null, 'Sin producción', () => '');
+        els.episodeSelect.disabled = true;
+        if (els.episodeSelectLabel) els.episodeSelectLabel.textContent = 'Capítulo';
+        return;
+      }
+      if (production.production_type === 'MOVIE') {
+        const option = documentRef.createElement('option');
+        option.value = '';
+        option.textContent = 'Contenido de la película';
+        els.episodeSelect.appendChild(option);
+        els.episodeSelect.disabled = true;
+        if (els.episodeSelectLabel) els.episodeSelectLabel.textContent = 'Contenido';
+        return;
+      }
+      const episodes = options.currentProductionEpisodes();
+      const seasons = options.currentProductionSeasons();
+      for (const season of seasons) {
+        const group = documentRef.createElement('optgroup');
+        group.label = `${season.code} · ${season.name}`;
+        for (const episode of episodes.filter(
+          (candidate) => String(candidate.season_id) === String(season.id)
+        )) {
+          const option = documentRef.createElement('option');
+          option.value = String(episode.id);
+          option.textContent = `${episode.code} · ${episode.name}`;
+          group.appendChild(option);
+        }
+        els.episodeSelect.appendChild(group);
+      }
+      els.episodeSelect.value = state.selectedEpisodeId ? String(state.selectedEpisodeId) : '';
+      els.episodeSelect.disabled = !episodes.length;
+      if (els.episodeSelectLabel) els.episodeSelectLabel.textContent = 'Capítulo';
     }
 
     function renderProductionLayoutControls() {
@@ -189,6 +226,9 @@
         const option = documentRef.createElement('option');
         option.value = String(item.id);
         option.textContent = labelForItem(item);
+        if (item.production_type) {
+          option.dataset.productionType = item.production_type;
+        }
         select.appendChild(option);
       });
       select.value = selectedId ? String(selectedId) : String(items[0].id);

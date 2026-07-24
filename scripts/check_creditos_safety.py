@@ -12,6 +12,7 @@ CHECKS = [
     "check_rule_import_models.py",
     "check_document_model_variants.py",
     "check_source_file_association.py",
+    "check_production_hierarchy.py",
     "check_domain_no_dom.py",
     "check_domain_imports.py",
     "check_renderer_app_boundaries.py",

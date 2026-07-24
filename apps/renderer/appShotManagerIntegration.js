@@ -38,8 +38,6 @@
         container,
         context: element('shotManagerContext'),
         deleteButton: element('deleteShotManagerAssociationBtn'),
-        episodeSelect: element('shotManagerEpisodeSelect'),
-        localEpisodeSelect: element('shotManagerLocalEpisodeSelect'),
         productionSelect: element('shotManagerProductionSelect'),
         refreshButton: element('refreshShotManagerBtn'),
         saveButton: element('saveShotManagerAssociationBtn'),

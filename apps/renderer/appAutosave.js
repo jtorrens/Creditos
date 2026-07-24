@@ -8,7 +8,7 @@
     }
 
     function scheduleAutosave() {
-      if (state.isLoadingEpisode || !state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) {
+      if (state.isLoadingEpisode || !state.databasePath || !options.hasSelectedContentScope() || !state.structure) {
         return;
       }
       setAutosaveStatus('Guardando...');
@@ -22,7 +22,7 @@
     }
 
     async function persistCurrentEpisode() {
-      if (!state.databasePath || !state.selectedProductionId || !state.selectedEpisodeId || !state.structure) return;
+      if (!state.databasePath || !options.hasSelectedContentScope() || !state.structure) return;
       const base = {
         production_id: state.selectedProductionId,
         episode_id: state.selectedEpisodeId,

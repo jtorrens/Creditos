@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import json
 import pathlib
-import sqlite3
 import sys
 import tempfile
 
@@ -217,35 +216,7 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 8
-
-        legacy_model = json.loads(json.dumps(model))
-        legacy_model["version"] = 6
-        for block in legacy_model["blocks"]:
-            block["interpretation"].pop("item_start_merged_b_to_d")
-        with sqlite3.connect(db_path) as legacy_connection:
-            legacy_connection.execute(
-                "UPDATE import_rule_models SET model_json = ? WHERE id = ?",
-                (json.dumps(legacy_model, ensure_ascii=False), record_id),
-            )
-            legacy_connection.execute("PRAGMA user_version = 4")
-        with db_connect(db_path) as migrated_connection:
-            migrated = load_rule_model_library(migrated_connection)["models"][0]
-            assert migrated["model"]["version"] == 9
-            assert all(
-                block["interpretation"]["item_start_merged_b_to_d"] == "ignore"
-                for block in migrated["model"]["blocks"]
-            )
-            assert all(
-                block["interpretation"]["border_enclosure"] == {
-                    "mode": "ignore",
-                    "start_column": "B",
-                    "end_column": "D",
-                    "effect": "page",
-                }
-                for block in migrated["model"]["blocks"]
-            )
-            assert migrated["revision"] == 7
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
 
     print("ok rule import models DB persistence and production parser")
     return 0

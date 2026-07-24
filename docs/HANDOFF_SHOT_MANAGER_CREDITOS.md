@@ -5,11 +5,10 @@ resolución de outputs y la ejecución headless quedan fuera de esta fase.
 
 ## Objetivo
 
-Créditos es una aplicación consumidora de VFX Shot Manager. Cada capítulo
+Créditos es una aplicación consumidora de VFX Shot Manager. Cada producción
 local de Créditos puede asociarse con:
 
 - una producción de Shot Manager;
-- un capítulo de esa producción, cuando es una serie;
 - un elemento estable de la estructura de producción.
 
 La asociación permite que una fase posterior solicite a Shot Manager la ruta
@@ -27,10 +26,11 @@ Shot Manager es la única fuente de verdad de:
 
 Créditos es la única fuente de verdad de:
 
-- sus producciones, capítulos y documentos;
+- sus producciones y documentos;
+- su jerarquía de película o de serie con temporadas y capítulos;
 - la composición visual de créditos;
 - la configuración y ejecución actual de su exportación MOV/PNG;
-- la asociación entre un capítulo local y los IDs de Shot Manager.
+- la asociación entre una producción local y los IDs de Shot Manager.
 
 Créditos nunca lee `project.sqlite` ni reconstruye rutas con reglas copiadas.
 Toda lectura de Shot Manager pasa por su API local.
@@ -82,10 +82,7 @@ La asociación se guarda en `data/creditos.db`, no en preferencias del equipo:
 ```text
 shot_manager_associations
 ├── production_id
-├── episode_id
 ├── shot_manager_production_id
-├── shot_manager_season_id
-├── shot_manager_episode_id
 ├── structure_entry_id
 └── updated_at
 ```
@@ -94,29 +91,34 @@ Solo se persisten IDs estables; nunca nombres ni rutas. Por eso la misma base
 de datos puede sincronizarse entre Mac y PC aunque la raíz de producción sea
 distinta en cada equipo.
 
-El esquema actual es v8. La tabla se incorpora directamente al modelo vigente
-y no hay lectura alternativa, compatibilidad o traducción de un modelo
-anterior.
+El esquema actual es v9. La asociación es única por producción y no contiene
+duplicaciones de temporada o capítulo. Créditos modela una película
+directamente en producción y una serie como producción → temporada →
+capítulo. No existen capítulos ficticios para películas, ni secuencias o
+planos en Créditos.
+
+La migración v8 → v9 fue un one-off aplicado a la base activa. Todas las
+producciones existentes se declararon explícitamente como series, se creó su
+temporada 1 y se conservaron capítulos, documentos, archivos fuente y estilos.
+El código actual solo admite v9 y no contiene rutas alternativas para el
+modelo retirado.
 
 ## Comportamiento de la interfaz
 
 En Producciones, el panel «Asociación con Shot Manager» permite:
 
-1. elegir el capítulo local de Créditos;
-2. elegir una producción disponible de Shot Manager;
-3. elegir su capítulo, si es una serie;
-4. elegir un elemento de estructura;
-5. guardar o quitar la asociación conscientemente.
+1. elegir una producción disponible de Shot Manager;
+2. elegir un elemento de estructura;
+3. guardar o quitar la asociación conscientemente.
 
-El capítulo local es el único capítulo activo de la aplicación. El selector
-del panel y el selector de Cartelas son dos vistas sincronizadas del mismo
-estado. Si la asociación contiene cambios sin guardar, Créditos pide
-confirmación antes de permitir el cambio desde cualquiera de las dos
-pantallas.
+La producción activa de Créditos determina la asociación mostrada. El capítulo
+se elige únicamente en Cartelas cuando la producción es una serie; una
+película trabaja directamente con el contenido de producción.
 
-Al cargar una asociación, todos los IDs se verifican contra el snapshot
-actual. Si un ID dejó de existir, Créditos muestra el problema y no selecciona
-otro elemento por nombre, posición o parecido.
+Al cargar una asociación, la producción, su tipo y el elemento de estructura
+se verifican contra el snapshot actual. Si un ID dejó de existir o los tipos
+película/serie no coinciden, Créditos muestra el problema y no selecciona otro
+elemento por nombre, posición o parecido.
 
 ## Auditoría del render actual de Créditos
 
