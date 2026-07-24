@@ -76,8 +76,15 @@
           <section class="parser-lab-preview-panel" aria-label="Previo simple del parser">
             <div class="parser-lab-panel-heading">
               <h2>Previo del parser</h2>
-              <span id="parserLabPreviewMeta">Sin archivo cargado</span>
+              <div class="parser-lab-preview-heading-tools">
+                <label class="parser-lab-structure-toggle">
+                  <input id="parserLabStructureToggle" type="checkbox">
+                  <span>Mostrar estructura</span>
+                </label>
+                <span id="parserLabPreviewMeta">Sin archivo cargado</span>
+              </div>
             </div>
+            <div id="parserLabPreviewGuidance" class="parser-lab-preview-guidance" role="status" aria-live="polite" hidden></div>
             <div id="parserLabPreviewEmpty" class="parser-lab-empty">Carga un archivo para ver las entidades interpretadas.</div>
             <div id="parserLabPreviewContent" class="parser-lab-preview-content" hidden></div>
           </section>
@@ -428,6 +435,8 @@
       composedJson: documentRef.getElementById('parserLabComposedJson'),
       inspectionJson: documentRef.getElementById('parserLabInspectionJson'),
       previewMeta: documentRef.getElementById('parserLabPreviewMeta'),
+      structureToggle: documentRef.getElementById('parserLabStructureToggle'),
+      previewGuidance: documentRef.getElementById('parserLabPreviewGuidance'),
       previewEmpty: documentRef.getElementById('parserLabPreviewEmpty'),
       previewContent: documentRef.getElementById('parserLabPreviewContent'),
       selectionMeta: documentRef.getElementById('parserLabSelectionMeta'),
@@ -451,6 +460,9 @@
       editingCompositionId: null,
       activeEditorTab: null,
       activePreviewBlockId: null,
+      previewPageByBlock: Object.create(null),
+      previewStructureVisible: false,
+      previewImpact: null,
       activeRightTab: 'inspector',
       activeJsonTab: 'row',
       modelReady: false,
@@ -462,6 +474,8 @@
     let blockEditTimer = null;
     let rowFilterTimer = null;
     let draggedBlockId = null;
+    let focusedPreviewImpactControl = null;
+    let hoveredPreviewImpactControl = null;
     let rowByNumber = new Map();
     let rowElementByNumber = new Map();
     let blockInstanceByRow = new Map();
@@ -1622,6 +1636,78 @@
       }
     }
 
+    function previewImpactDescription(control) {
+      const impact = control && control.dataset.previewImpact;
+      if (impact === 'header') {
+        return elements.blockHeaderSourceSelect.value === 'match'
+          ? 'Frontera: estos campos identifican la fila que abre el bloque.'
+          : 'Frontera: el bloque comienza por la posición estructural elegida, sin buscar un texto.';
+      }
+      if (impact === 'content') {
+        return elements.blockContentStartSelect.value === 'header'
+          ? 'Contenido: la propia fila de cabecera también se interpreta como el primer ítem.'
+          : 'Contenido: la cabecera solo delimita el bloque; los ítems comienzan en la fila siguiente.';
+      }
+      if (impact === 'orientation') {
+        return elements.blockOrientationSelect.value === 'horizontal'
+          ? 'Orientación: el primer término se coloca a la izquierda y sus asociados a la derecha.'
+          : 'Orientación: los términos del ítem se apilan verticalmente y centrados.';
+      }
+      if (impact === 'roles') {
+        const first = elements.blockFirstRoleSelect.value === 'principal' ? 'principal' : 'secundario';
+        const following = elements.blockFollowingRoleSelect.value === 'principal' ? 'principales' : 'secundarios';
+        return `Roles: el primer término es ${first} y los asociados son ${following}. Principal aparece en negrita.`;
+      }
+      if (impact === 'items') {
+        const grouping = elements.blockGroupingSelect.value;
+        if (grouping === 'row') return 'Ítems: cada fila con contenido crea una entidad independiente.';
+        if (grouping === 'first_term') {
+          return `Ítems: un valor en la columna ${elements.blockStartColumnSelect.value} inicia la entidad; lo siguiente se asocia hasta el próximo inicio.`;
+        }
+        return 'Ítems: el contenido se agrupa hasta encontrar una fila vacía.';
+      }
+      if (impact === 'boundaries') {
+        const match = control.id.match(/(Leading|Between|Trailing)/);
+        const prefix = match ? match[1] : 'Between';
+        const contextLabels = {
+          Leading: 'Cabecera → primer ítem',
+          Between: 'Entre ítems',
+          Trailing: 'Último ítem → siguiente bloque',
+        };
+        const effect = elements[`block${prefix}EffectSelect`].value;
+        const display = elements[`block${prefix}DisplaySelect`].value;
+        const effectLabels = {
+          continue: 'continúa la entidad actual',
+          item: 'inicia el siguiente ítem',
+          group: 'crea una división de grupo',
+          page: 'abre una nueva página del navegador',
+        };
+        const displayLabels = {
+          ignore: 'sin conservar espacio vacío',
+          compact: 'con una fila de espacio',
+          preserve: 'respetando las filas vacías originales',
+        };
+        return `${contextLabels[prefix]}: ${effectLabels[effect]}, ${displayLabels[display]}.`;
+      }
+      return '';
+    }
+
+    function applyPreviewAssistance() {
+      const activeControl = hoveredPreviewImpactControl || focusedPreviewImpactControl;
+      state.previewImpact = activeControl ? activeControl.dataset.previewImpact : null;
+      elements.previewContent.classList.toggle('show-structure', state.previewStructureVisible);
+      ['header', 'content', 'orientation', 'roles', 'items', 'boundaries'].forEach((impact) => {
+        elements.previewContent.classList.toggle(`impact-${impact}`, state.previewImpact === impact);
+      });
+      const description = activeControl
+        ? previewImpactDescription(activeControl)
+        : state.previewStructureVisible
+          ? 'Estructura visible: P identifica principal, S secundario y cada contorno delimita un ítem.'
+          : '';
+      elements.previewGuidance.hidden = !description;
+      elements.previewGuidance.textContent = description;
+    }
+
     function renderParserPreview({ preserveScroll = false } = {}) {
       const scrollPosition = preserveScroll ? previewScrollPosition() : null;
       const preview = state.composedPreview;
@@ -1639,10 +1725,14 @@
       elements.previewEmpty.hidden = Boolean(state.inspection && matchedBlocks.length);
       elements.previewContent.hidden = !state.inspection || !matchedBlocks.length;
       if (!state.inspection) {
+        elements.previewGuidance.hidden = true;
+        elements.previewGuidance.textContent = '';
         elements.previewEmpty.textContent = 'Carga un archivo para ver las entidades interpretadas.';
         return;
       }
       if (!matchedBlocks.length) {
+        elements.previewGuidance.hidden = true;
+        elements.previewGuidance.textContent = '';
         elements.previewEmpty.textContent = 'Ninguna cabecera del modelo se ha encontrado en este archivo.';
         return;
       }
@@ -1705,6 +1795,7 @@
         prompt.className = 'parser-lab-preview-no-items';
         prompt.textContent = 'Selecciona una fila dentro de un bloque o una pestaña para ver su interpretación.';
         elements.previewContent.appendChild(prompt);
+        applyPreviewAssistance();
         restorePreviewScrollPosition(scrollPosition);
         return;
       }
@@ -1730,6 +1821,7 @@
       elements.previewContent.appendChild(container);
       const previewItems = Array.from(container.querySelectorAll('.parser-lab-preview-item'));
       if (previewItems.length && !previewItems.some((item) => item.tabIndex === 0)) previewItems[0].tabIndex = 0;
+      applyPreviewAssistance();
       restorePreviewScrollPosition(scrollPosition);
     }
 
@@ -1740,9 +1832,16 @@
       const title = documentRef.createElement('h3');
       const meta = documentRef.createElement('span');
       const navigation = documentRef.createElement('div');
+      const previousPageButton = documentRef.createElement('button');
+      const pageStatus = documentRef.createElement('span');
+      const nextPageButton = documentRef.createElement('button');
       const startButton = documentRef.createElement('button');
       const endButton = documentRef.createElement('button');
       const items = documentRef.createElement('div');
+      const pages = buildPreviewPages(block);
+      const requestedPage = Number(state.previewPageByBlock[block.definition_id]) || 0;
+      const activePageIndex = Math.min(Math.max(0, requestedPage), pages.length - 1);
+      state.previewPageByBlock[block.definition_id] = activePageIndex;
       section.className = 'parser-lab-preview-block';
       heading.className = 'parser-lab-preview-block-heading';
       title.textContent = block.name;
@@ -1750,6 +1849,31 @@
       identity.className = 'parser-lab-preview-block-identity';
       identity.append(title, meta);
       navigation.className = 'parser-lab-preview-block-navigation';
+      previousPageButton.type = 'button';
+      previousPageButton.textContent = '‹';
+      previousPageButton.title = 'Página anterior dentro del bloque';
+      previousPageButton.setAttribute('aria-label', previousPageButton.title);
+      previousPageButton.disabled = activePageIndex === 0;
+      previousPageButton.addEventListener('click', () => {
+        state.previewPageByBlock[block.definition_id] = activePageIndex - 1;
+        renderParserPreview({ preserveScroll: true });
+        const pageViewport = elements.previewContent.querySelector('.parser-lab-preview-items');
+        if (pageViewport) pageViewport.scrollTop = 0;
+      });
+      pageStatus.className = 'parser-lab-preview-page-status';
+      pageStatus.textContent = `${activePageIndex + 1} / ${pages.length}`;
+      pageStatus.setAttribute('aria-label', `Página ${activePageIndex + 1} de ${pages.length}`);
+      nextPageButton.type = 'button';
+      nextPageButton.textContent = '›';
+      nextPageButton.title = 'Página siguiente dentro del bloque';
+      nextPageButton.setAttribute('aria-label', nextPageButton.title);
+      nextPageButton.disabled = activePageIndex === pages.length - 1;
+      nextPageButton.addEventListener('click', () => {
+        state.previewPageByBlock[block.definition_id] = activePageIndex + 1;
+        renderParserPreview({ preserveScroll: true });
+        const pageViewport = elements.previewContent.querySelector('.parser-lab-preview-items');
+        if (pageViewport) pageViewport.scrollTop = 0;
+      });
       startButton.type = 'button';
       startButton.textContent = '↑ Inicio';
       startButton.title = `Ir a la fila ${block.start_row}, principio de ${block.name}`;
@@ -1758,7 +1882,7 @@
       endButton.textContent = '↓ Final';
       endButton.title = `Ir a la fila ${block.end_row}, final de ${block.name}`;
       endButton.addEventListener('click', () => selectRow(block.end_row, true));
-      navigation.append(startButton, endButton);
+      navigation.append(previousPageButton, pageStatus, nextPageButton, startButton, endButton);
       heading.append(identity, navigation);
       items.className = 'parser-lab-preview-items';
       const detectionDiagnostics = block.detection
@@ -1780,47 +1904,93 @@
         section.append(heading, items);
         return section;
       }
-      if (shouldRenderEmptyBoundary(block.leading_empty_rows)) {
-        items.appendChild(renderPreviewSeparator(block.leading_empty_rows, 'Iniciales'));
-      }
       if (!block.items.length) {
         const empty = documentRef.createElement('div');
         empty.className = 'parser-lab-preview-no-items';
         empty.textContent = 'Bloque válido sin entidades interpretadas.';
         items.appendChild(empty);
       } else {
-        let itemIndex = 0;
-        block.item_groups.forEach((group) => {
-          if (group.target) {
-            const wrapper = documentRef.createElement('div');
-            const label = documentRef.createElement('div');
-            wrapper.className = `parser-lab-preview-item-group ${group.target}`;
-            label.className = 'parser-lab-preview-composition-label';
-            label.textContent = `${compositionTargetLabel(group.target)} · ${group.members.length} ítems`;
-            wrapper.appendChild(label);
-            group.members.forEach((item) => {
-              wrapper.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
-              if (shouldRenderEmptyBoundary(item.empty_rows_after)) {
-                wrapper.appendChild(renderPreviewSeparator(item.empty_rows_after));
-              }
-              itemIndex += 1;
-            });
-            items.appendChild(wrapper);
+        const page = documentRef.createElement('div');
+        page.className = 'parser-lab-preview-page';
+        page.dataset.pageLabel = `Página ${activePageIndex + 1}`;
+        pages[activePageIndex].forEach((segment) => {
+          if (segment.kind === 'separator') {
+            page.appendChild(renderPreviewSeparator(segment.boundary, segment.position, segment.internal));
             return;
           }
-          const item = group.members[0];
-          items.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
-          if (shouldRenderEmptyBoundary(item.empty_rows_after)) {
-            items.appendChild(renderPreviewSeparator(item.empty_rows_after));
+          if (segment.target) {
+            const wrapper = documentRef.createElement('div');
+            const label = documentRef.createElement('div');
+            wrapper.className = `parser-lab-preview-item-group ${segment.target}`;
+            label.className = 'parser-lab-preview-composition-label';
+            label.textContent = `${compositionTargetLabel(segment.target)} · ${segment.members.length} ítems`;
+            wrapper.appendChild(label);
+            segment.members.forEach(({ item, itemIndex, boundary }) => {
+              wrapper.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
+              if (boundary && shouldRenderEmptyBoundary(boundary)) {
+                wrapper.appendChild(renderPreviewSeparator(boundary));
+              }
+            });
+            page.appendChild(wrapper);
+            return;
           }
-          itemIndex += 1;
+          segment.members.forEach(({ item, itemIndex, boundary }) => {
+            page.appendChild(renderPreviewItem(item, itemIndex, block.definition_id));
+            if (boundary && shouldRenderEmptyBoundary(boundary)) {
+              page.appendChild(renderPreviewSeparator(boundary));
+            }
+          });
         });
-      }
-      if (shouldRenderEmptyBoundary(block.trailing_empty_rows)) {
-        items.appendChild(renderPreviewSeparator(block.trailing_empty_rows, 'Finales'));
+        items.appendChild(page);
       }
       section.append(heading, items);
       return section;
+    }
+
+    function buildPreviewPages(block) {
+      const pages = [];
+      let page = [];
+      let itemIndex = 0;
+      const finishPage = () => {
+        if (!page.length) return;
+        pages.push(page);
+        page = [];
+      };
+      if (shouldRenderEmptyBoundary(block.leading_empty_rows) && !isPreviewPageBoundary(block.leading_empty_rows)) {
+        page.push({ kind: 'separator', boundary: block.leading_empty_rows, position: 'Iniciales' });
+      }
+      const itemGroups = block.item_groups && block.item_groups.length
+        ? block.item_groups
+        : block.items.map((item) => ({ target: null, members: [item] }));
+      itemGroups.forEach((group) => {
+        if (group.target === 'page') finishPage();
+        let segment = { kind: 'items', target: group.target, members: [] };
+        group.members.forEach((item) => {
+          const boundary = item.empty_rows_after;
+          segment.members.push({
+            item,
+            itemIndex,
+            boundary: isPreviewPageBoundary(boundary) ? null : boundary,
+          });
+          itemIndex += 1;
+          if (isPreviewPageBoundary(boundary)) {
+            page.push(segment);
+            finishPage();
+            segment = { kind: 'items', target: group.target, members: [] };
+          }
+        });
+        if (segment.members.length) page.push(segment);
+        if (group.target === 'page') finishPage();
+      });
+      if (shouldRenderEmptyBoundary(block.trailing_empty_rows) && !isPreviewPageBoundary(block.trailing_empty_rows)) {
+        page.push({ kind: 'separator', boundary: block.trailing_empty_rows, position: 'Finales' });
+      }
+      finishPage();
+      return pages.length ? pages : [[]];
+    }
+
+    function isPreviewPageBoundary(boundary) {
+      return Boolean(boundary && (boundary.effective_effect || boundary.effect) === 'page');
     }
 
     function compositionTargetLabel(target) {
@@ -1900,13 +2070,15 @@
       const effectiveEffect = boundary.effective_effect || boundary.effect;
       separator.className = `parser-lab-preview-separator ${effectiveEffect} ${boundary.display}${internal ? ' internal' : ''}`;
       separator.style.setProperty('--parser-lab-empty-row-count', String(Math.min(12, Math.max(1, boundary.output_count || 1))));
-      separator.textContent = [
+      const description = [
         positionLabel,
         boundary.context === 'between_row_items'
           ? 'Entre ítems por fila'
           : labels[boundary.effect] || boundary.effect,
         displayLabels[boundary.display],
       ].filter(Boolean).join(' · ');
+      separator.title = description;
+      separator.setAttribute('aria-label', description);
       return separator;
     }
 
@@ -2495,6 +2667,51 @@
       render();
     }
 
+    const previewImpactControls = [
+      ['header', elements.blockHeaderSourceSelect],
+      ['header', elements.blockColumnSelect],
+      ['header', elements.blockOperatorSelect],
+      ['header', elements.blockValueInput],
+      ['header', elements.blockBoldSelect],
+      ['header', elements.blockMergedSelect],
+      ['content', elements.blockContentStartSelect],
+      ['orientation', elements.blockOrientationSelect],
+      ['roles', elements.blockFirstRoleSelect],
+      ['roles', elements.blockFollowingRoleSelect],
+      ['items', elements.blockGroupingSelect],
+      ['items', elements.blockStartColumnSelect],
+      ['items', elements.blockItemStartMergedSelect],
+      ['boundaries', elements.blockLeadingEffectSelect],
+      ['boundaries', elements.blockLeadingDisplaySelect],
+      ['boundaries', elements.blockBetweenEffectSelect],
+      ['boundaries', elements.blockBetweenDisplaySelect],
+      ['boundaries', elements.blockTrailingEffectSelect],
+      ['boundaries', elements.blockTrailingDisplaySelect],
+    ];
+    previewImpactControls.forEach(([impact, control]) => {
+      control.dataset.previewImpact = impact;
+      control.addEventListener('mouseenter', () => {
+        hoveredPreviewImpactControl = control;
+        applyPreviewAssistance();
+      });
+      control.addEventListener('mouseleave', () => {
+        if (hoveredPreviewImpactControl === control) hoveredPreviewImpactControl = null;
+        applyPreviewAssistance();
+      });
+      control.addEventListener('focus', () => {
+        focusedPreviewImpactControl = control;
+        applyPreviewAssistance();
+      });
+      control.addEventListener('blur', () => {
+        if (focusedPreviewImpactControl === control) focusedPreviewImpactControl = null;
+        applyPreviewAssistance();
+      });
+    });
+
+    elements.structureToggle.addEventListener('change', () => {
+      state.previewStructureVisible = elements.structureToggle.checked;
+      applyPreviewAssistance();
+    });
     elements.openButton.addEventListener('click', () => elements.fileInput.click());
     elements.clearButton.addEventListener('click', clearInspection);
     elements.modelSelect.addEventListener('change', () => selectModel(elements.modelSelect.value));
