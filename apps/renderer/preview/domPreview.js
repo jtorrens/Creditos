@@ -226,7 +226,7 @@
           ...options,
           ...unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]),
         };
-        const gapBefore = unitGapBefore(unitOptions, layout);
+        const gapBefore = unitGapBefore(unitOptions, layout, { unit, block, cartela });
         if (block.type === 'music_licenses' && unit.lines) {
           unitOptions.gapBefore = gapBefore;
           contentEl.appendChild(renderPdfTheme(unit, block, cartela, layout, unitOptions));

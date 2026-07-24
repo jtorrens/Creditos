@@ -81,7 +81,6 @@
               line_spacing: Math.max(0.1, Number(effectiveCartela.line_spacing) || 1.12),
               column_gap: Math.max(0, Number(effectiveCartela.column_gap) || 0),
               role_name_gap: Math.max(0, Number(effectiveCartela.role_name_gap) || 0),
-              source_group_gap: Math.max(0, Number(effectiveCartela.source_group_gap) || 0),
               block_gap: Math.max(0, Number(effectiveCartela.block_gap) || 0),
               block_title_gap: Math.max(0, Number(effectiveCartela.block_title_gap) || 0),
               page_top_margin: Math.max(0, Number(effectiveCartela.page_top_margin) || 0),

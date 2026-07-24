@@ -46,8 +46,8 @@
           summary: 'Separaciones entre columnas, filas y bloques',
           icon: '↔',
           status: () => cardStatus({
-            override: hasAnyCartelaOverride(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
-            animation: hasAnyAnimatedProperty(cartela, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+            override: hasAnyCartelaOverride(cartela, ['column_gap', 'role_name_gap', 'block_gap', 'block_title_gap']),
+            animation: hasAnyAnimatedProperty(cartela, ['column_gap', 'role_name_gap', 'block_gap', 'block_title_gap']),
           }),
           render: (panel) => panel.appendChild(renderCartelaSpacingControls(cartela)),
         },
@@ -228,7 +228,6 @@
       const effectiveCartela = options.getEffectiveCartela(cartela);
       wrap.appendChild(options.localNumberRow('Separación entre columnas', Number(effectiveCartela.column_gap) || 0, 0, null, (value) => options.updateSelectedCartela({ column_gap: value }), 1, animationMeta(cartela, 'column_gap', { override: options.hasCartelaOverride(cartela, 'column_gap'), reset: () => options.resetSelectedCartelaOverride('column_gap') })));
       wrap.appendChild(options.localNumberRow('Separación cargo/nombre', Number(effectiveCartela.role_name_gap) || 0, 0, null, (value) => options.updateSelectedCartela({ role_name_gap: value }), 1, animationMeta(cartela, 'role_name_gap', { override: options.hasCartelaOverride(cartela, 'role_name_gap'), reset: () => options.resetSelectedCartelaOverride('role_name_gap') })));
-      wrap.appendChild(options.localNumberRow('Separación de grupos del origen', Number(effectiveCartela.source_group_gap) || 0, 0, null, (value) => options.updateSelectedCartela({ source_group_gap: value }), 1, animationMeta(cartela, 'source_group_gap', { override: options.hasCartelaOverride(cartela, 'source_group_gap'), reset: () => options.resetSelectedCartelaOverride('source_group_gap') })));
       wrap.appendChild(options.localNumberRow('Separación entre bloques', Number(effectiveCartela.block_gap) || 0, 0, null, (value) => options.updateSelectedCartela({ block_gap: value }), 1, animationMeta(cartela, 'block_gap', { override: options.hasCartelaOverride(cartela, 'block_gap'), reset: () => options.resetSelectedCartelaOverride('block_gap') })));
       wrap.appendChild(options.localNumberRow('Separación título/primera fila', Number(effectiveCartela.block_title_gap) || 0, 0, null, (value) => options.updateSelectedCartela({ block_title_gap: value }), 1, animationMeta(cartela, 'block_title_gap', { override: options.hasCartelaOverride(cartela, 'block_title_gap'), reset: () => options.resetSelectedCartelaOverride('block_title_gap') })));
       return wrap;

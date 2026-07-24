@@ -77,3 +77,21 @@ test('corta antes del bloque que cruzaría el margen inferior aunque queden lín
   ]);
   assert.equal(pages[0].line_count < pages[0].line_limit, true);
 });
+
+test('cada fila vacía del origen ocupa exactamente una línea tipográfica', () => {
+  const domain = globalThis.CreditosDomainPagination.createPaginationDomain({
+    canvasTextMetrics: (styleKey) => ({ lineHeight: styleKey === 'role' ? 52 : 60 }),
+    cartelaBlockGap: () => 25,
+  });
+
+  const gap = domain.unitGapBefore({
+    itemGapBefore: false,
+    sourceGroupBlankRows: 2,
+  }, {}, {
+    unit: { kind: 'crew_credit', role: 'Peones', name: 'Jose Castro' },
+    block: { typography: {} },
+    cartela: { orientation: 'horizontal' },
+  });
+
+  assert.equal(gap, 120);
+});

@@ -364,7 +364,7 @@
         previousCreditSourceId = creditSourceId(unit);
       });
       height += rowHeights.reduce((total, value) => total + value, 0);
-      height += canvasRowGaps(units, cartela, layout, columns).reduce((total, value) => total + value, 0);
+      height += canvasRowGaps(units, block, cartela, layout, columns).reduce((total, value) => total + value, 0);
       return height;
     }
 
@@ -385,7 +385,7 @@
       const columns = Math.max(1, Number(block.columns) || 1);
       const cascadeRows = canvasBlockCascadeRows(block, cartela);
       const rowHeights = [];
-      const rowGaps = canvasRowGaps(units, cartela, layout, columns);
+      const rowGaps = canvasRowGaps(units, block, cartela, layout, columns);
       units.forEach((unit, index) => {
         const layoutRow = Math.floor(index / columns);
         const previousSourceId = index > 0 ? creditSourceId(units[index - 1]) : null;
@@ -431,7 +431,7 @@
       });
     }
 
-    function canvasRowGaps(units, cartela, layout, columns) {
+    function canvasRowGaps(units, block, cartela, layout, columns) {
       const items = units || [];
       const rowCount = Math.ceil(items.length / Math.max(1, columns));
       const gaps = Array.from({ length: Math.max(0, rowCount - 1) }, () => 0);
@@ -441,7 +441,7 @@
         const unit = items[firstIndex];
         const previousUnit = items[firstIndex - 1];
         const options = unitRenderOptions(unit, creditSourceId(previousUnit), cartela, firstIndex > 0, previousUnit);
-        gaps[row - 1] = unitGapBefore(options, layout);
+        gaps[row - 1] = unitGapBefore(options, layout, { unit, block, cartela });
       }
       return gaps;
     }

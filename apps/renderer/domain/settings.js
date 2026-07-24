@@ -34,7 +34,6 @@
           line_spacing: 1.12,
           column_gap: 14,
           role_name_gap: 6,
-          source_group_gap: 0,
           page_top_margin: 80,
           page_bottom_margin: 58,
           page_left_margin: 68,
@@ -95,7 +94,6 @@
       normalized.layout.line_spacing = Math.max(0.1, Number(normalized.layout.line_spacing) || defaults.layout.line_spacing);
       normalized.layout.column_gap = Math.max(0, Number(normalized.layout.column_gap) || defaults.layout.column_gap);
       normalized.layout.role_name_gap = Math.max(0, Number(normalized.layout.role_name_gap) || defaults.layout.role_name_gap);
-      normalized.layout.source_group_gap = Math.max(0, Number.isFinite(Number(normalized.layout.source_group_gap)) ? Number(normalized.layout.source_group_gap) : defaults.layout.source_group_gap);
       normalized.layout.page_top_margin = Math.max(0, Number(normalized.layout.page_top_margin) || defaults.layout.page_top_margin);
       normalized.layout.page_bottom_margin = Math.max(0, Number(normalized.layout.page_bottom_margin) || defaults.layout.page_bottom_margin);
       normalized.layout.page_left_margin = Math.max(0, Number.isFinite(Number(normalized.layout.page_left_margin)) ? Number(normalized.layout.page_left_margin) : defaults.layout.page_left_margin);

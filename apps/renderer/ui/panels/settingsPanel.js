@@ -138,7 +138,6 @@
       wrap.appendChild(settingsNumberRow('Interlineado', settings.layout.line_spacing, 0.1, null, 0.01, (value) => options.updateLayoutSetting({ line_spacing: value })));
       wrap.appendChild(settingsNumberRow('Separación entre columnas', settings.layout.column_gap, 0, null, 1, (value) => options.updateLayoutSetting({ column_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación cargo/nombre', settings.layout.role_name_gap, 0, null, 1, (value) => options.updateLayoutSetting({ role_name_gap: value })));
-      wrap.appendChild(settingsNumberRow('Separación de grupos del origen', settings.layout.source_group_gap, 0, null, 1, (value) => options.updateLayoutSetting({ source_group_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación entre bloques', settings.layout.block_gap, 0, null, 1, (value) => options.updateLayoutSetting({ block_gap: value })));
       wrap.appendChild(settingsNumberRow('Separación título/primera fila', settings.layout.block_title_gap, 0, null, 1, (value) => options.updateLayoutSetting({ block_title_gap: value })));
       wrap.appendChild(options.localSelectRow('Repetir nombre de bloque', options.boolSelectValue(settings.layout.repeat_block_titles), options.yesNoOptions, (value) => options.updateLayoutSetting({ repeat_block_titles: options.normalizeBoolean(value, true) })));

@@ -528,7 +528,6 @@
         line_spacing: 'Interlineado',
         column_gap: 'Columnas',
         role_name_gap: 'Cargo/nombre',
-        source_group_gap: 'Grupos',
         block_gap: 'Bloques',
         block_title_gap: 'Título/fila',
         vertical_offset: 'Vertical',

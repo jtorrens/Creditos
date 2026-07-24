@@ -40,7 +40,6 @@
       line_spacing: 'Interlineado',
       column_gap: 'Separacion entre columnas',
       role_name_gap: 'Separacion cargo/nombre',
-      source_group_gap: 'Separacion de grupos',
       block_gap: 'Separacion entre bloques',
       block_title_gap: 'Separacion titulo/primera fila',
       vertical_offset: 'Desplazamiento vertical',

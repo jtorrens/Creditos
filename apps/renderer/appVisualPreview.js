@@ -107,7 +107,7 @@
         let previousCreditSourceId = null;
         units.forEach((unit, index) => {
           const unitOptions = options.unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
-          const gapBefore = options.unitGapBefore(unitOptions, layout);
+          const gapBefore = options.unitGapBefore(unitOptions, layout, { unit, block, cartela });
           if (block.type === 'music_licenses' && unit.lines) {
             const themeEl = documentRef.createElement('div');
             themeEl.className = 'render-theme';

@@ -14,7 +14,6 @@
         line_spacing: Math.max(0.1, numberWithFallback(cartela && cartela.line_spacing, layout.line_spacing, 1)),
         column_gap: Math.max(0, numberWithFallback(cartela && cartela.column_gap, layout.column_gap, 0)),
         role_name_gap: Math.max(0, numberWithFallback(cartela && cartela.role_name_gap, layout.role_name_gap, 0)),
-        source_group_gap: Math.max(0, numberWithFallback(cartela && cartela.source_group_gap, layout.source_group_gap, 0)),
         block_gap: Math.max(0, numberWithFallback(cartela && cartela.block_gap, layout.block_gap, 0)),
         block_title_gap: Math.max(0, numberWithFallback(cartela && cartela.block_title_gap, layout.block_title_gap, 0)),
         page_top_margin: Math.max(0, numberWithFallback(cartela && cartela.page_top_margin, layout.page_top_margin, 0)),

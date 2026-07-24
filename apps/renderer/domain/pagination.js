@@ -228,9 +228,7 @@
         rowHeights[row] = Math.max(rowHeights[row] || 0, countRenderedUnitLines(unit, block, cartela, options));
         previousCreditSourceId = creditSourceId(unit);
       });
-      const sourceGapLines = Number(cartela && cartela.source_group_gap) > 0
-        ? sourceBlankRowCounts(items, columns).reduce((total, value) => total + value, 0)
-        : 0;
+      const sourceGapLines = sourceBlankRowCounts(items, columns).reduce((total, value) => total + value, 0);
       const titleLines = String(block.title || '').trim()
         ? paginationTextLines(block.title, canvasTextMetrics('block_title', cartela, layout, block.typography), contentWidth).length
         : 0;
@@ -274,10 +272,29 @@
       return canvasWrappedTextLines(value, metrics, width);
     }
 
-    function unitGapBefore(options, layout) {
+    function unitGapBefore(options, layout, context = {}) {
+      const blankRows = Math.max(0, Number(options && options.sourceGroupBlankRows) || 0);
+      const blankLineHeight = blankRows ? unitLineHeight(context.unit, context.block, context.cartela, layout) : 0;
       return (options && options.itemGapBefore ? cartelaBlockGap(null, layout) : 0)
-        + Math.max(0, Number(options && options.sourceGroupBlankRows) || 0)
-          * Math.max(0, Number(layout.source_group_gap) || 0);
+        + blankRows * blankLineHeight;
+    }
+
+    function unitLineHeight(unit, block, cartela, layout) {
+      const typography = block && block.typography ? block.typography : {};
+      if (unit && (unit.kind === 'credit' || unit.kind === 'crew_credit' || unit.kind === 'cast')) {
+        return Math.max(
+          canvasTextMetrics('role', cartela, layout, typography).lineHeight,
+          canvasTextMetrics('name', cartela, layout, typography).lineHeight
+        );
+      }
+      if (unit && Array.isArray(unit.lines) && unit.lines.length) {
+        return Math.max(
+          canvasTextMetrics('role', cartela, layout, typography).lineHeight,
+          canvasTextMetrics('name', cartela, layout, typography).lineHeight
+        );
+      }
+      const styleKey = unit && unit.title !== undefined ? 'block_title' : 'name';
+      return Math.max(0, Number(canvasTextMetrics(styleKey, cartela, layout, typography).lineHeight) || 0);
     }
 
     function repeatBlockTitlesForCartela(cartela) {

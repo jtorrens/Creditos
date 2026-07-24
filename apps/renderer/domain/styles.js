@@ -30,7 +30,6 @@
         line_spacing: Math.max(0.1, Number(value.line_spacing) || 1.12),
         column_gap: Math.max(0, Number(value.column_gap) || 0),
         role_name_gap: Math.max(0, Number(value.role_name_gap) || 0),
-        source_group_gap: Math.max(0, Number(value.source_group_gap) || 0),
         block_gap: Math.max(0, Number(value.block_gap) || 0),
         block_title_gap: Math.max(0, Number(value.block_title_gap) || 0),
         page_top_margin: Math.max(0, Number(value.page_top_margin) || 0),
@@ -67,7 +66,6 @@
       if (value.line_spacing !== undefined) output.line_spacing = Math.max(0.1, Number(value.line_spacing) || 1.12);
       if (value.column_gap !== undefined) output.column_gap = Math.max(0, Number(value.column_gap) || 0);
       if (value.role_name_gap !== undefined) output.role_name_gap = Math.max(0, Number(value.role_name_gap) || 0);
-      if (value.source_group_gap !== undefined) output.source_group_gap = Math.max(0, Number(value.source_group_gap) || 0);
       if (value.block_gap !== undefined) output.block_gap = Math.max(0, Number(value.block_gap) || 0);
       if (value.block_title_gap !== undefined) output.block_title_gap = Math.max(0, Number(value.block_title_gap) || 0);
       if (value.page_top_margin !== undefined) output.page_top_margin = Math.max(0, Number(value.page_top_margin) || 0);
@@ -170,7 +168,6 @@
         line_spacing: settings.layout.line_spacing,
         column_gap: settings.layout.column_gap,
         role_name_gap: settings.layout.role_name_gap,
-        source_group_gap: settings.layout.source_group_gap,
         block_gap: settings.layout.block_gap,
         block_title_gap: settings.layout.block_title_gap,
         page_top_margin: settings.layout.page_top_margin,
@@ -1021,7 +1018,6 @@
         'line_spacing',
         'column_gap',
         'role_name_gap',
-        'source_group_gap',
         'block_gap',
         'block_title_gap',
         'page_top_margin',

@@ -44,8 +44,8 @@
           summary: 'Separaciones entre columnas, filas y bloques',
           icon: '↔',
           status: () => cardStatus({
-            override: hasAnyStyleCartelaOverride(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
-            animation: hasAnyAnimatedProperty(style, ['column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap']),
+            override: hasAnyStyleCartelaOverride(style, ['column_gap', 'role_name_gap', 'block_gap', 'block_title_gap']),
+            animation: hasAnyAnimatedProperty(style, ['column_gap', 'role_name_gap', 'block_gap', 'block_title_gap']),
           }),
           render: (panel) => panel.appendChild(renderStyleSpacingControls(style)),
         },
@@ -145,7 +145,6 @@
       const cartela = options.getEffectiveStyleCartela(style);
       wrap.appendChild(options.localNumberRow('Separación entre columnas', cartela.column_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { column_gap: value }), 1, animationMeta(style, 'column_gap', { override: options.hasStyleCartelaOverride(style, 'column_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'column_gap') })));
       wrap.appendChild(options.localNumberRow('Separación cargo/nombre', cartela.role_name_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { role_name_gap: value }), 1, animationMeta(style, 'role_name_gap', { override: options.hasStyleCartelaOverride(style, 'role_name_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'role_name_gap') })));
-      wrap.appendChild(options.localNumberRow('Separación de grupos del origen', cartela.source_group_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { source_group_gap: value }), 1, animationMeta(style, 'source_group_gap', { override: options.hasStyleCartelaOverride(style, 'source_group_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'source_group_gap') })));
       wrap.appendChild(options.localNumberRow('Separación entre bloques', cartela.block_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { block_gap: value }), 1, animationMeta(style, 'block_gap', { override: options.hasStyleCartelaOverride(style, 'block_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'block_gap') })));
       wrap.appendChild(options.localNumberRow('Separación título/primera fila', cartela.block_title_gap, 0, null, (value) => options.updateEditableStyleCartela(style, { block_title_gap: value }), 1, animationMeta(style, 'block_title_gap', { override: options.hasStyleCartelaOverride(style, 'block_title_gap'), reset: () => options.resetEditableStyleCartelaOverride(style, 'block_title_gap') })));
       return wrap;

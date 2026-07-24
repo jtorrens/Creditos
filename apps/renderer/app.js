@@ -159,7 +159,7 @@
     ['name', 'Nombre'],
   ];
   const BLOCK_TYPOGRAPHY_FIELDS = TYPOGRAPHY_FIELDS.filter(([key]) => key !== 'page_header');
-  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'source_group_gap', 'block_gap', 'block_title_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'];
+  const STYLE_CARTELA_FIELDS = ['orientation', 'columns', 'vertical_offset', 'duration', 'line_spacing', 'column_gap', 'role_name_gap', 'block_gap', 'block_title_gap', 'page_top_margin', 'page_bottom_margin', 'page_left_margin', 'page_right_margin', 'repeat_block_titles', 'auto_text_wrap', 'text_capitalization', 'use_protected_capitalization'];
   const LANGUAGE_OPTIONS = [
     ['es', 'Español'],
     ['en', 'English'],
@@ -662,8 +662,7 @@
     scrollOffsetForFrame,
   } = scrollDomain;
   const paginationDomain = globalThis.CreditosDomainPagination.createPaginationDomain({
-    blockForTitleRepeat,
-    canvasTextHeight,
+    blockForTitleRepeat, canvasTextHeight,
     canvasTextMetrics,
     canvasWrappedTextLines,
     cartelaBlockGap,
@@ -673,8 +672,7 @@
     getEffectiveCartela,
     getRenderLayout,
     getRenderedBlockUnits,
-    layoutForCartela,
-    measureCanvasBlock,
+    layoutForCartela, measureCanvasBlock,
     normalizeSettings,
     sourceBlankRowCounts,
     unitRenderOptions,
