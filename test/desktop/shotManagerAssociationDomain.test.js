@@ -17,62 +17,83 @@ function snapshot() {
           type: 'OUTPUT',
           name: 'Preview',
           folderName: 'previews',
-          slug: 'prev',
-          anchor: 'EPISODE',
-          parentFolder: null,
         },
         {
           id: 'credits-work',
           type: 'WORK_AREA',
           name: 'Créditos',
           folderName: 'credits',
-          slug: 'cred',
-          anchor: 'EPISODE',
-          parentFolder: null,
         },
       ],
     },
-    seasons: [{ id: 'season-1', code: 'S01' }],
+    seasons: [{
+      id: 'season-1',
+      number: 1,
+      code: 'S01',
+      archivedAt: null,
+    }],
     episodes: [{
       id: 'episode-1',
       seasonId: 'season-1',
+      number: 1,
       code: 'E01',
-      title: 'Piloto',
       archivedAt: null,
     }],
   };
 }
 
-test('presenta capítulos y estructura conservando sus IDs estables', () => {
-  const value = snapshot();
+function association() {
+  return {
+    shotManagerProductionId: 'production-1',
+    structureEntryId: 'credits-work',
+    localHierarchy: {
+      productionType: 'SERIES',
+      governanceMode: 'SHOT_MANAGER',
+      seasons: [{
+        shotManagerSeasonId: 'season-1',
+        number: 1,
+        code: 'S01',
+      }],
+      episodes: [{
+        shotManagerEpisodeId: 'episode-1',
+        shotManagerSeasonId: 'season-1',
+        number: 1,
+        code: 'E01',
+      }],
+    },
+  };
+}
 
-  assert.deepEqual(domain.episodeOptions(value), [{
-    id: 'episode-1',
-    label: 'S01 · E01 · Piloto',
-    seasonId: 'season-1',
-  }]);
+test('ordena los elementos de estructura conservando sus IDs estables', () => {
   assert.deepEqual(
-    domain.structureEntryOptions(value).map((entry) => entry.id),
+    domain.structureEntryOptions(snapshot()).map((entry) => entry.id),
     ['credits-work', 'preview-output'],
   );
 });
 
-test('una asociación solo es válida cuando todos los IDs siguen existiendo', () => {
+test('valida producción, tipo y elemento de estructura', () => {
   const value = snapshot();
-  const valid = {
-    shotManagerProductionId: 'production-1',
-    seasonId: 'season-1',
-    episodeId: 'episode-1',
-    structureEntryId: 'credits-work',
-  };
+  const saved = association();
 
-  assert.equal(domain.validateStoredSelection(value, valid).valid, true);
+  assert.equal(
+    domain.validateStoredSelection(value, saved, 'SERIES').valid,
+    true,
+  );
+  assert.equal(
+    domain.validateStoredSelection(value, saved, 'FILM').valid,
+    false,
+  );
   assert.equal(domain.validateStoredSelection(value, {
-    ...valid,
-    episodeId: 'episode-renamed-by-id',
-  }).valid, false);
-  assert.equal(domain.validateStoredSelection(value, {
-    ...valid,
+    ...saved,
     structureEntryId: 'missing',
-  }).valid, false);
+  }, 'SERIES').valid, false);
+});
+
+test('detecta cambios en la jerarquía oficial', () => {
+  const value = snapshot();
+  const saved = association();
+
+  assert.equal(domain.hierarchyComparison(value, saved).inSync, true);
+  value.episodes[0].code = 'E001';
+  assert.equal(domain.hierarchyComparison(value, saved).inSync, false);
 });

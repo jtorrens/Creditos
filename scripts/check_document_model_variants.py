@@ -64,7 +64,7 @@ def main():
             movie_id = create_production(
                 connection,
                 "Película",
-                "MOVIE",
+                "FILM",
                 import_model_id="modelo_ia",
             )
             save_document(
@@ -94,7 +94,7 @@ def main():
                 connection,
                 movie_id,
             )] == [None]
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
 
     print("ok documents persist for series episodes and movie production scope")
     return 0

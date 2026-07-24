@@ -1,19 +1,19 @@
 # Handoff · VFX Shot Manager ↔ Créditos
 
-Estado de este documento: integración de contexto v1 implementada. La
+Estado de este documento: gobierno de producción v1 implementado. La
 resolución de outputs y la ejecución headless quedan fuera de esta fase.
 
 ## Objetivo
 
-Créditos es una aplicación consumidora de VFX Shot Manager. Cada producción
-local de Créditos puede asociarse con:
+Créditos admite dos modos excluyentes por producción:
 
-- una producción de Shot Manager;
-- un elemento estable de la estructura de producción.
+- `INDEPENDENT`: Créditos administra su tipo y jerarquía;
+- `SHOT_MANAGER`: una producción oficial de Shot Manager gobierna el tipo y
+  la jerarquía de temporadas y capítulos.
 
-La asociación permite que una fase posterior solicite a Shot Manager la ruta
-y nomenclatura oficiales de un render o preview sin duplicar esas reglas en
-Créditos.
+Una producción gobernada también conserva el ID estable de un elemento de
+estructura. Esto permitirá solicitar la ruta y nomenclatura oficiales de un
+render o preview sin duplicar esas reglas en Créditos.
 
 ## Propiedad de los datos
 
@@ -27,10 +27,15 @@ Shot Manager es la única fuente de verdad de:
 Créditos es la única fuente de verdad de:
 
 - sus producciones y documentos;
-- su jerarquía de película o de serie con temporadas y capítulos;
+- la jerarquía de las producciones independientes;
 - la composición visual de créditos;
 - la configuración y ejecución actual de su exportación MOV/PNG;
-- la asociación entre una producción local y los IDs de Shot Manager.
+- el modo de gobierno y la copia local de la jerarquía oficial.
+
+En una producción `SHOT_MANAGER`, Shot Manager es la autoridad de tipo,
+temporadas y capítulos. Créditos guarda una copia local con los IDs oficiales
+para poder seguir trabajando sin conexión, pero no crea, elimina ni renombra
+esa jerarquía remota.
 
 Créditos nunca lee `project.sqlite` ni reconstruye rutas con reglas copiadas.
 Toda lectura de Shot Manager pasa por su API local.
@@ -72,8 +77,8 @@ Créditos usa únicamente:
 - `GET /api/v1/productions/{productionId}`
 
 La API v1 es de solo lectura. Una desconexión no bloquea el trabajo en
-Créditos: se conserva la asociación y se indica que no puede verificarse
-hasta abrir Shot Manager.
+Créditos: se usa la jerarquía local ya sincronizada y se indica que no puede
+verificarse hasta abrir Shot Manager.
 
 ## Persistencia portable
 
@@ -87,38 +92,50 @@ shot_manager_associations
 └── updated_at
 ```
 
-Solo se persisten IDs estables; nunca nombres ni rutas. Por eso la misma base
-de datos puede sincronizarse entre Mac y PC aunque la raíz de producción sea
-distinta en cada equipo.
+Las temporadas y capítulos gobernados guardan además
+`shot_manager_season_id` y `shot_manager_episode_id`. Nunca se persisten rutas.
+Por eso la misma base de datos puede sincronizarse entre Mac y PC aunque la
+raíz de producción sea distinta en cada equipo.
 
-El esquema actual es v9. La asociación es única por producción y no contiene
-duplicaciones de temporada o capítulo. Créditos modela una película
+El esquema actual es v10. La asociación es única por producción y la jerarquía
+oficial se materializa en las tablas normales de temporadas y capítulos, sin
+un modelo paralelo. Créditos modela una película
 directamente en producción y una serie como producción → temporada →
 capítulo. No existen capítulos ficticios para películas, ni secuencias o
 planos en Créditos.
 
-La migración v8 → v9 fue un one-off aplicado a la base activa. Todas las
-producciones existentes se declararon explícitamente como series, se creó su
-temporada 1 y se conservaron capítulos, documentos, archivos fuente y estilos.
-El código actual solo admite v9 y no contiene rutas alternativas para el
-modelo retirado.
+La migración v9 → v10 fue un one-off aplicado a la base activa. Todas las
+producciones existentes quedaron como `INDEPENDENT`; `MOVIE` se sustituyó por
+`FILM`; se conservaron producciones, temporadas, capítulos, documentos,
+archivos fuente y estilos. El código actual solo admite v10 y no contiene
+rutas alternativas ni conversores para el modelo retirado.
 
 ## Comportamiento de la interfaz
 
-En Producciones, el panel «Asociación con Shot Manager» permite:
+En Producciones, el panel «Gobierno de Shot Manager» permite:
 
 1. elegir una producción disponible de Shot Manager;
 2. elegir un elemento de estructura;
-3. guardar o quitar la asociación conscientemente.
+3. convertir la producción independiente activa en gobernada;
+4. crear directamente una producción gobernada nueva;
+5. sincronizar cambios posteriores de temporadas y capítulos;
+6. convertir una producción gobernada en independiente conservando su
+   jerarquía y contenido.
 
 La producción activa de Créditos determina la asociación mostrada. El capítulo
 se elige únicamente en Cartelas cuando la producción es una serie; una
 película trabaja directamente con el contenido de producción.
 
-Al cargar una asociación, la producción, su tipo y el elemento de estructura
-se verifican contra el snapshot actual. Si un ID dejó de existir o los tipos
-película/serie no coinciden, Créditos muestra el problema y no selecciona otro
-elemento por nombre, posición o parecido.
+Al cargar una producción gobernada, la producción, su tipo, su jerarquía y el
+elemento de estructura se verifican contra el snapshot actual. Si la jerarquía
+remota cambió, la interfaz exige una sincronización consciente. Los capítulos
+coincidentes conservan sus documentos. Los capítulos locales ausentes en Shot
+Manager se eliminan automáticamente solo cuando están vacíos; si contienen
+documentos o un archivo fuente se pide confirmación explícita. Nunca se
+selecciona otro elemento por nombre, posición o parecido.
+
+Duplicar una producción gobernada crea siempre una copia independiente y
+elimina todos los IDs externos de la copia.
 
 ## Auditoría del render actual de Créditos
 

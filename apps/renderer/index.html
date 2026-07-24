@@ -46,19 +46,19 @@
               <select id="productionSelect" class="hidden-input" aria-hidden="true" tabindex="-1"></select>
               <div class="production-manager">
                 <div class="production-toolbar">
-                  <button id="showCreateProductionBtn" type="button">Nueva producción</button>
+                  <button id="showCreateProductionBtn" type="button">Nueva independiente</button>
                   <button id="duplicateProductionBtn" type="button">Duplicar</button>
                   <button id="deleteProductionBtn" type="button">Eliminar</button>
                 </div>
                 <div id="productionList" class="production-list" role="listbox" aria-label="Producciones"></div>
                 <div id="productionCreateBox" class="production-create-box">
                   <div class="field-grid">
-                    <label for="newProductionNameInput">Nueva producción</label>
+                    <label for="newProductionNameInput">Nueva producción independiente</label>
                     <div class="inline-actions production-create-fields">
                       <input id="newProductionNameInput" class="text-input" type="text" placeholder="Nombre producción">
                       <select id="newProductionTypeSelect" class="text-input" aria-label="Tipo de producción">
                         <option value="SERIES">Serie</option>
-                        <option value="MOVIE">Película</option>
+                        <option value="FILM">Película</option>
                       </select>
                       <input id="newProductionSeasonCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Número de temporadas">
                       <input id="newProductionEpisodeCountInput" class="text-input compact-number" type="number" min="1" step="1" value="1" aria-label="Capítulos por temporada">
@@ -92,8 +92,8 @@
             <section id="shotManagerIntegration" class="shot-manager-integration" aria-labelledby="shotManagerTitle">
               <div class="shot-manager-heading">
                 <div>
-                  <h3 id="shotManagerTitle">Asociación con Shot Manager</h3>
-                  <p>Relaciona la producción completa con su estructura oficial.</p>
+                  <h3 id="shotManagerTitle">Gobierno de Shot Manager</h3>
+                  <p>Convierte la producción activa o crea una nueva con la jerarquía oficial.</p>
                 </div>
                 <button id="refreshShotManagerBtn" type="button">Actualizar</button>
               </div>
@@ -110,8 +110,9 @@
               </div>
               <p id="shotManagerContext" class="shot-manager-context"></p>
               <div class="shot-manager-actions">
-                <button id="deleteShotManagerAssociationBtn" type="button" disabled>Quitar asociación</button>
-                <button id="saveShotManagerAssociationBtn" class="primary" type="button" disabled>Guardar asociación</button>
+                <button id="deleteShotManagerAssociationBtn" type="button" disabled>Convertir en independiente</button>
+                <button id="createShotManagerProductionBtn" type="button" disabled>Crear como gobernada</button>
+                <button id="saveShotManagerAssociationBtn" class="primary" type="button" disabled>Sincronizar jerarquía</button>
               </div>
             </section>
             <div class="section-title">Valores por defecto</div>

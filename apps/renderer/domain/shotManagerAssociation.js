@@ -70,8 +70,70 @@
     return { valid: true, message: '' };
   }
 
+  function hierarchyComparison(snapshot, association) {
+    const local = association && association.localHierarchy;
+    if (!snapshot || !snapshot.production || !local) {
+      return {
+        inSync: false,
+        message: 'No hay suficiente información para comprobar la jerarquía.',
+      };
+    }
+    if (
+      snapshot.production.productionType !== local.productionType ||
+      local.governanceMode !== 'SHOT_MANAGER'
+    ) {
+      return {
+        inSync: false,
+        message: 'La jerarquía local todavía no está gobernada por Shot Manager.',
+      };
+    }
+    const remoteSeasons = (snapshot.seasons || [])
+      .filter((season) => season && season.archivedAt == null)
+      .map((season) => ({
+        id: String(season.id),
+        number: Number(season.number),
+        code: String(season.code),
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const localSeasons = (local.seasons || [])
+      .map((season) => ({
+        id: String(season.shotManagerSeasonId || ''),
+        number: Number(season.number),
+        code: String(season.code),
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const remoteEpisodes = (snapshot.episodes || [])
+      .filter((episode) => episode && episode.archivedAt == null)
+      .map((episode) => ({
+        id: String(episode.id),
+        seasonId: String(episode.seasonId),
+        number: Number(episode.number),
+        code: String(episode.code),
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const localEpisodes = (local.episodes || [])
+      .map((episode) => ({
+        id: String(episode.shotManagerEpisodeId || ''),
+        seasonId: String(episode.shotManagerSeasonId || ''),
+        number: Number(episode.number),
+        code: String(episode.code),
+      }))
+      .sort((left, right) => left.id.localeCompare(right.id));
+    const inSync = (
+      JSON.stringify(remoteSeasons) === JSON.stringify(localSeasons) &&
+      JSON.stringify(remoteEpisodes) === JSON.stringify(localEpisodes)
+    );
+    return {
+      inSync,
+      message: inSync
+        ? ''
+        : 'La jerarquía de Shot Manager ha cambiado desde la última sincronización.',
+    };
+  }
+
   root.CreditosDomainShotManagerAssociation = {
     availableProductions,
+    hierarchyComparison,
     structureEntryOptions,
     validateStoredSelection,
   };

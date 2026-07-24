@@ -17,9 +17,8 @@ class FakeElement {
   }
 
   addEventListener(name, listener) {
-    const capture = arguments[2] === true;
     const listeners = this.listeners.get(name) || [];
-    listeners.push({ capture, listener });
+    listeners.push(listener);
     this.listeners.set(name, listeners);
   }
 
@@ -49,62 +48,80 @@ class FakeElement {
   }
 
   dispatchEvent(event) {
-    const listeners = this.listeners.get(event.type) || [];
-    for (const entry of [
-      ...listeners.filter((candidate) => candidate.capture),
-      ...listeners.filter((candidate) => !candidate.capture),
-    ]) {
-      entry.listener(event);
-      if (event.immediatePropagationStopped) break;
-    }
-    return !event.defaultPrevented;
+    for (const listener of this.listeners.get(event.type) || []) listener(event);
+    return true;
   }
 }
 
-class FakeEvent {
-  constructor(type) {
-    this.type = type;
-    this.defaultPrevented = false;
-    this.immediatePropagationStopped = false;
-  }
-
-  preventDefault() {
-    this.defaultPrevented = true;
-  }
-
-  stopImmediatePropagation() {
-    this.immediatePropagationStopped = true;
-  }
-}
-
-function elements(options = {}) {
-  const sourceEpisodeSelect = new FakeElement('select');
-  for (const [value, text] of options.localEpisodes || []) {
-    const option = new FakeElement('option');
-    option.value = value;
-    option.textContent = text;
-    sourceEpisodeSelect.appendChild(option);
-  }
-  sourceEpisodeSelect.value = options.localEpisodeId || '';
+function elements() {
+  const sourceProductionSelect = new FakeElement('select');
+  const localProduction = new FakeElement('option');
+  localProduction.value = '6';
+  localProduction.dataset.productionType = 'SERIES';
+  sourceProductionSelect.appendChild(localProduction);
+  sourceProductionSelect.value = '6';
   return {
     context: new FakeElement(),
+    createButton: new FakeElement('button'),
     deleteButton: new FakeElement('button'),
-    episodeSelect: new FakeElement('select'),
-    localEpisodeSelect: Object.assign(
-      new FakeElement('select'),
-      { value: options.localEpisodeId || '22' },
-    ),
     productionSelect: new FakeElement('select'),
     refreshButton: new FakeElement('button'),
     saveButton: new FakeElement('button'),
-    sourceEpisodeSelect,
-    sourceProductionSelect: Object.assign(new FakeElement('select'), { value: '6' }),
+    sourceProductionSelect,
     status: new FakeElement(),
     structureSelect: new FakeElement('select'),
   };
 }
 
-test('la carga del capítulo local no cancela el catálogo que está arrancando', async () => {
+function remoteSnapshot() {
+  return {
+    location: { rootPath: '/production' },
+    production: {
+      id: 'production-traz',
+      code: 'TRZ',
+      name: 'Trazos Ocultos',
+      productionType: 'SERIES',
+      structureEntries: [{
+        id: 'credits-render',
+        type: 'OUTPUT',
+        name: 'Render final',
+        folderName: 'renders',
+      }],
+    },
+    seasons: [{
+      id: 'season-1',
+      number: 1,
+      code: 'S1',
+      archivedAt: null,
+    }],
+    episodes: [{
+      id: 'episode-1',
+      seasonId: 'season-1',
+      number: 1,
+      code: 'E01',
+      archivedAt: null,
+    }],
+  };
+}
+
+function windowStub(confirmResult = true) {
+  return {
+    confirm: () => confirmResult,
+    CustomEvent: class {
+      constructor(type, options) {
+        this.type = type;
+        this.detail = options.detail;
+      }
+    },
+    dispatchEvent: () => true,
+    MutationObserver: class {
+      observe() {}
+    },
+    queueMicrotask,
+  };
+}
+
+test('conserva el catálogo si la asociación local termina mientras conecta', async () => {
   let resolveStatus;
   const statusReady = new Promise((resolve) => {
     resolveStatus = resolve;
@@ -112,6 +129,7 @@ test('la carga del capítulo local no cancela el catálogo que está arrancando'
   const els = elements();
   const panel = globalThis.CreditosShotManagerIntegrationPanel.createShotManagerIntegrationPanel({
     associationApi: {
+      create: async () => ({ ok: true }),
       delete: async () => ({ ok: true }),
       read: async () => ({ ok: true, association: null }),
       write: async () => ({ ok: true }),
@@ -137,19 +155,12 @@ test('la carga del capítulo local no cancela el catálogo que está arrancando'
     },
     domain: globalThis.CreditosDomainShotManagerAssociation,
     els,
-    windowRef: {
-      queueMicrotask,
-    },
+    windowRef: windowStub(),
   });
 
   const connectionLoad = panel.refreshConnection();
   const associationLoad = panel.loadLocalAssociation();
-  resolveStatus({
-    connected: true,
-    apiVersion: 1,
-    readOnly: true,
-    service: 'VFX Shot Manager',
-  });
+  resolveStatus({ connected: true, apiVersion: 1, readOnly: true });
   await Promise.all([connectionLoad, associationLoad]);
 
   assert.deepEqual(
@@ -158,82 +169,69 @@ test('la carga del capítulo local no cancela el catálogo que está arrancando'
   );
   assert.equal(
     els.status.textContent,
-    'Este capítulo todavía no está asociado con Shot Manager.',
+    'Producción independiente. Puedes convertirla en gobernada o crear otra desde Shot Manager.',
   );
 });
 
-test('las dos pantallas comparten capítulo y protegen cambios sin guardar', async () => {
-  let confirmResult = false;
-  let confirmations = 0;
-  let cartelasChanges = 0;
-  const els = elements({
-    localEpisodeId: '22',
-    localEpisodes: [
-      ['22', 'Episodio 01'],
-      ['23', 'Episodio 02'],
-    ],
-  });
-  els.sourceEpisodeSelect.addEventListener('change', () => {
-    cartelasChanges += 1;
-  });
+test('envía el snapshot y exige confirmación antes de borrar contenido', async () => {
+  const els = elements();
+  const snapshot = remoteSnapshot();
+  const writes = [];
   const panel = globalThis.CreditosShotManagerIntegrationPanel.createShotManagerIntegrationPanel({
     associationApi: {
+      create: async () => ({ ok: true }),
       delete: async () => ({ ok: true }),
       read: async () => ({ ok: true, association: null }),
-      write: async () => ({ ok: true }),
+      write: async (payload) => {
+        writes.push(payload);
+        if (!payload.confirmDestructive) {
+          return {
+            ok: true,
+            confirmationRequired: true,
+            plan: {
+              contentDeletions: [{ code: 'E06', name: 'Episodio 06' }],
+            },
+          };
+        }
+        return {
+          ok: true,
+          confirmationRequired: false,
+          association: { shotManagerProductionId: 'production-traz' },
+        };
+      },
     },
     bridge: {
-      getShotManagerStatus: async () => ({
-        connected: false,
-        error: {
-          code: 'SHOT_MANAGER_NOT_RUNNING',
-          message: 'Abre Shot Manager.',
+      getShotManagerStatus: async () => ({ connected: true, readOnly: true }),
+      listShotManagerProductions: async () => ({
+        ok: true,
+        data: {
+          productions: [{
+            available: true,
+            production: snapshot.production,
+          }],
         },
       }),
+      getShotManagerProduction: async () => ({ ok: true, data: snapshot }),
     },
     documentRef: {
       createElement: (tagName) => new FakeElement(tagName),
     },
     domain: globalThis.CreditosDomainShotManagerAssociation,
     els,
-    windowRef: {
-      confirm: () => {
-        confirmations += 1;
-        return confirmResult;
-      },
-      Event: FakeEvent,
-      MutationObserver: class {
-        observe() {}
-      },
-      queueMicrotask,
-    },
+    windowRef: windowStub(true),
   });
   await panel.initialize();
-
-  els.structureSelect.dispatchEvent(new FakeEvent('change'));
-  els.localEpisodeSelect.value = '23';
-  els.localEpisodeSelect.dispatchEvent(new FakeEvent('change'));
-
-  assert.equal(confirmations, 1);
-  assert.equal(els.localEpisodeSelect.value, '22');
-  assert.equal(els.sourceEpisodeSelect.value, '22');
-  assert.equal(cartelasChanges, 0);
-
-  confirmResult = true;
-  els.localEpisodeSelect.value = '23';
-  els.localEpisodeSelect.dispatchEvent(new FakeEvent('change'));
+  els.productionSelect.value = 'production-traz';
+  els.productionSelect.dispatchEvent({ type: 'change' });
   await Promise.resolve();
+  await Promise.resolve();
+  els.structureSelect.value = 'credits-render';
 
-  assert.equal(confirmations, 2);
-  assert.equal(els.sourceEpisodeSelect.value, '23');
-  assert.equal(cartelasChanges, 1);
+  await panel.saveAssociation(false);
 
-  els.structureSelect.dispatchEvent(new FakeEvent('change'));
-  confirmResult = false;
-  els.sourceEpisodeSelect.value = '22';
-  els.sourceEpisodeSelect.dispatchEvent(new FakeEvent('change'));
-
-  assert.equal(confirmations, 3);
-  assert.equal(els.sourceEpisodeSelect.value, '23');
-  assert.equal(cartelasChanges, 1);
+  assert.equal(writes.length, 2);
+  assert.equal(writes[0].snapshot, snapshot);
+  assert.equal(writes[0].confirmDestructive, false);
+  assert.equal(writes[1].confirmDestructive, true);
+  assert.equal(els.status.textContent, 'Producción gobernada y jerarquía sincronizada.');
 });

@@ -48,7 +48,7 @@
       return !!(
         production &&
         (
-          production.production_type === 'MOVIE' ||
+          production.production_type === 'FILM' ||
           selectedEpisode()
         )
       );

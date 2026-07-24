@@ -32,6 +32,7 @@ from server_services.project_service import (
 from server_services.style_service import delete_style, load_styles, save_style
 from server_services.source_file_service import load_active_source_file, save_source_file
 from server_services.shot_manager_association_service import (
+    create_governed_production,
     delete_shot_manager_association,
     load_shot_manager_association,
     save_shot_manager_association,
@@ -271,8 +272,27 @@ class Handler(BaseHTTPRequestHandler):
                     return
 
                 if path == "/api/db/write-shot-manager-association":
-                    association = save_shot_manager_association(connection, payload)
-                    self.send_json(200, {"ok": True, "association": association})
+                    result = save_shot_manager_association(connection, payload)
+                    self.send_json(
+                        200,
+                        {
+                            **db_overview(connection),
+                            "ok": True,
+                            **result,
+                        },
+                    )
+                    return
+
+                if path == "/api/db/create-shot-manager-production":
+                    production_id = create_governed_production(connection, payload)
+                    self.send_json(
+                        200,
+                        {
+                            **db_overview(connection),
+                            "ok": True,
+                            "production_id": production_id,
+                        },
+                    )
                     return
 
                 if path == "/api/db/delete-shot-manager-association":
@@ -280,7 +300,14 @@ class Handler(BaseHTTPRequestHandler):
                         connection,
                         payload.get("creditosProductionId"),
                     )
-                    self.send_json(200, {"ok": True, "deleted": deleted})
+                    self.send_json(
+                        200,
+                        {
+                            **db_overview(connection),
+                            "ok": True,
+                            "deleted": deleted,
+                        },
+                    )
                     return
 
                 if path == "/api/db/save-document":

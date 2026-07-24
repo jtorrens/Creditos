@@ -1,11 +1,13 @@
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 
 SCHEMA_SQL = """
 CREATE TABLE productions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    production_type TEXT NOT NULL CHECK (production_type IN ('MOVIE', 'SERIES')),
+    production_type TEXT NOT NULL CHECK (production_type IN ('FILM', 'SERIES')),
+    governance_mode TEXT NOT NULL
+        CHECK (governance_mode IN ('INDEPENDENT', 'SHOT_MANAGER')),
     page_width INTEGER NOT NULL DEFAULT 1920,
     page_height INTEGER NOT NULL DEFAULT 1080,
     preview_background TEXT NOT NULL DEFAULT '#ffffff',
@@ -21,6 +23,7 @@ CREATE TABLE seasons (
     season_number INTEGER NOT NULL,
     code TEXT NOT NULL,
     name TEXT NOT NULL,
+    shot_manager_season_id TEXT UNIQUE,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     UNIQUE (production_id, season_number),
@@ -35,6 +38,7 @@ CREATE TABLE episodes (
     episode_number INTEGER NOT NULL,
     code TEXT NOT NULL,
     name TEXT NOT NULL,
+    shot_manager_episode_id TEXT UNIQUE,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     UNIQUE (season_id, episode_number),

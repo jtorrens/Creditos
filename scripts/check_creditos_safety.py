@@ -13,6 +13,7 @@ CHECKS = [
     "check_document_model_variants.py",
     "check_source_file_association.py",
     "check_production_hierarchy.py",
+    "check_shot_manager_governance.py",
     "check_domain_no_dom.py",
     "check_domain_imports.py",
     "check_renderer_app_boundaries.py",

@@ -11,7 +11,7 @@ def content_scope(connection, production_id, episode_id):
     if not production:
         raise ValueError("Producción no encontrada.")
 
-    if production["production_type"] == "MOVIE":
+    if production["production_type"] == "FILM":
         if episode_id not in (None, ""):
             raise ValueError("Una película no admite capítulo.")
         return local_production_id, None

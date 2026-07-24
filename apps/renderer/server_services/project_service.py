@@ -6,7 +6,7 @@ from .common import now_iso
 from .import_rule_model_service import list_rule_import_models
 
 
-PRODUCTION_TYPES = {"MOVIE", "SERIES"}
+PRODUCTION_TYPES = {"FILM", "SERIES"}
 
 
 def row_to_dict(row):
@@ -27,6 +27,7 @@ def db_overview(connection):
                 productions.id,
                 productions.name,
                 productions.production_type,
+                productions.governance_mode,
                 productions.page_width,
                 productions.page_height,
                 productions.preview_background,
@@ -48,7 +49,9 @@ def db_overview(connection):
         row_to_dict(row)
         for row in connection.execute(
             """
-            SELECT id, production_id, season_number, code, name, created_at, updated_at
+            SELECT
+                id, production_id, season_number, code, name,
+                shot_manager_season_id, created_at, updated_at
             FROM seasons
             ORDER BY production_id, season_number
             """
@@ -65,6 +68,7 @@ def db_overview(connection):
                 episodes.episode_number,
                 episodes.code,
                 episodes.name,
+                episodes.shot_manager_episode_id,
                 seasons.season_number,
                 seasons.code AS season_code,
                 seasons.name AS season_name,
@@ -127,9 +131,10 @@ def _create_series_hierarchy(
         season = connection.execute(
             """
             INSERT INTO seasons (
-                production_id, season_number, code, name, created_at, updated_at
+                production_id, season_number, code, name,
+                shot_manager_season_id, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, NULL, ?, ?)
             """,
             (
                 production_id,
@@ -146,9 +151,10 @@ def _create_series_hierarchy(
                 """
                 INSERT INTO episodes (
                     production_id, season_id, episode_number, code, name,
+                    shot_manager_episode_id,
                     created_at, updated_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
                 """,
                 (
                     production_id,
@@ -182,10 +188,11 @@ def create_production(
     cursor = connection.execute(
         """
         INSERT INTO productions (
-            name, production_type, page_width, page_height, preview_background,
+            name, production_type, governance_mode,
+            page_width, page_height, preview_background,
             import_model_id, settings_json, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, 'INDEPENDENT', ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             clean_name,
@@ -252,10 +259,11 @@ def duplicate_production(connection, production_id):
     cursor = connection.execute(
         """
         INSERT INTO productions (
-            name, production_type, page_width, page_height, preview_background,
+            name, production_type, governance_mode,
+            page_width, page_height, preview_background,
             import_model_id, settings_json, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, 'INDEPENDENT', ?, ?, ?, ?, ?, ?, ?)
         """,
         (
             name,
@@ -284,9 +292,10 @@ def duplicate_production(connection, production_id):
         new_season = connection.execute(
             """
             INSERT INTO seasons (
-                production_id, season_number, code, name, created_at, updated_at
+                production_id, season_number, code, name,
+                shot_manager_season_id, created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, NULL, ?, ?)
             """,
             (
                 new_production_id,
@@ -313,9 +322,10 @@ def duplicate_production(connection, production_id):
             """
             INSERT INTO episodes (
                 production_id, season_id, episode_number, code, name,
+                shot_manager_episode_id,
                 created_at, updated_at
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, NULL, ?, ?)
             """,
             (
                 new_production_id,

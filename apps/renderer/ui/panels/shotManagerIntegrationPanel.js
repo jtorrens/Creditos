@@ -5,6 +5,7 @@
     const associationApi = options.associationApi;
     const domain = options.domain;
     const els = options.els;
+    const windowRef = options.windowRef || root;
     const state = {
       association: null,
       associationOperation: 0,
@@ -103,15 +104,20 @@
     }
 
     function renderActions() {
-      const complete = !!(
-        contextKey() &&
+      const remoteSelectionComplete = !!(
         state.connected &&
         state.snapshot &&
-        typesMatch() &&
         els.productionSelect.value &&
         els.structureSelect.value
       );
-      els.saveButton.disabled = !complete || !state.dirty;
+      const associationComplete = !!(
+        contextKey() &&
+        remoteSelectionComplete &&
+        typesMatch() &&
+        localProductionType()
+      );
+      els.saveButton.disabled = !associationComplete || !state.dirty;
+      els.createButton.disabled = !remoteSelectionComplete;
       els.deleteButton.disabled = !state.association;
     }
 
@@ -134,13 +140,14 @@
       state.snapshot = result.data;
       renderSnapshotOptions(selected);
       if (!typesMatch()) {
-        const localLabel = localProductionType() === 'MOVIE' ? 'película' : 'serie';
-        const remoteLabel = state.snapshot.production.productionType === 'MOVIE'
+        const localLabel = localProductionType() === 'FILM' ? 'película' : 'serie';
+        const remoteLabel = state.snapshot.production.productionType === 'FILM'
           ? 'película'
           : 'serie';
         setStatus(
-          `No se puede asociar: Créditos es ${localLabel} y Shot Manager es ${remoteLabel}.`,
-          'error',
+          `No puede gobernar la producción activa: Créditos es ${localLabel} y Shot Manager es ${remoteLabel}. ` +
+          'Sí puedes crearla como una producción gobernada nueva.',
+          'warning',
         );
       }
       renderActions();
@@ -175,8 +182,14 @@
         renderActions();
         return;
       }
-      state.dirty = false;
-      setStatus('Asociación guardada y verificada.', 'ok');
+      const hierarchy = domain.hierarchyComparison(state.snapshot, association);
+      state.dirty = !hierarchy.inSync;
+      setStatus(
+        hierarchy.inSync
+          ? 'Producción gobernada y jerarquía sincronizada.'
+          : `${hierarchy.message} Pulsa “Sincronizar jerarquía”.`,
+        hierarchy.inSync ? 'ok' : 'warning',
+      );
       renderActions();
     }
 
@@ -208,8 +221,8 @@
       if (!state.association) {
         setStatus(
           state.connected
-            ? 'Esta producción todavía no está asociada con Shot Manager.'
-            : (loadOptions.disconnectedMessage || 'Sin asociación. Abre Shot Manager para crearla.'),
+            ? 'Producción independiente. Puedes convertirla en gobernada o crear otra desde Shot Manager.'
+            : (loadOptions.disconnectedMessage || 'Producción independiente. Abre Shot Manager para vincularla.'),
           state.connected ? '' : (loadOptions.disconnectedTone || ''),
         );
         return;
@@ -271,11 +284,13 @@
       }
     }
 
-    async function saveAssociation() {
+    async function saveAssociation(confirmDestructive = false) {
       const payload = {
         ...localContext(),
         shotManagerProductionId: els.productionSelect.value,
         structureEntryId: els.structureSelect.value,
+        snapshot: state.snapshot,
+        confirmDestructive,
       };
       els.saveButton.disabled = true;
       const result = await associationApi.write(payload);
@@ -287,17 +302,73 @@
         renderActions();
         return;
       }
+      if (result.confirmationRequired) {
+        const deletions = result.plan && result.plan.contentDeletions
+          ? result.plan.contentDeletions
+          : [];
+        const chapterList = deletions
+          .map((episode) => `${episode.code} · ${episode.name}`)
+          .join('\n');
+        const confirmed = windowRef.confirm(
+          'Shot Manager ya no contiene algunos capítulos que sí tienen datos en Créditos.\n\n' +
+          `${chapterList}\n\n` +
+          'Si continúas se eliminarán esos capítulos y sus documentos asociados. ' +
+          'Esta acción no se puede deshacer.',
+        );
+        if (confirmed) await saveAssociation(true);
+        else {
+          setStatus('Sincronización cancelada; no se ha modificado la producción.', 'warning');
+          renderActions();
+        }
+        return;
+      }
       state.association = result.association;
       state.dirty = false;
-      setStatus('Asociación guardada y verificada.', 'ok');
+      setStatus('Producción gobernada y jerarquía sincronizada.', 'ok');
+      windowRef.dispatchEvent(new windowRef.CustomEvent(
+        'creditos:shot-manager-production-updated',
+        { detail: result },
+      ));
       renderActions();
     }
 
+    async function createGovernedProduction() {
+      const payload = {
+        shotManagerProductionId: els.productionSelect.value,
+        structureEntryId: els.structureSelect.value,
+        snapshot: state.snapshot,
+      };
+      els.createButton.disabled = true;
+      const result = await associationApi.create(payload);
+      if (!result || !result.ok) {
+        setStatus(
+          result && result.error
+            ? result.error.message
+            : 'No se pudo crear la producción gobernada.',
+          'error',
+        );
+        renderActions();
+        return;
+      }
+      setStatus('Producción gobernada creada y sincronizada.', 'ok');
+      windowRef.dispatchEvent(new windowRef.CustomEvent(
+        'creditos:shot-manager-production-created',
+        { detail: result },
+      ));
+    }
+
     async function deleteAssociation() {
+      const confirmed = windowRef.confirm(
+        'La producción conservará sus temporadas, capítulos y contenido, pero Shot Manager ' +
+        'dejará de gobernar su jerarquía. ¿Convertirla en independiente?',
+      );
+      if (!confirmed) return;
       const result = await associationApi.delete(localContext());
       if (!result || !result.ok) {
         setStatus(
-          result && result.error ? result.error.message : 'No se pudo quitar la asociación.',
+          result && result.error
+            ? result.error.message
+            : 'No se pudo convertir la producción en independiente.',
           'error',
         );
         return;
@@ -308,13 +379,17 @@
       renderProductionOptions();
       renderSnapshotOptions();
       renderActions();
-      setStatus('Asociación eliminada.');
+      setStatus('Producción convertida en independiente.');
+      windowRef.dispatchEvent(new windowRef.CustomEvent(
+        'creditos:shot-manager-production-updated',
+        { detail: result },
+      ));
     }
 
     function scheduleLocalSync() {
       if (localRenderQueued) return;
       localRenderQueued = true;
-      root.queueMicrotask(() => {
+      windowRef.queueMicrotask(() => {
         localRenderQueued = false;
         const nextKey = contextKey();
         if (nextKey !== state.contextKey) loadLocalAssociation();
@@ -330,10 +405,11 @@
         }
       });
       els.structureSelect.addEventListener('change', () => markDirty());
-      els.saveButton.addEventListener('click', saveAssociation);
+      els.saveButton.addEventListener('click', () => saveAssociation(false));
+      els.createButton.addEventListener('click', createGovernedProduction);
       els.deleteButton.addEventListener('click', deleteAssociation);
       els.refreshButton.addEventListener('click', refreshConnection);
-      localObserver = new root.MutationObserver(scheduleLocalSync);
+      localObserver = new windowRef.MutationObserver(scheduleLocalSync);
       localObserver.observe(els.sourceProductionSelect, {
         attributes: true,
         childList: true,
@@ -352,6 +428,7 @@
     }
 
     return {
+      createGovernedProduction,
       deleteAssociation,
       initialize,
       loadLocalAssociation,

@@ -80,12 +80,12 @@ def main():
             )
             assert duplicate_active["name"] == "origen_b.xlsx"
             assert base64.b64decode(duplicate_active["base64"]) == b"archivo-b"
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 9
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 10
 
             movie_id = create_production(
                 connection,
                 "Película",
-                "MOVIE",
+                "FILM",
                 import_model_id="modelo_a",
             )
             save_source_file(

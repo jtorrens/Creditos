@@ -24,7 +24,7 @@
         els.productionList.className = 'production-list';
         const table = documentRef.createElement('table');
         table.className = 'data-table';
-        table.innerHTML = '<thead><tr><th></th><th>Producción</th><th>Tipo</th><th>Estructura</th><th>Formato</th><th>Importación</th></tr></thead>';
+        table.innerHTML = '<thead><tr><th></th><th>Producción</th><th>Tipo</th><th>Gobierno</th><th>Estructura</th><th>Formato</th><th>Importación</th></tr></thead>';
         const tbody = documentRef.createElement('tbody');
         state.productions.forEach((production) => {
           const row = documentRef.createElement('tr');
@@ -54,11 +54,17 @@
           row.appendChild(nameCell);
 
           const typeCell = documentRef.createElement('td');
-          typeCell.textContent = production.production_type === 'MOVIE' ? 'Película' : 'Serie';
+          typeCell.textContent = production.production_type === 'FILM' ? 'Película' : 'Serie';
           row.appendChild(typeCell);
 
+          const governanceCell = documentRef.createElement('td');
+          governanceCell.textContent = production.governance_mode === 'SHOT_MANAGER'
+            ? 'Shot Manager'
+            : 'Independiente';
+          row.appendChild(governanceCell);
+
           const structureCell = documentRef.createElement('td');
-          structureCell.textContent = production.production_type === 'MOVIE'
+          structureCell.textContent = production.production_type === 'FILM'
             ? 'Producción'
             : `${Number(production.season_count) || 0} temp. · ${Number(production.episode_count) || 0} cap.`;
           row.appendChild(structureCell);
@@ -89,7 +95,7 @@
         if (els.episodeSelectLabel) els.episodeSelectLabel.textContent = 'Capítulo';
         return;
       }
-      if (production.production_type === 'MOVIE') {
+      if (production.production_type === 'FILM') {
         const option = documentRef.createElement('option');
         option.value = '';
         option.textContent = 'Contenido de la película';

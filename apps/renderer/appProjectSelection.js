@@ -89,6 +89,24 @@
       if (options.hasSelectedContentScope()) await options.loadCurrentEpisode();
     }
 
+    windowRef.addEventListener(
+      'creditos:shot-manager-production-created',
+      (event) => {
+        const overview = event.detail;
+        if (!overview || !overview.production_id) return;
+        state.selectedProductionId = overview.production_id;
+        state.selectedEpisodeId = null;
+        applyDatabaseOverview(overview);
+      },
+    );
+    windowRef.addEventListener(
+      'creditos:shot-manager-production-updated',
+      (event) => {
+        if (!event.detail) return;
+        applyDatabaseOverview(event.detail);
+      },
+    );
+
     return {
       applyDatabaseOverview,
       initializeDatabase,

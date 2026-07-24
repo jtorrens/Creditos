@@ -27,6 +27,7 @@
     }
     const panel = root.CreditosShotManagerIntegrationPanel.createShotManagerIntegrationPanel({
       associationApi: {
+        create: (payload) => associationRequest('/api/db/create-shot-manager-production', payload),
         delete: (payload) => associationRequest('/api/db/delete-shot-manager-association', payload),
         read: (payload) => associationRequest('/api/db/read-shot-manager-association', payload),
         write: (payload) => associationRequest('/api/db/write-shot-manager-association', payload),
@@ -37,6 +38,7 @@
       els: {
         container,
         context: element('shotManagerContext'),
+        createButton: element('createShotManagerProductionBtn'),
         deleteButton: element('deleteShotManagerAssociationBtn'),
         productionSelect: element('shotManagerProductionSelect'),
         refreshButton: element('refreshShotManagerBtn'),
