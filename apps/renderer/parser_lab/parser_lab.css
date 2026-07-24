@@ -546,9 +546,10 @@
 .parser-lab-preview-items {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-height: 0;
   overflow: auto;
-  padding: 8px;
+  padding: 18px clamp(14px, 4vw, 42px);
 }
 
 .parser-lab-preview-item-group {
@@ -569,50 +570,67 @@
 }
 
 .parser-lab-preview-item {
-  align-items: start;
-  background: var(--panel);
-  display: grid;
-  gap: 3px 9px;
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  display: block;
   height: auto;
-  justify-content: stretch;
-  min-height: 54px;
-  padding: 8px 9px;
-  text-align: left;
+  min-height: 0;
+  padding: 8px 12px;
+  text-align: center;
   white-space: normal;
+  width: 100%;
 }
 
-.parser-lab-preview-item-order {
-  color: var(--muted);
-  font-size: 10px;
-  grid-row: 1 / span 3;
-}
-
-.parser-lab-preview-item strong {
-  color: var(--ink);
-  font-size: 12px;
+.parser-lab-preview-item:hover,
+.parser-lab-preview-item:focus {
+  background: rgba(255, 255, 255, 0.035);
 }
 
 .parser-lab-preview-terms {
-  display: flex;
-  gap: 5px 12px;
-  grid-column: 2;
+  margin: 0 auto;
+  max-width: 760px;
   min-width: 0;
+  width: 100%;
 }
 
 .parser-lab-preview-item.vertical .parser-lab-preview-terms {
-  align-items: flex-start;
-  flex-direction: column;
+  display: block;
 }
 
 .parser-lab-preview-item.horizontal .parser-lab-preview-terms {
-  align-items: baseline;
-  flex-direction: row;
-  flex-wrap: wrap;
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.parser-lab-preview-term-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.parser-lab-preview-item.vertical .parser-lab-preview-term-column {
+  align-items: center;
+  text-align: center;
+}
+
+.parser-lab-preview-item.horizontal .parser-lab-preview-term-column-1 {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.parser-lab-preview-item.horizontal .parser-lab-preview-term-column-2 {
+  align-items: flex-start;
+  text-align: left;
 }
 
 .parser-lab-preview-term {
+  color: var(--muted);
   font-size: 11px;
+  line-height: 1.3;
 }
 
 .parser-lab-preview-term.principal {
@@ -622,7 +640,7 @@
 }
 
 .parser-lab-preview-term.secondary {
-  color: var(--muted);
+  font-weight: 400;
 }
 
 .parser-lab-preview-associated {

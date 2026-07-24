@@ -1829,37 +1829,38 @@
 
     function renderPreviewItem(item, index, blockId) {
       const card = documentRef.createElement('button');
-      const order = documentRef.createElement('span');
       const termsContainer = documentRef.createElement('div');
-      const source = documentRef.createElement('span');
-      const trace = documentRef.createElement('span');
       card.type = 'button';
       card.dataset.blockId = blockId;
       card.dataset.itemIndex = String(index);
       card.className = `parser-lab-preview-item ${item.orientation || 'vertical'}`;
       card.tabIndex = item.source_rows.includes(state.selectedRowNumber) ? 0 : -1;
-      order.className = 'parser-lab-preview-item-order';
-      order.textContent = String(index + 1).padStart(2, '0');
       termsContainer.className = 'parser-lab-preview-terms';
       const terms = item.terms;
       const internalEmptyRows = item.internal_empty_rows || [];
+      const lanes = item.orientation === 'horizontal'
+        ? [documentRef.createElement('div'), documentRef.createElement('div')]
+        : [documentRef.createElement('div')];
+      lanes.forEach((lane, laneIndex) => {
+        lane.className = `parser-lab-preview-term-column parser-lab-preview-term-column-${laneIndex + 1}`;
+      });
       terms.forEach((term, termIndex) => {
         const entry = documentRef.createElement('span');
         entry.className = `parser-lab-preview-term ${term.role}`;
         entry.textContent = term.value;
-        termsContainer.appendChild(entry);
+        const lane = item.orientation === 'horizontal' && termIndex > 0 ? lanes[1] : lanes[0];
+        lane.appendChild(entry);
         internalEmptyRows.filter((boundary) => (
           boundary.after_term_index === termIndex + 1 && shouldRenderEmptyBoundary(boundary)
         )).forEach((boundary) => {
-          termsContainer.appendChild(renderPreviewSeparator(boundary, 'Hueco interno', true));
+          lane.appendChild(renderPreviewSeparator(boundary, 'Hueco interno', true));
         });
       });
-      source.className = 'parser-lab-preview-source';
-      source.textContent = sourceRowsLabel(item.source_rows);
-      trace.className = 'parser-lab-preview-trace';
-      trace.textContent = item.decision_trace ? item.decision_trace.reason : '';
-      card.title = trace.textContent;
-      card.append(order, termsContainer, source, trace);
+      lanes.forEach((lane) => termsContainer.appendChild(lane));
+      const trace = item.decision_trace ? item.decision_trace.reason : '';
+      card.title = [sourceRowsLabel(item.source_rows), trace].filter(Boolean).join(' · ');
+      card.setAttribute('aria-label', terms.map((term) => term.value).join(', '));
+      card.appendChild(termsContainer);
       if (item.source_rows.length) card.addEventListener('click', () => selectRow(
         item.source_rows[0],
         true,
