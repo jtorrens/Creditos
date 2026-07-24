@@ -2,6 +2,7 @@
   function createPaginationDomain(dependencies = {}) {
     const {
       blockForTitleRepeat,
+      canvasTextHeight = () => 0,
       canvasTextMetrics,
       canvasWrappedTextLines,
       cartelaBlockGap,
@@ -12,6 +13,7 @@
       getRenderLayout,
       getRenderedBlockUnits,
       layoutForCartela,
+      measureCanvasBlock = () => 0,
       normalizeSettings,
       sourceBlankRowCounts,
       unitRenderOptions,
@@ -56,6 +58,47 @@
           };
 
           const pageHasBlocks = () => currentPage && currentPage.blocks.length > 0;
+          const pageWouldOverflowPixels = (block, candidateBlock, candidateItems) => {
+            if (!currentPage) return false;
+            const layout = layoutForCartela(getRenderLayout(), cartela);
+            const availableHeight = Math.max(
+              1,
+              Number(layout.page_height) - Number(layout.page_top_margin) - Number(layout.page_bottom_margin)
+            );
+            const width = Math.max(
+              1,
+              Number(layout.page_width) - Number(layout.page_left_margin) - Number(layout.page_right_margin)
+            );
+            const blocksForMeasure = currentPage.blocks.slice();
+            const measuredBlock = {
+              ...candidateBlock,
+              pages: [{
+                id: 'candidate_page',
+                items: candidateItems,
+                start_index: 0,
+                line_count: 0,
+              }],
+            };
+            const lastBlock = blocksForMeasure[blocksForMeasure.length - 1];
+            if (lastBlock && lastBlock.id === block.id) blocksForMeasure[blocksForMeasure.length - 1] = measuredBlock;
+            else blocksForMeasure.push(measuredBlock);
+            const title = String(currentPage.title || '').trim();
+            const titleMetrics = title
+              ? canvasTextMetrics('page_header', cartela, layout, cartela.title_typography)
+              : null;
+            const titleHeight = titleMetrics ? canvasTextHeight(title, titleMetrics, width) : 0;
+            const blockGap = Math.max(0, Number(cartelaBlockGap(cartela, layout)) || 0);
+            const blocksHeight = blocksForMeasure.reduce(
+              (total, candidate) => total + measureCanvasBlock(null, candidate, cartela, layout, width),
+              0
+            );
+            const gaps = Math.max(0, blocksForMeasure.length - 1) * blockGap;
+            const totalHeight = titleHeight
+              + (titleHeight && blocksForMeasure.length ? blockGap : 0)
+              + blocksHeight
+              + gaps;
+            return totalHeight > availableHeight + 0.5;
+          };
           const finishPage = () => {
             if (currentPage && (currentPage.blocks.length || String(currentPage.title || '').trim() || cartelaHasImages(currentPage.cartela) || (currentPage.cartela && currentPage.cartela.manual))) {
               physicalPages.push(currentPage);
@@ -98,9 +141,13 @@
             const existingBlockLines = physicalBlock && physicalBlock.id === block.id && physicalBlock.pages[0]
               ? Number(physicalBlock.pages[0].line_count) || 0
               : 0;
-            const candidateBlockLines = countBlockVisualLines(candidateBlock, cartela, existingItems.concat(unit));
+            const candidateItems = existingItems.concat(unit);
+            const candidateBlockLines = countBlockVisualLines(candidateBlock, cartela, candidateItems);
             const addedLines = candidateBlockLines - existingBlockLines;
-            if (pageHasBlocks() && currentPage.line_count + addedLines > currentPage.line_limit) {
+            if (pageHasBlocks() && (
+              currentPage.line_count + addedLines > currentPage.line_limit
+              || pageWouldOverflowPixels(block, candidateBlock, candidateItems)
+            )) {
               finishPage();
               startPage();
               physicalBlock = null;

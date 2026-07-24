@@ -663,6 +663,7 @@
   } = scrollDomain;
   const paginationDomain = globalThis.CreditosDomainPagination.createPaginationDomain({
     blockForTitleRepeat,
+    canvasTextHeight,
     canvasTextMetrics,
     canvasWrappedTextLines,
     cartelaBlockGap,
@@ -673,6 +674,7 @@
     getRenderLayout,
     getRenderedBlockUnits,
     layoutForCartela,
+    measureCanvasBlock,
     normalizeSettings,
     sourceBlankRowCounts,
     unitRenderOptions,
