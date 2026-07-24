@@ -4,7 +4,18 @@ const test = require('node:test');
 require('../../apps/renderer/appDatabaseSync');
 
 class FakeClassList {
-  toggle() {}
+  constructor() {
+    this.classes = new Set();
+  }
+
+  toggle(name, enabled) {
+    if (enabled) this.classes.add(name);
+    else this.classes.delete(name);
+  }
+
+  contains(name) {
+    return this.classes.has(name);
+  }
 }
 
 class FakeElement {
@@ -189,4 +200,39 @@ test('una bajada explícita no se bloquea por la consulta remota acotada', async
   assert.equal(statusRefreshCount, 1);
   assert.equal(actionStatus.statusKind, 'synced');
   assert.equal(state.databaseSyncStatus.statusKind, 'error');
+});
+
+test('un desfase remoto que solo contiene la DB permanece sincronizado y verde', async () => {
+  const databaseStatus = new FakeElement('span');
+  const state = {
+    databasePath: '/proyecto/data/creditos.db',
+    databaseSyncStatus: {
+      available: true,
+      statusKind: 'remote',
+      syncTarget: 'origin/main',
+      remoteAhead: true,
+      remoteOnlyDatabaseChanges: true,
+      databaseComparisonAvailable: true,
+      databaseUserDataMatches: true,
+      databaseSchemaMatches: true,
+      localSchemaVersion: 6,
+      remoteSchemaVersion: 6,
+    },
+  };
+  const sync = globalThis.CreditosAppDatabaseSync.createAppDatabaseSync({
+    documentRef: new FakeDocument(),
+    els: { databaseStatus },
+    initializeDatabase: async () => {},
+    nativeBridge: () => ({}),
+    state,
+    windowRef: testWindow(),
+  });
+
+  sync.updateDatabaseStatus();
+
+  assert.match(databaseStatus.textContent, /Datos DB: sincronizados/);
+  assert.match(databaseStatus.textContent, /Esquema DB: v6, sincronizado/);
+  assert.match(databaseStatus.textContent, /Codigo: actualizado \(el desfase remoto solo contiene DB\)/);
+  assert.equal(databaseStatus.classList.contains('db-sync-ok'), true);
+  assert.equal(databaseStatus.classList.contains('db-sync-error'), false);
 });

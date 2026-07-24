@@ -12,7 +12,7 @@
       const status = state.databaseSyncStatus;
       const pathText = state.databasePath ? state.databasePath : 'data/creditos.db';
       const targetText = status && status.syncTarget ? status.syncTarget : 'sin rama Git';
-      const statusKind = status && status.statusKind ? status.statusKind : databaseStatusKind(status);
+      const statusKind = databaseStatusKind(status);
       const statusLabel = databaseStatusLabel(status, statusKind);
       const codeLabel = codeStatusLabel(status);
       const schemaLabel = databaseSchemaStatusLabel(status);
@@ -36,6 +36,13 @@
     function databaseStatusKind(status) {
       if (!status) return 'unavailable';
       if (status.error || status.available === false) return 'error';
+      if (
+        status.remoteOnlyDatabaseChanges
+        && status.databaseComparisonAvailable
+        && status.databaseUserDataMatches
+        && status.databaseSchemaMatches
+      ) return 'synced';
+      if (status.statusKind) return status.statusKind;
       if (status.remoteIsNewer || status.remoteChanged || status.remoteAhead) return 'remote';
       if (status.localChanged) return 'local';
       if (status.available) return 'synced';
