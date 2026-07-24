@@ -1267,6 +1267,12 @@ button.primary:hover {
   color: #ff7a82;
 }
 
+.block-button.excluded .block-group {
+  background: rgba(188, 79, 88, 0.08);
+  border-color: rgba(220, 92, 102, 0.42);
+  color: #d96872;
+}
+
 .block-group {
   align-items: center;
   background: #30343a;

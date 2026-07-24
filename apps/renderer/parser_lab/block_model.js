@@ -11,6 +11,7 @@
   const TERM_ROLES = ['principal', 'secondary'];
   const COMPOSITION_SCOPES = ['item', 'block'];
   const COMPOSITION_TARGETS = ['group', 'page', 'cartela'];
+  const BORDER_ENCLOSURE_MODES = ['ignore', 'enclosed'];
 
   function defaultInterpretation() {
     return {
@@ -30,6 +31,12 @@
         leading: { effect: 'continue', display: 'ignore' },
         between_items: { effect: 'item', display: 'ignore' },
         trailing: { effect: 'continue', display: 'ignore' },
+      },
+      border_enclosure: {
+        mode: 'ignore',
+        start_column: 'B',
+        end_column: 'D',
+        effect: 'page',
       },
     };
   }
@@ -119,6 +126,18 @@
       if (!EMPTY_ROW_EFFECTS.includes(policy.effect)) errors.push('El efecto de las filas vacías no es válido.');
       if (!EMPTY_ROW_DISPLAYS.includes(policy.display)) errors.push('El tratamiento visual de las filas vacías no es válido.');
     });
+    const borderEnclosure = interpretation.border_enclosure || {};
+    if (!BORDER_ENCLOSURE_MODES.includes(borderEnclosure.mode)) {
+      errors.push('El uso de recintos con borde no es válido.');
+    }
+    if (!COLUMNS.includes(borderEnclosure.start_column) || !COLUMNS.includes(borderEnclosure.end_column)) {
+      errors.push('El rango de bordes no es válido.');
+    } else if (COLUMNS.indexOf(borderEnclosure.start_column) > COLUMNS.indexOf(borderEnclosure.end_column)) {
+      errors.push('El inicio del rango de bordes debe preceder a su final.');
+    }
+    if (!['item', 'group', 'page'].includes(borderEnclosure.effect)) {
+      errors.push('El efecto de los recintos con borde no es válido.');
+    }
     return errors;
   }
 
@@ -327,7 +346,7 @@
   function modelDocument(definitions, compositionRules, normalizedRowsView) {
     return {
       schema: 'parser_lab_block_model',
-      version: 8,
+      version: 9,
       blocks: definitions.map(normalizeDefinition),
       composition_rules: compositionRules.map(normalizeCompositionRule),
       normalized_rows_view: JSON.parse(JSON.stringify(normalizedRowsView)),
@@ -458,6 +477,7 @@
         normalized.interpretation,
         result
       );
+      applyBorderEnclosureBoundaries(bodyRows, normalized.interpretation, result.items);
       return finalizeBlockTrace(rows || [], instance, normalized.interpretation, result);
     }
     if (normalized.interpretation.item_grouping === 'first_term') {
@@ -468,6 +488,7 @@
         normalized.interpretation,
         result
       );
+      applyBorderEnclosureBoundaries(bodyRows, normalized.interpretation, result.items);
       return finalizeBlockTrace(rows || [], instance, normalized.interpretation, result);
     }
     let values = [];
@@ -507,7 +528,69 @@
       values.push(...rowValues);
     }
     flush();
+    applyBorderEnclosureBoundaries(bodyRows, normalized.interpretation, result.items);
     return finalizeBlockTrace(rows || [], instance, normalized.interpretation, result);
+  }
+
+  function applyBorderEnclosureBoundaries(bodyRows, interpretation, items) {
+    const policy = interpretation.border_enclosure;
+    if (!policy || policy.mode !== 'enclosed') return;
+    findBorderEnclosures(bodyRows, policy).forEach((enclosure) => {
+      const members = items.filter((item) => item.source_rows.some((row) => (
+        row >= enclosure.start_row && row <= enclosure.end_row
+      )));
+      const last = members[members.length - 1];
+      if (!last) return;
+      members.slice(0, -1).forEach((item) => {
+        item.separator_after = 'item';
+        if (item.empty_rows_after) {
+          item.empty_rows_after.effective_effect = 'item';
+          item.empty_rows_after.reason = 'El recinto con borde conserva esta división dentro de la misma página.';
+        }
+        item.border_enclosure_member = {
+          ...enclosure,
+          effect: 'item',
+        };
+      });
+      last.separator_after = policy.effect;
+      last.border_enclosure_after = {
+        ...enclosure,
+        effect: policy.effect,
+      };
+    });
+  }
+
+  function findBorderEnclosures(rows, policy) {
+    const start = COLUMNS.indexOf(policy.start_column);
+    const end = COLUMNS.indexOf(policy.end_column);
+    const columns = COLUMNS.slice(start, end + 1);
+    const enclosures = [];
+    let active = null;
+    (rows || []).forEach((row) => {
+      const top = columns.every((column) => borderSide(row, column, 'top'));
+      const bottom = columns.every((column) => borderSide(row, column, 'bottom'));
+      const sides = borderSide(row, policy.start_column, 'left')
+        && borderSide(row, policy.end_column, 'right');
+      if (top && sides) active = { start_row: row.row, valid: true };
+      if (!active) return;
+      if (!sides) active.valid = false;
+      if (bottom && sides) {
+        if (active.valid) {
+          enclosures.push({
+            start_row: active.start_row,
+            end_row: row.row,
+            start_column: policy.start_column,
+            end_column: policy.end_column,
+          });
+        }
+        active = null;
+      }
+    });
+    return enclosures;
+  }
+
+  function borderSide(row, column, side) {
+    return Boolean(row && row.borders && row.borders[column] && row.borders[column][side]);
   }
 
   function interpretHorizontalRows(bodyRows, firstIndex, lastIndex, interpretation, result) {

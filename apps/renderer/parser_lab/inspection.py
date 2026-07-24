@@ -9,7 +9,7 @@ from import_models.common.normalized_rows import (
 
 
 INSPECTION_SCHEMA = "parser_lab_inspection"
-INSPECTION_VERSION = 2
+INSPECTION_VERSION = 3
 SUPPORTED_SOURCE_KINDS = {"ods", "xlsx"}
 
 
@@ -26,7 +26,11 @@ def inspect_source_rows(file_bytes, source_name, source_kind):
         raise TypeError("Parser lab file_bytes must be bytes or bytearray.")
 
     with zipfile.ZipFile(BytesIO(bytes(file_bytes))) as zip_file:
-        sheets, sheet, rows = read_normalized_workbook(zip_file, kind)
+        sheets, sheet, rows = read_normalized_workbook(
+            zip_file,
+            kind,
+            include_bordered_empty=True,
+        )
     rows_with_empty_divisions = expand_empty_rows(rows)
 
     document = {
@@ -72,6 +76,8 @@ def validate_inspection_document(document):
             raise ValueError(f"{path}.values must be an object.")
         if not isinstance(row.get("bold"), dict):
             raise ValueError(f"{path}.bold must be an object.")
+        if not isinstance(row.get("borders"), dict):
+            raise ValueError(f"{path}.borders must be an object.")
         if not isinstance(row.get("merged_b_to_d"), bool):
             raise ValueError(f"{path}.merged_b_to_d must be a boolean.")
         if not isinstance(row.get("empty"), bool):
@@ -79,5 +85,12 @@ def validate_inspection_document(document):
         for column in document["columns"]:
             if column not in row["values"] or not isinstance(row["values"][column], str):
                 raise ValueError(f"{path}.values.{column} must be a string.")
+            sides = row["borders"].get(column)
+            if sides is not None and (
+                not isinstance(sides, dict)
+                or set(sides) != {"top", "right", "bottom", "left"}
+                or any(not isinstance(value, bool) for value in sides.values())
+            ):
+                raise ValueError(f"{path}.borders.{column} must contain four boolean sides.")
 
     return document

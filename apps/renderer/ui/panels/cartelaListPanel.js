@@ -25,6 +25,7 @@
         button.className = 'block-button'
           + (isActive ? ' active' : '')
           + (hasOverrides ? ' has-overrides' : '')
+          + (cartela.enabled === false ? ' excluded' : '')
           + (enabledWithoutStyle ? ' missing-style' : '');
         button.addEventListener('click', () => options.selectCartela(cartela.id));
         button.addEventListener('dragstart', (event) => {

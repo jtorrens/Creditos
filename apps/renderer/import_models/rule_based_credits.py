@@ -29,7 +29,11 @@ def parse(file_bytes, source_name, options):
     if source_kind not in {"ods", "xlsx"}:
         raise ValueError("El modelo de reglas solo admite archivos .ods y .xlsx.")
     with zipfile.ZipFile(BytesIO(file_bytes)) as zip_file:
-        sheets, sheet, sparse_rows = read_normalized_workbook(zip_file, source_kind)
+        sheets, sheet, sparse_rows = read_normalized_workbook(
+            zip_file,
+            source_kind,
+            include_bordered_empty=True,
+        )
     rows = expand_empty_rows(sparse_rows)
     instances = find_block_instances(rows, model["blocks"])
     unresolved = blocking_instances(model["blocks"], instances)
@@ -188,6 +192,7 @@ def interpret_block(rows, instance, definition):
         items = interpret_first_term(body, first, last, interpretation)
     else:
         items = interpret_empty_groups(body, first, last, interpretation)
+    apply_border_enclosures(body, interpretation, items)
     return {
         "items": items,
         "start_row": rows[instance["source_index"]]["row"],
@@ -342,6 +347,71 @@ def boundary_for(interpretation, empty_rows):
         "source_count": count,
         "output_count": count if policy["display"] == "preserve" else 1 if policy["display"] == "compact" else 0,
     }
+
+
+def apply_border_enclosures(body, interpretation, items):
+    policy = interpretation["border_enclosure"]
+    if policy["mode"] != "enclosed":
+        return
+    for enclosure in find_border_enclosures(body, policy):
+        members = [
+            item for item in items
+            if any(enclosure["start_row"] <= row <= enclosure["end_row"] for row in item["source_rows"])
+        ]
+        if not members:
+            continue
+        for item in members[:-1]:
+            boundary = item.get("boundary_after") or {}
+            item["boundary_after"] = {
+                **boundary,
+                "effect": "item",
+                "source": "border_enclosure_internal",
+                **enclosure,
+            }
+        members[-1]["boundary_after"] = {
+            "effect": policy["effect"],
+            "display": "ignore",
+            "source_count": 0,
+            "output_count": 0,
+            "source": "border_enclosure",
+            **enclosure,
+        }
+
+
+def find_border_enclosures(rows, policy):
+    columns = ["A", "B", "C", "D"]
+    start = columns.index(policy["start_column"])
+    end = columns.index(policy["end_column"])
+    selected = columns[start:end + 1]
+    enclosures = []
+    active = None
+    for row in rows:
+        top = all(border_side(row, column, "top") for column in selected)
+        bottom = all(border_side(row, column, "bottom") for column in selected)
+        sides = (
+            border_side(row, policy["start_column"], "left")
+            and border_side(row, policy["end_column"], "right")
+        )
+        if top and sides:
+            active = {"start_row": row["row"], "valid": True}
+        if active is None:
+            continue
+        if not sides:
+            active["valid"] = False
+        if bottom and sides:
+            if active["valid"]:
+                enclosures.append({
+                    "start_row": active["start_row"],
+                    "end_row": row["row"],
+                    "start_column": policy["start_column"],
+                    "end_column": policy["end_column"],
+                })
+            active = None
+    return enclosures
+
+
+def border_side(row, column, side):
+    return bool(row.get("borders", {}).get(column, {}).get(side))
 
 
 def source_block(definition, interpreted):

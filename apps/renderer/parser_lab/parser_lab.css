@@ -951,6 +951,26 @@
   font-weight: 750;
 }
 
+.parser-lab-table-panel .parser-lab-table td.parser-lab-source-border-top {
+  border-top: 2px solid #38424c;
+}
+
+.parser-lab-table-panel .parser-lab-table td.parser-lab-source-border-right {
+  border-right: 2px solid #38424c;
+}
+
+.parser-lab-table-panel .parser-lab-table td.parser-lab-source-border-bottom {
+  border-bottom: 2px solid #38424c;
+}
+
+.parser-lab-table-panel .parser-lab-table td.parser-lab-source-border-left {
+  border-left: 2px solid #38424c;
+}
+
+.parser-lab-border-rule {
+  margin-top: 10px;
+}
+
 .parser-lab-block-cell {
   color: var(--muted);
   font-size: 10px;

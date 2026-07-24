@@ -36,22 +36,47 @@ def read_shared_strings(zip_file):
     return strings
 
 
-def read_bold_styles(zip_file):
+def border_side_present(node):
+    if node is None:
+        return False
+    style = str(node.attrib.get("style") or "").strip().lower()
+    return bool(style and style != "none")
+
+
+def read_xlsx_styles(zip_file):
     if "xl/styles.xml" not in zip_file.namelist():
-        return {}
+        return {}, {}
 
     root = ET.fromstring(zip_file.read("xl/styles.xml"))
     fonts_node = root.find("a:fonts", NS)
+    borders_node = root.find("a:borders", NS)
     cell_xfs_node = root.find("a:cellXfs", NS)
     if fonts_node is None or cell_xfs_node is None:
-        return {}
+        return {}, {}
 
     fonts = [font.find("a:b", NS) is not None for font in fonts_node]
+    borders = []
+    for border in borders_node or ():
+        borders.append({
+            side: border_side_present(border.find(f"a:{side}", NS))
+            for side in ("top", "right", "bottom", "left")
+        })
     bold_styles = {}
+    border_styles = {}
     for index, xf in enumerate(cell_xfs_node):
         font_id = int(xf.attrib.get("fontId", "0"))
+        border_id = int(xf.attrib.get("borderId", "0"))
         bold_styles[str(index)] = fonts[font_id] if font_id < len(fonts) else False
-    return bold_styles
+        border_styles[str(index)] = (
+            dict(borders[border_id])
+            if border_id < len(borders)
+            else empty_borders()
+        )
+    return bold_styles, border_styles
+
+
+def empty_borders():
+    return {"top": False, "right": False, "bottom": False, "left": False}
 
 
 def cell_value(cell, shared_strings):
@@ -117,9 +142,9 @@ def choose_sheet(sheets):
     return sheets[0]
 
 
-def read_sheet_rows(zip_file, sheet_path):
+def read_sheet_rows(zip_file, sheet_path, include_bordered_empty=False):
     shared_strings = read_shared_strings(zip_file)
-    bold_styles = read_bold_styles(zip_file)
+    bold_styles, border_styles = read_xlsx_styles(zip_file)
     root = ET.fromstring(zip_file.read(sheet_path))
 
     merged_rows = set()
@@ -135,13 +160,20 @@ def read_sheet_rows(zip_file, sheet_path):
     for row in root.findall(".//a:sheetData/a:row", NS):
         number = int(row.attrib.get("r", "0"))
         values, styles = row_values(row, shared_strings)
-        if any(values.values()):
+        borders = {
+            col: dict(border_styles.get(style, empty_borders()))
+            for col, style in styles.items()
+        }
+        if any(values.values()) or (
+            include_bordered_empty and any(any(sides.values()) for sides in borders.values())
+        ):
             rows.append(
                 {
                     "row": number,
                     "values": values,
                     "styles": styles,
                     "bold": {col: bold_styles.get(style, False) for col, style in styles.items()},
+                    "borders": borders,
                     "merged_b_to_d": number in merged_rows,
                 }
             )
@@ -160,12 +192,24 @@ def read_ods_styles(zip_file, content_root):
         if not name:
             continue
         text_properties = node.find("style:text-properties", ODS_NS)
+        cell_properties = node.find("style:table-cell-properties", ODS_NS)
+        borders = {}
+        if cell_properties is not None:
+            all_border = cell_properties.attrib.get(ods_attr("fo", "border"))
+            if all_border is not None:
+                present = ods_border_present(all_border)
+                borders.update({side: present for side in ("top", "right", "bottom", "left")})
+            for side in ("top", "right", "bottom", "left"):
+                value = cell_properties.attrib.get(ods_attr("fo", f"border-{side}"))
+                if value is not None:
+                    borders[side] = ods_border_present(value)
         definitions[name] = {
             "parent": node.attrib.get(ods_attr("style", "parent-style-name")),
             "bold": bool(
                 text_properties is not None
                 and text_properties.attrib.get(ods_attr("fo", "font-weight")) == "bold"
             ),
+            "borders": borders,
         }
 
     def is_bold(style_name, seen=None):
@@ -178,7 +222,30 @@ def read_ods_styles(zip_file, content_root):
         definition = definitions[style_name]
         return definition["bold"] or is_bold(definition["parent"], seen)
 
-    return {name: is_bold(name) for name in definitions}
+    def resolved_borders(style_name, seen=None):
+        if not style_name or style_name not in definitions:
+            return empty_borders()
+        seen = set(seen or ())
+        if style_name in seen:
+            return empty_borders()
+        seen.add(style_name)
+        definition = definitions[style_name]
+        inherited = resolved_borders(definition["parent"], seen)
+        inherited.update(definition["borders"])
+        return inherited
+
+    return {
+        name: {
+            "bold": is_bold(name),
+            "borders": resolved_borders(name),
+        }
+        for name in definitions
+    }
+
+
+def ods_border_present(value):
+    normalized = str(value or "").strip().lower()
+    return bool(normalized and normalized != "none" and not normalized.startswith("0 "))
 
 
 def ods_cell_text(cell):
@@ -194,7 +261,7 @@ def ods_cell_text(cell):
     return ""
 
 
-def read_ods_sheet_rows(table, bold_styles):
+def read_ods_sheet_rows(table, style_metadata, include_bordered_empty=False):
     rows = []
     logical_row = 0
     cell_tag = ods_attr("table", "table-cell")
@@ -205,6 +272,7 @@ def read_ods_sheet_rows(table, bold_styles):
         values = {"A": "", "B": "", "C": "", "D": ""}
         styles = {}
         bold = {}
+        borders = {}
         merged_b_to_d = False
         column_index = 0
 
@@ -225,29 +293,34 @@ def read_ods_sheet_rows(table, bold_styles):
                 values[column] = value if offset == 0 else ""
                 if style_name:
                     styles[column] = style_name
-                    bold[column] = bold_styles.get(style_name, False)
+                    metadata = style_metadata.get(style_name, {})
+                    bold[column] = bool(metadata.get("bold"))
+                    borders[column] = dict(metadata.get("borders") or empty_borders())
             column_index += repeats
             if column_index > 3:
                 break
 
         for _ in range(row_repeats):
             logical_row += 1
-            if any(values.values()):
+            if any(values.values()) or (
+                include_bordered_empty and any(any(sides.values()) for sides in borders.values())
+            ):
                 rows.append(
                     {
                         "row": logical_row,
                         "values": dict(values),
                         "styles": dict(styles),
                         "bold": dict(bold),
+                        "borders": {column: dict(sides) for column, sides in borders.items()},
                         "merged_b_to_d": merged_b_to_d,
                     }
                 )
     return rows
 
 
-def read_ods_workbook(zip_file):
+def read_ods_workbook(zip_file, include_bordered_empty=False):
     root = ET.fromstring(zip_file.read("content.xml"))
-    bold_styles = read_ods_styles(zip_file, root)
+    style_metadata = read_ods_styles(zip_file, root)
     tables = root.findall(".//table:table", ODS_NS)
     sheets = [
         {
@@ -259,4 +332,8 @@ def read_ods_workbook(zip_file):
         for index, table in enumerate(tables)
     ]
     sheet = choose_sheet(sheets)
-    return sheets, sheet, read_ods_sheet_rows(sheet["table"], bold_styles)
+    return sheets, sheet, read_ods_sheet_rows(
+        sheet["table"],
+        style_metadata,
+        include_bordered_empty=include_bordered_empty,
+    )

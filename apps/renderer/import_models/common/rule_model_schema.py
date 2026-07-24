@@ -1,5 +1,5 @@
 BLOCK_MODEL_SCHEMA = "parser_lab_block_model"
-BLOCK_MODEL_VERSION = 8
+BLOCK_MODEL_VERSION = 9
 
 
 def validate_rule_model(model):
@@ -89,3 +89,15 @@ def validate_rule_block(block, index):
             or policy.get("display") not in {"ignore", "compact", "preserve"}
         ):
             raise ValueError(f"El bloque {index + 1} tiene una política de filas vacías inválida.")
+    border_enclosure = interpretation.get("border_enclosure")
+    if (
+        not isinstance(border_enclosure, dict)
+        or border_enclosure.get("mode") not in {"ignore", "enclosed"}
+        or border_enclosure.get("start_column") not in {"A", "B", "C", "D"}
+        or border_enclosure.get("end_column") not in {"A", "B", "C", "D"}
+        or border_enclosure.get("effect") not in {"item", "group", "page"}
+    ):
+        raise ValueError(f"El bloque {index + 1} tiene una regla de recintos con borde inválida.")
+    columns = ["A", "B", "C", "D"]
+    if columns.index(border_enclosure["start_column"]) > columns.index(border_enclosure["end_column"]):
+        raise ValueError(f"El bloque {index + 1} tiene un rango de bordes invertido.")

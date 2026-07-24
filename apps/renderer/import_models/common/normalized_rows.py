@@ -8,12 +8,19 @@ from .spreadsheet_readers import (
 )
 
 
-def read_normalized_workbook(zip_file, source_kind):
+def read_normalized_workbook(zip_file, source_kind, include_bordered_empty=False):
     if source_kind == "ods":
-        return read_ods_workbook(zip_file)
+        return read_ods_workbook(
+            zip_file,
+            include_bordered_empty=include_bordered_empty,
+        )
     sheets = workbook_sheets(zip_file)
     sheet = choose_sheet(sheets)
-    rows = read_sheet_rows(zip_file, sheet["path"])
+    rows = read_sheet_rows(
+        zip_file,
+        sheet["path"],
+        include_bordered_empty=include_bordered_empty,
+    )
     return sheets, sheet, rows
 
 
@@ -38,6 +45,7 @@ def empty_row(number):
         "values": {"A": "", "B": "", "C": "", "D": ""},
         "styles": {},
         "bold": {},
+        "borders": {},
         "merged_b_to_d": False,
         "empty": True,
     }

@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 
 def init_db(connection):
@@ -164,6 +164,8 @@ def init_db(connection):
         migrate_rule_models_v7(connection)
     if current_version < 6:
         migrate_rule_models_v8(connection)
+    if current_version < 7:
+        migrate_rule_models_v9(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
     connection.commit()
 
@@ -210,6 +212,33 @@ def migrate_rule_models_v8(connection):
             interpretation.pop("item_boundary_effect", None)
             interpretation["item_start_merged_b_to_d"] = "ignore"
         model["version"] = 8
+        connection.execute(
+            """
+            UPDATE import_rule_models
+            SET model_json = ?, revision = revision + 1, updated_at = ?
+            WHERE id = ?
+            """,
+            (json.dumps(model, ensure_ascii=False), timestamp, row["id"]),
+        )
+
+
+def migrate_rule_models_v9(connection):
+    timestamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for row in connection.execute(
+        "SELECT id, model_json FROM import_rule_models"
+    ).fetchall():
+        model = json.loads(row["model_json"])
+        if model.get("schema") != "parser_lab_block_model" or model.get("version") != 8:
+            continue
+        for block in model.get("blocks", []):
+            interpretation = block.get("interpretation") or {}
+            interpretation["border_enclosure"] = {
+                "mode": "ignore",
+                "start_column": "B",
+                "end_column": "D",
+                "effect": "page",
+            }
+        model["version"] = 9
         connection.execute(
             """
             UPDATE import_rule_models

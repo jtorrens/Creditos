@@ -12,7 +12,13 @@ const row = (number, values, options = {}) => ({
   row: number,
   values: { A: '', B: '', C: '', D: '', ...values },
   bold: options.bold || {},
+  borders: options.borders || {},
   merged_b_to_d: Boolean(options.merged),
+});
+const borderRow = (top, bottom) => ({
+  B: { top, right: false, bottom, left: true },
+  C: { top, right: false, bottom, left: false },
+  D: { top, right: true, bottom, left: false },
 });
 const rows = [
   row(1, { C: 'Dirección' }, { bold: { C: true } }),
@@ -195,7 +201,7 @@ const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
 assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).schema, 'parser_lab_block_model');
-assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 8);
+assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 9);
 assert.deepStrictEqual(
   model.modelDocument([direction], [], normalizedRowsView).normalized_rows_view,
   normalizedRowsView
@@ -241,6 +247,46 @@ assert.deepStrictEqual(headerContentBlock.items.map((item) => item.principal), [
 ]);
 assert.deepStrictEqual(headerContentBlock.items.map((item) => item.role), ['secondary', 'secondary']);
 assert.deepStrictEqual(headerContentBlock.items[0].source_rows, [1]);
+
+const borderedRows = [
+  row(1, { C: 'Cabecera con borde' }, { borders: borderRow(true, true) }),
+  row(2, { B: 'Cargo uno', D: 'Nombre uno' }, { borders: borderRow(true, false) }),
+  { ...row(3, {}, { borders: borderRow(false, false) }), empty: true },
+  row(4, { B: 'Cargo dos', D: 'Nombre dos' }, { borders: borderRow(false, true) }),
+  row(5, { C: 'Siguiente bloque' }),
+];
+const borderedDefinition = model.definitionFromRow(borderedRows[0], 0);
+borderedDefinition.interpretation.item_grouping = 'row';
+borderedDefinition.interpretation.term_roles = { first: 'secondary', following: 'principal' };
+borderedDefinition.interpretation.empty_rows.between_items.effect = 'page';
+borderedDefinition.interpretation.border_enclosure = {
+  mode: 'enclosed',
+  start_column: 'B',
+  end_column: 'D',
+  effect: 'page',
+};
+const borderedFollowing = model.definitionFromRow(borderedRows[4], 1);
+const borderedInstances = model.findBlockInstances(
+  borderedRows,
+  [borderedDefinition, borderedFollowing]
+);
+const borderedBlock = model.interpretModel(
+  borderedRows,
+  borderedInstances,
+  [borderedDefinition, borderedFollowing]
+).blocks[0];
+assert.strictEqual(borderedBlock.items.length, 2);
+assert.strictEqual(borderedBlock.items[0].separator_after, 'item');
+assert.strictEqual(borderedBlock.items[0].empty_rows_after.effective_effect, 'item');
+assert.strictEqual(borderedBlock.items[0].border_enclosure_member.effect, 'item');
+assert.strictEqual(borderedBlock.items[1].separator_after, 'page');
+assert.deepStrictEqual(borderedBlock.items[1].border_enclosure_after, {
+  start_row: 2,
+  end_row: 4,
+  start_column: 'B',
+  end_column: 'D',
+  effect: 'page',
+});
 
 const directionPage = model.normalizeDefinition(direction);
 directionPage.interpretation.empty_rows.between_items.effect = 'page';

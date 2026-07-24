@@ -307,6 +307,45 @@
                 ${emptyRowPolicyFields('Trailing', 'Último ítem → siguiente bloque')}
                 <p id="parserLabBetweenPolicyNote" class="parser-lab-rule-note"></p>
               </div>
+              <fieldset class="parser-lab-empty-row-policy parser-lab-border-rule">
+                <legend>Recintos con borde</legend>
+                <label>
+                  <span>Interpretación</span>
+                  <select id="parserLabBlockBorderModeSelect" class="text-input">
+                    <option value="ignore">Ignorar bordes</option>
+                    <option value="enclosed">Detectar rectángulos cerrados</option>
+                  </select>
+                </label>
+                <div class="parser-lab-form-grid">
+                  <label>
+                    <span>Desde columna</span>
+                    <select id="parserLabBlockBorderStartSelect" class="text-input">
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Hasta columna</span>
+                    <select id="parserLabBlockBorderEndSelect" class="text-input">
+                      <option value="A">A</option>
+                      <option value="B">B</option>
+                      <option value="C">C</option>
+                      <option value="D">D</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  <span>Cada recinto termina con</span>
+                  <select id="parserLabBlockBorderEffectSelect" class="text-input">
+                    <option value="item">Siguiente ítem</option>
+                    <option value="group">Salto de grupo</option>
+                    <option value="page">Salto de página</option>
+                  </select>
+                </label>
+                <p class="parser-lab-rule-note">Solo se consideran rectángulos completos dentro del contenido. El borde de una cabecera situada antes del contenido no crea una división.</p>
+              </fieldset>
               <p class="parser-lab-rule-note">La orientación controla la colocación. «Crear ítems» decide sus fronteras. El rol del primer término es también el rol tipográfico del ítem, especialmente cuando solo contiene un valor.</p>
               <div id="parserLabBlockFormError" class="parser-lab-form-error" hidden></div>
             </form>
@@ -428,6 +467,10 @@
       blockBetweenDisplaySelect: documentRef.getElementById('parserLabBlockBetweenDisplaySelect'),
       blockTrailingEffectSelect: documentRef.getElementById('parserLabBlockTrailingEffectSelect'),
       blockTrailingDisplaySelect: documentRef.getElementById('parserLabBlockTrailingDisplaySelect'),
+      blockBorderModeSelect: documentRef.getElementById('parserLabBlockBorderModeSelect'),
+      blockBorderStartSelect: documentRef.getElementById('parserLabBlockBorderStartSelect'),
+      blockBorderEndSelect: documentRef.getElementById('parserLabBlockBorderEndSelect'),
+      blockBorderEffectSelect: documentRef.getElementById('parserLabBlockBorderEffectSelect'),
       betweenPolicyNote: documentRef.getElementById('parserLabBetweenPolicyNote'),
       blockFormError: documentRef.getElementById('parserLabBlockFormError'),
       modelJson: documentRef.getElementById('parserLabModelJson'),
@@ -1032,14 +1075,14 @@
 
       appendCell(tr, row.row);
       appendBlockCell(tr, block, isBlockHeader);
-      if (row.empty) {
+      if (row.empty && !hasSourceBorders(row)) {
         appendEmptySourceCell(tr);
       } else {
         appendSourceCell(tr, row, 'A');
       }
       if (!row.empty && row.merged_b_to_d) {
         appendMergedCell(tr, row);
-      } else if (!row.empty) {
+      } else if (!row.empty || hasSourceBorders(row)) {
         ['B', 'C', 'D'].forEach((column) => appendSourceCell(tr, row, column));
       }
       return tr;
@@ -1110,9 +1153,24 @@
       cell.dataset.column = column;
       cell.dataset.normalizedColumn = column;
       cell.classList.toggle('parser-lab-cell-bold', isBold);
+      applySourceBorderClasses(cell, row, column);
       cell.textContent = row.values && row.values[column] || '';
       cell.title = cellDescription(column, isBold, style);
       rowElement.appendChild(cell);
+    }
+
+    function hasSourceBorders(row) {
+      return COLUMNS.some((column) => (
+        row.borders && row.borders[column]
+        && Object.values(row.borders[column]).some(Boolean)
+      ));
+    }
+
+    function applySourceBorderClasses(cell, row, column) {
+      const sides = row.borders && row.borders[column] || {};
+      ['top', 'right', 'bottom', 'left'].forEach((side) => {
+        cell.classList.toggle(`parser-lab-source-border-${side}`, Boolean(sides[side]));
+      });
     }
 
     function applyNormalizedRowsView() {
@@ -1204,6 +1262,13 @@
       cell.dataset.column = 'B:D';
       cell.className = 'parser-lab-merged-cell';
       cell.classList.toggle('parser-lab-cell-bold', isBold);
+      const mergedBorders = {
+        top: ['B', 'C', 'D'].every((column) => row.borders && row.borders[column] && row.borders[column].top),
+        right: Boolean(row.borders && row.borders.D && row.borders.D.right),
+        bottom: ['B', 'C', 'D'].every((column) => row.borders && row.borders[column] && row.borders[column].bottom),
+        left: Boolean(row.borders && row.borders.B && row.borders.B.left),
+      };
+      applySourceBorderClasses(cell, { borders: { 'B:D': mergedBorders } }, 'B:D');
       cell.title = `${cellDescription(sourceColumn, isBold, style)} · combinada de B a D`;
       text.textContent = value;
       badge.className = 'parser-lab-merged-badge';
@@ -2120,6 +2185,7 @@
       const displayLabels = { ignore: 'ignora hueco', compact: 'compacta a 1', preserve: 'respeta hueco' };
       const normalized = blockModel.normalizeDefinition(definition);
       const policies = normalized.interpretation.empty_rows;
+      const borderEnclosure = normalized.interpretation.border_enclosure;
       const orientationLabels = {
         vertical: 'vertical',
         horizontal: 'horizontal',
@@ -2142,6 +2208,9 @@
       parts.push(`inicio: ${effectLabels[policies.leading.effect]}/${displayLabels[policies.leading.display]}`);
       parts.push(`entre: ${effectLabels[policies.between_items.effect]}/${displayLabels[policies.between_items.display]}`);
       parts.push(`final: ${effectLabels[policies.trailing.effect]}/${displayLabels[policies.trailing.display]}`);
+      if (borderEnclosure.mode === 'enclosed') {
+        parts.push(`bordes ${borderEnclosure.start_column}–${borderEnclosure.end_column}: ${effectLabels[borderEnclosure.effect]}`);
+      }
       return parts.join(' · ');
     }
 
@@ -2176,6 +2245,10 @@
       setEmptyRowPolicyFields('Leading', normalized.interpretation.empty_rows.leading);
       setEmptyRowPolicyFields('Between', normalized.interpretation.empty_rows.between_items);
       setEmptyRowPolicyFields('Trailing', normalized.interpretation.empty_rows.trailing);
+      elements.blockBorderModeSelect.value = normalized.interpretation.border_enclosure.mode;
+      elements.blockBorderStartSelect.value = normalized.interpretation.border_enclosure.start_column;
+      elements.blockBorderEndSelect.value = normalized.interpretation.border_enclosure.end_column;
+      elements.blockBorderEffectSelect.value = normalized.interpretation.border_enclosure.effect;
       elements.blockFormError.hidden = true;
       updateBoundaryFields();
       updateBlockValueInput();
@@ -2220,6 +2293,12 @@
             leading: readEmptyRowPolicyFields('Leading'),
             between_items: readEmptyRowPolicyFields('Between'),
             trailing: readEmptyRowPolicyFields('Trailing'),
+          },
+          border_enclosure: {
+            mode: elements.blockBorderModeSelect.value,
+            start_column: elements.blockBorderStartSelect.value,
+            end_column: elements.blockBorderEndSelect.value,
+            effect: elements.blockBorderEffectSelect.value,
           },
         },
       };
@@ -2551,6 +2630,11 @@
     function renderFormatSummary(row) {
       const boldColumns = COLUMNS.filter((column) => row.bold && row.bold[column]);
       const styledColumns = COLUMNS.filter((column) => row.styles && row.styles[column] !== undefined);
+      const borderColumns = COLUMNS.flatMap((column) => {
+        const sides = row.borders && row.borders[column] || {};
+        const active = ['top', 'right', 'bottom', 'left'].filter((side) => sides[side]);
+        return active.length ? [`${column} · ${active.join('/')}`] : [];
+      });
       const block = blockInstanceContainingRow(row.row);
       const decision = rowDecision(row.row);
       const headerCandidates = decision && decision.header_candidates || [];
@@ -2575,6 +2659,7 @@
         formatSummaryRow('Contenido', [row.empty ? 'Fila vacía · división interna' : 'Fila con datos']),
         formatSummaryRow('Negrita', boldColumns.length ? boldColumns : ['Ninguna']),
         formatSummaryRow('Combinación', [row.merged_b_to_d ? 'B–D' : 'Celdas separadas']),
+        formatSummaryRow('Bordes', borderColumns.length ? borderColumns : ['Ninguno']),
         formatSummaryRow(
           'Estilos de origen',
           styledColumns.length ? styledColumns.map((column) => `${column} · ${row.styles[column]}`) : ['Sin estilo registrado']
@@ -2765,6 +2850,10 @@
       elements.blockBetweenDisplaySelect,
       elements.blockTrailingEffectSelect,
       elements.blockTrailingDisplaySelect,
+      elements.blockBorderModeSelect,
+      elements.blockBorderStartSelect,
+      elements.blockBorderEndSelect,
+      elements.blockBorderEffectSelect,
     ].forEach((select) => select.addEventListener('change', applyLiveBlockDefinition));
     elements.blockGroupingSelect.addEventListener('change', () => {
       updateOrientationFields();

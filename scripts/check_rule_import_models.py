@@ -39,6 +39,12 @@ def definition(block_id, name, column, value, orientation, grouping, roles):
                 "between_items": {"effect": "item", "display": "ignore"},
                 "trailing": {"effect": "continue", "display": "ignore"},
             },
+            "border_enclosure": {
+                "mode": "ignore",
+                "start_column": "B",
+                "end_column": "D",
+                "effect": "page",
+            },
         },
     }
 
@@ -47,6 +53,7 @@ def main():
     sys.path.insert(0, str(RENDERER_ROOT))
     sys.path.insert(0, str(SCRIPTS_ROOT))
     from check_parser_golden import traz_ods_fixture
+    from import_models.rule_based_credits import apply_border_enclosures, find_border_enclosures
     from server_db.connection import db_connect
     from server_services.import_rule_model_service import (
         apply_rule_model_library_action,
@@ -58,7 +65,7 @@ def main():
 
     model = {
         "schema": "parser_lab_block_model",
-        "version": 8,
+        "version": 9,
         "blocks": [
             definition(
                 "direction",
@@ -91,6 +98,56 @@ def main():
         "composition_rules": [],
         "normalized_rows_view": {"column_widths": {}},
     }
+    bordered_rows = [
+        {
+            "row": 10,
+            "borders": {
+                "B": {"top": True, "right": False, "bottom": False, "left": True},
+                "C": {"top": True, "right": False, "bottom": False, "left": False},
+                "D": {"top": True, "right": True, "bottom": False, "left": False},
+            },
+        },
+        {
+            "row": 11,
+            "borders": {
+                "B": {"top": False, "right": False, "bottom": True, "left": True},
+                "C": {"top": False, "right": False, "bottom": True, "left": False},
+                "D": {"top": False, "right": True, "bottom": True, "left": False},
+            },
+        },
+    ]
+    border_policy = {
+        "mode": "enclosed",
+        "start_column": "B",
+        "end_column": "D",
+        "effect": "page",
+    }
+    assert find_border_enclosures(bordered_rows, border_policy) == [{
+        "start_row": 10,
+        "end_row": 11,
+        "start_column": "B",
+        "end_column": "D",
+    }]
+    bordered_items = [
+        {
+            "source_rows": [10],
+            "boundary_after": {
+                "effect": "page",
+                "display": "ignore",
+                "source_count": 1,
+                "output_count": 0,
+            },
+        },
+        {"source_rows": [11], "boundary_after": None},
+    ]
+    apply_border_enclosures(
+        bordered_rows,
+        {"border_enclosure": border_policy},
+        bordered_items,
+    )
+    assert bordered_items[0]["boundary_after"]["effect"] == "item"
+    assert bordered_items[0]["boundary_after"]["source"] == "border_enclosure_internal"
+    assert bordered_items[1]["boundary_after"]["effect"] == "page"
     record_id = "rule_model_test"
     library = {
         "schema": "parser_lab_model_library",
@@ -160,7 +217,7 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 7
 
         legacy_model = json.loads(json.dumps(model))
         legacy_model["version"] = 6
@@ -174,12 +231,21 @@ def main():
             legacy_connection.execute("PRAGMA user_version = 4")
         with db_connect(db_path) as migrated_connection:
             migrated = load_rule_model_library(migrated_connection)["models"][0]
-            assert migrated["model"]["version"] == 8
+            assert migrated["model"]["version"] == 9
             assert all(
                 block["interpretation"]["item_start_merged_b_to_d"] == "ignore"
                 for block in migrated["model"]["blocks"]
             )
-            assert migrated["revision"] == 6
+            assert all(
+                block["interpretation"]["border_enclosure"] == {
+                    "mode": "ignore",
+                    "start_column": "B",
+                    "end_column": "D",
+                    "effect": "page",
+                }
+                for block in migrated["model"]["blocks"]
+            )
+            assert migrated["revision"] == 7
 
     print("ok rule import models DB persistence and production parser")
     return 0

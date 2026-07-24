@@ -40,7 +40,7 @@ def main():
 
         if production_after != production_before:
             ok = fail(f"inspection changed production parser output for {case.name}") and ok
-        if inspection.get("schema") != "parser_lab_inspection" or inspection.get("version") != 2:
+        if inspection.get("schema") != "parser_lab_inspection" or inspection.get("version") != 3:
             ok = fail(f"invalid inspection contract for {case.name}") and ok
         if inspection.get("source") != case.source_name or inspection.get("source_kind") != source_kind:
             ok = fail(f"invalid inspection source metadata for {case.name}") and ok
@@ -48,6 +48,8 @@ def main():
             ok = fail(f"upload service changed the inspection contract for {case.name}") and ok
         if not inspection.get("rows"):
             ok = fail(f"inspection returned no rows for {case.name}") and ok
+        if any(not isinstance(row.get("borders"), dict) for row in inspection.get("rows", [])):
+            ok = fail(f"inspection lost border metadata for {case.name}") and ok
 
         try:
             json.dumps(inspection, ensure_ascii=False)
@@ -101,7 +103,7 @@ def main():
 
     temporary_model = {
         "schema": "parser_lab_block_model",
-        "version": 8,
+        "version": 9,
         "blocks": [
             {
                 "id": "block_01_direction",
@@ -129,6 +131,12 @@ def main():
                         "leading": {"effect": "continue", "display": "ignore"},
                         "between_items": {"effect": "item", "display": "ignore"},
                         "trailing": {"effect": "continue", "display": "ignore"},
+                    },
+                    "border_enclosure": {
+                        "mode": "ignore",
+                        "start_column": "B",
+                        "end_column": "D",
+                        "effect": "page",
                     },
                 },
             }
