@@ -2330,7 +2330,7 @@ textarea.visual-input {
 
 .render-unit.horizontal {
   align-items: first baseline;
-  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(60px, var(--visual-role-column-width, 45%)) minmax(60px, 1fr);
 }
 
 .render-unit.vertical {
@@ -2364,6 +2364,28 @@ textarea.visual-input {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(111, 147, 255, 0.16);
   outline: 0;
+}
+
+.render-column-split-control {
+  align-items: center;
+  color: var(--muted);
+  display: grid;
+  font-size: 10px;
+  gap: 8px;
+  grid-template-columns: auto minmax(80px, 1fr) auto;
+  margin: 0 0 7px;
+  opacity: 0.62;
+}
+
+.render-column-split-control:focus-within,
+.render-column-split-control:hover {
+  opacity: 1;
+}
+
+.render-column-split-control input[type='range'] {
+  margin: 0;
+  min-width: 0;
+  width: 100%;
 }
 
 .render-cartela-title-input {

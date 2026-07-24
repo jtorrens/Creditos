@@ -59,7 +59,7 @@
       input.setAttribute('aria-label', field);
       if (visualOptions.styleKey) applyTypography(input, visualOptions.styleKey, visualOptions);
       if (visualOptions.textAlign) input.style.textAlign = visualOptions.textAlign;
-      configureTextWrapInput(input, options.normalizeBoolean(visualOptions.autoWrap, false));
+      configureTextWrapInput(input, false);
       windowRef.requestAnimationFrame(() => resizeMultilineInput(input));
       return input;
     }
@@ -73,8 +73,18 @@
 
     function resizeMultilineInput(input) {
       if (!input || input.tagName !== 'TEXTAREA') return;
-      input.style.height = 'auto';
-      input.style.height = `${Math.max(input.scrollHeight, 30)}px`;
+      const lineCount = Math.max(1, String(input.value || '').split(/\r\n|\r|\n/).length);
+      const computed = windowRef.getComputedStyle(input);
+      const fontSize = Number.parseFloat(computed.fontSize) || 13;
+      const lineHeight = Number.parseFloat(computed.lineHeight) || fontSize * 1.12;
+      const chrome = (
+        (Number.parseFloat(computed.paddingTop) || 0)
+        + (Number.parseFloat(computed.paddingBottom) || 0)
+        + (Number.parseFloat(computed.borderTopWidth) || 0)
+        + (Number.parseFloat(computed.borderBottomWidth) || 0)
+      );
+      input.rows = lineCount;
+      input.style.height = `${Math.max(30, Math.ceil(lineHeight * lineCount + chrome))}px`;
     }
 
     function applyTypography(element, key, typographyOptions = {}) {
