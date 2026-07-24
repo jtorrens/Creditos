@@ -61,13 +61,11 @@
       }
 
       const breakUnits = options.getMaterialContentItems(material);
-      const cartela = options.getSelectedCartela();
       if (
-        cartela
-        && cartela.orientation === 'horizontal'
-        && breakUnits.some((item) => ['credit', 'crew_credit', 'cast'].includes(item.kind))
+        breakUnits.some((item) => ['credit', 'crew_credit', 'cast'].includes(item.kind))
       ) {
-        const splitKey = `${cartela.id}:${ref}`;
+        const cartela = options.getSelectedCartela();
+        const splitKey = `${cartela && cartela.id || 'cartela'}:${ref}`;
         const split = materialColumnSplits.get(splitKey) || 42;
         wrap.style.setProperty('--material-role-column-width', `${split}%`);
         wrap.appendChild(makeMaterialColumnSplitControl(wrap, splitKey, split));
@@ -130,8 +128,7 @@
 
     function renderItemEditor(item) {
       const row = documentRef.createElement('div');
-      const cartela = options.getSelectedCartela();
-      const orientation = cartela && cartela.orientation ? cartela.orientation : 'horizontal';
+      const orientation = 'horizontal';
 
       if (item.kind === 'credit' || item.kind === 'crew_credit') {
         const overrideEntries = [

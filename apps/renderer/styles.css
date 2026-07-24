@@ -1707,8 +1707,7 @@ textarea.text-input {
 textarea.preview-input,
 textarea.visual-input {
   min-height: 30px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
   resize: none;
 }
 
