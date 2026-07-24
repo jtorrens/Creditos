@@ -925,17 +925,117 @@
       return cartela.pages[0];
     }
 
-    function moveMaterialToCartela(structure, materialId, targetCartela) {
-      if (!structure || !targetCartela) return false;
+    function cloneJson(value) {
+      return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+    }
+
+    function materialAssignment(structure, materialId) {
+      for (const [cartelaIndex, cartela] of (structure.cartelas || []).entries()) {
+        for (const [pageIndex, page] of (cartela.pages || []).entries()) {
+          const refIndex = (page.source_refs || []).indexOf(materialId);
+          if (refIndex < 0) continue;
+          const cartelaFields = { ...cartela };
+          const pageFields = { ...page };
+          delete cartelaFields.pages;
+          delete cartelaFields.images;
+          delete cartelaFields.image;
+          delete pageFields.source_refs;
+          delete pageFields.source_ref_settings;
+          return {
+            cartela_id: cartela.id,
+            cartela_index: cartelaIndex,
+            cartela_fields: cloneJson(cartelaFields),
+            page_id: page.id,
+            page_index: pageIndex,
+            page_fields: cloneJson(pageFields),
+            ref_index: refIndex,
+            settings: cloneJson(page.source_ref_settings && page.source_ref_settings[materialId] || { columns: 1 }),
+          };
+        }
+      }
+      return null;
+    }
+
+    function rememberMaterialAssignment(structure, materialId, assignment) {
+      if (!assignment) return;
+      structure.material_assignment_history = structure.material_assignment_history || {};
+      const history = structure.material_assignment_history[materialId] || [];
+      history.push(assignment);
+      structure.material_assignment_history[materialId] = history;
+    }
+
+    function removeMaterialRef(structure, materialId) {
       (structure.cartelas || []).forEach((cartela) => {
         (cartela.pages || []).forEach((page) => {
           page.source_refs = (page.source_refs || []).filter((ref) => ref !== materialId);
+          if (page.source_ref_settings) delete page.source_ref_settings[materialId];
         });
       });
+    }
+
+    function moveMaterialToCartela(structure, materialId, targetCartela) {
+      if (!structure || !targetCartela) return false;
+      const assignment = materialAssignment(structure, materialId);
+      if (assignment && assignment.cartela_id === targetCartela.id) return false;
+      rememberMaterialAssignment(structure, materialId, assignment);
+      removeMaterialRef(structure, materialId);
       const page = ensureFirstPage(targetCartela);
       page.source_ref_settings = page.source_ref_settings || {};
       page.source_ref_settings[materialId] = page.source_ref_settings[materialId] || { columns: 1 };
       page.source_refs.push(materialId);
+      return true;
+    }
+
+    function restoreMaterialAssignment(structure, materialId) {
+      if (!structure) return false;
+      removeMaterialRef(structure, materialId);
+      const histories = structure.material_assignment_history || {};
+      const history = Array.isArray(histories[materialId]) ? histories[materialId] : [];
+      const assignment = history.pop();
+      if (!assignment) return true;
+
+      let cartela = (structure.cartelas || []).find((candidate) => candidate.id === assignment.cartela_id);
+      if (!cartela) {
+        cartela = {
+          ...(cloneJson(assignment.cartela_fields) || {}),
+          id: assignment.cartela_id,
+          pages: [],
+        };
+        structure.cartelas = structure.cartelas || [];
+        const restoredOrder = Number(cartela.visual_order || cartela.source_order);
+        const orderedIndex = Number.isFinite(restoredOrder)
+          ? structure.cartelas.findIndex((candidate) => {
+            const candidateOrder = Number(candidate.visual_order || candidate.source_order);
+            return Number.isFinite(candidateOrder) && candidateOrder > restoredOrder;
+          })
+          : -1;
+        const fallbackIndex = Math.max(0, Math.min(Number(assignment.cartela_index) || 0, structure.cartelas.length));
+        const cartelaIndex = orderedIndex >= 0 ? orderedIndex : fallbackIndex;
+        structure.cartelas.splice(cartelaIndex, 0, cartela);
+      }
+
+      cartela.pages = cartela.pages || [];
+      let page = cartela.pages.find((candidate) => candidate.id === assignment.page_id);
+      if (!page) {
+        page = {
+          ...(cloneJson(assignment.page_fields) || {}),
+          id: assignment.page_id || `${cartela.id}_page_001`,
+          source_refs: [],
+          source_ref_settings: {},
+        };
+        const pageIndex = Math.max(0, Math.min(Number(assignment.page_index) || 0, cartela.pages.length));
+        cartela.pages.splice(pageIndex, 0, page);
+      }
+
+      page.source_refs = (page.source_refs || []).filter((ref) => ref !== materialId);
+      const refIndex = Math.max(0, Math.min(Number(assignment.ref_index) || 0, page.source_refs.length));
+      page.source_refs.splice(refIndex, 0, materialId);
+      page.source_ref_settings = page.source_ref_settings || {};
+      page.source_ref_settings[materialId] = cloneJson(assignment.settings) || { columns: 1 };
+
+      if (history.length) histories[materialId] = history;
+      else delete histories[materialId];
+      if (!Object.keys(histories).length) delete structure.material_assignment_history;
       return true;
     }
 
@@ -979,6 +1079,7 @@
       normalizeVisualOrders,
       removeDefaultEmptyCartelas,
       resetCartelaOverride,
+      restoreMaterialAssignment,
       structureJsonForOutput,
       transferStructurePresentation,
       updateCartela,

@@ -37,13 +37,7 @@
       removeButton.addEventListener('click', () => {
         const cartela = options.getSelectedCartela();
         if (!cartela) return;
-        cartela.pages = (cartela.pages || []).map((page) => ({
-          ...page,
-          source_refs: (page.source_refs || []).filter((sourceRef) => sourceRef !== ref),
-        }));
-        cartela.pages.forEach((page) => {
-          if (page.source_ref_settings) delete page.source_ref_settings[ref];
-        });
+        options.restoreMaterialAssignment(state.structure, ref);
         options.rebuild();
       });
       const actions = documentRef.createElement('div');
