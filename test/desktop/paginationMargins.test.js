@@ -139,6 +139,73 @@ test('una ampliación manual de líneas prevalece sobre el margen físico', () =
   ]);
 });
 
+test('una línea manual no arrastra todos los nombres del mismo grupo', () => {
+  const units = [
+    { id: 'previous', kind: 'crew_credit', source_item_id: 'previous', role: 'Eléctricos', name: 'Edgar' },
+    { id: 'name_1', kind: 'crew_credit', source_item_id: 'reinforcements', role: 'Refuerzos', name: 'Natan' },
+    { id: 'name_2', kind: 'crew_credit', source_item_id: 'reinforcements', role: 'Refuerzos', name: 'Pascual' },
+    { id: 'name_3', kind: 'crew_credit', source_item_id: 'reinforcements', role: 'Refuerzos', name: 'Hugo' },
+  ];
+  const domain = globalThis.CreditosDomainPagination.createPaginationDomain({
+    blockForTitleRepeat: (candidate) => candidate,
+    canvasTextHeight: () => 20,
+    canvasTextMetrics: () => ({ lineHeight: 20 }),
+    canvasWrappedTextLines: (value) => [String(value || '')],
+    cartelaBlockGap: () => 0,
+    cartelaHasImages: () => false,
+    countTitleLine: () => 0,
+    creditSourceId: (unit) => unit.source_item_id,
+    getEffectiveCartela: (cartela) => cartela,
+    getRenderLayout: () => ({
+      page_width: 400,
+      page_height: 260,
+      page_top_margin: 10,
+      page_bottom_margin: 10,
+      page_left_margin: 10,
+      page_right_margin: 10,
+      column_gap: 0,
+      role_name_gap: 0,
+    }),
+    getRenderedBlockUnits: () => units,
+    layoutForCartela: (layout) => layout,
+    measureCanvasBlock: (_ctx, candidate) => 190 + candidate.pages[0].items.length * 30,
+    normalizeSettings: (settings) => settings,
+    sourceBlankRowCounts: () => [],
+    unitRenderOptions: (unit, previousSourceId) => ({
+      repeatedNameRow: unit.source_item_id === previousSourceId,
+    }),
+  });
+  const cartela = {
+    id: 'crew',
+    pages: [{
+      id: 'crew_page',
+      blocks: [{
+        id: 'crew_block',
+        columns: 1,
+        pages: [{ id: 'source_page', items: units }],
+      }],
+    }],
+  };
+
+  const pages = domain.buildPhysicalPages([cartela], {}, {
+    settings: { default_auto_page_lines: 36 },
+    pageLineAdjustments: {
+      __physical: {
+        crew_crew_page_physical_01: 1,
+      },
+    },
+  });
+
+  assert.deepEqual(
+    pages[0].blocks[0].pages[0].items.map((item) => item.id),
+    ['previous', 'name_1']
+  );
+  assert.deepEqual(
+    pages.slice(1).flatMap((page) => page.blocks[0].pages[0].items.map((item) => item.id)),
+    ['name_2', 'name_3']
+  );
+});
+
 test('cada fila vacía del origen ocupa exactamente una línea tipográfica', () => {
   const domain = globalThis.CreditosDomainPagination.createPaginationDomain({
     canvasTextMetrics: (styleKey) => ({ lineHeight: styleKey === 'role' ? 52 : 60 }),

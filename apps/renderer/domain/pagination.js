@@ -35,6 +35,7 @@
           const blockPageIndexes = new Map();
           let pageIndex = 0;
           let currentPage = null;
+          let manualOverflowLinesUsed = 0;
 
           const startPage = () => {
             const currentPageIndex = pageIndex;
@@ -53,6 +54,7 @@
               cartela_page: cartelaPage,
               blocks: [],
             };
+            manualOverflowLinesUsed = 0;
             pageIndex += 1;
             cartelaPhysicalIndex += 1;
           };
@@ -130,7 +132,7 @@
           };
           const addUnitToPage = (block, unit, unitIndex) => {
             if (!currentPage) startPage();
-            const manualExpansion = Number(physicalAdjustments[currentPage.id]) > 0;
+            const manualExpansion = Math.max(0, Number(physicalAdjustments[currentPage.id]) || 0);
             let physicalBlock = currentPage.blocks[currentPage.blocks.length - 1];
             const candidateBlockPageIndex = physicalBlock && physicalBlock.id === block.id
               ? Number(physicalBlock.block_page_index) || 0
@@ -145,13 +147,41 @@
             const candidateItems = existingItems.concat(unit);
             const candidateBlockLines = countBlockVisualLines(candidateBlock, cartela, candidateItems);
             const addedLines = candidateBlockLines - existingBlockLines;
+            const pixelOverflow = pageWouldOverflowPixels(block, candidateBlock, candidateItems);
+            const candidateLayout = layoutForCartela(getRenderLayout(), cartela);
+            const candidateColumns = Math.max(1, Number(candidateBlock.columns) || 1);
+            const candidateContentWidth = Math.max(
+              1,
+              candidateLayout.page_width - candidateLayout.page_left_margin - candidateLayout.page_right_margin
+            );
+            const candidateColumnWidth = Math.max(
+              1,
+              (candidateContentWidth - candidateLayout.column_gap * (candidateColumns - 1)) / candidateColumns
+            );
+            const unitLines = countRenderedUnitLines(unit, block, cartela, {
+              ...unitRenderOptions(
+                unit,
+                existingItems.length ? creditSourceId(existingItems[existingItems.length - 1]) : null,
+                cartela,
+                existingItems.length > 0,
+                existingItems[existingItems.length - 1] || null
+              ),
+              layout: candidateLayout,
+              wrapWidth: candidateColumnWidth,
+            });
+            const exceedsManualOverflow = pixelOverflow && (
+              !manualExpansion
+              || manualOverflowLinesUsed + unitLines > manualExpansion
+            );
             if (pageHasBlocks() && (
               currentPage.line_count + addedLines > currentPage.line_limit
-              || (!manualExpansion && pageWouldOverflowPixels(block, candidateBlock, candidateItems))
+              || exceedsManualOverflow
             )) {
               finishPage();
               startPage();
               physicalBlock = null;
+            } else if (pixelOverflow && manualExpansion) {
+              manualOverflowLinesUsed += unitLines;
             }
 
             physicalBlock = ensureBlockOnPage(block);
