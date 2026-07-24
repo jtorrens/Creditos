@@ -2,7 +2,10 @@
   function createAppMaterialEditor(options = {}) {
     const documentRef = options.documentRef || root.document;
     const state = options.state;
-    const materialColumnSplits = new Map();
+    const MIN_ROW_COLUMN_PERCENT = 6;
+    const MAX_ROW_COLUMN_PERCENT = 25;
+    const MIN_ROLE_COLUMN_PERCENT = 15;
+    const MIN_NAME_COLUMN_PERCENT = 15;
 
     function renderMaterialEditor(material, ref) {
       const wrap = documentRef.createElement('div');
@@ -58,11 +61,11 @@
       if (
         breakUnits.some((item) => ['credit', 'crew_credit', 'cast'].includes(item.kind))
       ) {
-        const cartela = options.getSelectedCartela();
-        const splitKey = `${cartela && cartela.id || 'cartela'}:${ref}`;
-        const split = materialColumnSplits.get(splitKey) || 42;
-        wrap.style.setProperty('--material-role-column-width', `${split}%`);
-        wrap.appendChild(makeMaterialColumnSplitControl(wrap, splitKey, split));
+        const widths = normalizeEditorColumnWidths(
+          state.structure.editor_column_widths && state.structure.editor_column_widths[ref]
+        );
+        applyEditorColumnWidths(wrap, widths);
+        wrap.appendChild(makeMaterialTableHeader(wrap, ref, widths));
       }
       breakUnits.forEach((item, index) => {
         const isLastItem = index === breakUnits.length - 1;
@@ -71,30 +74,121 @@
       return wrap;
     }
 
-    function makeMaterialColumnSplitControl(wrap, splitKey, value) {
-      const control = documentRef.createElement('label');
-      control.className = 'material-table-header material-column-split-control';
-      control.title = 'Repartir el ancho de edición entre cargo y nombre';
-      const rowLabel = documentRef.createElement('span');
-      rowLabel.textContent = 'Fila';
-      const roleLabel = documentRef.createElement('span');
-      roleLabel.textContent = 'Cargo';
-      const slider = documentRef.createElement('input');
-      slider.type = 'range';
-      slider.min = '20';
-      slider.max = '70';
-      slider.step = '1';
-      slider.value = String(value);
-      slider.setAttribute('aria-label', 'Ancho de la columna de cargo');
-      slider.addEventListener('input', () => {
-        const split = Math.max(20, Math.min(70, Number(slider.value) || 42));
-        materialColumnSplits.set(splitKey, split);
-        wrap.style.setProperty('--material-role-column-width', `${split}%`);
+    function normalizeEditorColumnWidths(value) {
+      const row = Math.max(
+        MIN_ROW_COLUMN_PERCENT,
+        Math.min(MAX_ROW_COLUMN_PERCENT, Number(value && value.row_percent) || 9)
+      );
+      const role = Math.max(
+        MIN_ROLE_COLUMN_PERCENT,
+        Math.min(100 - row - MIN_NAME_COLUMN_PERCENT, Number(value && value.role_percent) || 42)
+      );
+      return { row_percent: row, role_percent: role };
+    }
+
+    function applyEditorColumnWidths(wrap, widths) {
+      wrap.style.setProperty('--material-row-column-width', `${widths.row_percent}%`);
+      wrap.style.setProperty('--material-role-column-width', `${widths.role_percent}%`);
+      wrap.querySelectorAll && wrap.querySelectorAll('.material-column-resizer').forEach((resizer) => {
+        const value = resizer.dataset.column === 'row' ? widths.row_percent : widths.role_percent;
+        resizer.setAttribute('aria-valuenow', String(Math.round(value)));
+        resizer.setAttribute('aria-valuetext', `${Math.round(value)} %`);
       });
-      const nameLabel = documentRef.createElement('span');
-      nameLabel.textContent = 'Nombre';
-      control.append(rowLabel, roleLabel, nameLabel, slider);
-      return control;
+    }
+
+    function persistEditorColumnWidths(ref, widths) {
+      state.structure.editor_column_widths = state.structure.editor_column_widths || {};
+      state.structure.editor_column_widths[ref] = {
+        row_percent: Math.round(widths.row_percent * 10) / 10,
+        role_percent: Math.round(widths.role_percent * 10) / 10,
+      };
+    }
+
+    function resizeEditorColumn(wrap, ref, widths, column, nextValue) {
+      if (column === 'row') {
+        widths.row_percent = Math.max(
+          MIN_ROW_COLUMN_PERCENT,
+          Math.min(MAX_ROW_COLUMN_PERCENT, nextValue)
+        );
+        widths.role_percent = Math.min(widths.role_percent, 100 - widths.row_percent - MIN_NAME_COLUMN_PERCENT);
+      } else {
+        widths.role_percent = Math.max(
+          MIN_ROLE_COLUMN_PERCENT,
+          Math.min(100 - widths.row_percent - MIN_NAME_COLUMN_PERCENT, nextValue)
+        );
+      }
+      persistEditorColumnWidths(ref, widths);
+      applyEditorColumnWidths(wrap, widths);
+    }
+
+    function beginEditorColumnResize(wrap, ref, widths, column, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const width = Math.max(1, wrap.getBoundingClientRect().width);
+      const startX = event.clientX;
+      const startValue = column === 'row' ? widths.row_percent : widths.role_percent;
+      wrap.classList.add('resizing-material-columns');
+      const move = (moveEvent) => resizeEditorColumn(
+        wrap,
+        ref,
+        widths,
+        column,
+        startValue + ((moveEvent.clientX - startX) / width) * 100
+      );
+      const stop = () => {
+        documentRef.removeEventListener('pointermove', move);
+        documentRef.removeEventListener('pointerup', stop);
+        documentRef.removeEventListener('pointercancel', stop);
+        wrap.classList.remove('resizing-material-columns');
+        if (options.scheduleAutosave) options.scheduleAutosave();
+      };
+      documentRef.addEventListener('pointermove', move);
+      documentRef.addEventListener('pointerup', stop);
+      documentRef.addEventListener('pointercancel', stop);
+    }
+
+    function resizeEditorColumnWithKeyboard(wrap, ref, widths, column, event) {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const delta = event.key === 'ArrowRight' ? 2 : -2;
+      const current = column === 'row' ? widths.row_percent : widths.role_percent;
+      resizeEditorColumn(wrap, ref, widths, column, current + delta);
+      if (options.scheduleAutosave) options.scheduleAutosave();
+    }
+
+    function makeMaterialTableHeader(wrap, ref, widths) {
+      const header = documentRef.createElement('div');
+      header.className = 'material-table-header';
+      [
+        ['Fila', 'row'],
+        ['Cargo', 'role'],
+        ['Nombre', 'name'],
+      ].forEach(([label, column]) => {
+        const cell = documentRef.createElement('span');
+        cell.className = `material-column-header material-column-header-${column}`;
+        cell.textContent = label;
+        if (column !== 'name') {
+          const resizer = documentRef.createElement('span');
+          resizer.className = 'material-column-resizer';
+          resizer.dataset.column = column;
+          resizer.setAttribute('role', 'separator');
+          resizer.setAttribute('aria-label', `Cambiar ancho de la columna ${label}`);
+          resizer.setAttribute('aria-orientation', 'vertical');
+          resizer.setAttribute('aria-valuenow', String(Math.round(
+            column === 'row' ? widths.row_percent : widths.role_percent
+          )));
+          resizer.setAttribute('tabindex', '0');
+          resizer.addEventListener('pointerdown', (event) => (
+            beginEditorColumnResize(wrap, ref, widths, column, event)
+          ));
+          resizer.addEventListener('keydown', (event) => (
+            resizeEditorColumnWithKeyboard(wrap, ref, widths, column, event)
+          ));
+          cell.appendChild(resizer);
+        }
+        header.appendChild(cell);
+      });
+      return header;
     }
 
     function renderMusicThemesEditor(material) {

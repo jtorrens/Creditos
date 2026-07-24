@@ -11,8 +11,19 @@ function element(tagName) {
     children: [],
     className: '',
     addEventListener(type, handler) { listeners[type] = handler; },
-    dispatch(type) { if (listeners[type]) listeners[type](); },
-    setAttribute() {},
+    dataset: {},
+    dispatch(type, event = {}) { if (listeners[type]) listeners[type](event); },
+    querySelectorAll(selector) {
+      const className = selector.startsWith('.') ? selector.slice(1) : '';
+      const matches = [];
+      const visit = (node) => {
+        if (String(node.className || '').split(/\s+/).includes(className)) matches.push(node);
+        (node.children || []).forEach(visit);
+      };
+      visit(this);
+      return matches;
+    },
+    setAttribute(name, value) { this[name] = value; },
     style: {
       values: {},
       setProperty(name, value) { this.values[name] = value; },
@@ -33,7 +44,9 @@ function findByClass(node, className) {
   return null;
 }
 
-test('el editor de materiales muestra el repartidor Cargo/Nombre', () => {
+test('el editor de materiales permite arrastrar las columnas Fila/Cargo/Nombre', () => {
+  let autosaves = 0;
+  const state = { materials: [], structure: { overrides: {} } };
   const editor = globalThis.CreditosAppMaterialEditor.createAppMaterialEditor({
     documentRef: { createElement: element },
     ensureCartelaSourceRefSettings: () => ({}),
@@ -47,8 +60,9 @@ test('el editor de materiales muestra el repartidor Cargo/Nombre', () => {
     normalizeFrozenMaterial: (value) => value,
     rebuild: () => {},
     resetEditableOverrides: () => {},
+    scheduleAutosave: () => { autosaves += 1; },
     sourceRefIsLocked: () => false,
-    state: { materials: [], structure: { overrides: {} } },
+    state,
   });
   const panel = editor.renderMaterialEditor({
     id: 'team',
@@ -63,11 +77,14 @@ test('el editor de materiales muestra el repartidor Cargo/Nombre', () => {
     }],
   }, 'team');
 
-  const control = findByClass(panel, 'material-column-split-control');
+  const control = findByClass(panel, 'material-table-header');
   const row = findByClass(panel, 'preview-credit');
   assert.ok(control);
   assert.ok(row.className.includes('horizontal'));
   assert.deepEqual(control.children.slice(0, 3).map((child) => child.textContent), ['Fila', 'Cargo', 'Nombre']);
+  assert.equal(control.children.some((child) => child.tagName === 'INPUT'), false);
+  const resizers = control.querySelectorAll('.material-column-resizer');
+  assert.equal(resizers.length, 2);
   assert.equal(findByClass(row, 'preview-credit-fields'), null);
   assert.deepEqual(row.children.map((child) => child.className), [
     'row-label',
@@ -75,8 +92,14 @@ test('el editor de materiales muestra el repartidor Cargo/Nombre', () => {
     'preview-names',
   ]);
 
-  const slider = control.children.find((child) => child.tagName === 'INPUT');
-  slider.value = '60';
-  slider.dispatch('input');
-  assert.equal(panel.style.values['--material-role-column-width'], '60%');
+  resizers[1].dispatch('keydown', {
+    key: 'ArrowRight',
+    preventDefault() {},
+  });
+  assert.equal(panel.style.values['--material-role-column-width'], '44%');
+  assert.deepEqual(state.structure.editor_column_widths.team, {
+    row_percent: 9,
+    role_percent: 44,
+  });
+  assert.equal(autosaves, 1);
 });

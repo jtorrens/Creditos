@@ -1369,6 +1369,7 @@
     normalizeFrozenMaterial,
     rebuild,
     restoreMaterialAssignment,
+    scheduleAutosave,
     hasEditableOverride,
     resetEditableOverrides,
     sourceRefIsLocked,

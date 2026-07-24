@@ -1661,7 +1661,10 @@ textarea.text-input {
 
 .preview-credit.horizontal {
   gap: 0;
-  grid-template-columns: 70px minmax(60px, var(--material-role-column-width, 42%)) minmax(60px, 1fr);
+  grid-template-columns:
+    minmax(46px, var(--material-row-column-width, 9%))
+    minmax(90px, var(--material-role-column-width, 42%))
+    minmax(100px, 1fr);
 }
 
 .preview-credit.vertical {
@@ -1705,32 +1708,66 @@ textarea.visual-input {
   resize: none;
 }
 
-.material-column-split-control {
-  align-items: center;
+.material-table-header {
   color: var(--muted);
   display: grid;
   font-size: 10px;
   gap: 0;
-  grid-template-columns: 70px minmax(60px, var(--material-role-column-width, 42%)) minmax(60px, 1fr);
+  grid-template-columns:
+    minmax(46px, var(--material-row-column-width, 9%))
+    minmax(90px, var(--material-role-column-width, 42%))
+    minmax(100px, 1fr);
   margin: 8px 0 0;
 }
 
-.material-table-header > span {
+.material-column-header {
   border-bottom: 1px solid var(--line);
   min-width: 0;
   padding: 5px 8px;
+  position: relative;
 }
 
-.material-column-split-control input[type='range'] {
-  grid-column: 2 / span 2;
-  margin: -3px 8px 2px;
-  min-width: 0;
-  width: 100%;
+.material-column-resizer {
+  bottom: 0;
+  cursor: col-resize;
+  position: absolute;
+  right: -7px;
+  top: 0;
+  touch-action: none;
+  width: 14px;
+  z-index: 3;
+}
+
+.material-column-resizer::after {
+  background: var(--line-strong);
+  bottom: 3px;
+  content: '';
+  position: absolute;
+  right: 6px;
+  top: 3px;
+  width: 2px;
+}
+
+.material-column-resizer:hover::after,
+.material-column-resizer:focus-visible::after,
+.material-panel.resizing-material-columns .material-column-resizer::after {
+  background: var(--accent);
+}
+
+.material-column-resizer:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.material-panel.resizing-material-columns,
+.material-panel.resizing-material-columns * {
+  cursor: col-resize !important;
+  user-select: none;
 }
 
 .preview-credit.horizontal > .preview-role,
 .preview-credit.horizontal > .preview-names,
-.material-table-header > span:nth-child(n + 2) {
+.material-column-header:nth-child(n + 2) {
   border-left: 1px solid var(--line);
 }
 
