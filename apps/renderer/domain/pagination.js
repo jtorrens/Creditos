@@ -130,6 +130,7 @@
           };
           const addUnitToPage = (block, unit, unitIndex) => {
             if (!currentPage) startPage();
+            const manualExpansion = Number(physicalAdjustments[currentPage.id]) > 0;
             let physicalBlock = currentPage.blocks[currentPage.blocks.length - 1];
             const candidateBlockPageIndex = physicalBlock && physicalBlock.id === block.id
               ? Number(physicalBlock.block_page_index) || 0
@@ -146,7 +147,7 @@
             const addedLines = candidateBlockLines - existingBlockLines;
             if (pageHasBlocks() && (
               currentPage.line_count + addedLines > currentPage.line_limit
-              || pageWouldOverflowPixels(block, candidateBlock, candidateItems)
+              || (!manualExpansion && pageWouldOverflowPixels(block, candidateBlock, candidateItems))
             )) {
               finishPage();
               startPage();

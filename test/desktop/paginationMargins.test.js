@@ -78,6 +78,67 @@ test('corta antes del bloque que cruzaría el margen inferior aunque queden lín
   assert.equal(pages[0].line_count < pages[0].line_limit, true);
 });
 
+test('una ampliación manual de líneas prevalece sobre el margen físico', () => {
+  const domain = globalThis.CreditosDomainPagination.createPaginationDomain({
+    blockForTitleRepeat: (candidate) => candidate,
+    canvasTextHeight: () => 20,
+    canvasTextMetrics: () => ({}),
+    canvasWrappedTextLines: (value) => [String(value || '')],
+    cartelaBlockGap: () => 10,
+    cartelaHasImages: () => false,
+    countTitleLine: (value) => String(value || '').trim() ? 1 : 0,
+    creditSourceId: () => '',
+    getEffectiveCartela: (cartela) => cartela,
+    getRenderLayout: () => ({
+      page_width: 400,
+      page_height: 260,
+      page_top_margin: 10,
+      page_bottom_margin: 10,
+      page_left_margin: 10,
+      page_right_margin: 10,
+      column_gap: 0,
+      role_name_gap: 0,
+    }),
+    getRenderedBlockUnits: (candidate) => candidate.pages.flatMap((page) => page.items),
+    layoutForCartela: (layout) => layout,
+    measureCanvasBlock: (_ctx, candidate) => candidate.measured_height,
+    normalizeSettings: (settings) => settings,
+    sourceBlankRowCounts: () => [],
+    unitRenderOptions: () => ({}),
+  });
+  const cartela = {
+    id: 'thanks',
+    title: 'Agradecimientos',
+    pages: [{
+      id: 'thanks_page',
+      blocks: [
+        block('Localizaciones', 100),
+        block('Arte', 30),
+        block('Vestuario', 30),
+        block('Maquillaje/Peluquería', 30),
+      ],
+    }],
+  };
+
+  const pages = domain.buildPhysicalPages([cartela], {}, {
+    settings: { default_auto_page_lines: 36 },
+    pageLineAdjustments: {
+      __physical: {
+        thanks_thanks_page_physical_01: 1,
+      },
+    },
+  });
+
+  assert.equal(pages.length, 1);
+  assert.equal(pages[0].line_limit, 37);
+  assert.deepEqual(pages[0].blocks.map((candidate) => candidate.id), [
+    'Localizaciones',
+    'Arte',
+    'Vestuario',
+    'Maquillaje/Peluquería',
+  ]);
+});
+
 test('cada fila vacía del origen ocupa exactamente una línea tipográfica', () => {
   const domain = globalThis.CreditosDomainPagination.createPaginationDomain({
     canvasTextMetrics: (styleKey) => ({ lineHeight: styleKey === 'role' ? 52 : 60 }),
