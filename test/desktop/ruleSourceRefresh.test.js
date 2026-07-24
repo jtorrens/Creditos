@@ -63,3 +63,54 @@ test('una revisión nueva del modelo reconstruye y persiste el episodio', async 
   assert.equal(persisted, 1);
   assert.equal(state.isLoadingEpisode, false);
 });
+
+test('reconstruye y persiste el render cuando cambian los saltos procedentes del modelo', async () => {
+  const freshRender = { id: 'fresh-page-break-render' };
+  const state = {
+    databasePath: '/tmp/creditos.db',
+    materials: [],
+    selectedEpisodeId: 2,
+    selectedProductionId: 1,
+  };
+  let persisted = 0;
+  const loader = globalThis.CreditosAppEpisodeLoader.createAppEpisodeLoader({
+    applyPreviewSettingsToUi: () => {},
+    buildCurrentRenderJson: () => freshRender,
+    createMaterialsFromSource: () => [{ id: 'team' }],
+    createStructureFromSource: (_source, _materials, previousStructure) => ({
+      ...previousStructure,
+      page_breaks: { team: ['item_1', 'item_2'] },
+      preview_settings: {},
+    }),
+    currentImportModelId: () => 'rule_model_test',
+    dbPost: async () => ({
+      source: { source: 'credits.ods' },
+      source_refresh: { status: 'current' },
+      structure: {
+        cartelas: [{ id: 'cartela_1' }],
+        page_breaks: { team: ['item_1'] },
+      },
+      render: { id: 'stale-page-break-render' },
+      styles: [],
+    }),
+    defaultPreviewSettings: () => ({}),
+    loadStyleObjects: () => {},
+    migrateStructure: (value) => value,
+    normalizeReferenceVideo: (value) => value,
+    normalizeSource: (value) => value,
+    persistCurrentEpisode: async () => { persisted += 1; },
+    rebuild: () => {},
+    selectedProduction: () => ({}),
+    selectedProductionHasStoredSettings: () => true,
+    state,
+    updateReferenceVideoStatus: () => {},
+    updateXlsxStatus: () => {},
+    windowRef: { alert: () => assert.fail('No debe mostrar una alerta.') },
+  });
+
+  await loader.loadCurrentEpisode();
+
+  assert.equal(state.render, freshRender);
+  assert.deepEqual(state.structure.page_breaks.team, ['item_1', 'item_2']);
+  assert.equal(persisted, 1);
+});

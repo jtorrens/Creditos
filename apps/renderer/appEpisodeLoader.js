@@ -27,13 +27,16 @@
         options.loadStyleObjects(result.styles || []);
         state.referenceVideo = options.normalizeReferenceVideo(result.reference);
         state.referenceVideoDuration = null;
+        let sourceBreaksChanged = false;
         if (result.source) {
           state.source = options.normalizeSource(result.source, result.source.meta && result.source.meta.loaded_file);
           state.materials = options.createMaterialsFromSource(state.source);
-          state.structure = result.structure
-            ? options.createStructureFromSource(state.source, state.materials, options.migrateStructure(result.structure))
-            : options.createStructureFromSource(state.source, state.materials, null);
-          state.render = result.source_refresh && result.source_refresh.status === 'refreshed'
+          const storedStructure = result.structure ? options.migrateStructure(result.structure) : null;
+          state.structure = options.createStructureFromSource(state.source, state.materials, storedStructure);
+          sourceBreaksChanged = !!storedStructure && JSON.stringify(storedStructure.page_breaks || {})
+            !== JSON.stringify(state.structure.page_breaks || {});
+          const sourceRefreshed = result.source_refresh && result.source_refresh.status === 'refreshed';
+          state.render = sourceRefreshed || sourceBreaksChanged
             ? options.buildCurrentRenderJson(state.source, state.materials, state.structure)
             : result.render || options.buildCurrentRenderJson(state.source, state.materials, state.structure);
           state.selectedCartelaId = state.structure.cartelas[0] ? state.structure.cartelas[0].id : null;
@@ -53,7 +56,13 @@
         options.updateXlsxStatus();
         options.updateReferenceVideoStatus();
         options.rebuild();
-        if (result.source_refresh && result.source_refresh.status === 'refreshed') {
+        if (
+          result.source
+          && (
+            (result.source_refresh && result.source_refresh.status === 'refreshed')
+            || sourceBreaksChanged
+          )
+        ) {
           await options.persistCurrentEpisode();
         }
         if (result.source_refresh && result.source_refresh.status === 'failed') {

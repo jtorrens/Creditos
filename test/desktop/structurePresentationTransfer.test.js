@@ -40,6 +40,38 @@ function material(id, title, rows = []) {
   };
 }
 
+test('actualiza los saltos de página desde el origen aunque la estructura conserve cortes antiguos', () => {
+  const domain = createDomain();
+  const sourceMaterial = {
+    ...material('team', 'Jefes de Equipo', [2, 4, 6]),
+    page_break_after_item_indexes: [0, 1],
+  };
+  sourceMaterial.items = sourceMaterial.items.map((item, index) => ({
+    ...item,
+    id: `item_${index + 1}`,
+    names: [{ id: `name_${index + 1}`, name: `Nombre ${index + 1}` }],
+  }));
+  const previousStructure = {
+    version: 12,
+    cartelas: [cartela('team_cartela', ['team'])],
+    page_breaks: {
+      team: ['item_1__name_1'],
+    },
+  };
+
+  const structure = domain.createStructureFromSource(
+    { sheet: 'Créditos' },
+    [sourceMaterial],
+    previousStructure,
+    { default_cartela_duration: 4 }
+  );
+
+  assert.deepEqual(structure.page_breaks.team, [
+    'item_1__name_1',
+    'item_2__name_2',
+  ]);
+});
+
 test('traslada presentación conservadoramente y solo agrupa correspondencias exactas completas', () => {
   const domain = createDomain();
   const targetMaterials = [

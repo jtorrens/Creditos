@@ -15,7 +15,6 @@
       const materialIds = new Set(materials.map((material) => material.id));
       const previousByRef = new Map();
       const previousOverrides = previous && previous.overrides ? previous.overrides : {};
-      const previousPageBreaks = previous && previous.page_breaks ? previous.page_breaks : {};
       const sourcePageBreaks = pageBreaksFromMaterials(materials);
       const previousPreviewSettings = normalizePreviewSettings(previous && previous.preview_settings ? previous.preview_settings : {});
 
@@ -71,7 +70,7 @@
         cartelas: cleanCartelas,
         settings,
         overrides: previousOverrides,
-        page_breaks: { ...sourcePageBreaks, ...previousPageBreaks },
+        page_breaks: sourcePageBreaks,
         page_line_adjustments: previous && previous.page_line_adjustments ? previous.page_line_adjustments : {},
         preview_settings: previousPreviewSettings,
       };
