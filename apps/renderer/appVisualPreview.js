@@ -3,7 +3,6 @@
     const documentRef = options.documentRef || root.document;
     const els = options.els;
     const state = options.state;
-    const visualColumnSplits = new Map();
 
     function makeVisualStaticText(value, className, styleKey, renderOptions = {}) {
       const text = String(value || '').trim();
@@ -101,21 +100,10 @@
         contentEl.style.rowGap = '0';
 
         const units = blockPage.items || [];
-        let columnSplitControl = null;
-        if (
-          cartela.orientation === 'horizontal'
-          && units.some((unit) => ['credit', 'crew_credit', 'cast'].includes(unit.kind))
-        ) {
-          const splitKey = `${cartela.id}:${block.id}:${blockPage.id}`;
-          const split = visualColumnSplits.get(splitKey) || 45;
-          contentEl.style.setProperty('--visual-role-column-width', `${split}%`);
-          columnSplitControl = makeColumnSplitControl(contentEl, splitKey, split);
-        }
         if (blockTitle) {
           if (units.length) blockTitle.style.marginBottom = `${options.cartelaBlockTitleGap(cartela, layout)}px`;
           blockPageEl.appendChild(blockTitle);
         }
-        if (columnSplitControl) blockPageEl.appendChild(columnSplitControl);
         let previousCreditSourceId = null;
         units.forEach((unit, index) => {
           const unitOptions = options.unitRenderOptions(unit, previousCreditSourceId, cartela, index > 0, units[index - 1]);
@@ -148,30 +136,6 @@
         blockEl.appendChild(blockPageEl);
       });
       return blockEl;
-    }
-
-    function makeColumnSplitControl(contentEl, splitKey, value) {
-      const control = documentRef.createElement('label');
-      control.className = 'render-column-split-control';
-      control.title = 'Repartir el ancho de edición entre cargo y nombre';
-      const roleLabel = documentRef.createElement('span');
-      roleLabel.textContent = 'Cargo';
-      const slider = documentRef.createElement('input');
-      slider.type = 'range';
-      slider.min = '20';
-      slider.max = '80';
-      slider.step = '1';
-      slider.value = String(value);
-      slider.setAttribute('aria-label', 'Ancho de la columna de cargo');
-      slider.addEventListener('input', () => {
-        const split = Math.max(20, Math.min(80, Number(slider.value) || 45));
-        visualColumnSplits.set(splitKey, split);
-        contentEl.style.setProperty('--visual-role-column-width', `${split}%`);
-      });
-      const nameLabel = documentRef.createElement('span');
-      nameLabel.textContent = 'Nombre';
-      control.append(roleLabel, slider, nameLabel);
-      return control;
     }
 
     function renderVisualUnit(unit, cartela, alignment, layout, renderOptions = {}) {

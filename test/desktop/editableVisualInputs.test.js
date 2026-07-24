@@ -3,7 +3,7 @@ const test = require('node:test');
 
 require('../../apps/renderer/appEditableInputs');
 
-test('el editor visual no hace wrap y solo crece con saltos de línea manuales', () => {
+test('los editores de materiales y visual no hacen wrap y solo crecen con saltos manuales', () => {
   let inputHandler = null;
   const input = {
     classList: { add: () => {}, toggle: () => {} },
@@ -57,4 +57,12 @@ test('el editor visual no hace wrap y solo crece con saltos de línea manuales',
 
   assert.equal(input.rows, 2);
   assert.equal(input.style.height, '38px');
+
+  input.value = 'Otro cargo largo que tampoco debe hacer wrap';
+  editable.makePreviewInput('item_2', 'role', input.value, 'role-input');
+
+  assert.equal(input.wrap, 'off');
+  assert.equal(input.style.whiteSpace, 'pre');
+  assert.equal(input.rows, 1);
+  assert.equal(input.style.height, '30px');
 });

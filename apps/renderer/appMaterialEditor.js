@@ -2,6 +2,7 @@
   function createAppMaterialEditor(options = {}) {
     const documentRef = options.documentRef || root.document;
     const state = options.state;
+    const materialColumnSplits = new Map();
 
     function renderMaterialEditor(material, ref) {
       const wrap = documentRef.createElement('div');
@@ -60,11 +61,46 @@
       }
 
       const breakUnits = options.getMaterialContentItems(material);
+      const cartela = options.getSelectedCartela();
+      if (
+        cartela
+        && cartela.orientation === 'horizontal'
+        && breakUnits.some((item) => ['credit', 'crew_credit', 'cast'].includes(item.kind))
+      ) {
+        const splitKey = `${cartela.id}:${ref}`;
+        const split = materialColumnSplits.get(splitKey) || 42;
+        wrap.style.setProperty('--material-role-column-width', `${split}%`);
+        wrap.appendChild(makeMaterialColumnSplitControl(wrap, splitKey, split));
+      }
       breakUnits.forEach((item, index) => {
         const isLastItem = index === breakUnits.length - 1;
         wrap.appendChild(renderItemEditor(item, material.id, isLastItem));
       });
       return wrap;
+    }
+
+    function makeMaterialColumnSplitControl(wrap, splitKey, value) {
+      const control = documentRef.createElement('label');
+      control.className = 'material-column-split-control';
+      control.title = 'Repartir el ancho de edición entre cargo y nombre';
+      const roleLabel = documentRef.createElement('span');
+      roleLabel.textContent = 'Cargo';
+      const slider = documentRef.createElement('input');
+      slider.type = 'range';
+      slider.min = '20';
+      slider.max = '70';
+      slider.step = '1';
+      slider.value = String(value);
+      slider.setAttribute('aria-label', 'Ancho de la columna de cargo');
+      slider.addEventListener('input', () => {
+        const split = Math.max(20, Math.min(70, Number(slider.value) || 42));
+        materialColumnSplits.set(splitKey, split);
+        wrap.style.setProperty('--material-role-column-width', `${split}%`);
+      });
+      const nameLabel = documentRef.createElement('span');
+      nameLabel.textContent = 'Nombre';
+      control.append(roleLabel, slider, nameLabel);
+      return control;
     }
 
     function renderMusicThemesEditor(material) {
@@ -118,8 +154,14 @@
           namesWrap.appendChild(nameLine);
         });
 
-        row.appendChild(roleWrap);
-        row.appendChild(namesWrap);
+        if (orientation === 'horizontal') {
+          const fields = documentRef.createElement('div');
+          fields.className = 'preview-credit-fields';
+          fields.append(roleWrap, namesWrap);
+          row.appendChild(fields);
+        } else {
+          row.append(roleWrap, namesWrap);
+        }
         return row;
       }
 
@@ -137,8 +179,14 @@
         const characterWrap = documentRef.createElement('div');
         characterWrap.className = 'preview-names';
         characterWrap.appendChild(makeRowPreviewInput(item.id, 'character', item.character || '', 'name-input', rowLabel, item.row, overrideEntries));
-        row.appendChild(actorWrap);
-        row.appendChild(characterWrap);
+        if (orientation === 'horizontal') {
+          const fields = documentRef.createElement('div');
+          fields.className = 'preview-credit-fields';
+          fields.append(actorWrap, characterWrap);
+          row.appendChild(fields);
+        } else {
+          row.append(actorWrap, characterWrap);
+        }
         return row;
       }
 

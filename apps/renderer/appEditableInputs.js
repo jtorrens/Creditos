@@ -49,7 +49,7 @@
         onOverrideChange: previewOptions.onOverrideChange,
       });
       input.classList.add('preview-input', className);
-      configureTextWrapInput(input, options.normalizeBoolean(options.getEffectiveCartela(options.getSelectedCartela() || {}).auto_text_wrap, false));
+      configureTextWrapInput(input, false);
       return input;
     }
 

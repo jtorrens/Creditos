@@ -1660,7 +1660,14 @@ textarea.text-input {
 }
 
 .preview-credit.horizontal {
-  grid-template-columns: 70px minmax(120px, 220px) minmax(0, 1fr);
+  grid-template-columns: 70px minmax(0, 1fr);
+}
+
+.preview-credit-fields {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(60px, var(--material-role-column-width, 42%)) minmax(60px, 1fr);
+  min-width: 0;
 }
 
 .preview-credit.vertical {
@@ -1700,8 +1707,41 @@ textarea.text-input {
 textarea.preview-input,
 textarea.visual-input {
   min-height: 30px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   resize: none;
+}
+
+.material-column-split-control {
+  align-items: center;
+  color: var(--muted);
+  display: grid;
+  font-size: 10px;
+  gap: 8px;
+  grid-template-columns: 70px minmax(80px, 1fr) auto;
+  margin: 8px 0 2px;
+  opacity: 0.65;
+}
+
+.material-column-split-control > span:first-child {
+  grid-column: 2;
+}
+
+.material-column-split-control input[type='range'] {
+  grid-column: 2;
+  margin: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.material-column-split-control > span:last-child {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+
+.material-column-split-control:focus-within,
+.material-column-split-control:hover {
+  opacity: 1;
 }
 
 .preview-input:hover,
@@ -2330,7 +2370,7 @@ textarea.visual-input {
 
 .render-unit.horizontal {
   align-items: first baseline;
-  grid-template-columns: minmax(60px, var(--visual-role-column-width, 45%)) minmax(60px, 1fr);
+  grid-template-columns: minmax(120px, 220px) minmax(0, 1fr);
 }
 
 .render-unit.vertical {
@@ -2366,27 +2406,6 @@ textarea.visual-input {
   outline: 0;
 }
 
-.render-column-split-control {
-  align-items: center;
-  color: var(--muted);
-  display: grid;
-  font-size: 10px;
-  gap: 8px;
-  grid-template-columns: auto minmax(80px, 1fr) auto;
-  margin: 0 0 7px;
-  opacity: 0.62;
-}
-
-.render-column-split-control:focus-within,
-.render-column-split-control:hover {
-  opacity: 1;
-}
-
-.render-column-split-control input[type='range'] {
-  margin: 0;
-  min-width: 0;
-  width: 100%;
-}
 
 .render-cartela-title-input {
   font-weight: 800;
