@@ -32,21 +32,18 @@ def parse(file_bytes, source_name, options):
         sheets, sheet, sparse_rows = read_normalized_workbook(zip_file, source_kind)
     rows = expand_empty_rows(sparse_rows)
     instances = find_block_instances(rows, model["blocks"])
-    unresolved = [
-        instance
-        for instance in instances
-        if instance["match_status"] != "matched"
-    ]
+    unresolved = blocking_instances(model["blocks"], instances)
     if unresolved:
         details = ", ".join(
             f"{instance['name']} ({status_label(instance['match_status'])})"
             for instance in unresolved
         )
         raise ValueError(f"El modelo no puede aplicarse de forma inequívoca: {details}.")
+    matched = matched_block_pairs(model["blocks"], instances)
+    if any(definition["enabled"] for definition in model["blocks"]) and not matched:
+        raise ValueError("El modelo no coincide con ninguna frontera habilitada del archivo.")
     blocks = []
-    for definition, instance in zip(model["blocks"], instances):
-        if not definition["enabled"]:
-            continue
+    for definition, instance in matched:
         interpreted = interpret_block(rows, instance, definition)
         blocks.append(source_block(definition, interpreted))
     result = {
@@ -73,6 +70,23 @@ def parse(file_bytes, source_name, options):
     }
     validate_source_json(result)
     return result
+
+
+def blocking_instances(definitions, instances):
+    return [
+        instance
+        for definition, instance in zip(definitions, instances)
+        if definition["enabled"]
+        and instance["match_status"] in {"ambiguous", "out_of_order"}
+    ]
+
+
+def matched_block_pairs(definitions, instances):
+    return [
+        (definition, instance)
+        for definition, instance in zip(definitions, instances)
+        if definition["enabled"] and instance["match_status"] == "matched"
+    ]
 
 
 def find_block_instances(rows, definitions):

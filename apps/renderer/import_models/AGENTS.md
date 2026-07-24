@@ -23,6 +23,6 @@ Do not put parser rules in `server.py` or `app.js`.
 
 - `rule_based_credits` is the registered production family for DB-backed manual models.
 - The selected rule record is loaded by the server service and passed explicitly to the parser.
-- Production parsing must validate the current rule contract and fail on missing, ambiguous, or out-of-order boundaries.
+- Production parsing must validate the current rule contract. Missing boundaries may be skipped when other enabled boundaries match; ambiguous or out-of-order boundaries must fail rather than guess. A model with no matching enabled boundary must also fail.
 - Never read the retired Parser Lab JSON library from a production importer.
 - Preserve the stable `source_json` boundary consumed by materials, structure, render, and Preview.

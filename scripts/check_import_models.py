@@ -52,6 +52,7 @@ def calls_validate_source_json(path):
 def main():
     sys.path.insert(0, str(PACKAGE_ROOT))
     registry = importlib.import_module("import_models.registry")
+    rule_based = importlib.import_module("import_models.rule_based_credits")
     import_service = importlib.import_module("server_services.import_service")
     errors = []
 
@@ -138,6 +139,41 @@ def main():
     )
     if preserved != stale_source or not failure_status or failure_status.get("status") != "failed":
         errors.append("failed rule refresh did not preserve the last valid source")
+
+    def boundary(name):
+        return {
+            "id": name.casefold().replace(" ", "_"),
+            "name": name,
+            "enabled": True,
+            "header": {
+                "source": "match",
+                "column": "C",
+                "operator": "equals",
+                "value": name,
+                "bold": "ignore",
+                "merged_b_to_d": "ignore",
+            },
+        }
+
+    definitions = [boundary("Primero"), boundary("Ausente"), boundary("Último")]
+    rows = [
+        {"row": 1, "values": {"C": "Primero"}, "bold": {}, "merged_b_to_d": False},
+        {"row": 2, "values": {"C": "Contenido"}, "bold": {}, "merged_b_to_d": False},
+        {"row": 3, "values": {"C": "Último"}, "bold": {}, "merged_b_to_d": False},
+    ]
+    instances = rule_based.find_block_instances(rows, definitions)
+    matched_ids = [
+        definition["id"]
+        for definition, _instance in rule_based.matched_block_pairs(definitions, instances)
+    ]
+    if matched_ids != ["primero", "último"] or rule_based.blocking_instances(definitions, instances):
+        errors.append("a missing rule boundary did not preserve the other matched boundaries")
+    ambiguous_instances = rule_based.find_block_instances(
+        rows + [{"row": 4, "values": {"C": "Primero"}, "bold": {}, "merged_b_to_d": False}],
+        [boundary("Primero")],
+    )
+    if not rule_based.blocking_instances([boundary("Primero")], ambiguous_instances):
+        errors.append("an ambiguous rule boundary did not remain blocking")
 
     for error in errors:
         print(f"ERROR: {error}", file=sys.stderr)
