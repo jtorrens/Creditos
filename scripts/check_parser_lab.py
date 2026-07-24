@@ -101,7 +101,7 @@ def main():
 
     temporary_model = {
         "schema": "parser_lab_block_model",
-        "version": 7,
+        "version": 8,
         "blocks": [
             {
                 "id": "block_01_direction",
@@ -121,7 +121,7 @@ def main():
                     "orientation": "vertical",
                     "item_grouping": "empty_rows",
                     "item_start_column": "B",
-                    "item_boundary_effect": "item",
+                    "item_start_merged_b_to_d": "ignore",
                     "traversal": "row_major",
                     "split_cell_lines": True,
                     "term_roles": {"first": "principal", "following": "secondary"},

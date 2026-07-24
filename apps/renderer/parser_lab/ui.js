@@ -279,12 +279,12 @@
                   <option value="D">D</option>
                 </select>
               </label>
-              <label id="parserLabBlockItemBoundaryField" hidden>
-                <span>Al encontrar otro primer término</span>
-                <select id="parserLabBlockItemBoundarySelect" class="text-input">
-                  <option value="item">Siguiente ítem</option>
-                  <option value="group">Salto de grupo</option>
-                  <option value="page">Salto de página</option>
+              <label id="parserLabBlockItemStartMergedField" hidden>
+                <span>Combinación B–D para iniciar ítem</span>
+                <select id="parserLabBlockItemStartMergedSelect" class="text-input">
+                  <option value="ignore">Ignorar</option>
+                  <option value="required">Requerida</option>
+                  <option value="forbidden">Prohibida</option>
                 </select>
               </label>
               <label>
@@ -411,8 +411,8 @@
       blockGroupingSelect: documentRef.getElementById('parserLabBlockGroupingSelect'),
       blockStartColumnField: documentRef.getElementById('parserLabBlockStartColumnField'),
       blockStartColumnSelect: documentRef.getElementById('parserLabBlockStartColumnSelect'),
-      blockItemBoundaryField: documentRef.getElementById('parserLabBlockItemBoundaryField'),
-      blockItemBoundarySelect: documentRef.getElementById('parserLabBlockItemBoundarySelect'),
+      blockItemStartMergedField: documentRef.getElementById('parserLabBlockItemStartMergedField'),
+      blockItemStartMergedSelect: documentRef.getElementById('parserLabBlockItemStartMergedSelect'),
       blockFirstRoleSelect: documentRef.getElementById('parserLabBlockFirstRoleSelect'),
       blockFollowingRoleSelect: documentRef.getElementById('parserLabBlockFollowingRoleSelect'),
       blockLeadingEffectSelect: documentRef.getElementById('parserLabBlockLeadingEffectSelect'),
@@ -1962,7 +1962,8 @@
         : 'contenido después de cabecera');
       parts.push(groupingLabels[normalized.interpretation.item_grouping]);
       if (normalized.interpretation.item_grouping === 'first_term') {
-        parts.push(`nuevo término: ${effectLabels[normalized.interpretation.item_boundary_effect]}`);
+        const mergedLabels = { ignore: 'cualquier combinación', required: 'B–D combinada', forbidden: 'B–D separada' };
+        parts.push(`inicio: ${mergedLabels[normalized.interpretation.item_start_merged_b_to_d]}`);
       }
       parts.push(`roles: ${normalized.interpretation.term_roles.first} → ${normalized.interpretation.term_roles.following}`);
       parts.push(`inicio: ${effectLabels[policies.leading.effect]}/${displayLabels[policies.leading.display]}`);
@@ -1996,7 +1997,7 @@
       elements.blockOrientationSelect.value = normalized.interpretation.orientation;
       elements.blockGroupingSelect.value = normalized.interpretation.item_grouping;
       elements.blockStartColumnSelect.value = normalized.interpretation.item_start_column;
-      elements.blockItemBoundarySelect.value = normalized.interpretation.item_boundary_effect;
+      elements.blockItemStartMergedSelect.value = normalized.interpretation.item_start_merged_b_to_d;
       elements.blockFirstRoleSelect.value = normalized.interpretation.term_roles.first;
       elements.blockFollowingRoleSelect.value = normalized.interpretation.term_roles.following;
       setEmptyRowPolicyFields('Leading', normalized.interpretation.empty_rows.leading);
@@ -2035,7 +2036,7 @@
           orientation: elements.blockOrientationSelect.value,
           item_grouping: elements.blockGroupingSelect.value,
           item_start_column: elements.blockStartColumnSelect.value,
-          item_boundary_effect: elements.blockItemBoundarySelect.value,
+          item_start_merged_b_to_d: elements.blockItemStartMergedSelect.value,
           traversal: 'row_major',
           split_cell_lines: true,
           term_roles: {
@@ -2148,7 +2149,7 @@
       const rowGrouping = grouping === 'row';
       const continueOption = elements.blockBetweenEffectSelect.querySelector('option[value="continue"]');
       elements.blockStartColumnField.hidden = grouping !== 'first_term';
-      elements.blockItemBoundaryField.hidden = grouping !== 'first_term';
+      elements.blockItemStartMergedField.hidden = grouping !== 'first_term';
       continueOption.textContent = rowGrouping
         ? 'Sin separación adicional · siguen siendo dos ítems'
         : 'Continuar el mismo ítem';
@@ -2536,7 +2537,7 @@
       elements.blockContentStartSelect,
       elements.blockOrientationSelect,
       elements.blockStartColumnSelect,
-      elements.blockItemBoundarySelect,
+      elements.blockItemStartMergedSelect,
       elements.blockFirstRoleSelect,
       elements.blockFollowingRoleSelect,
       elements.blockLeadingEffectSelect,

@@ -195,7 +195,7 @@ const normalizedRowsView = {
   column_widths: { block: 140, A: 100, B: 240, C: 220, D: 260 },
 };
 assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).schema, 'parser_lab_block_model');
-assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 7);
+assert.strictEqual(model.modelDocument([direction], [], normalizedRowsView).version, 8);
 assert.deepStrictEqual(
   model.modelDocument([direction], [], normalizedRowsView).normalized_rows_view,
   normalizedRowsView
@@ -379,18 +379,45 @@ assert.deepStrictEqual(groupedHorizontalBlock.items[0].terms.map((term) => [term
 ]);
 assert.strictEqual(groupedHorizontalBlock.items[0].principal, 'Óscar Mesa');
 assert.deepStrictEqual(groupedHorizontalBlock.items[1].source_rows, [6]);
-assert.strictEqual(groupedHorizontalBlock.items[0].separator_after, 'item');
+assert.strictEqual(groupedHorizontalBlock.items[0].separator_after, null);
 
-const pagedFirstTermDefinition = model.normalizeDefinition(groupedHorizontalDefinition);
-pagedFirstTermDefinition.interpretation.item_boundary_effect = 'page';
-const pagedFirstTermBlock = model.interpretModel(
-  groupedHorizontalRows,
-  groupedHorizontalInstances,
-  [pagedFirstTermDefinition, groupedHorizontalFollowing]
+const mergedStartRows = [
+  row(1, { C: 'Jefes de Equipo' }),
+  row(2, { B: 'Productoras Ejecutivas Creativas' }, { merged: true }),
+  row(3, { B: 'Sara Cano', D: 'Paula Fabra' }),
+  { ...row(4, {}), empty: true },
+  row(5, { B: 'Directora General', D: '' }, { merged: true }),
+  row(6, { C: 'Concha Jaime' }),
+  row(7, { B: 'Jefe de Producción' }, { merged: true }),
+  row(8, { C: 'Pedro Ripper' }),
+  row(9, { C: 'Bloque siguiente' }),
+];
+const mergedStartDefinition = model.definitionFromRow(mergedStartRows[0], 0);
+mergedStartDefinition.interpretation.item_grouping = 'first_term';
+mergedStartDefinition.interpretation.item_start_column = 'B';
+mergedStartDefinition.interpretation.item_start_merged_b_to_d = 'required';
+mergedStartDefinition.interpretation.empty_rows.between_items.effect = 'page';
+mergedStartDefinition.interpretation.term_roles = { first: 'secondary', following: 'principal' };
+const mergedStartFollowing = model.definitionFromRow(mergedStartRows[8], 1);
+const mergedStartInstances = model.findBlockInstances(
+  mergedStartRows,
+  [mergedStartDefinition, mergedStartFollowing]
+);
+const mergedStartBlock = model.interpretModel(
+  mergedStartRows,
+  mergedStartInstances,
+  [mergedStartDefinition, mergedStartFollowing]
 ).blocks[0];
-assert.strictEqual(pagedFirstTermBlock.items[0].separator_after, 'page');
-assert.strictEqual(pagedFirstTermBlock.items[0].empty_rows_after.context, 'first_term_boundary');
-assert.deepStrictEqual(pagedFirstTermBlock.items[0].empty_rows_after.source_rows, []);
+assert.strictEqual(mergedStartBlock.items.length, 3);
+assert.deepStrictEqual(mergedStartBlock.items[0].terms.map((term) => [term.value, term.role]), [
+  ['Productoras Ejecutivas Creativas', 'secondary'],
+  ['Sara Cano', 'principal'],
+  ['Paula Fabra', 'principal'],
+]);
+assert.strictEqual(mergedStartBlock.items[0].separator_after, 'page');
+assert.deepStrictEqual(mergedStartBlock.items[1].source_rows, [5, 6]);
+assert.deepStrictEqual(mergedStartBlock.items[2].source_rows, [7, 8]);
+assert.strictEqual(mergedStartBlock.items[1].separator_after, null);
 
 const singleValueRows = [
   row(1, { C: 'Localizaciones' }),

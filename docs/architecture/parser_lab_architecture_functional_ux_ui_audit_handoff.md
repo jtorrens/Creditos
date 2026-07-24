@@ -183,14 +183,14 @@ mantiene un único `active_model_id` y permite quedar vacía después de borrar 
 superior con diálogos propios de Parser Lab; duplicar copia toda la regla y genera
 una identidad nueva.
 
-Contrato: `parser_lab_block_model`, versión 7.
+Contrato: `parser_lab_block_model`, versión 8.
 
 Estructura superior:
 
 ```json
 {
   "schema": "parser_lab_block_model",
-  "version": 7,
+  "version": 8,
   "blocks": [],
   "composition_rules": [],
   "normalized_rows_view": {
@@ -230,7 +230,7 @@ Contratos retirados que no deben reintroducirse:
     "orientation": "horizontal",
     "item_grouping": "first_term",
     "item_start_column": "B",
-    "item_boundary_effect": "item",
+    "item_start_merged_b_to_d": "ignore",
     "traversal": "row_major",
     "split_cell_lines": true,
     "term_roles": {
@@ -281,10 +281,10 @@ Son decisiones ortogonales.
 - `row`: crea un ítem por cada fila con contenido;
 - `first_term`: acumula filas hasta encontrar otro valor en `item_start_column`.
 
-Cuando se usa `first_term`, `item_boundary_effect` decide qué produce el siguiente
-primer término: `item` mantiene la página, `group` introduce una división interna
-de una línea y `page` fuerza un salto de página. Esta frontera es independiente de
-las filas vacías.
+Cuando se usa `first_term`, `item_start_merged_b_to_d` permite ignorar, exigir o
+prohibir una combinación B–D en la fila que inicia el ítem. Encontrar otro primer
+término solo crea otro ítem; los saltos de grupo o página pertenecen exclusivamente
+a las políticas explícitas de filas vacías.
 
 El orden dentro de cada ítem es siempre de izquierda a derecha y de arriba abajo. Las líneas internas de una celda también se separan y conservan su posición.
 
@@ -544,7 +544,7 @@ Ejemplo:
 - creación de ítems: uno por fila;
 - la línea «Una producción de Buendía Estudios Canarias» se conserva como ítem real.
 
-La implementación es genérica, forma parte de la versión 7 del modelo y no contiene excepciones textuales. El JSON experimental existente se migró una sola vez asignando `after_header` al contenido y `source: "match"` a sus fronteras previas. La migración de v6 a v7 asigna a `item_boundary_effect` el efecto intermedio ya definido por cada bloque, por lo que «Jefes de Equipo» conserva página y «Equipo técnico» conserva siguiente ítem.
+La implementación es genérica, forma parte de la versión 8 del modelo y no contiene excepciones textuales. La migración elimina el efecto de presentación asociado erróneamente a `first_term` y añade `item_start_merged_b_to_d`. Las políticas de filas vacías continúan siendo la única fuente de saltos de grupo y página.
 
 ## 10. Alcance aún por decidir
 

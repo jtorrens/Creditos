@@ -24,6 +24,6 @@ Do not put parser rules in `server.py` or `app.js`.
 - `rule_based_credits` is the registered production family for DB-backed manual models.
 - The selected rule record is loaded by the server service and passed explicitly to the parser.
 - Production parsing must validate the current rule contract. Missing boundaries may be skipped when other enabled boundaries match; ambiguous or out-of-order boundaries must fail rather than guess. A model with no matching enabled boundary must also fail.
-- `first_term` grouping must use its persisted `item_boundary_effect` (`item`, `group`, or `page`); do not infer presentation from block names or text values.
+- `first_term` grouping may require or forbid a merged B–D row through `item_start_merged_b_to_d`; page/group presentation remains owned by explicit empty-row policies.
 - Never read the retired Parser Lab JSON library from a production importer.
 - Preserve the stable `source_json` boundary consumed by materials, structure, render, and Preview.

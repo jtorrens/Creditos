@@ -1,5 +1,5 @@
 BLOCK_MODEL_SCHEMA = "parser_lab_block_model"
-BLOCK_MODEL_VERSION = 7
+BLOCK_MODEL_VERSION = 8
 
 
 def validate_rule_model(model):
@@ -68,8 +68,8 @@ def validate_rule_block(block, index):
         raise ValueError(f"El bloque {index + 1} tiene una agrupación inválida.")
     if interpretation.get("item_start_column") not in {"A", "B", "C", "D"}:
         raise ValueError(f"El bloque {index + 1} tiene una columna inicial inválida.")
-    if interpretation.get("item_boundary_effect") not in {"item", "group", "page"}:
-        raise ValueError(f"El bloque {index + 1} tiene un efecto de frontera de ítem inválido.")
+    if interpretation.get("item_start_merged_b_to_d") not in {"ignore", "required", "forbidden"}:
+        raise ValueError(f"El bloque {index + 1} tiene una condición de combinación de inicio inválida.")
     if "separator" in interpretation:
         raise ValueError(f"El bloque {index + 1} usa el contrato antiguo de separador.")
     term_roles = interpretation.get("term_roles")

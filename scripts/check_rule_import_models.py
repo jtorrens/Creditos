@@ -30,7 +30,7 @@ def definition(block_id, name, column, value, orientation, grouping, roles):
             "content_start": "after_header",
             "item_grouping": grouping,
             "item_start_column": "B",
-            "item_boundary_effect": "item",
+            "item_start_merged_b_to_d": "ignore",
             "traversal": "row_major",
             "split_cell_lines": True,
             "term_roles": roles,
@@ -58,7 +58,7 @@ def main():
 
     model = {
         "schema": "parser_lab_block_model",
-        "version": 7,
+        "version": 8,
         "blocks": [
             definition(
                 "direction",
@@ -160,12 +160,12 @@ def main():
             )
             assert [item["id"] for item in deleted["models"]] == [record_id]
             assert deleted["active_model_id"] == record_id
-            assert connection.execute("PRAGMA user_version").fetchone()[0] == 5
+            assert connection.execute("PRAGMA user_version").fetchone()[0] == 6
 
         legacy_model = json.loads(json.dumps(model))
         legacy_model["version"] = 6
         for block in legacy_model["blocks"]:
-            block["interpretation"].pop("item_boundary_effect")
+            block["interpretation"].pop("item_start_merged_b_to_d")
         with sqlite3.connect(db_path) as legacy_connection:
             legacy_connection.execute(
                 "UPDATE import_rule_models SET model_json = ? WHERE id = ?",
@@ -174,12 +174,12 @@ def main():
             legacy_connection.execute("PRAGMA user_version = 4")
         with db_connect(db_path) as migrated_connection:
             migrated = load_rule_model_library(migrated_connection)["models"][0]
-            assert migrated["model"]["version"] == 7
+            assert migrated["model"]["version"] == 8
             assert all(
-                block["interpretation"]["item_boundary_effect"] == "item"
+                block["interpretation"]["item_start_merged_b_to_d"] == "ignore"
                 for block in migrated["model"]["blocks"]
             )
-            assert migrated["revision"] == 5
+            assert migrated["revision"] == 6
 
     print("ok rule import models DB persistence and production parser")
     return 0

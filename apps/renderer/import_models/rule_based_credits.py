@@ -238,9 +238,15 @@ def interpret_first_term(body, first, last, interpretation):
             else:
                 flush(boundary)
         pending_empty = []
-        starts_item = bool(str(row["values"].get(interpretation["item_start_column"], "")).strip())
+        starts_item = (
+            bool(str(row["values"].get(interpretation["item_start_column"], "")).strip())
+            and requirement_matches(
+                bool(row.get("merged_b_to_d")),
+                interpretation["item_start_merged_b_to_d"],
+            )
+        )
         if starts_item and values:
-            flush(item_boundary(interpretation))
+            flush()
         start_column = (
             "A"
             if interpretation["content_start"] == "header" and index == first
@@ -252,16 +258,6 @@ def interpret_first_term(body, first, last, interpretation):
             values.extend(row_values)
     flush()
     return items
-
-
-def item_boundary(interpretation):
-    effect = interpretation["item_boundary_effect"]
-    return {
-        "effect": effect,
-        "display": "compact" if effect == "group" else "ignore",
-        "source_count": 0,
-        "output_count": 1 if effect == "group" else 0,
-    }
 
 
 def interpret_empty_groups(body, first, last, interpretation):
